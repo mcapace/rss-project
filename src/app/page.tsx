@@ -12,7 +12,11 @@ import {
   AlertCircle,
   Radio,
   BookOpen,
+  ArrowUpRight,
 } from "lucide-react";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { BrandMark } from "@/components/ui/BrandMark";
 
 interface FeedItem {
   title?: string;
@@ -38,35 +42,40 @@ interface FeedData {
 
 const PRESET_FEEDS = [
   {
-    name: "BBC News - World",
+    name: "Market Watch Preview",
+    brand: "mw",
+    url: "/api/feeds/mw/2026-09/feed.xml",
+    category: "Internal",
+  },
+  {
+    name: "BBC News — World",
+    brand: null,
     url: "https://feeds.bbci.co.uk/news/world/rss.xml",
     category: "News",
   },
   {
     name: "The Verge",
+    brand: null,
     url: "https://www.theverge.com/rss/index.xml",
     category: "Tech",
   },
   {
-    name: "Hacker News Top",
-    url: "https://news.ycombinator.com/rss",
-    category: "Tech",
-  },
-  {
-    name: "NYT - Technology",
+    name: "NYT — Technology",
+    brand: null,
     url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
     category: "Tech",
   },
   {
     name: "NASA Breaking News",
+    brand: null,
     url: "https://www.nasa.gov/rss/dyn/breaking_news.rss",
     category: "Science",
   },
 ];
 
-export default function Home() {
-  const [urlInput, setUrlInput] = useState(PRESET_FEEDS[0].url);
-  const [activeFeedUrl, setActiveFeedUrl] = useState(PRESET_FEEDS[0].url);
+export default function FeedReaderPage() {
+  const [urlInput, setUrlInput] = useState(PRESET_FEEDS[1].url);
+  const [activeFeedUrl, setActiveFeedUrl] = useState(PRESET_FEEDS[1].url);
   const [feedData, setFeedData] = useState<FeedData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState("");
@@ -92,7 +101,7 @@ export default function Home() {
 
   useEffect(() => {
     startTransition(() => {
-      loadFeed(PRESET_FEEDS[0].url);
+      loadFeed(PRESET_FEEDS[1].url);
     });
   }, []);
 
@@ -125,263 +134,244 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-              <Rss className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                RSS Feed Hub
-                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">
-                  Live
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400 hidden sm:block">
-                Aggregator, Parser & Reader
-              </p>
-            </div>
-          </div>
+    <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
+      {/* Header section */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-[rgba(255,255,255,0.06)]">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA0]">
+            Feed Inspector & QA
+          </span>
+          <h1 className="font-serif text-3xl sm:text-4xl text-[#EDEDED] font-normal tracking-tight mt-1">
+            RSS Reader
+          </h1>
+        </div>
+        <p className="text-xs text-[#9A9AA0] max-w-sm">
+          Inspect, validate, and preview generated edition RSS feeds and external feeds in real time.
+        </p>
+      </div>
 
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/mcapace/rss-project"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5 border border-slate-700"
+      {/* URL Fetcher Card */}
+      <Card padding="md" className="space-y-4">
+        <form onSubmit={handleFetch} className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#9A9AA0]">
+              <Radio className="w-4 h-4 text-[#C9A227]" />
+            </div>
+            <input
+              type="text"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              placeholder="Enter RSS/Atom XML feed URL..."
+              required
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs font-mono text-[#EDEDED] placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]"
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            isLoading={isPending}
+            disabled={isPending}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isPending ? "animate-spin" : ""}`} />
+            {isPending ? "Fetching..." : "Fetch Feed"}
+          </Button>
+        </form>
+
+        {/* Quick Presets */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] mr-1">
+            Presets:
+          </span>
+          {PRESET_FEEDS.map((preset) => (
+            <button
+              key={preset.url}
+              onClick={() => handleSelectPreset(preset.url)}
+              className={`text-xs px-2.5 py-1 rounded-md border transition-all flex items-center gap-1.5 ${
+                activeFeedUrl === preset.url
+                  ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.24)] text-[#EDEDED] font-medium"
+                  : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
+              }`}
             >
-              <Globe className="w-3.5 h-3.5" />
-              GitHub
-            </a>
+              {preset.brand && <BrandMark brand={preset.brand} size="sm" />}
+              <span>{preset.name}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* Error state */}
+      {error && (
+        <div className="p-4 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#F87171] flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className="text-xs">
+            <span className="font-semibold">Failed to load feed:</span>
+            <p className="mt-0.5 opacity-90">{error}</p>
           </div>
         </div>
-      </header>
+      )}
 
-      {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full flex flex-col gap-8">
-        {/* URL Input Form */}
-        <section className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-xl backdrop-blur-sm">
-          <form onSubmit={handleFetch} className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Radio className="w-4 h-4 text-orange-400" />
-              </div>
-              <input
-                type="url"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="Enter any RSS/Atom XML feed URL..."
-                required
-                className="w-full pl-10 pr-4 py-3 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isPending}
-              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white font-medium text-sm rounded-xl transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${isPending ? "animate-spin" : ""}`} />
-              {isPending ? "Fetching..." : "Fetch Feed"}
-            </button>
-          </form>
-
-          {/* Quick Presets */}
-          <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800/60">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
-              Presets:
-            </span>
-            {PRESET_FEEDS.map((preset) => (
-              <button
-                key={preset.url}
-                onClick={() => handleSelectPreset(preset.url)}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                  activeFeedUrl === preset.url
-                    ? "bg-orange-500/10 border-orange-500/40 text-orange-400 font-medium"
-                    : "bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                }`}
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Error Notification */}
-        {error && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-            <div className="text-sm">
-              <strong className="font-semibold">Error loading feed:</strong>
-              <p className="mt-1 text-red-300">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Feed Info Header */}
-        {feedData && (
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  {feedData.title || "Untitled Feed"}
-                </h2>
-                {feedData.link && (
-                  <a
-                    href={feedData.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-orange-400 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                )}
-              </div>
-              {feedData.description && (
-                <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-                  {feedData.description}
-                </p>
+      {/* Active Feed Overview */}
+      {feedData && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-[rgba(255,255,255,0.08)]">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-serif text-2xl text-[#EDEDED] font-normal tracking-tight">
+                {feedData.title || "Untitled Feed"}
+              </h2>
+              {feedData.link && (
+                <a
+                  href={feedData.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#9A9AA0] hover:text-[#C9A227] transition-colors p-1"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                </a>
               )}
             </div>
-
-            {/* Filter Input */}
-            <div className="relative w-full md:w-72">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Search className="w-4 h-4" />
-              </div>
-              <input
-                type="text"
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Filter articles..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Feed Grid & Detail View */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* List of Articles */}
-          <div
-            className={`flex flex-col gap-4 ${
-              selectedItem ? "lg:col-span-7" : "lg:col-span-12"
-            }`}
-          >
-            {isPending && !feedData && (
-              <div className="py-20 text-center text-slate-500">
-                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-orange-400" />
-                <p className="text-sm">Loading feed contents...</p>
-              </div>
+            {feedData.description && (
+              <p className="text-xs text-[#9A9AA0] mt-1 max-w-2xl">
+                {feedData.description}
+              </p>
             )}
+          </div>
 
-            {filteredItems.map((item, idx) => {
-              const isSelected = selectedItem?.link === item.link;
-              return (
-                <article
-                  key={item.guid || item.link || idx}
-                  onClick={() => setSelectedItem(item)}
-                  className={`p-5 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-slate-900/90 border-orange-500/50 shadow-lg shadow-orange-500/5"
-                      : "bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/70 hover:border-slate-700"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <h3 className="text-base font-semibold text-slate-100 hover:text-orange-400 transition-colors leading-snug">
-                      {item.title || "No Title"}
-                    </h3>
-                    {item.link && (
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-slate-500 hover:text-orange-400 transition-colors shrink-0 p-1"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
-                  </div>
+          <div className="relative w-full md:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#9A9AA0]">
+              <Search className="w-3.5 h-3.5" />
+            </div>
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Filter feed items..."
+              className="w-full pl-8 pr-3 py-1.5 bg-[#141416] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs text-[#EDEDED] placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227]"
+            />
+          </div>
+        </div>
+      )}
 
-                  {item.contentSnippet && (
-                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                      {item.contentSnippet}
-                    </p>
+      {/* Main Grid: Articles + Reader Pane */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Articles List */}
+        <div
+          className={`space-y-3 ${
+            selectedItem ? "lg:col-span-7" : "lg:col-span-12"
+          }`}
+        >
+          {isPending && !feedData && (
+            <div className="py-20 text-center text-[#9A9AA0]">
+              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-3 text-[#C9A227]" />
+              <p className="text-xs font-mono">Parsing feed payload...</p>
+            </div>
+          )}
+
+          {filteredItems.map((item, idx) => {
+            const isSelected = selectedItem?.link === item.link;
+            return (
+              <Card
+                key={item.guid || item.link || idx}
+                padding="md"
+                onClick={() => setSelectedItem(item)}
+                className={`cursor-pointer transition-all ${
+                  isSelected
+                    ? "bg-[#1B1B1E] border-[#C9A227]/40 ring-1 ring-[#C9A227]/30"
+                    : "hover:bg-[#1B1B1E]/70"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="font-serif text-lg text-[#EDEDED] font-normal leading-snug hover:text-white">
+                    {item.title || "No Title"}
+                  </h3>
+                  {item.link && (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[#9A9AA0] hover:text-[#C9A227] transition-colors p-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+
+                {item.contentSnippet && (
+                  <p className="text-xs text-[#9A9AA0] mt-2 line-clamp-2 leading-relaxed font-sans">
+                    {item.contentSnippet}
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-mono text-[#9A9AA0]">
+                  {item.pubDate && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {new Date(item.pubDate).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
                   )}
 
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                    {item.pubDate && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {new Date(item.pubDate).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                  {(item.creator || item.author) && (
+                    <span>• {item.creator || item.author}</span>
+                  )}
+
+                  {item.categories && item.categories.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-[#6B6B72]" />
+                      <span className="text-[#9A9AA0]">
+                        {item.categories.slice(0, 2).join(", ")}
                       </span>
-                    )}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
 
-                    {(item.creator || item.author) && (
-                      <span>by {item.creator || item.author}</span>
-                    )}
+          {feedData && filteredItems.length === 0 && (
+            <Card padding="lg" className="text-center text-[#9A9AA0]">
+              <BookOpen className="w-6 h-6 mx-auto mb-2 opacity-40" />
+              <p className="text-xs">No articles matched filter criteria.</p>
+            </Card>
+          )}
+        </div>
 
-                    {item.categories && item.categories.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Tag className="w-3 h-3 text-slate-600" />
-                        <span className="text-slate-400">
-                          {item.categories.slice(0, 2).join(", ")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-
-            {feedData && filteredItems.length === 0 && (
-              <div className="py-16 text-center text-slate-500 bg-slate-900/20 rounded-xl border border-slate-800">
-                <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No articles match your filter.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Reader Panel (if selected) */}
-          {selectedItem && (
-            <div className="lg:col-span-5 sticky top-24 h-fit max-h-[80vh] overflow-y-auto bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                <span className="text-xs font-semibold text-orange-400 uppercase tracking-wider">
+        {/* Article Preview Pane */}
+        {selectedItem && (
+          <div className="lg:col-span-5 sticky top-20 h-fit max-h-[80vh] overflow-y-auto">
+            <Card elevated padding="lg" className="space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)]">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C9A227]">
                   Article Preview
                 </span>
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="text-slate-400 hover:text-slate-200 text-xs px-2 py-1 rounded bg-slate-800"
+                  className="text-xs text-[#9A9AA0] hover:text-[#EDEDED] px-2 py-0.5 rounded bg-[#141416] border border-[rgba(255,255,255,0.06)]"
                 >
                   Close
                 </button>
               </div>
 
-              <div className="mt-4">
-                <h2 className="text-lg font-bold text-white leading-tight">
+              <div>
+                <h2 className="font-serif text-xl text-[#EDEDED] font-normal leading-tight">
                   {selectedItem.title}
                 </h2>
 
-                <div className="mt-2 text-xs text-slate-400 flex flex-wrap gap-2 items-center">
+                <div className="mt-2 text-xs font-mono text-[#9A9AA0] flex flex-wrap gap-2 items-center">
                   {selectedItem.pubDate && <span>{selectedItem.pubDate}</span>}
                   {(selectedItem.creator || selectedItem.author) && (
-                    <span>• by {selectedItem.creator || selectedItem.author}</span>
+                    <span>• {selectedItem.creator || selectedItem.author}</span>
                   )}
                 </div>
 
-                <div className="mt-6 text-sm text-slate-300 leading-relaxed space-y-4">
+                <div className="mt-6 text-xs text-[#EDEDED] leading-relaxed space-y-3 font-sans">
                   {selectedItem.contentEncoded || selectedItem.content ? (
                     <div
-                      className="prose prose-invert prose-sm max-w-none break-words"
+                      className="prose prose-invert prose-xs max-w-none break-words"
                       dangerouslySetInnerHTML={{
                         __html:
                           selectedItem.contentEncoded ||
@@ -395,30 +385,23 @@ export default function Home() {
                 </div>
 
                 {selectedItem.link && (
-                  <div className="mt-6 pt-4 border-t border-slate-800">
+                  <div className="mt-6 pt-4 border-t border-[rgba(255,255,255,0.08)] flex justify-end">
                     <a
                       href={selectedItem.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-medium transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C9A227] hover:bg-[#D8B138] text-[#0A0A0B] rounded-lg text-xs font-semibold tracking-tight transition-colors"
                     >
-                      Read full article
+                      <span>Read Original</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
                 )}
               </div>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-6 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-          RSS Project • Built with Next.js & Tailwind CSS • Deployed on Vercel
-        </div>
-      </footer>
-    </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

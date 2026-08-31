@@ -54,9 +54,9 @@ def run(brand, issue_id, issue_uuid, out_root="output"):
             sb.table("article_images").insert(img_rows).execute()
 
     sb.table("issues").update({
-        "status": "review", "stats": manifest["stats"],
+        "status": "published", "stats": manifest["stats"],
     }).eq("id", issue_uuid).execute()
-    print(f"published {len(data['articles'])} articles, {len(uploaded)} images -> review")
+    print(f"published {len(data['articles'])} articles, {len(uploaded)} images -> published")
 
 
 if __name__ == "__main__":

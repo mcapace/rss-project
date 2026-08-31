@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus, BookOpen, Layers } from "lucide-react";
+import { Plus } from "lucide-react";
+import { CorporateLogo } from "@/components/ui/CorporateLogo";
 
 export function TopNav() {
   const pathname = usePathname();
@@ -14,19 +15,23 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 w-full bg-[#0A0A0B]/90 backdrop-blur-md border-b border-[rgba(255,255,255,0.08)]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        {/* Brand Wordmark */}
+        {/* Brand Wordmark & Corporate Logo */}
         <div className="flex items-center gap-6">
-          <Link
-            href="/admin"
-            className="group flex items-center gap-2 text-decoration-none"
-          >
-            <span className="font-serif text-xl tracking-tight text-[#EDEDED] group-hover:text-white transition-colors">
-              Editions
-            </span>
-            <span className="text-[10px] uppercase font-mono tracking-widest text-[#9A9AA0] px-1.5 py-0.5 rounded bg-[#141416] border border-[rgba(255,255,255,0.06)]">
-              RSS
-            </span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <CorporateLogo height={16} linked onDark />
+            <span className="text-[rgba(255,255,255,0.2)] text-xs font-light">|</span>
+            <Link
+              href="/admin"
+              className="group flex items-center gap-2 text-decoration-none"
+            >
+              <span className="font-serif text-lg tracking-tight text-[#EDEDED] group-hover:text-white transition-colors">
+                Editions
+              </span>
+              <span className="text-[9px] uppercase font-mono tracking-widest text-[#9A9AA0] px-1.5 py-0.5 rounded bg-[#141416] border border-[rgba(255,255,255,0.06)]">
+                RSS
+              </span>
+            </Link>
+          </div>
 
           {/* Desktop Nav Links */}
           <nav className="hidden sm:flex items-center gap-1">

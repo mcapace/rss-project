@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, ArrowRight, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { CorporateLogo } from "@/components/ui/CorporateLogo";
 
 function LoginForm() {
   const router = useRouter();
@@ -42,16 +43,16 @@ function LoginForm() {
 
   return (
     <main className="flex-1 max-w-md w-full mx-auto px-4 py-20 flex flex-col items-center justify-center space-y-6">
-      <div className="text-center space-y-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA0]">
-          Internal Access
-        </span>
-        <h1 className="font-serif text-3xl text-[#EDEDED] font-normal tracking-tight">
-          Editions Authentication
-        </h1>
-        <p className="text-xs text-[#9A9AA0]">
-          Enter the administrative password to manage issues and publishing pipelines.
-        </p>
+      <div className="text-center space-y-3 flex flex-col items-center">
+        <CorporateLogo height={20} onDark />
+        <div className="space-y-1">
+          <h1 className="font-serif text-2xl text-[#EDEDED] font-normal tracking-tight">
+            Digital Editions Access
+          </h1>
+          <p className="text-xs text-[#9A9AA0]">
+            Enter administrative password to manage issues and publishing pipelines.
+          </p>
+        </div>
       </div>
 
       <Card elevated padding="lg" className="w-full space-y-6">

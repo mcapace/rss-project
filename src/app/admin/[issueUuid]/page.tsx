@@ -122,7 +122,7 @@ export default function IssueStatusPage({
           </div>
         </div>
         <Card elevated padding="lg" className="space-y-6">
-          <div className="flex justify-between items-center pb-6 border-b border-[rgba(255,255,255,0.06)]">
+          <div className="flex justify-between items-center pb-6 border-b border-gray-100">
             <div className="flex items-center gap-3.5">
               <Skeleton className="w-8 h-8 rounded" />
               <div>
@@ -148,17 +148,17 @@ export default function IssueStatusPage({
       <div>
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs text-[#9A9AA0] hover:text-[#EDEDED] transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors mb-3"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Issues</span>
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA0]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
               Publishing Pipeline • Issue Status
             </span>
-            <h1 className="font-serif text-3xl sm:text-4xl text-[#EDEDED] font-normal tracking-tight mt-1">
+            <h1 className="font-serif text-3xl sm:text-4xl text-gray-900 font-normal tracking-tight mt-1">
               {issue?.issue_label || "Issue Processing"}
             </h1>
           </div>
@@ -171,29 +171,29 @@ export default function IssueStatusPage({
       {/* Hero Card */}
       <Card elevated padding="lg" className="space-y-8">
         {/* Header with Brand, Label, ID & Date */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[rgba(255,255,255,0.06)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
           <div className="flex items-center gap-3.5">
             <BrandMark brand={issue?.brand || "mw"} size="lg" />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-serif text-2xl text-[#EDEDED] font-normal">
+                <h2 className="font-serif text-2xl text-gray-900 font-normal">
                   {issue?.issue_label || "Loading..."}
                 </h2>
-                <span className="text-xs font-mono text-[#9A9AA0] bg-[#0A0A0B] px-2 py-0.5 rounded border border-[rgba(255,255,255,0.06)]">
+                <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
                   {issue?.issue_id}
                 </span>
               </div>
-              <p className="text-xs font-mono text-[#9A9AA0] mt-1">
+              <p className="text-xs font-mono text-gray-500 mt-1">
                 {issue?.pdf_key || "Direct S3 PDF Package"}
               </p>
             </div>
           </div>
 
           <div className="text-left sm:text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0]">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
               Registered
             </div>
-            <div className="text-xs font-mono text-[#EDEDED] mt-0.5">
+            <div className="text-xs font-mono text-gray-900 mt-0.5">
               {issue?.created_at
                 ? new Date(issue.created_at).toLocaleString(undefined, {
                     month: "short",
@@ -213,71 +213,71 @@ export default function IssueStatusPage({
             {/* 3-Step Progress Indicator */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Step 1: Extracting */}
-              <div className="p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] relative overflow-hidden">
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0]">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
                     Step 1
                   </span>
                   <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse" />
                 </div>
-                <div className="text-sm font-semibold text-[#EDEDED] mt-2 flex items-center gap-2">
+                <div className="text-sm font-semibold text-gray-900 mt-2 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#C9A227]" />
                   <span>Extracting</span>
                 </div>
-                <p className="text-[11px] text-[#9A9AA0] mt-1">
+                <p className="text-[11px] text-gray-500 mt-1">
                   Parsing PDF pages, text coordinates, and raw images.
                 </p>
               </div>
 
               {/* Step 2: Segmenting */}
-              <div className="p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] relative overflow-hidden">
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0]">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
                     Step 2
                   </span>
                   <Sparkles className="w-3.5 h-3.5 text-[#C9A227] opacity-60" />
                 </div>
-                <div className="text-sm font-semibold text-[#EDEDED] mt-2 flex items-center gap-2">
+                <div className="text-sm font-semibold text-gray-900 mt-2 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-[#C9A227]" />
                   <span>Segmenting</span>
                 </div>
-                <p className="text-[11px] text-[#9A9AA0] mt-1">
+                <p className="text-[11px] text-gray-500 mt-1">
                   Claude AI TOC mapping & BlueToad HTML formatting.
                 </p>
               </div>
 
               {/* Step 3: Publishing */}
-              <div className="p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] relative overflow-hidden">
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0]">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
                     Step 3
                   </span>
-                  <Globe className="w-3.5 h-3.5 text-[#9A9AA0] opacity-40" />
+                  <Globe className="w-3.5 h-3.5 text-gray-400 opacity-60" />
                 </div>
-                <div className="text-sm font-semibold text-[#EDEDED] mt-2 flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-[#9A9AA0]" />
+                <div className="text-sm font-semibold text-gray-900 mt-2 flex items-center gap-2">
+                  <FileCheck2 className="w-4 h-4 text-gray-400" />
                   <span>Publishing</span>
                 </div>
-                <p className="text-[11px] text-[#9A9AA0] mt-1">
+                <p className="text-[11px] text-gray-500 mt-1">
                   Writing S3 images and Supabase article database.
                 </p>
               </div>
             </div>
 
             {/* Live Polling Status Note */}
-            <div className="p-5 rounded-xl bg-[#141416] border border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+            <div className="p-5 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <RotateCw className="w-4 h-4 text-[#C9A227] animate-spin" />
                 <div>
-                  <div className="text-xs font-semibold text-[#EDEDED]">
+                  <div className="text-xs font-semibold text-gray-900">
                     GitHub Worker running in background
                   </div>
-                  <div className="text-[11px] text-[#9A9AA0]">
+                  <div className="text-[11px] text-gray-500">
                     Polling live status every 5 seconds. Processing typically takes 3–8 minutes.
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#9A9AA0] px-2 py-1 bg-[#0A0A0B] rounded border border-[rgba(255,255,255,0.06)]">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 px-2 py-1 bg-white rounded border border-gray-200 shadow-xs">
                 Live SWR
               </span>
             </div>
@@ -287,16 +287,16 @@ export default function IssueStatusPage({
         {/* PUBLISHED SUCCESS STATE */}
         {isPublished && (
           <div className="space-y-6 py-2">
-            <div className="p-6 rounded-xl bg-[rgba(34,197,94,0.06)] border border-[rgba(34,197,94,0.2)] space-y-4">
+            <div className="p-6 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#22C55E]/10 border border-[#22C55E]/20 flex items-center justify-center text-[#4ADE80]">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
                   <Check className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl text-[#EDEDED] font-normal">
+                  <h3 className="font-serif text-xl text-gray-900 font-normal">
                     Issue Successfully Published
                   </h3>
-                  <p className="text-xs text-[#9A9AA0] mt-0.5">
+                  <p className="text-xs text-gray-600 mt-0.5">
                     Live RSS feed is active and ready for migration tool consumption.
                   </p>
                 </div>
@@ -304,11 +304,11 @@ export default function IssueStatusPage({
 
               {/* Feed URL Field */}
               <div className="space-y-1.5 pt-2">
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0]">
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-gray-600">
                   Public RSS Feed URL
                 </label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 px-4 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs font-mono text-[#4ADE80] truncate select-all">
+                  <div className="flex-1 px-4 py-2.5 bg-white border border-emerald-200 rounded-lg text-xs font-mono text-emerald-800 font-medium truncate select-all shadow-xs">
                     {typeof window !== "undefined"
                       ? `${window.location.origin}${data.feedUrl}`
                       : data?.feedUrl}
@@ -317,12 +317,12 @@ export default function IssueStatusPage({
                     onClick={copyFeedUrl}
                     variant="ghost"
                     size="md"
-                    className="shrink-0 font-mono text-xs"
+                    className="shrink-0 font-mono text-xs bg-white hover:bg-gray-50"
                   >
                     {copied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 mr-1.5 text-[#4ADE80]" />
-                        <span>Copied!</span>
+                        <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                        <span className="text-emerald-700 font-medium">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -337,39 +337,39 @@ export default function IssueStatusPage({
 
             {/* Metrics Breakdown */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)]">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <BookOpen className="w-3.5 h-3.5 text-[#C9A227]" />
                   <span>Articles</span>
                 </div>
-                <div className="text-2xl font-mono text-[#EDEDED] font-semibold mt-1">
+                <div className="text-2xl font-mono text-gray-900 font-semibold mt-1">
                   {data?.articleCount ?? "—"}
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)]">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <ImageIcon className="w-3.5 h-3.5 text-[#C9A227]" />
                   <span>Extracted Images</span>
                 </div>
-                <div className="text-2xl font-mono text-[#EDEDED] font-semibold mt-1">
+                <div className="text-2xl font-mono text-gray-900 font-semibold mt-1">
                   {data?.imageCount ?? "—"}
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] col-span-2 sm:col-span-1">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 col-span-2 sm:col-span-1">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-[#C9A227]" />
                   <span>Format</span>
                 </div>
-                <div className="text-xs font-mono text-[#EDEDED] mt-2">
+                <div className="text-xs font-mono text-gray-900 mt-2 font-medium">
                   RSS 2.0 • BlueToad
                 </div>
               </div>
             </div>
 
             {/* Actions Bar */}
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-100">
               <a
                 href={data?.feedUrl}
                 target="_blank"
@@ -400,14 +400,14 @@ export default function IssueStatusPage({
         {/* FAILED STATE */}
         {isFailed && (
           <div className="space-y-6 py-2">
-            <div className="p-6 rounded-xl bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.25)] space-y-3">
+            <div className="p-6 rounded-xl bg-rose-50 border border-rose-200 space-y-3">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-serif text-lg text-[#EDEDED] font-normal">
+                  <h3 className="font-serif text-lg text-rose-950 font-normal">
                     Processing Execution Failed
                   </h3>
-                  <p className="text-xs text-[#FCA5A5] mt-1 font-mono break-words">
+                  <p className="text-xs text-rose-700 mt-1 font-mono break-words">
                     {issue?.error || "Unknown worker failure during PDF extraction or Claude segmentation."}
                   </p>
                 </div>
@@ -415,12 +415,12 @@ export default function IssueStatusPage({
             </div>
 
             {retryError && (
-              <div className="p-3 rounded-lg bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] text-[#F87171] text-xs">
+              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs">
                 {retryError}
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
               <Link href="/admin">
                 <Button variant="ghost" size="md">
                   Return to Issues

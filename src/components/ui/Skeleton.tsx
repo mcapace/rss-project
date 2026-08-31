@@ -9,7 +9,7 @@ export function Skeleton({
 }) {
   return (
     <div
-      className={`animate-pulse rounded bg-[#1B1B1E] border border-[rgba(255,255,255,0.04)] ${className}`}
+      className={`animate-pulse rounded bg-gray-200 ${className}`}
       style={style}
     />
   );
@@ -17,7 +17,7 @@ export function Skeleton({
 
 export function TableRowSkeleton() {
   return (
-    <tr className="border-b border-[rgba(255,255,255,0.04)]">
+    <tr className="border-b border-gray-100">
       <td className="py-4 px-6">
         <div className="flex items-center gap-2.5">
           <Skeleton className="w-6 h-6 rounded" />
@@ -46,7 +46,7 @@ export function TableRowSkeleton() {
 
 export function ArticleCardSkeleton() {
   return (
-    <div className="p-6 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#141416] space-y-3">
+    <div className="p-6 rounded-xl border border-gray-200 bg-white space-y-3 shadow-xs">
       <div className="flex justify-between items-start gap-4">
         <Skeleton className="w-3/4 h-5 rounded" />
         <Skeleton className="w-5 h-5 rounded" />

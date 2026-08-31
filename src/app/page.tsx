@@ -1,28 +1,27 @@
 "use client";
 
-import { useState, useEffect, useTransition, Suspense } from "react";
+import { useState, useTransition, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
 import {
-  Rss,
   Search,
   ExternalLink,
-  RefreshCw,
+  BookOpen,
   Clock,
   Tag,
-  AlertCircle,
   Radio,
-  BookOpen,
-  ArrowUpRight,
   Layers,
-  Sparkles,
+  RefreshCw,
+  AlertCircle,
+  ArrowUpRight,
   Plus,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { ArticleCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
+import { BrandKey } from "@/lib/brands";
 
 interface FeedItem {
   title?: string;
@@ -33,8 +32,13 @@ interface FeedItem {
   contentSnippet?: string;
   content?: string;
   contentEncoded?: string;
-  categories?: string[];
   guid?: string;
+  categories?: string[];
+  enclosure?: {
+    url?: string;
+    type?: string;
+    length?: number;
+  };
 }
 
 interface FeedData {
@@ -42,26 +46,25 @@ interface FeedData {
   description?: string;
   link?: string;
   feedUrl?: string;
-  lastBuildDate?: string;
   items?: FeedItem[];
 }
 
 interface PublishedIssue {
   id: string;
-  brand: string;
+  brand: BrandKey;
   issue_id: string;
   issue_label: string;
   status: string;
   feedUrl: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 function FeedReaderContent() {
   const searchParams = useSearchParams();
   const queryUrl = searchParams.get("url");
 
-  // Fetch only our published edition feeds from Supabase
+  // Fetch only published digital editions from our database
   const { data: issuesData, isLoading: issuesLoading } = useSWR<{
     issues: PublishedIssue[];
   }>("/api/issues", fetcher);
@@ -78,25 +81,28 @@ function FeedReaderContent() {
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const loadFeed = async (url: string) => {
-    if (!url || !url.trim()) return;
+  const loadFeed = async (targetUrl: string) => {
+    if (!targetUrl.trim()) return;
     setError(null);
     setSelectedItem(null);
+    setActiveFeedUrl(targetUrl);
+
     try {
-      const res = await fetch(`/api/feed?url=${encodeURIComponent(url)}`);
+      const endpoint = `/api/feed?url=${encodeURIComponent(targetUrl.trim())}`;
+      const res = await fetch(endpoint);
       const data = await res.json();
+
       if (!res.ok || data.error) {
-        throw new Error(data.error || "Failed to load RSS feed");
+        throw new Error(data.error || "Failed to parse feed");
       }
+
       setFeedData(data);
-      setActiveFeedUrl(url);
     } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred loading the feed.");
+      setError(err.message || "Could not fetch or parse RSS feed.");
       setFeedData(null);
     }
   };
 
-  // When queryUrl changes or when publishedIssues first loads
   useEffect(() => {
     if (queryUrl) {
       setUrlInput(queryUrl);
@@ -114,16 +120,15 @@ function FeedReaderContent() {
 
   const handleFetch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!urlInput.trim()) return;
     startTransition(() => {
-      loadFeed(urlInput.trim());
+      loadFeed(urlInput);
     });
   };
 
-  const handleSelectPreset = (presetUrl: string) => {
-    setUrlInput(presetUrl);
+  const handleSelectPreset = (url: string) => {
+    setUrlInput(url);
     startTransition(() => {
-      loadFeed(presetUrl);
+      loadFeed(url);
     });
   };
 
@@ -143,16 +148,16 @@ function FeedReaderContent() {
   return (
     <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-gray-200">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA0]">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
             Feed Inspector & QA
           </span>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#EDEDED] font-normal tracking-tight mt-1">
+          <h1 className="font-serif text-3xl sm:text-4xl text-gray-900 font-normal tracking-tight mt-1">
             Edition Reader
           </h1>
         </div>
-        <p className="text-xs text-[#9A9AA0] max-w-sm">
+        <p className="text-xs text-gray-500 max-w-sm">
           Inspect, validate, and preview generated digital edition RSS feeds directly from our publishing pipeline.
         </p>
       </div>
@@ -161,7 +166,7 @@ function FeedReaderContent() {
       <Card padding="md" className="space-y-4">
         <form onSubmit={handleFetch} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#9A9AA0]">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
               <Radio className="w-4 h-4 text-[#C9A227]" />
             </div>
             <input
@@ -169,7 +174,7 @@ function FeedReaderContent() {
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               placeholder="Enter digital edition feed URL e.g. /api/feeds/mw/2026-09/feed.xml"
-              className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs font-mono text-[#EDEDED] placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-xs font-mono text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]"
             />
           </div>
           <Button
@@ -187,24 +192,24 @@ function FeedReaderContent() {
         </form>
 
         {/* Our Published Editions Only */}
-        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] mr-1 flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-100">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mr-1 flex items-center gap-1">
             <Layers className="w-3 h-3 text-[#C9A227]" />
             <span>Published Editions:</span>
           </span>
 
           {issuesLoading && publishedIssues.length === 0 ? (
-            <span className="text-xs font-mono text-[#9A9AA0] italic">
+            <span className="text-xs font-mono text-gray-400 italic">
               Loading published catalog...
             </span>
           ) : publishedIssues.length === 0 ? (
-            <span className="text-xs text-[#9A9AA0] flex items-center gap-2">
+            <span className="text-xs text-gray-500 flex items-center gap-2">
               <span>No published editions yet.</span>
               <Link
                 href="/admin/new"
-                className="text-[#C9A227] hover:underline inline-flex items-center gap-1 font-medium"
+                className="text-amber-700 hover:underline inline-flex items-center gap-1 font-medium"
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-3.5 h-3.5" />
                 Upload New Issue
               </Link>
             </span>
@@ -215,8 +220,8 @@ function FeedReaderContent() {
                 onClick={() => handleSelectPreset(issue.feedUrl)}
                 className={`text-xs px-2.5 py-1 rounded-md border transition-all flex items-center gap-1.5 ${
                   activeFeedUrl === issue.feedUrl
-                    ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.24)] text-[#EDEDED] font-medium shadow-sm"
-                    : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
+                    ? "bg-amber-50 border-amber-300 text-amber-950 font-medium shadow-xs"
+                    : "bg-white border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
                 <BrandMark brand={issue.brand} size="sm" />
@@ -229,7 +234,7 @@ function FeedReaderContent() {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#F87171] flex items-start gap-3">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
           <div className="text-xs">
             <span className="font-semibold">Failed to load feed:</span>
@@ -240,10 +245,10 @@ function FeedReaderContent() {
 
       {/* Active Feed Overview */}
       {feedData && (
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-[rgba(255,255,255,0.08)]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-3 border-b border-gray-200">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-serif text-2xl text-[#EDEDED] font-normal tracking-tight">
+              <h2 className="font-serif text-2xl text-gray-900 font-normal tracking-tight">
                 {feedData.title || "Untitled Feed"}
               </h2>
               {feedData.link && (
@@ -251,21 +256,21 @@ function FeedReaderContent() {
                   href={feedData.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#9A9AA0] hover:text-[#C9A227] transition-colors p-1"
+                  className="text-gray-400 hover:text-[#C9A227] transition-colors p-1"
                 >
                   <ArrowUpRight className="w-4 h-4" />
                 </a>
               )}
             </div>
             {feedData.description && (
-              <p className="text-xs text-[#9A9AA0] mt-1 max-w-2xl font-sans">
+              <p className="text-xs text-gray-600 mt-1 max-w-2xl font-sans">
                 {feedData.description}
               </p>
             )}
           </div>
 
           <div className="relative w-full md:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#9A9AA0]">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
               <Search className="w-3.5 h-3.5" />
             </div>
             <input
@@ -273,7 +278,7 @@ function FeedReaderContent() {
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               placeholder="Filter feed items..."
-              className="w-full pl-8 pr-3 py-1.5 bg-[#141416] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs text-[#EDEDED] placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227]"
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#C9A227]"
             />
           </div>
         </div>
@@ -304,12 +309,12 @@ function FeedReaderContent() {
                 onClick={() => setSelectedItem(item)}
                 className={`cursor-pointer transition-all ${
                   isSelected
-                    ? "bg-[#1B1B1E] border-[#C9A227]/40 ring-1 ring-[#C9A227]/30"
-                    : "hover:bg-[#1B1B1E]/70"
+                    ? "bg-amber-50/40 border-amber-400/80 ring-1 ring-amber-400/40 shadow-xs"
+                    : "hover:bg-gray-50/80"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
-                  <h3 className="font-serif text-lg text-[#EDEDED] font-normal leading-snug hover:text-white">
+                  <h3 className="font-serif text-lg text-gray-900 font-normal leading-snug hover:text-[#C9A227]">
                     {item.title || "No Title"}
                   </h3>
                   {item.link && (
@@ -318,7 +323,7 @@ function FeedReaderContent() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="text-[#9A9AA0] hover:text-[#C9A227] transition-colors p-1"
+                      className="text-gray-400 hover:text-[#C9A227] transition-colors p-1"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -326,12 +331,12 @@ function FeedReaderContent() {
                 </div>
 
                 {item.contentSnippet && (
-                  <p className="text-xs text-[#9A9AA0] mt-2 line-clamp-2 leading-relaxed font-sans">
+                  <p className="text-xs text-gray-600 mt-2 line-clamp-2 leading-relaxed font-sans">
                     {item.contentSnippet}
                   </p>
                 )}
 
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-mono text-[#9A9AA0]">
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-mono text-gray-500">
                   {item.pubDate && (
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
@@ -349,8 +354,8 @@ function FeedReaderContent() {
 
                   {item.categories && item.categories.length > 0 && (
                     <div className="flex items-center gap-1">
-                      <Tag className="w-3 h-3 text-[#6B6B72]" />
-                      <span className="text-[#9A9AA0]">
+                      <Tag className="w-3 h-3 text-gray-400" />
+                      <span className="text-gray-500">
                         {item.categories.slice(0, 2).join(", ")}
                       </span>
                     </div>
@@ -361,13 +366,13 @@ function FeedReaderContent() {
           })}
 
           {!feedData && !isPending && (
-            <Card padding="lg" className="text-center py-20 text-[#9A9AA0] space-y-3">
+            <Card padding="lg" className="text-center py-20 text-gray-500 space-y-3">
               <BookOpen className="w-8 h-8 mx-auto opacity-30 text-[#C9A227]" />
               <div className="space-y-1">
-                <h3 className="font-serif text-xl text-[#EDEDED] font-normal">
+                <h3 className="font-serif text-xl text-gray-900 font-normal">
                   No Edition Selected
                 </h3>
-                <p className="text-xs text-[#9A9AA0] max-w-sm mx-auto">
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
                   Select a published edition from our catalog above, or enter an edition feed URL.
                 </p>
               </div>
@@ -383,7 +388,7 @@ function FeedReaderContent() {
           )}
 
           {feedData && filteredItems.length === 0 && (
-            <Card padding="lg" className="text-center text-[#9A9AA0]">
+            <Card padding="lg" className="text-center text-gray-500">
               <BookOpen className="w-6 h-6 mx-auto mb-2 opacity-40" />
               <p className="text-xs">No articles matched filter criteria.</p>
             </Card>
@@ -394,34 +399,34 @@ function FeedReaderContent() {
         {selectedItem && (
           <div className="lg:col-span-5 sticky top-20 h-fit max-h-[80vh] overflow-y-auto">
             <Card elevated padding="lg" className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)]">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C9A227]">
                   Article Preview
                 </span>
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="text-xs text-[#9A9AA0] hover:text-[#EDEDED] px-2 py-0.5 rounded bg-[#141416] border border-[rgba(255,255,255,0.06)]"
+                  className="text-xs text-gray-500 hover:text-gray-900 px-2 py-0.5 rounded bg-gray-100 border border-gray-200"
                 >
                   Close
                 </button>
               </div>
 
               <div>
-                <h2 className="font-serif text-xl text-[#EDEDED] font-normal leading-tight">
+                <h2 className="font-serif text-xl text-gray-900 font-normal leading-tight">
                   {selectedItem.title}
                 </h2>
 
-                <div className="mt-2 text-xs font-mono text-[#9A9AA0] flex flex-wrap gap-2 items-center">
+                <div className="mt-2 text-xs font-mono text-gray-500 flex flex-wrap gap-2 items-center">
                   {selectedItem.pubDate && <span>{selectedItem.pubDate}</span>}
                   {(selectedItem.creator || selectedItem.author) && (
                     <span>• {selectedItem.creator || selectedItem.author}</span>
                   )}
                 </div>
 
-                <div className="mt-6 text-xs text-[#EDEDED] leading-relaxed space-y-3 font-sans">
+                <div className="mt-6 text-xs text-gray-800 leading-relaxed space-y-3 font-sans">
                   {selectedItem.contentEncoded || selectedItem.content ? (
                     <div
-                      className="prose prose-invert prose-xs max-w-none break-words"
+                      className="prose prose-xs max-w-none break-words"
                       dangerouslySetInnerHTML={{
                         __html:
                           selectedItem.contentEncoded ||
@@ -435,12 +440,12 @@ function FeedReaderContent() {
                 </div>
 
                 {selectedItem.link && (
-                  <div className="mt-6 pt-4 border-t border-[rgba(255,255,255,0.08)] flex justify-end">
+                  <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
                     <a
                       href={selectedItem.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C9A227] hover:bg-[#D8B138] text-[#0A0A0B] rounded-lg text-xs font-semibold tracking-tight transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C9A227] hover:bg-[#D8B138] text-gray-950 rounded-lg text-xs font-semibold tracking-tight transition-colors shadow-xs"
                     >
                       <span>Read Original</span>
                       <ExternalLink className="w-3.5 h-3.5" />

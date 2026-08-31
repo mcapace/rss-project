@@ -37,22 +37,22 @@ export function Button({
 
   if (variant === "primary") {
     // Gold accent default
-    variantClasses = "bg-[#C9A227] hover:bg-[#D8B138] text-[#0A0A0B] font-semibold";
+    variantClasses = "bg-[#C9A227] hover:bg-[#D8B138] text-gray-950 font-semibold shadow-xs";
   } else if (variant === "brand" && brandConfig) {
-    variantClasses = "text-white font-semibold";
+    variantClasses = "text-white font-semibold shadow-xs";
     customStyle = {
       backgroundColor: brandConfig.accent,
       ...style,
     };
   } else if (variant === "ghost") {
     variantClasses =
-      "bg-transparent hover:bg-[#1B1B1E] text-[#EDEDED] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]";
+      "bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-200 hover:border-gray-300";
   } else if (variant === "outline") {
     variantClasses =
-      "bg-[#141416] hover:bg-[#1B1B1E] text-[#EDEDED] border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.2)]";
+      "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 hover:border-gray-300 shadow-xs";
   } else if (variant === "danger") {
     variantClasses =
-      "bg-[rgba(239,68,68,0.15)] hover:bg-[rgba(239,68,68,0.25)] text-[#F87171] border border-[rgba(239,68,68,0.3)]";
+      "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200";
   }
 
   return (

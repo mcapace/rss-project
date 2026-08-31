@@ -44,12 +44,12 @@ function LoginForm() {
   return (
     <main className="flex-1 max-w-md w-full mx-auto px-4 py-20 flex flex-col items-center justify-center space-y-6">
       <div className="text-center space-y-3 flex flex-col items-center">
-        <CorporateLogo height={20} onDark />
+        <CorporateLogo height={22} onDark={false} />
         <div className="space-y-1">
-          <h1 className="font-serif text-2xl text-[#EDEDED] font-normal tracking-tight">
+          <h1 className="font-serif text-2xl text-gray-900 font-normal tracking-tight">
             Digital Editions Access
           </h1>
-          <p className="text-xs text-[#9A9AA0]">
+          <p className="text-xs text-gray-500">
             Enter administrative password to manage issues and publishing pipelines.
           </p>
         </div>
@@ -58,11 +58,11 @@ function LoginForm() {
       <Card elevated padding="lg" className="w-full space-y-6">
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#9A9AA0]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
               Admin Password
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#9A9AA0]">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                 <Lock className="w-4 h-4 text-[#C9A227]" />
               </div>
               <input
@@ -72,13 +72,13 @@ function LoginForm() {
                 placeholder="••••••••••••"
                 required
                 autoFocus
-                className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-sm text-[#EDEDED] placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]"
               />
             </div>
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#F87171] text-xs flex items-center gap-2">
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -102,7 +102,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-xs text-[#9A9AA0]">Loading...</div>}>
+    <Suspense fallback={<div className="py-20 text-center text-xs text-gray-500">Loading...</div>}>
       <LoginForm />
     </Suspense>
   );

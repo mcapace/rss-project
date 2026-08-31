@@ -10,20 +10,20 @@ export default function NotFound() {
         <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C9A227]">
           404 Error
         </span>
-        <h1 className="font-serif text-4xl text-[#EDEDED] font-normal tracking-tight">
+        <h1 className="font-serif text-4xl text-gray-900 font-normal tracking-tight">
           Page Not Found
         </h1>
-        <p className="text-xs text-[#9A9AA0] max-w-sm">
+        <p className="text-xs text-gray-500 max-w-sm">
           The requested issue, feed endpoint, or admin dashboard resource could not be located.
         </p>
       </div>
 
       <Card elevated padding="lg" className="w-full text-center space-y-6">
-        <div className="w-12 h-12 rounded-2xl bg-[#1B1B1E] border border-[rgba(255,255,255,0.08)] flex items-center justify-center mx-auto text-[#9A9AA0]">
+        <div className="w-12 h-12 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mx-auto text-gray-500">
           <FileQuestion className="w-6 h-6" />
         </div>
 
-        <div className="pt-2 flex items-center justify-center gap-3 border-t border-[rgba(255,255,255,0.06)]">
+        <div className="pt-2 flex items-center justify-center gap-3 border-t border-gray-100">
           <Link href="/admin">
             <Button variant="primary" size="md">
               <ArrowLeft className="w-4 h-4 mr-1.5" />

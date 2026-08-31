@@ -82,12 +82,12 @@ export default function AdminIssuesPage() {
   return (
     <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-gray-200">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA0]">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
             Digital Editions • Management
           </span>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#EDEDED] font-normal tracking-tight mt-1">
+          <h1 className="font-serif text-3xl sm:text-4xl text-gray-900 font-normal tracking-tight mt-1">
             Issues
           </h1>
         </div>
@@ -115,8 +115,8 @@ export default function AdminIssuesPage() {
                 onClick={() => setSelectedBrandFilter(tab.id)}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-medium tracking-wide transition-all flex items-center gap-2 ${
                   isSelected
-                    ? "bg-[#141416] text-[#EDEDED] border border-[rgba(255,255,255,0.16)] shadow-sm"
-                    : "text-[#9A9AA0] hover:text-[#EDEDED] bg-transparent hover:bg-[#141416] border border-transparent hover:border-[rgba(255,255,255,0.08)]"
+                    ? "bg-white text-gray-900 border border-gray-200 shadow-xs font-semibold"
+                    : "text-gray-500 hover:text-gray-900 bg-transparent hover:bg-gray-100 border border-transparent hover:border-gray-200"
                 }`}
               >
                 {brandConfig && (
@@ -132,7 +132,7 @@ export default function AdminIssuesPage() {
         </div>
 
         {/* Live SWR Indicator */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-[#9A9AA0]">
+        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-gray-500">
           <RefreshCw
             className={`w-3 h-3 text-[#C9A227] ${
               isValidating ? "animate-spin" : "opacity-40"
@@ -148,7 +148,7 @@ export default function AdminIssuesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.08)] bg-[#1B1B1E]/40 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9A9AA0]">
+                <tr className="border-b border-gray-200 bg-gray-50/80 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-500">
                   <th className="py-3.5 px-6 font-medium">Brand</th>
                   <th className="py-3.5 px-6 font-medium">Issue</th>
                   <th className="py-3.5 px-6 font-medium">Status</th>
@@ -157,7 +157,7 @@ export default function AdminIssuesPage() {
                   <th className="py-3.5 px-6 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.04)]">
+              <tbody className="divide-y divide-gray-100">
                 <TableRowSkeleton />
                 <TableRowSkeleton />
                 <TableRowSkeleton />
@@ -167,14 +167,14 @@ export default function AdminIssuesPage() {
         ) : filteredIssues.length === 0 ? (
           /* Empty State */
           <div className="py-24 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#1B1B1E] border border-[rgba(255,255,255,0.08)] flex items-center justify-center mx-auto text-[#9A9AA0]">
+            <div className="w-12 h-12 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mx-auto text-gray-400">
               <FolderOpen className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-serif text-2xl text-[#EDEDED] font-normal">
+              <h3 className="font-serif text-2xl text-gray-900 font-normal">
                 No issues yet
               </h3>
-              <p className="text-xs text-[#9A9AA0] max-w-sm mx-auto">
+              <p className="text-xs text-gray-500 max-w-sm mx-auto">
                 Upload your first print-production PDF to begin automated BlueToad replacement.
               </p>
             </div>
@@ -192,7 +192,7 @@ export default function AdminIssuesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.08)] bg-[#1B1B1E]/40 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9A9AA0]">
+                <tr className="border-b border-gray-200 bg-gray-50/80 text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-500">
                   <th className="py-3.5 px-6 font-medium">Brand</th>
                   <th className="py-3.5 px-6 font-medium">Issue</th>
                   <th className="py-3.5 px-6 font-medium">Status</th>
@@ -201,37 +201,37 @@ export default function AdminIssuesPage() {
                   <th className="py-3.5 px-6 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-sm">
+              <tbody className="divide-y divide-gray-100 text-sm">
                 {filteredIssues.map((issue) => (
                   <tr
                     key={issue.id}
                     onClick={() => router.push(`/admin/${issue.id}`)}
-                    className="hover:bg-[#1B1B1E]/60 transition-colors group cursor-pointer"
+                    className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
                   >
                     <td className="py-4 px-6 whitespace-nowrap">
                       <BrandMark brand={issue.brand} size="md" showName />
                     </td>
                     <td className="py-4 px-6 whitespace-nowrap">
-                      <div className="font-serif text-base text-[#EDEDED] font-normal group-hover:text-white transition-colors">
+                      <div className="font-serif text-base text-gray-900 font-normal group-hover:text-[#C9A227] transition-colors">
                         {issue.issue_label}
                       </div>
-                      <div className="text-xs font-mono text-[#9A9AA0]">
+                      <div className="text-xs font-mono text-gray-500">
                         {issue.issue_id}
                       </div>
                     </td>
                     <td className="py-4 px-6 whitespace-nowrap">
                       <StatusBadge status={issue.status} brand={issue.brand} />
                     </td>
-                    <td className="py-4 px-6 whitespace-nowrap font-mono text-xs text-[#9A9AA0]">
+                    <td className="py-4 px-6 whitespace-nowrap font-mono text-xs text-gray-500">
                       {issue.status === "published" ? (
-                        <span className="text-[#EDEDED] font-semibold">
+                        <span className="text-gray-900 font-semibold">
                           {issue.articleCount}
                         </span>
                       ) : (
                         "—"
                       )}
                     </td>
-                    <td className="py-4 px-6 whitespace-nowrap text-xs font-mono text-[#9A9AA0]">
+                    <td className="py-4 px-6 whitespace-nowrap text-xs font-mono text-gray-500">
                       {issue.created_at
                         ? new Date(issue.created_at).toLocaleDateString(
                             undefined,
@@ -250,12 +250,12 @@ export default function AdminIssuesPage() {
                             type="button"
                             onClick={(e) => handleCopyFeed(e, issue)}
                             title="Copy Public Feed URL"
-                            className="px-2.5 py-1 rounded bg-[#1B1B1E] hover:bg-[#25252A] text-[#9A9AA0] hover:text-[#EDEDED] font-mono text-[11px] border border-[rgba(255,255,255,0.08)] flex items-center gap-1.5 transition-colors"
+                            className="px-2.5 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 font-mono text-[11px] border border-gray-200 flex items-center gap-1.5 transition-colors"
                           >
                             {copiedId === issue.id ? (
                               <>
-                                <Check className="w-3 h-3 text-[#4ADE80]" />
-                                <span className="text-[#4ADE80]">Copied</span>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-emerald-600 font-medium">Copied</span>
                               </>
                             ) : (
                               <>
@@ -265,7 +265,7 @@ export default function AdminIssuesPage() {
                             )}
                           </button>
                         )}
-                        <span className="p-1.5 text-[#9A9AA0] group-hover:text-[#EDEDED] transition-colors">
+                        <span className="p-1.5 text-gray-400 group-hover:text-gray-900 transition-colors">
                           <ArrowRight className="w-4 h-4" />
                         </span>
                       </div>

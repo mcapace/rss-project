@@ -193,17 +193,17 @@ export default function NewIssuePage() {
       <div>
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs text-[#9A9AA0] hover:text-[#EDEDED] transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors mb-3"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Issues</span>
         </Link>
         <div className="flex items-baseline justify-between">
           <div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9A9AA0]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
               Publishing Pipeline
             </span>
-            <h1 className="font-serif text-3xl text-[#EDEDED] font-normal tracking-tight mt-1">
+            <h1 className="font-serif text-3xl text-gray-900 font-normal tracking-tight mt-1">
               New Issue
             </h1>
           </div>
@@ -215,7 +215,7 @@ export default function NewIssuePage() {
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Brand Selector Tiles */}
           <div className="space-y-3">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#9A9AA0]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
               Select Brand
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -230,16 +230,16 @@ export default function NewIssuePage() {
                     onClick={() => setSelectedBrand(key)}
                     className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between h-28 ${
                       isSelected
-                        ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.25)] ring-1 ring-[#C9A227]/40 shadow-lg"
-                        : "bg-[#141416] border-[rgba(255,255,255,0.08)] hover:bg-[#1B1B1E] hover:border-[rgba(255,255,255,0.16)]"
+                        ? "bg-amber-50/50 border-amber-500 ring-1 ring-amber-500/40 shadow-xs"
+                        : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                     }`}
                   >
                     <BrandMark brand={key} size="md" />
                     <div>
-                      <div className="text-sm font-semibold text-[#EDEDED] tracking-tight">
+                      <div className="text-sm font-semibold text-gray-900 tracking-tight">
                         {brand.name}
                       </div>
-                      <div className="text-[11px] font-mono text-[#9A9AA0] mt-0.5">
+                      <div className="text-[11px] font-mono text-gray-500 mt-0.5">
                         {brand.short}
                       </div>
                     </div>
@@ -258,7 +258,7 @@ export default function NewIssuePage() {
           {/* Issue Identification Inputs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#9A9AA0]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
                 Issue ID
               </label>
               <input
@@ -268,15 +268,15 @@ export default function NewIssuePage() {
                 onChange={(e) => setIssueId(e.target.value)}
                 placeholder="e.g. 2026-09"
                 required
-                className="w-full px-3.5 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-sm text-[#EDEDED] font-mono placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
+                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-mono placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
               />
-              <p className="text-[11px] text-[#6B6B72]">
+              <p className="text-[11px] text-gray-500">
                 Folder / URL identifier (YYYY-MM)
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#9A9AA0]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
                 Issue Label
               </label>
               <input
@@ -286,9 +286,9 @@ export default function NewIssuePage() {
                 onChange={(e) => setIssueLabel(e.target.value)}
                 placeholder="e.g. September 2026"
                 required
-                className="w-full px-3.5 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-sm text-[#EDEDED] font-serif placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
+                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-serif placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
               />
-              <p className="text-[11px] text-[#6B6B72]">
+              <p className="text-[11px] text-gray-500">
                 Human-readable title displayed in feeds
               </p>
             </div>
@@ -296,7 +296,7 @@ export default function NewIssuePage() {
 
           {/* Table of Contents Pages */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#9A9AA0]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
               TOC Pages
             </label>
             <input
@@ -305,16 +305,16 @@ export default function NewIssuePage() {
               value={tocPages}
               onChange={(e) => setTocPages(e.target.value)}
               placeholder="3,4"
-              className="w-full px-3.5 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-sm text-[#EDEDED] font-mono placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-mono placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
             />
-            <p className="text-[11px] text-[#6B6B72]">
+            <p className="text-[11px] text-gray-500">
               Printed pages holding the table of contents (comma-separated, default &quot;3,4&quot;)
             </p>
           </div>
 
           {/* PDF Dropzone */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#9A9AA0]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
               Print-Production PDF
             </label>
 
@@ -331,27 +331,27 @@ export default function NewIssuePage() {
                 onClick={() => !isUploading && fileInputRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                className="border border-dashed border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.24)] rounded-xl p-8 text-center bg-[#0A0A0B]/60 transition-colors cursor-pointer group"
+                className="border border-dashed border-gray-300 hover:border-gray-400 rounded-xl p-8 text-center bg-gray-50/70 transition-colors cursor-pointer group"
               >
-                <UploadCloud className="w-8 h-8 mx-auto text-[#9A9AA0] group-hover:text-[#EDEDED] transition-colors mb-3" />
-                <div className="text-sm font-medium text-[#EDEDED]">
+                <UploadCloud className="w-8 h-8 mx-auto text-gray-400 group-hover:text-gray-700 transition-colors mb-3" />
+                <div className="text-sm font-medium text-gray-800">
                   Drop print-ready PDF here, or browse
                 </div>
-                <p className="text-xs text-[#6B6B72] mt-1 font-mono">
+                <p className="text-xs text-gray-500 mt-1 font-mono">
                   Accepts .pdf up to 500MB • Direct S3 upload
                 </p>
               </div>
             ) : (
-              <div className="border border-[rgba(255,255,255,0.12)] bg-[#0A0A0B]/90 rounded-xl p-4 flex items-center justify-between">
+              <div className="border border-gray-200 bg-white rounded-xl p-4 flex items-center justify-between shadow-xs">
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-10 h-10 rounded-lg bg-[#C9A227]/10 border border-[#C9A227]/20 flex items-center justify-center text-[#C9A227] shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-[#C9A227] shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="overflow-hidden">
-                    <div className="text-sm font-medium text-[#EDEDED] truncate font-mono">
+                    <div className="text-sm font-medium text-gray-900 truncate font-mono">
                       {selectedFile.name}
                     </div>
-                    <div className="text-xs text-[#9A9AA0] font-mono mt-0.5">
+                    <div className="text-xs text-gray-500 font-mono mt-0.5">
                       {formatFileSize(selectedFile.size)}
                     </div>
                   </div>
@@ -361,7 +361,7 @@ export default function NewIssuePage() {
                   <button
                     type="button"
                     onClick={() => setSelectedFile(null)}
-                    className="p-1.5 text-[#9A9AA0] hover:text-[#EDEDED] rounded-lg bg-[#141416] border border-[rgba(255,255,255,0.06)] ml-3 shrink-0"
+                    className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 ml-3 shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -372,9 +372,9 @@ export default function NewIssuePage() {
 
           {/* Upload Progress Bar */}
           {isUploading && (
-            <div className="space-y-2 p-4 rounded-xl bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)]">
+            <div className="space-y-2 p-4 rounded-xl bg-gray-50 border border-gray-200">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-[#EDEDED] flex items-center gap-2">
+                <span className="font-semibold text-gray-900 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse" />
                   {uploadStage === "requesting_url" && "Requesting presigned upload URL..."}
                   {uploadStage === "uploading_s3" && `Uploading PDF to S3 inbox (${uploadProgress}%)...`}
@@ -387,7 +387,7 @@ export default function NewIssuePage() {
               </div>
 
               {/* Gold Progress Bar */}
-              <div className="w-full h-1.5 bg-[#141416] rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-[#C9A227] to-[#E5BE43] transition-all duration-150 ease-out"
                   style={{ width: `${uploadProgress}%` }}
@@ -398,17 +398,17 @@ export default function NewIssuePage() {
 
           {/* Inline Error Banner */}
           {errorMessage && (
-            <div className="p-4 rounded-xl bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.25)] text-[#F87171] flex items-start gap-3">
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <div className="text-xs space-y-0.5">
                 <strong className="font-semibold">Upload failure:</strong>
-                <p className="text-[#FCA5A5]">{errorMessage}</p>
+                <p className="text-red-600">{errorMessage}</p>
               </div>
             </div>
           )}
 
           {/* Submit Actions */}
-          <div className="pt-2 flex items-center justify-end gap-3 border-t border-[rgba(255,255,255,0.06)]">
+          <div className="pt-2 flex items-center justify-end gap-3 border-t border-gray-100">
             <Link href="/admin">
               <Button type="button" variant="ghost" size="md" disabled={isUploading}>
                 Cancel

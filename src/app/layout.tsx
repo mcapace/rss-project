@@ -37,7 +37,7 @@ export default function RootLayout({
       lang="en"
       className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#0A0A0B] text-[#EDEDED] font-sans selection:bg-[#C9A227]/30 selection:text-white">
+      <body className="min-h-full flex flex-col bg-[#F4F5F7] text-gray-900 font-sans selection:bg-[#C9A227]/30 selection:text-gray-900">
         <TopNav />
         <div className="flex-1 flex flex-col">{children}</div>
       </body>

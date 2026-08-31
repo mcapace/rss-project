@@ -25,8 +25,8 @@ export function Card({
     <div
       className={`rounded-xl border transition-colors ${
         elevated
-          ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.1)]"
-          : "bg-[#141416] border-[rgba(255,255,255,0.08)]"
+          ? "bg-white border-gray-200 shadow-sm"
+          : "bg-white border-gray-200/90 shadow-xs"
       } ${paddingClasses[padding]} ${className}`}
       {...props}
     >
@@ -43,7 +43,7 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <div className={`pb-4 mb-4 border-b border-[rgba(255,255,255,0.06)] ${className}`}>
+    <div className={`pb-4 mb-4 border-b border-gray-100 ${className}`}>
       {children}
     </div>
   );
@@ -58,7 +58,7 @@ export function CardTitle({
 }) {
   return (
     <h3
-      className={`font-serif text-lg md:text-xl text-[#EDEDED] font-normal tracking-tight ${className}`}
+      className={`font-serif text-lg md:text-xl text-gray-900 font-normal tracking-tight ${className}`}
     >
       {children}
     </h3>

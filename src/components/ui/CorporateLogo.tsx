@@ -13,7 +13,7 @@ type Props = {
 export function CorporateLogo({
   className = "",
   linked = false,
-  onDark = true,
+  onDark = false,
   height = 18,
 }: Props) {
   // Original aspect ratio: 1023 x 59 ≈ 17.34

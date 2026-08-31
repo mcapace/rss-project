@@ -348,16 +348,18 @@ function FeedReaderContent() {
                       <h3 className="font-serif text-lg text-gray-900 font-normal leading-snug hover:text-[#C9A227]">
                         {item.title || "No Title"}
                       </h3>
-                      {item.link && (
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-gray-400 hover:text-[#C9A227] transition-colors p-1"
+                      {item.guid && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyGuid(item.guid!);
+                          }}
+                          className="text-gray-400 hover:text-[#C9A227] transition-colors p-1 shrink-0"
+                          title="Copy Article GUID"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
                       )}
                     </div>
 

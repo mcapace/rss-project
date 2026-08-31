@@ -48,3 +48,8 @@ __pycache__/
 env/
 venv/
 
+# supabase
+supabase/.temp/
+.temp/
+
+.env*.local

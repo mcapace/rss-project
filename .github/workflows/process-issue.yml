@@ -1,0 +1,45 @@
+name: process-issue
+on:
+  workflow_dispatch:
+    inputs:
+      issue_uuid: { required: true, type: string }
+      brand:      { required: true, type: string }
+      issue_id:   { required: true, type: string }
+      pdf_key:    { required: true, type: string }
+      toc_pages:  { required: true, type: string, default: "3,4" }
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pymupdf anthropic boto3 supabase
+      - name: Download PDF
+        run: aws s3 cp "s3://$S3_BUCKET/${{ inputs.pdf_key }}" issue.pdf
+      - name: Extract
+        run: python worker/extract.py ${{ inputs.brand }} ${{ inputs.issue_id }} issue.pdf
+      - name: Segment
+        run: python worker/segment.py ${{ inputs.brand }} ${{ inputs.issue_id }} --toc-pages "${{ inputs.toc_pages }}"
+      - name: Publish to Supabase + S3
+        run: python worker/publish_db.py ${{ inputs.brand }} ${{ inputs.issue_id }} --issue-uuid ${{ inputs.issue_uuid }}
+      - name: Mark failed
+        if: failure()
+        run: |
+          python - <<'EOF'
+          import os
+          from supabase import create_client
+          sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
+          sb.table("issues").update({"status": "failed", "error": "worker failed; see Action logs"}) \
+            .eq("id", "${{ inputs.issue_uuid }}").execute()
+          EOF

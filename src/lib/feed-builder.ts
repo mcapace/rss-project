@@ -1,3 +1,5 @@
+import { getAnonSupabase, getServiceSupabase } from "@/lib/supabase/server";
+
 /**
  * XML string escaping helper
  */
@@ -155,4 +157,85 @@ ${mediaContentXml ? mediaContentXml + "\n" : ""}  </item>`;
 ${itemsXml}
   </channel>
 </rss>`;
+}
+
+/**
+ * Loads published issue data and generates RSS 2.0 XML
+ */
+export async function getIssueFeedXml(
+  brand: string,
+  issueId: string,
+  origin: string
+): Promise<string | null> {
+  let sb;
+  try {
+    sb = getServiceSupabase();
+  } catch {
+    sb = getAnonSupabase();
+  }
+
+  const normBrand = brand.toLowerCase();
+  const normIssue = issueId.trim();
+
+  const { data: issue, error: issueError } = await sb
+    .from("issues")
+    .select("*")
+    .eq("brand", normBrand)
+    .eq("issue_id", normIssue)
+    .eq("status", "published")
+    .single();
+
+  if (issueError || !issue) {
+    return null;
+  }
+
+  const { data: articles, error: artError } = await sb
+    .from("articles")
+    .select("*")
+    .eq("issue_uuid", issue.id)
+    .eq("include", true)
+    .order("sort_order", { ascending: true });
+
+  if (artError) {
+    throw new Error(`Failed to load articles: ${artError.message}`);
+  }
+
+  const articleIds = (articles || []).map((a) => a.id);
+  let imagesByArticle: Record<string, any[]> = {};
+
+  if (articleIds.length > 0) {
+    const { data: images, error: imgError } = await sb
+      .from("article_images")
+      .select("*")
+      .in("article_uuid", articleIds)
+      .eq("include", true)
+      .order("sort_order", { ascending: true });
+
+    if (!imgError && images) {
+      for (const img of images) {
+        if (!imagesByArticle[img.article_uuid]) {
+          imagesByArticle[img.article_uuid] = [];
+        }
+        imagesByArticle[img.article_uuid].push(img);
+      }
+    }
+  }
+
+  const enrichedArticles: FeedArticle[] = (articles || []).map((art) => ({
+    ...art,
+    images: imagesByArticle[art.id] || [],
+  }));
+
+  return generateRssFeed(
+    {
+      id: issue.id,
+      brand: issue.brand,
+      issue_id: issue.issue_id,
+      issue_label: issue.issue_label,
+      pdf_key: issue.pdf_key,
+      created_at: issue.created_at,
+      articles: enrichedArticles,
+    },
+    origin
+  );
 }

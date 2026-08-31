@@ -5,7 +5,7 @@ import { getIssueFeedXml } from "@/lib/feed-builder";
 const parser = new Parser({
   customFields: {
     item: [
-      ["media:content", "mediaContent"],
+      ["media:content", "mediaContent", { keepArray: true }],
       ["content:encoded", "contentEncoded"],
       ["description", "description"],
     ],

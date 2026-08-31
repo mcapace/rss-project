@@ -16,12 +16,27 @@ import {
   AlertCircle,
   ArrowUpRight,
   Plus,
+  ImageIcon,
+  Images,
+  Check,
+  Copy,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { ArticleCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { BrandKey } from "@/lib/brands";
+
+interface MediaContentItem {
+  $?: {
+    url?: string;
+    type?: string;
+    width?: string | number;
+    height?: string | number;
+    medium?: string;
+  };
+  url?: string;
+}
 
 interface FeedItem {
   title?: string;
@@ -35,6 +50,7 @@ interface FeedItem {
   contentEncoded?: string;
   guid?: string;
   categories?: string[];
+  mediaContent?: MediaContentItem | MediaContentItem[];
   enclosure?: {
     url?: string;
     type?: string;
@@ -80,7 +96,15 @@ function FeedReaderContent() {
   const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
+  const [copiedGuid, setCopiedGuid] = useState(false);
+  const [selectedPreviewImg, setSelectedPreviewImg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const handleCopyGuid = (guid: string) => {
+    navigator.clipboard.writeText(guid);
+    setCopiedGuid(true);
+    setTimeout(() => setCopiedGuid(false), 2000);
+  };
 
   const loadFeed = async (targetUrl: string) => {
     if (!targetUrl.trim()) return;
@@ -460,19 +484,92 @@ function FeedReaderContent() {
                   )}
                 </div>
 
-                {selectedItem.link && (
-                  <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                {/* Article Media Gallery (All extracted & included images) */}
+                {(() => {
+                  const mediaItems: MediaContentItem[] = Array.isArray(selectedItem.mediaContent)
+                    ? selectedItem.mediaContent
+                    : selectedItem.mediaContent
+                    ? [selectedItem.mediaContent]
+                    : [];
+
+                  const imageUrls = mediaItems
+                    .map((m) => m.$?.url || m.url)
+                    .filter((u): u is string => Boolean(u));
+
+                  if (imageUrls.length <= 1) return null;
+
+                  return (
+                    <div className="mt-8 pt-6 border-t border-gray-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-700">
+                          <Images className="w-3.5 h-3.5 text-[#C9A227]" />
+                          <span>Extracted Media ({imageUrls.length} images)</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-gray-400">Click to preview full-res</span>
+                      </div>
+
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {imageUrls.map((url, i) => (
+                          <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:border-[#C9A227] hover:shadow-sm transition-all"
+                            title={`Open photo ${i + 1} (${url.split("/").pop()})`}
+                          >
+                            <img
+                              src={url}
+                              alt={`Article image ${i + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <ExternalLink className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+                            </div>
+                            <span className="absolute bottom-1 right-1 text-[9px] font-mono px-1 py-0.2 rounded bg-black/60 text-white leading-tight">
+                              #{i + 1}
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                  {selectedItem.guid ? (
+                    <button
+                      onClick={() => handleCopyGuid(selectedItem.guid!)}
+                      className="inline-flex items-center gap-1 text-[11px] font-mono text-gray-500 hover:text-gray-900 transition-colors"
+                      title="Copy BlueToad Article GUID"
+                    >
+                      {copiedGuid ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700 font-medium">GUID Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy GUID</span>
+                        </>
+                      )}
+                    </button>
+                  ) : <div />}
+
+                  {activeFeedUrl && (
                     <a
-                      href={selectedItem.link}
+                      href={activeFeedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C9A227] hover:bg-[#D8B138] text-gray-950 rounded-lg text-xs font-semibold tracking-tight transition-colors shadow-xs"
                     >
-                      <span>Read Original</span>
+                      <span>View Feed XML</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </Card>
           </div>

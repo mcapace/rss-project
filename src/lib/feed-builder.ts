@@ -80,7 +80,7 @@ export function generateRssFeed(issue: FeedIssue, originUrl: string): string {
     .map((article, index) => {
       const articleNumber = String(index + 1).padStart(3, "0");
       const articleGuid = `${brandBase}/${issue.issue_id}/article-${articleNumber}`;
-      const articleLink = articleGuid;
+      const articleLink = `${brandBase}/${issue.issue_id}/article-${articleNumber}`;
       const itemPubDate = article.created_at
         ? new Date(article.created_at).toUTCString()
         : pubDate;

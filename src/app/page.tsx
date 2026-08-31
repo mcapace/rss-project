@@ -29,6 +29,7 @@ interface FeedItem {
   pubDate?: string;
   creator?: string;
   author?: string;
+  description?: string;
   contentSnippet?: string;
   content?: string;
   contentEncoded?: string;
@@ -301,7 +302,11 @@ function FeedReaderContent() {
           )}
 
           {filteredItems.map((item, idx) => {
-            const isSelected = selectedItem?.link === item.link;
+            const isSelected = selectedItem?.title === item.title;
+            // Extract first img src from description or content if present
+            const imgMatch = (item.description || item.contentEncoded || "").match(/<img[^>]+src=["']([^"']+)["']/i);
+            const leadImg = imgMatch ? imgMatch[1] : null;
+
             return (
               <Card
                 key={item.guid || item.link || idx}
@@ -313,51 +318,66 @@ function FeedReaderContent() {
                     : "hover:bg-gray-50/80"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <h3 className="font-serif text-lg text-gray-900 font-normal leading-snug hover:text-[#C9A227]">
-                    {item.title || "No Title"}
-                  </h3>
-                  {item.link && (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-gray-400 hover:text-[#C9A227] transition-colors p-1"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-start justify-between gap-4">
+                      <h3 className="font-serif text-lg text-gray-900 font-normal leading-snug hover:text-[#C9A227]">
+                        {item.title || "No Title"}
+                      </h3>
+                      {item.link && (
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-gray-400 hover:text-[#C9A227] transition-colors p-1"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
 
-                {item.contentSnippet && (
-                  <p className="text-xs text-gray-600 mt-2 line-clamp-2 leading-relaxed font-sans">
-                    {item.contentSnippet}
-                  </p>
-                )}
+                    {item.contentSnippet && (
+                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-sans">
+                        {item.contentSnippet}
+                      </p>
+                    )}
 
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] font-mono text-gray-500">
-                  {item.pubDate && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(item.pubDate).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  )}
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-gray-500 pt-1">
+                      {item.pubDate && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(item.pubDate).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      )}
 
-                  {(item.creator || item.author) && (
-                    <span>• {item.creator || item.author}</span>
-                  )}
+                      {(item.creator || item.author) && (
+                        <span>• {item.creator || item.author}</span>
+                      )}
 
-                  {item.categories && item.categories.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Tag className="w-3 h-3 text-gray-400" />
-                      <span className="text-gray-500">
-                        {item.categories.slice(0, 2).join(", ")}
-                      </span>
+                      {item.categories && item.categories.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Tag className="w-3 h-3 text-gray-400" />
+                          <span className="text-gray-500">
+                            {item.categories.slice(0, 2).join(", ")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {leadImg && (
+                    <div className="w-full sm:w-28 h-24 rounded-lg overflow-hidden shrink-0 border border-gray-200 bg-gray-100">
+                      <img
+                        src={leadImg}
+                        alt={item.title || "Article Image"}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     </div>
                   )}
                 </div>
@@ -424,11 +444,12 @@ function FeedReaderContent() {
                 </div>
 
                 <div className="mt-6 text-xs text-gray-800 leading-relaxed space-y-3 font-sans">
-                  {selectedItem.contentEncoded || selectedItem.content ? (
+                  {selectedItem.description || selectedItem.contentEncoded || selectedItem.content ? (
                     <div
-                      className="prose prose-xs max-w-none break-words"
+                      className="prose prose-xs max-w-none break-words [&_img]:rounded-lg [&_img]:w-full [&_img]:max-h-96 [&_img]:object-cover [&_img]:mb-4"
                       dangerouslySetInnerHTML={{
                         __html:
+                          selectedItem.description ||
                           selectedItem.contentEncoded ||
                           selectedItem.content ||
                           "",

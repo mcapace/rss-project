@@ -15,13 +15,19 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const url = searchParams.get("url");
+  let url = searchParams.get("url");
 
   if (!url) {
     return NextResponse.json(
       { error: "Query parameter 'url' is required" },
       { status: 400 }
     );
+  }
+
+  // Handle relative URLs (e.g. /api/feeds/mw/2026-04/feed.xml)
+  if (url.startsWith("/")) {
+    const origin = request.nextUrl.origin;
+    url = `${origin}${url}`;
   }
 
   try {

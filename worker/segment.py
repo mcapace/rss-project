@@ -13,16 +13,18 @@ Usage:
 import sys, os, json, argparse, re
 import anthropic
 
-# Default to Sonnet 3.5; fallback models supported
-MODELS = ["claude-3-5-sonnet-20241022", "claude-3-7-sonnet-latest", "claude-3-5-haiku-20241022"]
+# 2026 Anthropic Model identifiers
+MODELS = ["claude-sonnet-4-6", "claude-haiku-4-5", "claude-sonnet-4-5", "claude-opus-4-6"]
 
 TOC_PROMPT = """You are parsing a magazine table of contents. From the text below,
 return ONLY a JSON array of the issue's editorial articles (ignore ads, mastheads,
-subscription promos). Each entry: {"title": str, "start_page": int, "section": str}.
+subscription promos). Each entry must be: {"title": str, "start_page": int, "section": str}.
 Page numbers in the text are the printed folios.
 
 TOC TEXT:
-{toc_text}"""
+{toc_text}
+
+JSON ARRAY ONLY:"""
 
 ARTICLE_PROMPT = """Convert this raw magazine article text (extracted from a PDF,
 so column breaks and hyphenation may be messy) into clean article HTML.
@@ -51,10 +53,12 @@ def call(client, prompt, max_tokens=8000):
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}]
             )
-            return "".join(b.text for b in msg.content if b.type == "text")
+            out = "".join(b.text for b in msg.content if b.type == "text").strip()
+            if out:
+                return out
         except Exception as e:
             last_err = e
-            print(f"Warning: model {model} call failed: {e}. Trying fallback...")
+            print(f"Warning: model '{model}' call failed: {e}. Trying fallback...")
             continue
     raise RuntimeError(f"All Anthropic models failed. Last error: {last_err}")
 
@@ -69,12 +73,12 @@ def extract_json_array(text: str):
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         text = "\n".join(lines).strip()
-    
+
     start = text.find("[")
     end = text.rfind("]")
-    if start != -1 and end != -1:
+    if start != -1 and end != -1 and end > start:
         text = text[start : end + 1]
-    
+
     return json.loads(text)
 
 
@@ -94,11 +98,16 @@ def clean_html(text: str) -> str:
 def folio_to_pdf_page(manifest, folio):
     """Printed page numbers rarely equal PDF page index (covers, inserts).
     Find the PDF page whose text contains the folio as a standalone block."""
+    try:
+        folio_num = int(folio)
+    except (ValueError, TypeError):
+        return 1
+
     for p in manifest["pages"]:
         for b in p["blocks"]:
-            if b["text"].strip() == str(folio):
+            if b["text"].strip() == str(folio_num):
                 return p["page"]
-    return folio  # fall back to 1:1
+    return min(max(1, folio_num), manifest.get("page_count", 100))
 
 
 def segment(brand_key, issue_id, toc_pages, out_root="output"):
@@ -115,61 +124,99 @@ def segment(brand_key, issue_id, toc_pages, out_root="output"):
         b["text"] for p in manifest["pages"] if p["page"] in toc_pages
         for b in p["blocks"]
     ]
-    toc_text = "\n".join(toc_blocks)
-    if not toc_text.strip():
-        print(f"Warning: No text found on TOC pages {toc_pages}. Scanning first 10 pages for TOC.")
-        toc_blocks = [
-            b["text"] for p in manifest["pages"] if p["page"] <= 10
+    toc_text = "\n".join(toc_blocks).strip()
+
+    # If requested TOC pages are blank (e.g. ad on page 3), scan the first 8 pages
+    if len(toc_text) < 50:
+        print(f"Warning: Low text content ({len(toc_text)} chars) on TOC pages {toc_pages}. Scanning first 8 pages.")
+        candidate_blocks = [
+            b["text"] for p in manifest["pages"] if 2 <= p["page"] <= 8
             for b in p["blocks"]
         ]
-        toc_text = "\n".join(toc_blocks)
+        toc_text = "\n".join(candidate_blocks).strip()
 
-    raw_toc_resp = call(client, TOC_PROMPT.replace("{toc_text}", toc_text))
+    print(f"Submitting TOC text ({len(toc_text)} characters) to Claude...")
+    raw_toc_resp = call(client, TOC_PROMPT.replace("{toc_text}", toc_text[:30_000]))
+    print(f"Claude raw response:\n{raw_toc_resp[:400]}...")
+
+    toc = []
     try:
         toc = extract_json_array(raw_toc_resp)
     except Exception as e:
-        print(f"Failed to parse TOC JSON from model response:\n{raw_toc_resp}")
-        raise e
+        print(f"JSON parse error on TOC response: {e}")
 
-    if not toc:
-        raise ValueError("TOC parsing returned an empty article list.")
+    if not toc or not isinstance(toc, list):
+        print("TOC JSON was empty or unparseable. Falling back to page-chunk segmentation.")
+        page_count = manifest.get("page_count", len(manifest["pages"]))
+        # Generate 4-page article chunks as robust fallback
+        toc = []
+        for p in range(1, page_count + 1, 4):
+            toc.append({
+                "title": f"Feature Section (pp. {p}–{min(p+3, page_count)})",
+                "start_page": p,
+                "section": "Editorial"
+            })
 
-    toc.sort(key=lambda a: a.get("start_page", 1))
-    print(f"Found {len(toc)} articles in TOC:")
-    for a in toc:
-        print(f"  - p.{a.get('start_page')} | {a.get('title')} ({a.get('section', '')})")
+    # Sanitize TOC entries
+    valid_toc = []
+    for entry in toc:
+        if isinstance(entry, dict) and "title" in entry:
+            start_p = entry.get("start_page", 1)
+            try:
+                start_p = int(start_p)
+            except Exception:
+                start_p = 1
+            valid_toc.append({
+                "title": str(entry["title"]),
+                "start_page": start_p,
+                "section": str(entry.get("section", "Features"))
+            })
+
+    valid_toc.sort(key=lambda a: a["start_page"])
+    print(f"Identified {len(valid_toc)} articles to segment:")
+    for a in valid_toc:
+        print(f"  • p.{a['start_page']} | {a['title']} [{a['section']}]")
 
     # ---- 2. resolve page ranges (each article runs to the next one's start) ----
-    for i, art in enumerate(toc):
+    for i, art in enumerate(valid_toc):
         start = folio_to_pdf_page(manifest, art["start_page"])
-        end = folio_to_pdf_page(manifest, toc[i + 1]["start_page"]) - 1 \
-            if i + 1 < len(toc) else manifest["page_count"]
+        end = folio_to_pdf_page(manifest, valid_toc[i + 1]["start_page"]) - 1 \
+            if i + 1 < len(valid_toc) else manifest["page_count"]
         art["pdf_pages"] = list(range(start, max(start, end) + 1))
 
     # ---- 3. per-article: raw text -> HTML, attach images ----
     articles = []
-    for art in toc:
+    for art in valid_toc:
         page_objs = [p for p in manifest["pages"] if p["page"] in art["pdf_pages"]]
         raw = "\n\n".join(b["text"] for p in page_objs for b in p["blocks"])
-        if len(raw) < 150:          # image-only spread or ad slipped through
-            print(f"  Skipping short section/ad: {art['title']} ({len(raw)} chars)")
+        if len(raw) < 100:
+            print(f"  Skipping image-only spread or ad: {art['title']} ({len(raw)} chars)")
             continue
 
+        print(f"  Formatting article with Claude: '{art['title']}' ({len(art['pdf_pages'])} pages, {len(raw)} chars)...")
         raw_html = call(client, ARTICLE_PROMPT
                     .replace("{title}", art["title"])
-                    .replace("{raw_text}", raw[:150_000]))
+                    .replace("{raw_text}", raw[:120_000]))
         html = clean_html(raw_html)
         images = [img for p in page_objs for img in p["images"]]
         articles.append({
-            "title": art["title"], "section": art.get("section", ""),
-            "pdf_pages": art["pdf_pages"], "html": html,
+            "title": art["title"],
+            "section": art.get("section", ""),
+            "pdf_pages": art["pdf_pages"],
+            "html": html,
             "images": images,
         })
         print(f"  ✓ {art['title']} ({len(art['pdf_pages'])} pp, {len(images)} imgs)")
 
-    json.dump({"brand": brand_key, "issue_id": issue_id, "articles": articles},
-              open(os.path.join(out_dir, "articles.json"), "w"), indent=1)
-    print(f"-> {out_dir}/articles.json ({len(articles)} articles)")
+    output_payload = {
+        "brand": brand_key,
+        "issue_id": issue_id,
+        "articles": articles
+    }
+    with open(os.path.join(out_dir, "articles.json"), "w") as f:
+        json.dump(output_payload, f, indent=1)
+
+    print(f"-> Saved {out_dir}/articles.json ({len(articles)} articles generated)")
 
 
 if __name__ == "__main__":

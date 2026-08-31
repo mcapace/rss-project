@@ -46,4 +46,17 @@ BRANDS = {
         "min_image_bytes": 20_000,
         "exclude_pages": [],
     },
+    "wa": {
+        "name": "Whisky Advocate",
+        "slug": "whiskyadvocate",
+        "feed_title_template": "WA {issue_label}",
+        "site_link": "https://www.whiskyadvocate.com",
+        "language": "en",
+        "s3_bucket": "mshanken-digital-editions",
+        "s3_prefix": "whiskyadvocate",
+        "cdn_base": "https://editions.whiskyadvocate.com",
+        "min_image_px": 300,
+        "min_image_bytes": 20_000,
+        "exclude_pages": [],
+    },
 }

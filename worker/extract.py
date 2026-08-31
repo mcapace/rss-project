@@ -12,7 +12,10 @@ import pymupdf
 from config import BRANDS
 
 
-def extract(brand_key: str, issue_id: str, pdf_path: str, out_root: str = "../output"):
+def extract(brand_key: str, issue_id: str, pdf_path: str, out_root: str = "output"):
+    brand_key = brand_key.lower()
+    if brand_key not in BRANDS:
+        raise ValueError(f"Unknown brand '{brand_key}'. Supported: {list(BRANDS.keys())}")
     cfg = BRANDS[brand_key]
     out_dir = os.path.join(out_root, brand_key, issue_id)
     img_dir = os.path.join(out_dir, "images")

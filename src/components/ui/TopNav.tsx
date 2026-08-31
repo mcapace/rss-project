@@ -17,20 +17,11 @@ export function TopNav() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Brand Wordmark & Corporate Logo */}
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <CorporateLogo height={16} linked onDark />
-            <span className="text-[rgba(255,255,255,0.2)] text-xs font-light">|</span>
-            <Link
-              href="/admin"
-              className="group flex items-center gap-2 text-decoration-none"
-            >
-              <span className="font-serif text-lg tracking-tight text-[#EDEDED] group-hover:text-white transition-colors">
-                Editions
-              </span>
-              <span className="text-[9px] uppercase font-mono tracking-widest text-[#9A9AA0] px-1.5 py-0.5 rounded bg-[#141416] border border-[rgba(255,255,255,0.06)]">
-                RSS
-              </span>
-            </Link>
+            <span className="text-[9px] uppercase font-mono tracking-widest text-[#9A9AA0] px-1.5 py-0.5 rounded bg-[#141416] border border-[rgba(255,255,255,0.06)]">
+              RSS
+            </span>
           </div>
 
           {/* Desktop Nav Links */}

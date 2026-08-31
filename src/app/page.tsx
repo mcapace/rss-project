@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import useSWR from "swr";
 import {
   Rss,
@@ -9,13 +10,14 @@ import {
   ExternalLink,
   RefreshCw,
   Clock,
-  Globe,
   Tag,
   AlertCircle,
   Radio,
   BookOpen,
   ArrowUpRight,
   Layers,
+  Sparkles,
+  Plus,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -53,55 +55,23 @@ interface PublishedIssue {
   feedUrl: string;
 }
 
-const FALLBACK_PRESET_FEEDS = [
-  {
-    name: "BBC News — World",
-    brand: null,
-    url: "https://feeds.bbci.co.uk/news/world/rss.xml",
-    category: "News",
-  },
-  {
-    name: "The Verge",
-    brand: null,
-    url: "https://www.theverge.com/rss/index.xml",
-    category: "Tech",
-  },
-  {
-    name: "NYT — Technology",
-    brand: null,
-    url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-    category: "Tech",
-  },
-  {
-    name: "NASA Breaking News",
-    brand: null,
-    url: "https://www.nasa.gov/rss/dyn/breaking_news.rss",
-    category: "Science",
-  },
-];
-
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 function FeedReaderContent() {
   const searchParams = useSearchParams();
   const queryUrl = searchParams.get("url");
 
-  // Fetch published edition feeds from Supabase
-  const { data: issuesData } = useSWR<{ issues: PublishedIssue[] }>(
-    "/api/issues",
-    fetcher
-  );
+  // Fetch only our published edition feeds from Supabase
+  const { data: issuesData, isLoading: issuesLoading } = useSWR<{
+    issues: PublishedIssue[];
+  }>("/api/issues", fetcher);
 
   const publishedIssues = (issuesData?.issues || []).filter(
     (i) => i.status === "published"
   );
 
-  const [urlInput, setUrlInput] = useState(
-    queryUrl || FALLBACK_PRESET_FEEDS[0].url
-  );
-  const [activeFeedUrl, setActiveFeedUrl] = useState(
-    queryUrl || FALLBACK_PRESET_FEEDS[0].url
-  );
+  const [urlInput, setUrlInput] = useState(queryUrl || "");
+  const [activeFeedUrl, setActiveFeedUrl] = useState(queryUrl || "");
   const [feedData, setFeedData] = useState<FeedData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState("");
@@ -109,6 +79,7 @@ function FeedReaderContent() {
   const [isPending, startTransition] = useTransition();
 
   const loadFeed = async (url: string) => {
+    if (!url || !url.trim()) return;
     setError(null);
     setSelectedItem(null);
     try {
@@ -125,13 +96,21 @@ function FeedReaderContent() {
     }
   };
 
+  // When queryUrl changes or when publishedIssues first loads
   useEffect(() => {
-    const target = queryUrl || FALLBACK_PRESET_FEEDS[0].url;
-    setUrlInput(target);
-    startTransition(() => {
-      loadFeed(target);
-    });
-  }, [queryUrl]);
+    if (queryUrl) {
+      setUrlInput(queryUrl);
+      startTransition(() => {
+        loadFeed(queryUrl);
+      });
+    } else if (publishedIssues.length > 0 && !activeFeedUrl) {
+      const defaultFeed = publishedIssues[0].feedUrl;
+      setUrlInput(defaultFeed);
+      startTransition(() => {
+        loadFeed(defaultFeed);
+      });
+    }
+  }, [queryUrl, publishedIssues.length]);
 
   const handleFetch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,11 +149,11 @@ function FeedReaderContent() {
             Feed Inspector & QA
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#EDEDED] font-normal tracking-tight mt-1">
-            RSS Reader
+            Edition Reader
           </h1>
         </div>
         <p className="text-xs text-[#9A9AA0] max-w-sm">
-          Inspect, validate, and preview generated edition RSS feeds directly from Supabase, or test external XML endpoints.
+          Inspect, validate, and preview generated digital edition RSS feeds directly from our publishing pipeline.
         </p>
       </div>
 
@@ -189,8 +168,7 @@ function FeedReaderContent() {
               type="text"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="Enter RSS/Atom XML feed URL..."
-              required
+              placeholder="Enter digital edition feed URL e.g. /api/feeds/mw/2026-09/feed.xml"
               className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0B] border border-[rgba(255,255,255,0.08)] rounded-lg text-xs font-mono text-[#EDEDED] placeholder-[#6B6B72] focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227]"
             />
           </div>
@@ -199,50 +177,53 @@ function FeedReaderContent() {
             variant="primary"
             size="md"
             isLoading={isPending}
-            disabled={isPending}
+            disabled={isPending || !urlInput.trim()}
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isPending ? "animate-spin" : ""}`} />
-            {isPending ? "Fetching..." : "Fetch Feed"}
+            <RefreshCw
+              className={`w-3.5 h-3.5 mr-1.5 ${isPending ? "animate-spin" : ""}`}
+            />
+            {isPending ? "Inspecting..." : "Inspect Feed"}
           </Button>
         </form>
 
-        {/* Quick Presets: Published Editions First, then Fallbacks */}
+        {/* Our Published Editions Only */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[rgba(255,255,255,0.06)]">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] mr-1 flex items-center gap-1">
             <Layers className="w-3 h-3 text-[#C9A227]" />
-            <span>Feeds:</span>
+            <span>Published Editions:</span>
           </span>
 
-          {/* Published Editions */}
-          {publishedIssues.map((issue) => (
-            <button
-              key={issue.id}
-              onClick={() => handleSelectPreset(issue.feedUrl)}
-              className={`text-xs px-2.5 py-1 rounded-md border transition-all flex items-center gap-1.5 ${
-                activeFeedUrl === issue.feedUrl
-                  ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.24)] text-[#EDEDED] font-medium shadow-sm"
-                  : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
-              }`}
-            >
-              <BrandMark brand={issue.brand} size="sm" />
-              <span>{issue.issue_label}</span>
-            </button>
-          ))}
-
-          {/* Fallback Reference Presets */}
-          {FALLBACK_PRESET_FEEDS.map((preset) => (
-            <button
-              key={preset.url}
-              onClick={() => handleSelectPreset(preset.url)}
-              className={`text-xs px-2.5 py-1 rounded-md border transition-all flex items-center gap-1.5 ${
-                activeFeedUrl === preset.url
-                  ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.24)] text-[#EDEDED] font-medium"
-                  : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
-              }`}
-            >
-              <span>{preset.name}</span>
-            </button>
-          ))}
+          {issuesLoading && publishedIssues.length === 0 ? (
+            <span className="text-xs font-mono text-[#9A9AA0] italic">
+              Loading published catalog...
+            </span>
+          ) : publishedIssues.length === 0 ? (
+            <span className="text-xs text-[#9A9AA0] flex items-center gap-2">
+              <span>No published editions yet.</span>
+              <Link
+                href="/admin/new"
+                className="text-[#C9A227] hover:underline inline-flex items-center gap-1 font-medium"
+              >
+                <Plus className="w-3 h-3" />
+                Upload New Issue
+              </Link>
+            </span>
+          ) : (
+            publishedIssues.map((issue) => (
+              <button
+                key={issue.id}
+                onClick={() => handleSelectPreset(issue.feedUrl)}
+                className={`text-xs px-2.5 py-1 rounded-md border transition-all flex items-center gap-1.5 ${
+                  activeFeedUrl === issue.feedUrl
+                    ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.24)] text-[#EDEDED] font-medium shadow-sm"
+                    : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
+                }`}
+              >
+                <BrandMark brand={issue.brand} size="sm" />
+                <span>{issue.issue_label}</span>
+              </button>
+            ))
+          )}
         </div>
       </Card>
 
@@ -378,6 +359,28 @@ function FeedReaderContent() {
               </Card>
             );
           })}
+
+          {!feedData && !isPending && (
+            <Card padding="lg" className="text-center py-20 text-[#9A9AA0] space-y-3">
+              <BookOpen className="w-8 h-8 mx-auto opacity-30 text-[#C9A227]" />
+              <div className="space-y-1">
+                <h3 className="font-serif text-xl text-[#EDEDED] font-normal">
+                  No Edition Selected
+                </h3>
+                <p className="text-xs text-[#9A9AA0] max-w-sm mx-auto">
+                  Select a published edition from our catalog above, or enter an edition feed URL.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link href="/admin/new">
+                  <Button variant="primary" size="sm">
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Upload an Issue
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
 
           {feedData && filteredItems.length === 0 && (
             <Card padding="lg" className="text-center text-[#9A9AA0]">

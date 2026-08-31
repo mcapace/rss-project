@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TableRowSkeleton } from "@/components/ui/Skeleton";
 import { BRANDS, BrandKey } from "@/lib/brands";
 
 interface IssueItem {
@@ -144,11 +145,24 @@ export default function AdminIssuesPage() {
       {/* Issues Table Card */}
       <Card padding="none" className="overflow-hidden">
         {isLoading && issues.length === 0 ? (
-          <div className="py-24 text-center space-y-3">
-            <RefreshCw className="w-7 h-7 animate-spin mx-auto text-[#C9A227]" />
-            <p className="text-xs font-mono text-[#9A9AA0]">
-              Loading edition catalog...
-            </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[rgba(255,255,255,0.08)] bg-[#1B1B1E]/40 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9A9AA0]">
+                  <th className="py-3.5 px-6 font-medium">Brand</th>
+                  <th className="py-3.5 px-6 font-medium">Issue</th>
+                  <th className="py-3.5 px-6 font-medium">Status</th>
+                  <th className="py-3.5 px-6 font-medium">Articles</th>
+                  <th className="py-3.5 px-6 font-medium">Created</th>
+                  <th className="py-3.5 px-6 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[rgba(255,255,255,0.04)]">
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+                <TableRowSkeleton />
+              </tbody>
+            </table>
           </div>
         ) : filteredIssues.length === 0 ? (
           /* Empty State */

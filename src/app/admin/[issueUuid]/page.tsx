@@ -22,6 +22,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { BRANDS } from "@/lib/brands";
 
 const fetcher = async (url: string) => {
@@ -109,6 +110,37 @@ export default function IssueStatusPage({
   const isProcessing = status === "processing";
   const isPublished = status === "published";
   const isFailed = status === "failed";
+
+  if (!data && !error) {
+    return (
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
+        <div>
+          <Skeleton className="w-24 h-4 rounded mb-3" />
+          <div className="flex justify-between items-center">
+            <Skeleton className="w-64 h-9 rounded" />
+            <Skeleton className="w-24 h-6 rounded-full" />
+          </div>
+        </div>
+        <Card elevated padding="lg" className="space-y-6">
+          <div className="flex justify-between items-center pb-6 border-b border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3.5">
+              <Skeleton className="w-8 h-8 rounded" />
+              <div>
+                <Skeleton className="w-48 h-6 rounded mb-1" />
+                <Skeleton className="w-32 h-3 rounded" />
+              </div>
+            </div>
+            <Skeleton className="w-24 h-6 rounded" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">

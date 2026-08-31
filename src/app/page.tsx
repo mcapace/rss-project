@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import useSWR from "swr";
 import {
   Rss,
   Search,
@@ -13,10 +15,12 @@ import {
   Radio,
   BookOpen,
   ArrowUpRight,
+  Layers,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
+import { ArticleCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
 
 interface FeedItem {
   title?: string;
@@ -40,13 +44,16 @@ interface FeedData {
   items?: FeedItem[];
 }
 
-const PRESET_FEEDS = [
-  {
-    name: "Market Watch Preview",
-    brand: "mw",
-    url: "/api/feeds/mw/2026-09/feed.xml",
-    category: "Internal",
-  },
+interface PublishedIssue {
+  id: string;
+  brand: string;
+  issue_id: string;
+  issue_label: string;
+  status: string;
+  feedUrl: string;
+}
+
+const FALLBACK_PRESET_FEEDS = [
   {
     name: "BBC News — World",
     brand: null,
@@ -73,9 +80,28 @@ const PRESET_FEEDS = [
   },
 ];
 
-export default function FeedReaderPage() {
-  const [urlInput, setUrlInput] = useState(PRESET_FEEDS[1].url);
-  const [activeFeedUrl, setActiveFeedUrl] = useState(PRESET_FEEDS[1].url);
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+function FeedReaderContent() {
+  const searchParams = useSearchParams();
+  const queryUrl = searchParams.get("url");
+
+  // Fetch published edition feeds from Supabase
+  const { data: issuesData } = useSWR<{ issues: PublishedIssue[] }>(
+    "/api/issues",
+    fetcher
+  );
+
+  const publishedIssues = (issuesData?.issues || []).filter(
+    (i) => i.status === "published"
+  );
+
+  const [urlInput, setUrlInput] = useState(
+    queryUrl || FALLBACK_PRESET_FEEDS[0].url
+  );
+  const [activeFeedUrl, setActiveFeedUrl] = useState(
+    queryUrl || FALLBACK_PRESET_FEEDS[0].url
+  );
   const [feedData, setFeedData] = useState<FeedData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState("");
@@ -100,10 +126,12 @@ export default function FeedReaderPage() {
   };
 
   useEffect(() => {
+    const target = queryUrl || FALLBACK_PRESET_FEEDS[0].url;
+    setUrlInput(target);
     startTransition(() => {
-      loadFeed(PRESET_FEEDS[1].url);
+      loadFeed(target);
     });
-  }, []);
+  }, [queryUrl]);
 
   const handleFetch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +174,7 @@ export default function FeedReaderPage() {
           </h1>
         </div>
         <p className="text-xs text-[#9A9AA0] max-w-sm">
-          Inspect, validate, and preview generated edition RSS feeds and external feeds in real time.
+          Inspect, validate, and preview generated edition RSS feeds directly from Supabase, or test external XML endpoints.
         </p>
       </div>
 
@@ -178,12 +206,31 @@ export default function FeedReaderPage() {
           </Button>
         </form>
 
-        {/* Quick Presets */}
+        {/* Quick Presets: Published Editions First, then Fallbacks */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] mr-1">
-            Presets:
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9AA0] mr-1 flex items-center gap-1">
+            <Layers className="w-3 h-3 text-[#C9A227]" />
+            <span>Feeds:</span>
           </span>
-          {PRESET_FEEDS.map((preset) => (
+
+          {/* Published Editions */}
+          {publishedIssues.map((issue) => (
+            <button
+              key={issue.id}
+              onClick={() => handleSelectPreset(issue.feedUrl)}
+              className={`text-xs px-2.5 py-1 rounded-md border transition-all flex items-center gap-1.5 ${
+                activeFeedUrl === issue.feedUrl
+                  ? "bg-[#1B1B1E] border-[rgba(255,255,255,0.24)] text-[#EDEDED] font-medium shadow-sm"
+                  : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
+              }`}
+            >
+              <BrandMark brand={issue.brand} size="sm" />
+              <span>{issue.issue_label}</span>
+            </button>
+          ))}
+
+          {/* Fallback Reference Presets */}
+          {FALLBACK_PRESET_FEEDS.map((preset) => (
             <button
               key={preset.url}
               onClick={() => handleSelectPreset(preset.url)}
@@ -193,7 +240,6 @@ export default function FeedReaderPage() {
                   : "bg-transparent border-[rgba(255,255,255,0.06)] text-[#9A9AA0] hover:text-[#EDEDED] hover:bg-[#141416]"
               }`}
             >
-              {preset.brand && <BrandMark brand={preset.brand} size="sm" />}
               <span>{preset.name}</span>
             </button>
           ))}
@@ -231,7 +277,7 @@ export default function FeedReaderPage() {
               )}
             </div>
             {feedData.description && (
-              <p className="text-xs text-[#9A9AA0] mt-1 max-w-2xl">
+              <p className="text-xs text-[#9A9AA0] mt-1 max-w-2xl font-sans">
                 {feedData.description}
               </p>
             )}
@@ -261,9 +307,10 @@ export default function FeedReaderPage() {
           }`}
         >
           {isPending && !feedData && (
-            <div className="py-20 text-center text-[#9A9AA0]">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-3 text-[#C9A227]" />
-              <p className="text-xs font-mono">Parsing feed payload...</p>
+            <div className="space-y-3">
+              <ArticleCardSkeleton />
+              <ArticleCardSkeleton />
+              <ArticleCardSkeleton />
             </div>
           )}
 
@@ -403,5 +450,20 @@ export default function FeedReaderPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function FeedReaderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-6xl mx-auto px-4 py-20 space-y-4">
+          <Skeleton className="w-48 h-8 rounded" />
+          <Skeleton className="w-full h-32 rounded-xl" />
+        </div>
+      }
+    >
+      <FeedReaderContent />
+    </Suspense>
   );
 }

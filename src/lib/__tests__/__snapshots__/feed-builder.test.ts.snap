@@ -21,9 +21,10 @@ exports[`RSS Feed Generation & BlueToad Contract Compliance > generates a compli
     <title>Whiskey Revival &amp; Craft Spirits</title>
     <link>https://mshanken-digital-editions.s3.amazonaws.com/2026-09/article-001</link>
     <guid isPermaLink="false">https://mshanken-digital-editions.s3.amazonaws.com/2026-09/article-001</guid>
-    <dc:creator>Spirits Report</dc:creator>
+    <dc:creator>Laura Pelner</dc:creator>
+    <category>Spirits Report</category>
     <pubDate>Mon, 31 Aug 2026 12:00:00 GMT</pubDate>
-    <description>&lt;img src=&quot;https://mshanken-digital-editions.s3.amazonaws.com/mw/2026-09/images/p004_lead.jpg&quot; /&gt;&lt;h2&gt;The Renaissance&lt;/h2&gt;&lt;p&gt;American single malt whiskey continues its unprecedented rise across premium retail channels.&lt;/p&gt;&lt;hr&gt;&lt;p&gt;&lt;strong&gt;Key Growth Drivers:&lt;/strong&gt; Aged stock and boutique blending.&lt;/p&gt;</description>
+    <description>&lt;img src=&quot;https://mshanken-digital-editions.s3.amazonaws.com/mw/2026-09/images/p004_lead.jpg&quot; /&gt;&lt;h2&gt;The Renaissance&lt;/h2&gt;&lt;p&gt;&lt;em&gt;By Laura Pelner&lt;/em&gt;&lt;/p&gt;&lt;p&gt;American single malt whiskey continues its unprecedented rise across premium retail channels.&lt;/p&gt;&lt;hr&gt;&lt;p&gt;&lt;strong&gt;Key Growth Drivers:&lt;/strong&gt; Aged stock &amp; boutique blending.&lt;/p&gt;</description>
     <media:content url="https://mshanken-digital-editions.s3.amazonaws.com/mw/2026-09/images/p004_lead.jpg" type="image/jpeg" width="1200" height="800" medium="image" />
     <media:content url="https://mshanken-digital-editions.s3.amazonaws.com/mw/2026-09/images/p005_bottle.jpg" type="image/jpeg" width="600" height="900" medium="image" />
   </item>

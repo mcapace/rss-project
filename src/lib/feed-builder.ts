@@ -13,6 +13,55 @@ export function escapeXml(str: string | null | undefined): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Decode common HTML entities so description HTML is XML-escaped exactly once
+ * (avoids BlueToad-incompatible &amp;amp; double-encoding).
+ */
+export function unescapeHtmlEntities(str: string | null | undefined): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'");
+}
+
+/**
+ * Extract a magazine byline author from article HTML (BlueToad-style).
+ */
+export function extractAuthorFromHtml(html: string | null | undefined): string {
+  if (!html) return "";
+  const head = html.slice(0, 2500);
+
+  const patterns = [
+    // ALL-CAPS magazine bylines: BY TERRI ALLAN / BY SHANE ENGLISH
+    /\bBY\s+([A-Z][A-Z .,'&-]{1,70}[A-Z])\b/,
+    // Title-case bylines: By Laura Pelner / By Maryann Worobiec and Chris Cardoso
+    /\bBy\s+([A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*(?:\s+and\s+[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*)*)/,
+  ];
+
+  for (const re of patterns) {
+    const m = head.match(re);
+    if (!m?.[1]) continue;
+    let name = m[1]
+      .replace(/&amp;/g, "&")
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/[.|,\-\s]+$/, "");
+    if (name.length < 3 || name.length > 80) continue;
+    if (/\d/.test(name)) continue;
+    if (name === name.toUpperCase() && /\s/.test(name)) {
+      name = name
+        .toLowerCase()
+        .replace(/\b([a-z])/g, (c) => c.toUpperCase());
+    }
+    return name;
+  }
+  return "";
+}
+
 export interface FeedArticleImage {
   id?: string;
   s3_key: string;
@@ -28,6 +77,7 @@ export interface FeedArticle {
   sort_order: number;
   title: string;
   section: string | null;
+  author?: string | null;
   pdf_pages: number[] | null;
   html: string;
   include: boolean;
@@ -62,6 +112,15 @@ export function getBaseImageUrl(brand: string): string {
 
 /**
  * Builds RSS 2.0 XML strictly following the BlueToad contract.
+ *
+ * BlueToad item mapping (apples-to-apples):
+ * - title          → article headline
+ * - link / guid    → {base}/{issue}/article-NNN (isPermaLink=false)
+ * - dc:creator     → author byline (falls back to section if no byline)
+ * - category       → magazine section/department when author is present
+ * - pubDate        → RFC-822 UTC
+ * - description    → lead <img> + article HTML, XML-escaped once
+ * - media:content  → one element per included image
  */
 export function generateRssFeed(issue: FeedIssue, originUrl: string): string {
   const brandBase = getBaseImageUrl(issue.brand);
@@ -87,6 +146,18 @@ export function generateRssFeed(issue: FeedIssue, originUrl: string): string {
         ? new Date(article.created_at).toUTCString()
         : pubDate;
 
+      const author =
+        (article.author && article.author.trim()) ||
+        extractAuthorFromHtml(article.html) ||
+        "";
+      const section = (article.section || "").trim();
+      // BlueToad: dc:creator is the writer; fall back to section for staff/unsigned pieces
+      const creator = author || section;
+      const categoryXml =
+        author && section && author !== section
+          ? `\n    <category>${escapeXml(section)}</category>`
+          : "";
+
       // Filter and sort included images
       const includedImages = (article.images || [])
         .filter((img) => img.include !== false)
@@ -103,7 +174,8 @@ export function generateRssFeed(issue: FeedIssue, originUrl: string): string {
         descriptionHtml += `<img src="${leadImgUrl}" />`;
       }
       if (article.html) {
-        descriptionHtml += article.html;
+        // Normalize entities so XML escaping happens exactly once
+        descriptionHtml += unescapeHtmlEntities(article.html);
       }
 
       // Build media:content XML elements for all images
@@ -127,7 +199,7 @@ export function generateRssFeed(issue: FeedIssue, originUrl: string): string {
     <title>${escapeXml(article.title)}</title>
     <link>${escapeXml(articleLink)}</link>
     <guid isPermaLink="false">${escapeXml(articleGuid)}</guid>
-    <dc:creator>${escapeXml(article.section || "")}</dc:creator>
+    <dc:creator>${escapeXml(creator)}</dc:creator>${categoryXml}
     <pubDate>${itemPubDate}</pubDate>
     <description>${escapeXml(descriptionHtml)}</description>
 ${mediaContentXml ? mediaContentXml + "\n" : ""}  </item>`;

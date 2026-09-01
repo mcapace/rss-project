@@ -34,6 +34,8 @@ Rules:
   <strong>/<em> for emphasis, <hr> between major sections.
 - Rejoin hyphenated line breaks. Fix obvious column-order jumbles.
 - Do NOT summarize, omit, or add anything. Full text, faithfully.
+- Preserve the author byline when present. Prefer a dedicated line near the
+  top as: <p><em>By Author Name</em></p> (or multiple authors).
 - Drop page furniture: folios, running heads, photo credits, pull quote
   duplicates, continued-on notices.
 - Return ONLY the HTML, no markdown fences, no commentary.
@@ -42,6 +44,30 @@ TITLE: {title}
 
 RAW TEXT:
 {raw_text}"""
+
+
+BYLINE_RE_CAPS = re.compile(r"\bBY\s+([A-Z][A-Z .,'&-]{1,70}[A-Z])\b")
+BYLINE_RE_TITLE = re.compile(
+    r"\bBy\s+([A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*(?:\s+and\s+[A-Z][a-zA-Z.'-]+(?:\s+[A-Z][a-zA-Z.'-]+)*)*)"
+)
+
+
+def extract_author(html: str) -> str:
+    """Pull a magazine byline from structured article HTML."""
+    if not html:
+        return ""
+    head = html[:2500]
+    m = BYLINE_RE_CAPS.search(head) or BYLINE_RE_TITLE.search(head)
+    if not m:
+        return ""
+    name = m.group(1)
+    name = name.replace("&amp;", "&").replace("&#39;", "'").replace("&apos;", "'")
+    name = re.sub(r"\s+", " ", name).strip(" .|,-")
+    if len(name) < 3 or len(name) > 80 or re.search(r"\d", name):
+        return ""
+    if name.isupper() and " " in name:
+        name = name.title()
+    return name
 
 
 def call(client, prompt, max_tokens=8000):
@@ -198,15 +224,17 @@ def segment(brand_key, issue_id, toc_pages, out_root="output"):
                     .replace("{title}", art["title"])
                     .replace("{raw_text}", raw[:120_000]))
         html = clean_html(raw_html)
+        author = extract_author(html)
         images = [img for p in page_objs for img in p["images"]]
         articles.append({
             "title": art["title"],
             "section": art.get("section", ""),
+            "author": author,
             "pdf_pages": art["pdf_pages"],
             "html": html,
             "images": images,
         })
-        print(f"  ✓ {art['title']} ({len(art['pdf_pages'])} pp, {len(images)} imgs)")
+        print(f"  ✓ {art['title']} ({len(art['pdf_pages'])} pp, {len(images)} imgs, author={author or 'n/a'})")
 
     output_payload = {
         "brand": brand_key,

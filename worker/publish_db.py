@@ -39,6 +39,7 @@ def run(brand, issue_id, issue_uuid, out_root="output"):
         row = sb.table("articles").insert({
             "issue_uuid": issue_uuid, "sort_order": order,
             "title": art["title"], "section": art.get("section", ""),
+            "author": art.get("author") or None,
             "pdf_pages": art["pdf_pages"], "html": art["html"],
         }).execute().data[0]
         img_rows = []

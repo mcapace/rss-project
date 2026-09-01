@@ -58,12 +58,13 @@ create table issues (
   unique (brand, issue_id)
 );
 
-create table articles (
+  create table articles (
   id uuid primary key default gen_random_uuid(),
   issue_uuid uuid references issues(id) on delete cascade,
   sort_order int not null,
   title text not null,
   section text,
+  author text,                              -- byline; maps to dc:creator
   pdf_pages int[],
   html text not null,
   include boolean default true,           -- toggle off to drop from feed
@@ -99,11 +100,13 @@ ADMIN_PASSWORD (or wire Vercel auth / Clerk later)
 ## Feed contract (must match BlueToad exactly)
 
 RSS 2.0, namespaces: media, atom, dc, wfw. Per item: `title`, `link`, `guid`,
-`dc:creator` (section), `pubDate`, `description` containing full escaped
-article HTML with lead `<img>` inline, plus one `media:content` element per
-included image (url/type/width/height). Reference sample: `sample-feed.xml`
-in this repo. The migration tool parses `description` HTML; keep `<h2>`,
-`<p>`, `<strong>`, `<em>`, `<hr>` vocabulary only.
+`dc:creator` (author byline; falls back to section if unsigned), `category`
+(section/department when an author is present), `pubDate`, `description`
+containing full escaped article HTML with lead `<img>` inline, plus one
+`media:content` element per included image (url/type/width/height). Reference
+sample: `sample-feed.xml` in this repo. The migration tool parses `description`
+HTML; keep `<h2>`, `<p>`, `<strong>`, `<em>`, `<hr>` vocabulary only. Escape
+HTML entities exactly once in `description` (no `&amp;amp;`).
 
 ## Worker (already written — lives in /worker in this repo)
 

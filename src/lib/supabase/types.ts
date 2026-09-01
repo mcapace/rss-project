@@ -62,6 +62,7 @@ export interface Database {
           sort_order: number;
           title: string;
           section: string | null;
+          author: string | null;
           pdf_pages: number[] | null;
           html: string;
           include: boolean;
@@ -73,6 +74,7 @@ export interface Database {
           sort_order: number;
           title: string;
           section?: string | null;
+          author?: string | null;
           pdf_pages?: number[] | null;
           html: string;
           include?: boolean;
@@ -84,6 +86,7 @@ export interface Database {
           sort_order?: number;
           title?: string;
           section?: string | null;
+          author?: string | null;
           pdf_pages?: number[] | null;
           html?: string;
           include?: boolean;

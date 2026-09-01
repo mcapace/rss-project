@@ -465,7 +465,12 @@ function FeedReaderContent() {
                 <div className="mt-2 text-xs font-mono text-gray-500 flex flex-wrap gap-2 items-center">
                   {selectedItem.pubDate && <span>{selectedItem.pubDate}</span>}
                   {(selectedItem.creator || selectedItem.author) && (
-                    <span>• {selectedItem.creator || selectedItem.author}</span>
+                    <span>
+                      • Author: {selectedItem.creator || selectedItem.author}
+                    </span>
+                  )}
+                  {selectedItem.categories && selectedItem.categories.length > 0 && (
+                    <span>• Section: {selectedItem.categories[0]}</span>
                   )}
                 </div>
 

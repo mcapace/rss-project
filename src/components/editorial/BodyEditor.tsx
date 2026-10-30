@@ -136,6 +136,9 @@ type Props = {
   readOnly?: boolean;
   /** Shared Yjs document and Realtime provider; when present the body is edited collaboratively. */
   collab?: CollaborationHandle;
+  /** The page replaced the body on purpose (revision restore, source adoption, assistant edit, draft recovery): write the current html into the editor and the shared document, even on a fresh mount. */
+  applyHtml?: boolean;
+  onHtmlApplied?: () => void;
   /** Images attached to the document, offered by the insert-image control. */
   images?: InsertableImage[];
   /** Called when the editor is ready so the page can wire actions (for example inserting an FAQ). */
@@ -147,7 +150,7 @@ type Props = {
  * tables, images and video embeds; anything TipTap cannot represent switches to a
  * lossless HTML view so imported markup is never silently dropped.
  */
-export function BodyEditor({ html, onChange, readOnly = false, images = [], onReady, collab }: Props) {
+export function BodyEditor({ html, onChange, readOnly = false, images = [], onReady, collab, applyHtml = false, onHtmlApplied }: Props) {
   const [sourceMode, setSourceMode] = useState(false);
   const [panel, setPanel] = useState<"" | "link" | "video" | "image">("");
   const [field, setField] = useState("");
@@ -162,6 +165,8 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
   const collaborative = Boolean(collab);
   // What the editor last reported, so an external change to `html` (restore, assistant apply) can be told apart from our own echo.
   const emitted = useRef<string | null>(null);
+  // The html prop as last seen, so only a *change* to it counts as external; the saved body a story opens with never does.
+  const seenProp = useRef<string>(html);
   const editor = useEditor({
     extensions: [
       // In collaborative mode history comes from Yjs, so the local undo stack is off.
@@ -190,12 +195,29 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once per editor instance
   }, [editor, collab]);
 
+  // An explicit replacement always wins: the prop guard below cannot tell a restore that remounted the editor from a stale saved body.
+  useEffect(() => {
+    if (!editor || !applyHtml) return;
+    if (!sourceMode && html !== editor.getHTML()) {
+      try { editor.commands.setContent(html, { emitUpdate: true, errorOnInvalidContent: true }); }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- A rejected parse must fall back to the lossless HTML view.
+      catch { preserveSource(); }
+    }
+    seenProp.current = html;
+    onHtmlApplied?.();
+  }, [editor, applyHtml, html, sourceMode, preserveSource, onHtmlApplied]);
+
   useEffect(() => {
     if (!editor) return;
     editor.setEditable(!sourceMode && !readOnly, false);
     // In collaborative mode the shared document is the truth, except when the html changed outside the editor
     // (draft restore, assistant apply, source view): that change is written into the shared document too.
-    if (collab && !sourceMode && (html === emitted.current || html === editor.getHTML())) return;
+    if (collab && !sourceMode) {
+      const unchangedProp = html === seenProp.current;
+      seenProp.current = html;
+      // The hydrated shared document wins over the saved body; only a later change to the prop is written in.
+      if (unchangedProp || html === emitted.current || html === editor.getHTML()) return;
+    }
     if (!sourceMode && html !== editor.getHTML()) {
       try { editor.commands.setContent(html, { emitUpdate: false, errorOnInvalidContent: true }); }
       catch {

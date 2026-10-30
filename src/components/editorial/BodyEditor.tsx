@@ -162,6 +162,8 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
   const collaborative = Boolean(collab);
   // What the editor last reported, so an external change to `html` (restore, assistant apply) can be told apart from our own echo.
   const emitted = useRef<string | null>(null);
+  // The html prop as last seen, so only a *change* to it counts as external; the saved body a story opens with never does.
+  const seenProp = useRef<string>(html);
   const editor = useEditor({
     extensions: [
       // In collaborative mode history comes from Yjs, so the local undo stack is off.
@@ -195,7 +197,12 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
     editor.setEditable(!sourceMode && !readOnly, false);
     // In collaborative mode the shared document is the truth, except when the html changed outside the editor
     // (draft restore, assistant apply, source view): that change is written into the shared document too.
-    if (collab && !sourceMode && (html === emitted.current || html === editor.getHTML())) return;
+    if (collab && !sourceMode) {
+      const unchangedProp = html === seenProp.current;
+      seenProp.current = html;
+      // The hydrated shared document wins over the saved body; only a later change to the prop is written in.
+      if (unchangedProp || html === emitted.current || html === editor.getHTML()) return;
+    }
     if (!sourceMode && html !== editor.getHTML()) {
       try { editor.commands.setContent(html, { emitUpdate: false, errorOnInvalidContent: true }); }
       catch {

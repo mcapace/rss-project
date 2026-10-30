@@ -75,6 +75,9 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<{ message: string; conflict?: boolean } | null>(null);
   const [recovered, setRecovered] = useState<Draft | null>(null);
+  // Set whenever the page replaces the body on purpose, so the editor (and the shared document) take it even across a remount.
+  const [bodyReplaced, setBodyReplaced] = useState(false);
+  const bodyApplied = useCallback(() => setBodyReplaced(false), []);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [compare, setCompare] = useState<CmsDocumentRevision | null>(null);
   const [historyToken, setHistoryToken] = useState(0);
@@ -180,8 +183,8 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         case "meta_description": updateMeta(metadata => ({ ...metadata, seo: { ...(metadata.seo as CmsJsonObject | undefined ?? {}), description: action.value } })); break;
         case "keywords": updateMeta(metadata => ({ ...metadata, tags: [...new Set([...stringList(metadata.tags), ...action.value])] })); break;
         case "caption": updateMeta(metadata => ({ ...metadata, media: ((Array.isArray(metadata.media) ? metadata.media : []) as CmsJsonObject[]).map((item, index) => index === action.index ? { ...item, caption: action.caption || item.caption, alt: action.alt || item.alt } : item) })); break;
-        case "direct_answer": setDraft(current => current ? { ...current, body_html: `<p><strong>${escape(action.value)}</strong></p>${current.body_html}` } : current); break;
-        case "faq": setDraft(current => current ? { ...current, body_html: `${current.body_html}<h2>Frequently asked questions</h2>${action.value.map(item => `<h3>${escape(item.question)}</h3><p>${escape(item.answer)}</p>`).join("")}` } : current); break;
+        case "direct_answer": setDraft(current => current ? { ...current, body_html: `<p><strong>${escape(action.value)}</strong></p>${current.body_html}` } : current); setBodyReplaced(true); break;
+        case "faq": setDraft(current => current ? { ...current, body_html: `${current.body_html}<h2>Frequently asked questions</h2>${action.value.map(item => `<h3>${escape(item.question)}</h3><p>${escape(item.answer)}</p>`).join("")}` } : current); setBodyReplaced(true); break;
       }
     };
     setAssistantContext({ documentId: document.id, getDocument, apply });
@@ -260,7 +263,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         </div>
       </div>
 
-      {recovered && <div style={{ marginBottom: 12 }}><Notice icon={RotateCcw}><span>You have unsaved edits from an earlier visit to this document.</span> <button type="button" className="ed-link" onClick={() => { setDraft(recovered); setRecovered(null); }}>Restore them</button> · <button type="button" className="ed-link" onClick={() => { setRecovered(null); try { window.localStorage.removeItem(draftKey(document.id)); } catch { /* ignore */ } }}>Discard</button></Notice></div>}
+      {recovered && <div style={{ marginBottom: 12 }}><Notice icon={RotateCcw}><span>You have unsaved edits from an earlier visit to this document.</span> <button type="button" className="ed-link" onClick={() => { setDraft(recovered); setBodyReplaced(true); setRecovered(null); }}>Restore them</button> · <button type="button" className="ed-link" onClick={() => { setRecovered(null); try { window.localStorage.removeItem(draftKey(document.id)); } catch { /* ignore */ } }}>Discard</button></Notice></div>}
       {error && <div style={{ marginBottom: 12 }}><Notice tone="error" icon={X}>{error.message}{error.conflict && <> <button type="button" className="ed-link" onClick={() => setTab("history")}>Open History</button></>}</Notice></div>}
       {gate && <p className="ed-gate"><Info size={13} aria-hidden />Review required before publishing{reasons.length ? `: ${reasons.join(", ")}` : "."}</p>}
       {warnings.length > 0 && !gate && <p className="ed-gate"><Info size={13} aria-hidden />{warnings[0]}</p>}
@@ -273,7 +276,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           onChange={event => { update({ title: event.target.value }); event.target.style.height = "auto"; event.target.style.height = `${event.target.scrollHeight}px`; }} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
         <input className="ed-byline-input" style={{ marginTop: 8 }} value={draft.byline} placeholder="Byline" aria-label="Byline" maxLength={1000} onChange={event => update({ byline: event.target.value })} />
         {collab.ready
-          ? <BodyEditor key={`${document.id}:${collab.status === "off" ? document.revision : "live"}`} html={draft.body_html} onChange={(body_html, body_json) => update({ body_html, body_json: body_json as unknown as CmsJsonObject })} images={insertable}
+          ? <BodyEditor key={`${document.id}:${collab.status === "off" ? document.revision : "live"}`} html={draft.body_html} onChange={(body_html, body_json) => update({ body_html, body_json: body_json as unknown as CmsJsonObject })} images={insertable} applyHtml={bodyReplaced} onHtmlApplied={bodyApplied}
               collab={collab.status !== "off" ? { doc: collab.doc, provider: collab.provider, user: collab.user } : undefined} />
           : <div style={{ marginTop: 14 }}><SkeletonRows rows={4} /></div>}
         <p className="ed-editor-foot"><PenLine size={12} aria-hidden />{words.toLocaleString()} words · {readingMinutes(words)} min read · {CONTENT_TYPE_LABELS[document.kind].singular} · {SOURCE_SYSTEM_LABELS[document.source_system].short}</p>
@@ -287,7 +290,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
               <strong style={{ fontSize: 14 }}>Revision {compare.revision} <span style={{ color: "var(--muted)", fontWeight: 400 }}>· {compare.actor} · {formatDateTime(compare.created_at)}</span></strong>
               <div style={{ display: "flex", gap: 8 }}>
-                <Button size="sm" icon={RotateCcw} onClick={() => { const snapshot = compare.snapshot; setDraft(current => current ? { ...current, title: snapshot.title, byline: snapshot.byline, body_html: snapshot.body_html, excerpt: snapshot.excerpt, slug: snapshot.slug, public_url: snapshot.public_url, metadata: { ...snapshot.metadata, review: current.metadata.review ?? snapshot.metadata.review } } : current); setTab("write"); toast(`Revision ${compare.revision} restored to your draft. Save to keep it.`); }}>Restore to draft</Button>
+                <Button size="sm" icon={RotateCcw} onClick={() => { const snapshot = compare.snapshot; setDraft(current => current ? { ...current, title: snapshot.title, byline: snapshot.byline, body_html: snapshot.body_html, excerpt: snapshot.excerpt, slug: snapshot.slug, public_url: snapshot.public_url, metadata: { ...snapshot.metadata, review: current.metadata.review ?? snapshot.metadata.review } } : current); setBodyReplaced(true); setTab("write"); toast(`Revision ${compare.revision} restored to your draft. Save to keep it.`); }}>Restore to draft</Button>
                 <Button size="sm" variant="subtle" icon={X} onClick={() => setCompare(null)}>Close</Button>
               </div>
             </div>
@@ -318,7 +321,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               {source.is_candidate && <Pill tone="review">Changed since import</Pill>}
-              <Button size="sm" icon={Check} onClick={() => { update({ title: source.title, byline: source.byline, body_html: source.body_html }); setTab("write"); toast("Source text copied into your draft. Save to keep it."); }}>Adopt into draft</Button>
+              <Button size="sm" icon={Check} onClick={() => { update({ title: source.title, byline: source.byline, body_html: source.body_html }); setBodyReplaced(true); setTab("write"); toast("Source text copied into your draft. Save to keep it."); }}>Adopt into draft</Button>
             </div>
           </div>
           <div style={{ marginTop: 12 }}><RevisionDiff from={{ ...draft, title: source.title, byline: source.byline, body_html: source.body_html }} to={draft} label="Differences between this source and your draft" /></div>

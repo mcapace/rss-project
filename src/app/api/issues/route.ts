@@ -1,60 +1,18 @@
-import { NextResponse } from "next/server";
-import { getServiceSupabase } from "@/lib/supabase/server";
-
+import { requireCmsUser } from "@/lib/cms/auth-server";
+import { assertBrand } from "@/lib/cms/access";
+import { cmsDb, databaseError } from "@/lib/cms/db";
+import { cmsJson, cmsFailure } from "@/lib/cms/http";
 export const runtime = "nodejs";
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const sb = getServiceSupabase();
-
-    // 1. Fetch all issues newest first
-    const { data: issues, error } = await sb
-      .from("issues")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Supabase issues list query error:", error);
-      return NextResponse.json(
-        { error: error.message || "Failed to fetch issues" },
-        { status: 500 }
-      );
-    }
-
-    if (!issues || issues.length === 0) {
-      return NextResponse.json({ issues: [] });
-    }
-
-    // 2. Fetch article counts per issue
-    const issueIds = issues.map((i) => i.id);
-    const { data: articleRows, error: artError } = await sb
-      .from("articles")
-      .select("issue_uuid")
-      .in("issue_uuid", issueIds);
-
-    const countsByIssue: Record<string, number> = {};
-    if (articleRows && !artError) {
-      for (const row of articleRows) {
-        if (row.issue_uuid) {
-          countsByIssue[row.issue_uuid] =
-            (countsByIssue[row.issue_uuid] || 0) + 1;
-        }
-      }
-    }
-
-    // 3. Format response with computed counts and feed URLs
-    const formattedIssues = issues.map((issue) => ({
-      ...issue,
-      articleCount: countsByIssue[issue.id] || 0,
-      feedUrl: `/api/feeds/${issue.brand}/${issue.issue_id}/feed.xml`,
-    }));
-
-    return NextResponse.json({ issues: formattedIssues });
-  } catch (error: any) {
-    console.error("Issues list endpoint failure:", error);
-    return NextResponse.json(
-      { error: error?.message || "Failed to retrieve issues list" },
-      { status: 500 }
-    );
-  }
+    const user = await requireCmsUser();
+    const brand = new URL(request.url).searchParams.get("brand");
+    if (brand && brand !== "all") assertBrand(user, brand);
+    const db = cmsDb();
+    // Apply publication scope before the limit so another publication cannot hide its issues.
+    const { data, error, count } = await db.from("issues").select("*", { count: "exact" }).in("brand", brand && brand !== "all" ? [brand] : user.brands).order("created_at", { ascending: false }).limit(100);
+    if (error) databaseError(error);
+    const issues = (data || []).map(issue => ({ ...issue, cms_intake_token: undefined, articleCount: issue.stats?.cms_document_count ?? issue.stats?.articles ?? null, feedUrl: issue.status === "published" ? `/api/feeds/${issue.brand}/${issue.issue_id}/feed.xml` : null }));
+    return cmsJson({ issues, total: count || 0, limit: 100 });
+  } catch (error) { return cmsFailure(error); }
 }

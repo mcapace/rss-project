@@ -3,10 +3,18 @@ on:
   workflow_dispatch:
     inputs:
       issue_uuid: { required: true, type: string }
+      intake_token: { required: true, type: string }
       brand:      { required: true, type: string }
       issue_id:   { required: true, type: string }
       pdf_key:    { required: true, type: string }
       toc_pages:  { required: true, type: string, default: "3,4" }
+
+permissions:
+  contents: read
+
+concurrency:
+  group: print-issue-${{ inputs.issue_uuid }}
+  cancel-in-progress: false
 
 jobs:
   process:
@@ -20,26 +28,31 @@ jobs:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PRINT_ISSUE_UUID: ${{ inputs.issue_uuid }}
+      PRINT_INTAKE_TOKEN: ${{ inputs.intake_token }}
+      PRINT_BRAND: ${{ inputs.brand }}
+      PRINT_ISSUE_ID: ${{ inputs.issue_id }}
+      PRINT_PDF_KEY: ${{ inputs.pdf_key }}
+      PRINT_TOC_PAGES: ${{ inputs.toc_pages }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install pymupdf anthropic boto3 supabase
+      - name: Validate job inputs
+        id: validate
+        run: python worker/validate_inputs.py
+      - name: Claim current issue attempt
+        id: claim
+        run: python worker/job_status.py processing
+      - run: pip install --require-hashes -r worker/requirements.txt
       - name: Download PDF
-        run: aws s3 cp "s3://$S3_BUCKET/${{ inputs.pdf_key }}" issue.pdf
+        run: aws s3 cp "s3://$S3_BUCKET/$PRINT_PDF_KEY" issue.pdf
       - name: Extract
-        run: python worker/extract.py ${{ inputs.brand }} ${{ inputs.issue_id }} issue.pdf
+        run: python worker/extract.py "$PRINT_BRAND" "$PRINT_ISSUE_ID" issue.pdf
       - name: Segment
-        run: python worker/segment.py ${{ inputs.brand }} ${{ inputs.issue_id }} --toc-pages "${{ inputs.toc_pages }}"
-      - name: Publish to Supabase + S3
-        run: python worker/publish_db.py ${{ inputs.brand }} ${{ inputs.issue_id }} --issue-uuid ${{ inputs.issue_uuid }}
+        run: python worker/segment.py "$PRINT_BRAND" "$PRINT_ISSUE_ID" --toc-pages "$PRINT_TOC_PAGES"
+      - name: Create CMS review candidates
+        run: python worker/publish_db.py "$PRINT_BRAND" "$PRINT_ISSUE_ID" --issue-uuid "$PRINT_ISSUE_UUID"
       - name: Mark failed
-        if: failure()
-        run: |
-          python - <<'EOF'
-          import os
-          from supabase import create_client
-          sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
-          sb.table("issues").update({"status": "failed", "error": "worker failed; see Action logs"}) \
-            .eq("id", "${{ inputs.issue_uuid }}").execute()
-          EOF
+        if: failure() && steps.claim.outcome == 'success'
+        run: python worker/job_status.py failed

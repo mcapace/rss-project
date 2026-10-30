@@ -1,0 +1,42 @@
+name: CMS checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, codex/inhouse-cms-foundation]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cms-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+  print-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: worker/requirements.txt
+      - run: pip install --require-hashes -r worker/requirements.txt
+      - run: python -m unittest discover -s worker/tests -v

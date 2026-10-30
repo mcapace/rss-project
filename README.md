@@ -1,80 +1,80 @@
-# mag-rss: BlueToad replacement pipeline
+# In-house editorial CMS foundation
 
-Takes the production PDF you already receive per issue and produces the same
-full-content RSS (with images) that BlueToad's assisted package delivers, with
-images hosted on your own S3/CloudFront instead of mydigitalpublication.com.
-The migration tool consumes the new feed URL with no code changes.
+An editorial workspace for Whisky Advocate and the other configured M. Shanken
+publications. Existing Morweb content imports directly into CMS records. Future
+print PDFs become editable review drafts in the same system.
 
-## Pipeline
+`rss-project` is the shared codebase for the future in-house CMS. Whisky Advocate
+is the first rollout. A publication selector carries the chosen title through the
+content library, ratings, issue inbox, and print intake. The initial configuration
+includes Whisky Advocate, Wine Spectator, Cigar Aficionado, and Market Watch;
+each named editor sees only assigned publications.
 
+**BlueToad RSS is not a dependency.** The repository retains optional legacy RSS
+helpers and previously published feed output for compatibility, but the new
+print worker writes directly to the CMS and does not auto-publish.
+
+## What is included
+
+- A content workspace for articles, ratings, and Pages, with a rich text editor,
+  structured properties, source history, editorial revisions, and article preview.
+- Named Supabase Auth accounts, publication-scoped editor access, server-side
+  authorization, and revision checks to prevent lost edits.
+- Publication selection retained in URLs and navigation, including direct links
+  to a publication's content or print issue. The demo supports all four configured
+  publications; only Whisky Advocate starts with synthetic examples.
+- A Morweb importer with a local dry-run report, explicit development apply mode,
+  stable source identity, and held records for unresolved mapping decisions.
+- PDF intake with a queued worker, immutable source candidates, private image
+  previews, and visible extraction warnings. Re-extraction preserves editor changes.
+- A synthetic demo at `/cms/demo`, separate from the connected workspace at `/cms`.
+
+This milestone prepares and edits content. It does **not** publish a replacement
+public website. Historical publication states can be retained during import;
+new print content requires review, and new website publishing is not connected.
+
+## Start locally
+
+Use Node.js 22 or 24:
+
+```sh
+npm ci
+npm run dev
 ```
-issue PDF (300RGB press file)
-   |
-   |  1. extract.py        deterministic, no API cost
-   v
-pages.json + images/       per-page text blocks w/ coordinates,
-   |                       deduped full-res JPEGs (orig streams, no re-encode)
-   |  2. segment.py        Claude API: TOC parse + article HTML structuring
-   v
-articles.json              title, section, page range, clean HTML, image list
-   |
-   |  3. publish.py        no API cost
-   v
-feed.xml + S3 upload       BlueToad-schema RSS 2.0 + MRSS image refs
+
+Open `http://localhost:3000/cms/demo` to try synthetic content without a database
+or model credential. Demo edits are stored only in that browser. For a connected
+workspace, follow the [CMS development setup](docs/cms-development.md): apply the
+migrations to the deliberately selected Supabase project, provision named accounts, and set
+the server environment. PDF intake also needs a private development S3 bucket
+and the matching GitHub worker branch and secrets.
+
+## Documentation
+
+- [Development setup, accounts, storage, and worker configuration](docs/cms-development.md)
+- [Morweb migration mapping, dry-run reports, and development import](docs/migration-import.md)
+
+Preserved archive files, media copies, private issue PDFs, and import reports do
+not belong in this repository.
+
+## Checks
+
+```sh
+npm test
+npx tsc --noEmit
+npm run build
 ```
 
-Run per issue (Market Watch example):
+For the Python worker:
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-python extract.py mw 2026-09 MW0926_300RGB.pdf
-python segment.py mw 2026-09 --toc-pages 3,4
-python publish.py mw 2026-09 --issue-label "September 2026" --upload
+```sh
+python3.12 -m venv .venv
+.venv/bin/python -m pip install --require-hashes -r worker/requirements.txt
+.venv/bin/python -m unittest discover -s worker/tests -v
 ```
 
-Feed lands at `{cdn_base}/{issue_id}/feed.xml`. Point the migration tool desk
-at that URL instead of the contents-rss.php URL.
-
-## What you need to provision
-
-1. **S3 bucket** (or reuse an existing one) + a CloudFront distribution with a
-   friendly CNAME per brand (`editions.marketwatchmag.com` etc). Set these in
-   `config.py`. Supabase Storage also works if you'd rather stay in that stack;
-   swap the boto3 block in publish.py for the supabase-py equivalent.
-2. **Anthropic API key** for segment.py. Cost per issue is small: TOC parse +
-   one call per article. A Market Watch issue is roughly 15-25 calls.
-3. **AWS credentials** in the environment for `--upload` (standard boto3 chain).
-
-## Validated so far (WS Aug. 31, 2026 issue, 158 pp / 188 MB)
-
-- extract.py: 1,012 embedded images -> 502 kept after fragment/size filtering,
-  ~158 MB, full-resolution DeviceRGB JPEGs extracted as original streams.
-  Full text layer present with per-block coordinates.
-- publish.py: emits schema-identical XML (verified against the live BlueToad
-  feed structure: item/title/link/guid/dc:creator/pubDate/description with
-  escaped HTML, media namespace declared, media:content per image).
-
-## Known work items before production
-
-- **segment.py is untested against a real issue** (needs API key + a run).
-  The two prompts will need one or two iterations per brand, especially
-  WS buying guide pages. Market Watch first is the right call: simpler layouts.
-- **Ad filtering**: the TOC-driven page ranges naturally exclude most ads, but
-  full-page ads inside an article's range will leak their image into that
-  article's image list. Options: maintain a per-issue ad page list (you have
-  the insertion orders), or add a cheap Claude vision call per suspect page.
-- **Folio mapping**: printed page numbers vs PDF page index can drift when
-  covers/inserts aren't counted. folio_to_pdf_page() handles the common case;
-  verify on the first MW issue.
-- **Spreads**: images crossing a spread are stored per-page halves in some
-  layouts (saw two 3040px halves on p60-61 of the WS file). If MW does this,
-  add a stitch step keyed on matching heights + adjacent pages.
-- **Automation**: once stable, wrap in a GitHub Action triggered by dropping
-  the PDF into an S3 inbox prefix, or run from the WhiskyFest-contracts-style
-  admin you already operate. Per-issue runtime is a few minutes.
-
-## Why this replaces the assisted tier
-
-BlueToad's assisted package = article segmentation labor + image hosting.
-Stage 2 automates the segmentation; Stage 3 replaces the hosting. The flipbook
-is the only thing left, and you don't need it.
+Tests use synthetic content, a local PGlite database, and mocked external
+services. A full development run using an approved real PDF still needs to
+verify model extraction quality, image selection, folio mapping, S3 uploads, and
+worker dispatch. An archive dry-run is a mapping check, not proof that the whole
+website has been migrated.

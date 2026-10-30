@@ -11,6 +11,11 @@
   --text-tertiary: #71717A;
 }
 
+html[data-cms-theme="dark"] {
+  --bg-base: #0a0a0a;
+  --text-primary: #ededed;
+}
+
 @theme inline {
   --color-bg-base: var(--bg-base);
   --color-bg-surface: var(--bg-surface);
@@ -39,14 +44,14 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F4F5F7;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: rgb(127 127 127 / 0.4);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: rgb(127 127 127 / 0.6);
 }
 
 /* Clean transition defaults */

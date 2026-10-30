@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { THEME_BOOT_SCRIPT } from "@/lib/editorial/theme";
 import "./globals.css";
-import { TopNav } from "@/components/ui/TopNav";
-
-const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  display: "swap",
-});
+import "@/components/editorial/editorial.css";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -22,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "M. Shanken — Editorial CMS",
+  title: "M. Shanken — Editorial workspace",
   description:
     "An in-house editorial workspace for articles, ratings, pages, and print-to-web drafts.",
 };
@@ -35,10 +30,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#F4F5F7] text-gray-900 font-sans selection:bg-[#C9A227]/30 selection:text-gray-900">
-        <TopNav />
+      <body className="min-h-full flex flex-col font-sans">
+        {/* Applies the stored light or dark theme before the first paint on every page. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <div className="flex-1 flex flex-col">{children}</div>
       </body>
     </html>

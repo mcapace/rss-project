@@ -13,7 +13,7 @@ export function demoDocuments(): CmsDocument[] {
   ];
   return rows.map((row, index) => ({
     id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
-    brand: "wa", kind: row.kind, source_system: row.source, source_key: `demo:${index + 1}`,
+    brand: "wa", kind: row.kind, source_system: row.source, source_key: `demo:${index + 1}`, body_json: null,
     source_hash: String(index + 1).repeat(64), identity_anchor: {}, title: row.title,
     byline: row.byline, body_html: row.body, excerpt: row.excerpt, slug: null, public_url: null,
     publication_state: row.state, published_at: row.state === "published" ? "2026-10-01T14:00:00Z" : null,

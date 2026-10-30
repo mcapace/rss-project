@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { gunzipSync } from "node:zlib";
 import { createClient } from "@supabase/supabase-js";
+import { htmlToDocument } from "../src/lib/cms/blocks";
 import { planMorwebImport, type MorwebImportOptions } from "../src/lib/cms/morweb";
 import type { CmsBrand, CmsIngestResult } from "../src/lib/cms/types";
 import { CMS_DOCUMENT_KINDS } from "../src/lib/cms/types";
@@ -149,6 +150,11 @@ Keep input and report files outside this repository.`);
       if (!result || !["created", "unchanged", "candidate"].includes(result.action) || !result.document_id) { failure = { source_key: document.source_key, code: "invalid_rpc_response" }; break; }
       counts[result.action]++;
       applied.push({ source_key: document.source_key, document_id: result.document_id, action: result.action, revision: result.revision });
+      // Normalization layer: a newly created record also gets its structured block body. Candidates keep the editor's text.
+      if (result.action === "created") {
+        const { error: blockError } = await supabase.rpc("cms_set_body_json", { p_document_id: result.document_id, p_body_json: htmlToDocument(document.body_html) });
+        if (blockError) runtime.progress(`body_json not written for ${document.source_key}: ${blockError.code || "rpc_error"}`);
+      }
       if (applied.length % 100 === 0) runtime.progress(`Processed ${applied.length}/${plan.documents.length} eligible records.`);
     } catch {
       failure = { source_key: document.source_key, code: "request_failed" };

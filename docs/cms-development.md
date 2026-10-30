@@ -1,6 +1,8 @@
 # CMS development setup
 
-This foundation separates editorial content from the earlier RSS pipeline. Morweb
+This repository is the shared foundation for the future in-house CMS across
+M. Shanken publications, starting with Whisky Advocate. It separates editorial
+content from the earlier RSS pipeline. Morweb
 records import into `cms_documents`; future print issues extract into the same
 workspace as review drafts. BlueToad is not a dependency of either path.
 
@@ -36,11 +38,14 @@ workspace when verifying persistence, permissions, and extraction.
 Vercel preview deployments disable connected CMS access by default, including
 sign-in, private pages/APIs, and background Supabase session refresh. The demo
 remains available at `/cms/demo`. To enable a connected development preview,
-first verify that its Supabase project, S3 bucket, GitHub worker target, and worker
-secrets all belong to the development environment, then explicitly set
-`CMS_ENABLE_CONNECTED_PREVIEW=true` in that preview environment. This flag does
-not verify or replace credentials; never enable it with inherited production
-services. Local and production runtimes retain the normal configuration and
+first verify the explicitly authorized Supabase target, then set
+`CMS_ENABLE_CONNECTED_PREVIEW=true` for the specific CMS branch. The selected
+`rss-project` project is the shared future CMS target for this rollout; do not
+create a second project solely because the repository originally began as RSS.
+This flag does not verify or replace credentials. It must not be enabled against
+an unintended production database. Print intake separately requires verification
+of its S3 bucket, worker branch, and worker secrets before a PDF job is started.
+Local and production runtimes retain the normal configuration and
 authorization checks. The existing public published RSS output is unchanged.
 
 The editor uses explicit saves. Workspace navigation links and the browser's
@@ -58,21 +63,27 @@ and requests exceeding 10 seconds. Rich HTML and link/media URLs are sanitized
 before they reach the reader. This adapter does not change the existing
 published RSS output endpoint.
 
-## 2. Connect a development Supabase project
+## 2. Connect the selected Supabase project
 
-Create a separate development Supabase project. Apply these SQL files in order
-using that project's SQL editor or your existing migration runner:
+Inspect the selected project's migration history and tables first. For a fresh
+development environment, apply these SQL files in order using its migration
+runner. For an existing project, apply only unapplied migrations:
 
 1. `supabase/migrations/20260831000000_init_schema.sql`
 2. `supabase/migrations/20260901000000_add_article_author.sql`
-3. `supabase/migrations/20261030140201_cms_foundation.sql`
+3. `supabase/migrations/20261030152039_cms_foundation.sql`
+4. `supabase/migrations/20261030153019_cms_service_role_privileges.sql`
 
 If the first two migrations are already recorded as applied in the development
 project, apply only the new foundation migration. The foundation migration is
 additive and is intended to run once; it is not a reset script. It retains the
 legacy `issues`, `articles`, and `article_images` tables while adding the CMS
 records, immutable source snapshots, editorial revisions, and atomic intake/save
-functions.
+functions. The privilege migration explicitly removes Supabase's inherited
+service-role defaults before granting only the operations the CMS needs. History
+tables permit reading and appending. The application role cannot update, delete,
+or truncate history. Migration filenames match the applied remote
+history so a future migration runner does not attempt to apply them twice.
 
 CMS tables have row-level security enabled with no direct access granted to
 browser `anon` or `authenticated` roles. Private API routes verify the current
@@ -84,8 +95,8 @@ host's secret settings. Environment files are ignored by Git.
 
 | Variable | Use |
 | --- | --- |
-| `CMS_ENABLE_CONNECTED_PREVIEW` | Optional Vercel preview opt-in; only the exact value `true` enables connected CMS access. Leave unset until every connected service is verified as development-only. Unnecessary locally or in production. |
-| `SUPABASE_URL` | Development project URL |
+| `CMS_ENABLE_CONNECTED_PREVIEW` | Optional Vercel preview opt-in; only the exact value `true` enables connected CMS access. Scope it to the approved CMS branch after verifying the selected database. Unnecessary locally or in production. |
+| `SUPABASE_URL` | Explicitly selected project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Project publishable/anon credential used for authentication |
 | `SUPABASE_SECRET_KEY` **or** `SUPABASE_SERVICE_ROLE_KEY` | Privileged server database client; use a development project credential |
 | `AWS_REGION` | Region of the development asset bucket |
@@ -121,6 +132,20 @@ Supported publication keys are `wa` (Whisky Advocate), `ws` (Wine Spectator), `c
 recognized publications. An administrator uses `"cms_role": "admin"` and receives
 all configured publications. Missing roles, unsupported roles, and editors with
 no assigned publications are rejected.
+
+Publication selection uses the `brand` query parameter across `/cms`, `/admin`,
+`/admin/new`, issue detail, and the optional reader. Unknown or unassigned values
+resolve to an authorized publication in the UI; API requests for an unauthorized
+publication are rejected. Whisky Advocate is the default when assigned. The issue
+inbox alone supports an explicit `brand=all` view across the user's publications.
+Its publication filter runs before the latest-100 limit. All links into create or
+upload flows resolve to one specific authorized publication.
+
+The demo exposes all four configured publications without querying the database.
+Whisky Advocate has the synthetic seed content; other publications begin empty.
+Changing the demo publication never copies records across publications. Adding a
+future publication requires an explicit shared configuration and schema update;
+the selector does not grant access or provision a publication by itself.
 
 Do not put these permissions in user-editable `user_metadata`; the application
 does not use it for authorization. The former shared administrator password is

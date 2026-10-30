@@ -18,6 +18,8 @@ function response(value: unknown) { return new Response(JSON.stringify(value), {
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(finish => { resolve = finish; }); return { promise, resolve }; }
 beforeEach(() => {
   (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  window.history.replaceState(null, "", "/cms");
+  localStorage.clear();
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
@@ -58,7 +60,7 @@ describe("workspace asynchronous selection", () => {
     await navigation("Ratings");
     await act(async () => detail.resolve(response({ document: sample })));
     expect(host.querySelector('[data-testid="editor"]')).toBeNull();
-    expect(host.querySelector("h1")!.textContent).toBe("Whisky ratings");
+    expect(host.querySelector("h1")!.textContent).toBe("Ratings");
   });
 
   it("does not replace a new publication's results with an older request", async () => {
@@ -75,5 +77,34 @@ describe("workspace asynchronous selection", () => {
     await act(async () => whiskyList.resolve(response({ documents: [{ ...sample, title: "Stale whisky result" }], total: 1 })));
     expect(host.textContent).toContain("Wine sample result");
     expect(host.textContent).not.toContain("Stale whisky result");
+    expect(new URLSearchParams(window.location.search).get("brand")).toBe("ws");
+    expect(host.querySelector<HTMLAnchorElement>('.cms-navigation a[href^="/admin?"]')?.getAttribute("href")).toBe("/admin?brand=ws");
+    expect(host.querySelector<HTMLAnchorElement>('.cms-navigation a[href^="/admin/new?"]')?.getAttribute("href")).toBe("/admin/new?brand=ws");
+  });
+
+  it("restores an authorized publication from a direct URL and limits the selector to that user's access", async () => {
+    const fetchMock = vi.fn(async (_url: string) => response({ documents: [], total: 0 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await act(async () => root.render(<CmsWorkspace user={{ ...user, brands: ["ws"] }} initialBrand="ca" />));
+    const selector = host.querySelector<HTMLSelectElement>("#cms-brand")!;
+    expect(selector.value).toBe("ws");
+    expect([...selector.options].map(option => option.value)).toEqual(["ws"]);
+    expect(fetchMock.mock.calls.every(([url]) => String(url).includes("brand=ws"))).toBe(true);
+    expect(window.location.search).toBe("?brand=ws");
+  });
+
+  it("shows a separate empty demo library for a new publication and restores the Whisky Advocate examples on return", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    await act(async () => root.render(<CmsWorkspace demo />));
+    const selector = host.querySelector<HTMLSelectElement>("#cms-brand")!;
+    expect([...selector.options].map(option => option.value)).toEqual(["wa", "ws", "ca", "mw"]);
+    expect(host.querySelectorAll(".cms-story-link").length).toBeGreaterThan(0);
+    await act(async () => { selector.value = "ws"; selector.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(host.querySelectorAll(".cms-story-link")).toHaveLength(0);
+    expect(host.querySelector(".cms-metric strong")?.textContent).toBe("0");
+    expect(host.querySelector(".cms-breadcrumb")?.textContent).toContain("Wine Spectator");
+    await act(async () => { selector.value = "wa"; selector.dispatchEvent(new Event("change", { bubbles: true })); });
+    expect(host.querySelectorAll(".cms-story-link").length).toBeGreaterThan(0);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, Suspense } from "react";
+import { useState, useTransition, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ArrowUpRight,
   Plus,
-  ImageIcon,
   Images,
   Check,
   Copy,
@@ -26,6 +25,9 @@ import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { ArticleCardSkeleton, Skeleton } from "@/components/ui/Skeleton";
 import { BrandKey } from "@/lib/brands";
+import { publicationHref, publicationNames, resolveCmsBrand } from "@/lib/cms/publications";
+import type { CmsUser } from "@/lib/cms/access";
+import type { CmsBrand } from "@/lib/cms/types";
 
 interface MediaContentItem {
   $?: {
@@ -75,19 +77,43 @@ interface PublishedIssue {
   feedUrl: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+async function fetcher(url: string) {
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error(data.error || "Could not load the legacy edition catalog.");
+  return data;
+}
 
 function FeedReaderContent() {
   const searchParams = useSearchParams();
+  const requestedBrand = searchParams.get("brand");
   const queryUrl = searchParams.get("url");
+  const queryString = searchParams.toString();
+  const { data: session, error, mutate } = useSWR<{ user: CmsUser }, Error>("/api/cms/session", fetcher);
+  const brand = resolveCmsBrand(requestedBrand, session?.user.brands || []);
 
-  // Fetch only published digital editions from our database
-  const { data: issuesData, isLoading: issuesLoading } = useSWR<{
+  useEffect(() => {
+    if (brand && !error && requestedBrand !== brand) {
+      window.history.replaceState(null, "", publicationHref(`/reader?${queryString}`, brand));
+    }
+  }, [brand, error, queryString, requestedBrand]);
+
+  if (error) return <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 space-y-4"><h1 className="font-serif text-3xl text-gray-900">Legacy edition reader</h1><p role="alert" className="text-sm text-red-700">{error.message}</p><Button type="button" variant="outline" onClick={() => void mutate()}>Reload access</Button></main>;
+  if (!brand) return <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-10"><p className="text-sm text-gray-600" role="status">Loading publication access…</p></main>;
+
+  // Remount on publication changes so an earlier edition cannot remain in the new workspace.
+  return <PublicationFeedReader key={brand} brand={brand} queryUrl={queryUrl} />;
+}
+
+function PublicationFeedReader({ brand, queryUrl }: { brand: CmsBrand; queryUrl: string | null }) {
+  const { data: issuesData, error: issuesError, isLoading: issuesLoading, mutate: refreshIssues } = useSWR<{
     issues: PublishedIssue[];
-  }>("/api/issues", fetcher);
+    total: number;
+    limit: number;
+  }, Error>(`/api/issues?brand=${brand}`, fetcher);
 
   const publishedIssues = (issuesData?.issues || []).filter(
-    (i) => i.status === "published"
+    (i) => i.status === "published" && i.brand === brand
   );
 
   const [urlInput, setUrlInput] = useState(queryUrl || "");
@@ -97,8 +123,9 @@ function FeedReaderContent() {
   const [searchFilter, setSearchFilter] = useState("");
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
   const [copiedGuid, setCopiedGuid] = useState(false);
-  const [selectedPreviewImg, setSelectedPreviewImg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const lastQueryUrl = useRef<string | null>(null);
+  const firstPublishedFeed = publishedIssues[0]?.feedUrl;
 
   const handleCopyGuid = (guid: string) => {
     navigator.clipboard.writeText(guid);
@@ -106,7 +133,7 @@ function FeedReaderContent() {
     setTimeout(() => setCopiedGuid(false), 2000);
   };
 
-  const loadFeed = async (targetUrl: string) => {
+  const loadFeed = useCallback(async (targetUrl: string) => {
     if (!targetUrl.trim()) return;
     setError(null);
     setSelectedItem(null);
@@ -122,38 +149,32 @@ function FeedReaderContent() {
       }
 
       setFeedData(data);
-    } catch (err: any) {
-      setError(err.message || "Could not fetch or parse RSS feed.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not fetch or parse RSS feed.");
       setFeedData(null);
     }
-  };
+  }, [setError, setSelectedItem, setActiveFeedUrl, setFeedData]);
 
   useEffect(() => {
-    if (queryUrl) {
-      setUrlInput(queryUrl);
-      startTransition(() => {
-        loadFeed(queryUrl);
-      });
-    } else if (publishedIssues.length > 0 && !activeFeedUrl) {
-      const defaultFeed = publishedIssues[0].feedUrl;
-      setUrlInput(defaultFeed);
-      startTransition(() => {
-        loadFeed(defaultFeed);
-      });
-    }
-  }, [queryUrl, publishedIssues.length]);
+    const queryChanged = queryUrl && queryUrl !== lastQueryUrl.current;
+    lastQueryUrl.current = queryUrl;
+    const target = queryChanged ? queryUrl : !activeFeedUrl ? firstPublishedFeed : undefined;
+    if (!target) return;
+    setUrlInput(target);
+    startTransition(async () => { await loadFeed(target); });
+  }, [queryUrl, firstPublishedFeed, activeFeedUrl, loadFeed]);
 
   const handleFetch = (e: React.FormEvent) => {
     e.preventDefault();
-    startTransition(() => {
-      loadFeed(urlInput);
+    startTransition(async () => {
+      await loadFeed(urlInput);
     });
   };
 
   const handleSelectPreset = (url: string) => {
     setUrlInput(url);
-    startTransition(() => {
-      loadFeed(url);
+    startTransition(async () => {
+      await loadFeed(url);
     });
   };
 
@@ -183,7 +204,7 @@ function FeedReaderContent() {
           </h1>
         </div>
         <p className="text-xs text-gray-500 max-w-sm">
-          Inspect, validate, and preview generated digital edition RSS feeds directly from our publishing pipeline.
+          View previously published RSS editions for {publicationNames[brand]}. New PDFs become review drafts in the CMS.
         </p>
       </div>
 
@@ -223,15 +244,20 @@ function FeedReaderContent() {
             <span>Published Editions:</span>
           </span>
 
-          {issuesLoading && publishedIssues.length === 0 ? (
+          {issuesError ? (
+            <span className="text-xs text-red-700 flex items-center gap-2" role="alert">
+              <span>{issuesError.message}</span>
+              <button type="button" onClick={() => void refreshIssues()} className="underline underline-offset-4">Retry catalog</button>
+            </span>
+          ) : issuesLoading && publishedIssues.length === 0 ? (
             <span className="text-xs font-mono text-gray-400 italic">
               Loading published catalog...
             </span>
           ) : publishedIssues.length === 0 ? (
             <span className="text-xs text-gray-500 flex items-center gap-2">
-              <span>No published editions yet.</span>
+              <span>No legacy editions in this publication’s latest issues.</span>
               <Link
-                href="/admin/new"
+                href={publicationHref("/admin/new", brand)}
                 className="text-amber-700 hover:underline inline-flex items-center gap-1 font-medium"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -255,6 +281,7 @@ function FeedReaderContent() {
             ))
           )}
         </div>
+        {issuesData && issuesData.total > issuesData.issues.length && <p className="text-xs text-gray-500">This catalog shows published editions among the latest {issuesData.issues.length} of {issuesData.total} issues for {publicationNames[brand]}.</p>}
       </Card>
 
       {/* Error state */}
@@ -423,7 +450,7 @@ function FeedReaderContent() {
                 </p>
               </div>
               <div className="pt-2">
-                <Link href="/admin/new">
+                <Link href={publicationHref("/admin/new", brand)}>
                   <Button variant="primary" size="sm">
                     <Plus className="w-3.5 h-3.5 mr-1" />
                     Upload an Issue

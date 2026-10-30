@@ -4,6 +4,12 @@ An editorial workspace for Whisky Advocate and the other configured M. Shanken
 publications. Existing Morweb content imports directly into CMS records. Future
 print PDFs become editable review drafts in the same system.
 
+`rss-project` is the shared codebase for the future in-house CMS. Whisky Advocate
+is the first rollout. A publication selector carries the chosen title through the
+content library, ratings, issue inbox, and print intake. The initial configuration
+includes Whisky Advocate, Wine Spectator, Cigar Aficionado, and Market Watch;
+each named editor sees only assigned publications.
+
 **BlueToad RSS is not a dependency.** The repository retains optional legacy RSS
 helpers and previously published feed output for compatibility, but the new
 print worker writes directly to the CMS and does not auto-publish.
@@ -14,6 +20,9 @@ print worker writes directly to the CMS and does not auto-publish.
   structured properties, source history, editorial revisions, and article preview.
 - Named Supabase Auth accounts, publication-scoped editor access, server-side
   authorization, and revision checks to prevent lost edits.
+- Publication selection retained in URLs and navigation, including direct links
+  to a publication's content or print issue. The demo supports all four configured
+  publications; only Whisky Advocate starts with synthetic examples.
 - A Morweb importer with a local dry-run report, explicit development apply mode,
   stable source identity, and held records for unresolved mapping decisions.
 - PDF intake with a queued worker, immutable source candidates, private image
@@ -36,7 +45,7 @@ npm run dev
 Open `http://localhost:3000/cms/demo` to try synthetic content without a database
 or model credential. Demo edits are stored only in that browser. For a connected
 workspace, follow the [CMS development setup](docs/cms-development.md): apply the
-migrations to a development Supabase project, provision named accounts, and set
+migrations to the deliberately selected Supabase project, provision named accounts, and set
 the server environment. PDF intake also needs a private development S3 bucket
 and the matching GitHub worker branch and secrets.
 

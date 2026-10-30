@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
 import { AlertCircle, ArrowLeft, FileText, Sparkles, UploadCloud, X } from "lucide-react";
@@ -9,10 +9,12 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { BRANDS } from "@/lib/brands";
+import { publicationHref, resolveCmsBrand } from "@/lib/cms/publications";
+import { CMS_BRANDS, type CmsBrand } from "@/lib/cms/types";
 
-interface SessionResponse { user: { brands: string[] } }
+interface SessionResponse { user: { brands: CmsBrand[] } }
 interface UploadResponse { uploadUrl: string; pdfKey: string; uploadHeaders: Record<string, string>; error?: string }
-const brandOptions = [BRANDS.wa, ...Object.values(BRANDS).filter((brand) => brand.id !== "wa")];
+const brandOptions = CMS_BRANDS.map((brand) => BRANDS[brand]);
 const inputClass = "w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 disabled:opacity-50";
 
 async function fetchSession(url: string): Promise<SessionResponse> {
@@ -24,10 +26,12 @@ async function fetchSession(url: string): Promise<SessionResponse> {
 
 export default function NewIssuePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedBrand = searchParams.get("brand");
   const { data: session, error: sessionError, mutate: refreshSession } = useSWR<SessionResponse, Error>("/api/cms/session", fetchSession);
-  const [brandChoice, setBrandChoice] = useState<string | null>(null);
   const availableBrands = brandOptions.filter((brand) => session?.user.brands.includes(brand.id));
-  const selectedBrand = availableBrands.find((brand) => brand.id === brandChoice)?.id ?? availableBrands[0]?.id ?? "wa";
+  const selectedBrand = resolveCmsBrand(requestedBrand, availableBrands.map((brand) => brand.id));
+  const issuesUrl = publicationHref("/admin", selectedBrand);
   const [issueId, setIssueId] = useState("");
   const [issueLabel, setIssueLabel] = useState("");
   const [tocPages, setTocPages] = useState("3,4");
@@ -37,6 +41,17 @@ export default function NewIssuePage() {
   const [uploadStage, setUploadStage] = useState<"idle" | "preparing" | "uploading" | "extracting" | "done">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (selectedBrand && !sessionError && requestedBrand !== selectedBrand) {
+      window.history.replaceState(null, "", publicationHref("/admin/new", selectedBrand));
+    }
+  }, [requestedBrand, selectedBrand, sessionError]);
+
+  function changePublication(brand: CmsBrand) {
+    if (isUploading || !availableBrands.some((option) => option.id === brand)) return;
+    window.history.replaceState(null, "", publicationHref("/admin/new", brand));
+  }
 
   function selectFile(file?: File) {
     if (!file || isUploading) return;
@@ -110,7 +125,7 @@ export default function NewIssuePage() {
       if (!processResponse.ok || result.error) throw new Error(result.error || "The PDF uploaded, but extraction could not start.");
       if (typeof result.issueUuid !== "string" || !result.issueUuid) throw new Error("The issue could not be opened. Check the issue list before trying again.");
       setUploadStage("done");
-      router.push(`/admin/${encodeURIComponent(result.issueUuid)}`);
+      router.push(publicationHref(`/admin/${encodeURIComponent(result.issueUuid)}`, selectedBrand));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
       setIsUploading(false);
@@ -121,7 +136,7 @@ export default function NewIssuePage() {
   return (
     <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-10 space-y-7">
       <div>
-        <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 mb-4"><ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to issues</Link>
+        <Link href={issuesUrl} className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 mb-4"><ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to issues</Link>
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">Print to web</p>
         <h1 className="font-serif text-3xl text-gray-900 mt-1">New print issue</h1>
         <p className="text-sm text-gray-600 mt-2">Upload the issue PDF to prepare articles and images for editorial review.</p>
@@ -137,7 +152,7 @@ export default function NewIssuePage() {
             {session && availableBrands.length === 0 && <p role="alert" className="text-sm text-red-700">Your account has no publication access. Ask your CMS administrator to assign a publication.</p>}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {availableBrands.map((brand) => (
-                <button key={brand.id} type="button" aria-pressed={selectedBrand === brand.id} onClick={() => setBrandChoice(brand.id)} className={`p-3 rounded-xl border text-left h-28 flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 disabled:opacity-50 ${selectedBrand === brand.id ? "bg-amber-50 border-amber-600 shadow-xs" : "bg-white border-gray-200 hover:bg-gray-50"}`}>
+                <button key={brand.id} type="button" aria-pressed={selectedBrand === brand.id} onClick={() => changePublication(brand.id)} className={`p-3 rounded-xl border text-left h-28 flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 disabled:opacity-50 ${selectedBrand === brand.id ? "bg-amber-50 border-amber-600 shadow-xs" : "bg-white border-gray-200 hover:bg-gray-50"}`}>
                   <BrandMark brand={brand.id} size="md" />
                   <span className="text-xs font-semibold text-gray-900">{brand.name}</span>
                 </button>
@@ -195,7 +210,7 @@ export default function NewIssuePage() {
           {errorMessage && <div role="alert" className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 flex items-start gap-3"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" /><p className="text-sm">{errorMessage}</p></div>}
 
           <div className="pt-5 flex items-center justify-end gap-3 border-t border-gray-100">
-            <Button type="button" variant="ghost" disabled={isUploading} onClick={() => router.push("/admin")}>Cancel</Button>
+            <Button type="button" variant="ghost" disabled={isUploading} onClick={() => router.push(issuesUrl)}>Cancel</Button>
             <Button type="submit" variant="brand" brand={selectedBrand} isLoading={isUploading} disabled={isUploading || !selectedFile || !session || !!sessionError || availableBrands.length === 0}>
               <Sparkles className="w-4 h-4" aria-hidden="true" /> {isUploading ? "Preparing issue…" : "Upload & extract"}
             </Button>

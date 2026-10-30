@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Layers3, FileText, Star, PanelsTopLeft, ClipboardCheck, BookOpen, ArrowUpRight, Search, Plus, ChevronDown, ChevronLeft, ChevronRight, ArrowRight, AlertCircle, X, Menu, LogOut, RefreshCw, PenLine, FileInput } from "lucide-react";
 import { BRANDS } from "@/lib/brands";
+import { isCmsBrand, publicationHref, resolveCmsBrand } from "@/lib/cms/publications";
+import { CMS_BRANDS } from "@/lib/cms/types";
 import type { CmsUser } from "@/lib/cms/access";
 import type { CmsBrand, CmsDocument, CmsDocumentKind, CmsDocumentPatch, CmsDocumentRevision } from "@/lib/cms/types";
 import { demoDocuments, demoRevision, demoSources } from "@/lib/cms/demo";
@@ -12,7 +14,7 @@ import { DocumentEditor, type HistoryData } from "./DocumentEditor";
 import "./cms.css";
 
 type Row = Pick<CmsDocument, "id" | "brand" | "kind" | "source_system" | "title" | "byline" | "excerpt" | "publication_state" | "published_at" | "issue_uuid" | "revision" | "created_at" | "updated_at">;
-const sampleUser: CmsUser = { id: "demo", email: "Demo editor", role: "editor", brands: ["wa"] };
+const sampleUser: CmsUser = { id: "demo", email: "Demo editor", role: "admin", brands: [...CMS_BRANDS] };
 const demoKey = "mshanken-cms-demo-v1";
 const initialSamples = demoDocuments();
 const stateLabels: Record<string, string> = { draft: "Draft", review: "Needs review", published: "Published", unpublished: "Unpublished" };
@@ -26,7 +28,7 @@ async function requestJson(url: string, options?: RequestInit) {
 
 export function CmsWorkspace({ demo = false, user = sampleUser, initialBrand, initialIssue }: { demo?: boolean; user?: CmsUser; initialBrand?: string; initialIssue?: string }) {
   const router = useRouter();
-  const [brand, setBrand] = useState<CmsBrand>(user.brands.includes(initialBrand as CmsBrand) ? initialBrand as CmsBrand : user.brands.includes("wa") ? "wa" : user.brands[0]);
+  const [brand, setBrand] = useState<CmsBrand>(() => resolveCmsBrand(initialBrand, user.brands) || user.brands[0]);
   const [kind, setKind] = useState<"" | CmsDocumentKind>("");
   const [state, setState] = useState("");
   const [issue, setIssue] = useState(initialIssue || "");
@@ -59,12 +61,20 @@ export function CmsWorkspace({ demo = false, user = sampleUser, initialBrand, in
   const loading = !demo && loadedQuery !== queryIdentity;
   useEffect(() => () => { openController.current?.abort(); selectionEpoch.current += 1; }, []);
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("brand", brand);
+    if (issue) url.searchParams.set("issue", issue);
+    else url.searchParams.delete("issue");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [brand, issue]);
+
   useEffect(() => { if (search === debouncedSearch) return; const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 250); return () => clearTimeout(timer); }, [search, debouncedSearch]);
   useEffect(() => {
     if (!demo) return;
     try {
       const saved = JSON.parse(localStorage.getItem(demoKey) || "null");
-      if (saved && Array.isArray(saved.documents) && saved.histories && saved.documents.every((item: CmsDocument) => item.id && item.title && item.metadata && item.brand === "wa")) {
+      if (saved && Array.isArray(saved.documents) && saved.histories && saved.documents.every((item: CmsDocument) => item.id && item.title && item.metadata && isCmsBrand(item.brand))) {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate browser-only demo storage after SSR so the first client render matches the server.
         setDemoRows(saved.documents); setDemoHistories(saved.histories);
       }
@@ -101,7 +111,8 @@ export function CmsWorkspace({ demo = false, user = sampleUser, initialBrand, in
   const matchingDemo = useMemo(() => demoRows.filter(row => row.brand === brand && (!kind || row.kind === kind) && (!state || row.publication_state === state) && (!issue || row.issue_uuid === issue) && row.title.toLowerCase().includes(debouncedSearch.toLowerCase())).sort((a, b) => b.updated_at.localeCompare(a.updated_at)), [demoRows, brand, kind, state, issue, debouncedSearch]);
   const displayRows = demo ? matchingDemo.slice((page - 1) * 50, page * 50) : rows;
   const displayTotal = demo ? matchingDemo.length : total;
-  const stats = demo ? { total: demoRows.length, review: demoRows.filter(r => r.publication_state === "review").length, drafts: demoRows.filter(r => r.publication_state === "draft").length, ratings: demoRows.filter(r => r.kind === "rating").length } : overview;
+  const publicationDemoRows = demoRows.filter(row => row.brand === brand);
+  const stats = demo ? { total: publicationDemoRows.length, review: publicationDemoRows.filter(r => r.publication_state === "review").length, drafts: publicationDemoRows.filter(r => r.publication_state === "draft").length, ratings: publicationDemoRows.filter(r => r.kind === "rating").length } : overview;
   const pages = Math.max(1, Math.ceil(displayTotal / 50));
   const selectedBrand = BRANDS[brand];
 
@@ -113,6 +124,13 @@ export function CmsWorkspace({ demo = false, user = sampleUser, initialBrand, in
   function changeSearch(value: string) { cancelOpening(); setSearch(value); }
   function filterKind(value: "" | CmsDocumentKind) { cancelOpening(); setKind(value); setPage(1); }
   function filterState(value: string) { cancelOpening(); setState(value); setPage(1); }
+  function changePublication(value: string) {
+    const nextBrand = resolveCmsBrand(value, user.brands);
+    if (!nextBrand || nextBrand === brand || !leaveEditor()) return;
+    setBrand(nextBrand); setIssue(""); setPage(1); setOverview(null);
+    setRows([]); setTotal(0); setError(""); setSearch(""); setDebouncedSearch("");
+    setCreateOpen(false); setCreateTitle(""); setCreateError("");
+  }
   function leaveEditor() {
     if (!canLeaveEditor()) return false;
     openController.current?.abort(); selectionEpoch.current += 1;
@@ -185,8 +203,8 @@ export function CmsWorkspace({ demo = false, user = sampleUser, initialBrand, in
   return <div className={`cms-shell ${sidebarOpen ? "sidebar-open" : ""}`}>
     {sidebarOpen && <button className="cms-sidebar-scrim" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
     <aside className="cms-sidebar">
-      <Link href={demo ? "/cms/demo" : "/cms"} className="cms-wordmark" onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}><span className="cms-monogram">M</span><span>SHANKEN<small>EDITORIAL WORKSPACE</small></span></Link>
-      <div className="cms-publication"><span className="cms-publication-icon">{selectedBrand.short}</span><div><label htmlFor="cms-brand">Publication</label><select id="cms-brand" value={brand} onChange={e => { if (leaveEditor()) { setBrand(e.target.value as CmsBrand); setIssue(""); setPage(1); } }}>{user.brands.map(key => <option key={key} value={key}>{BRANDS[key].name}</option>)}</select></div><ChevronDown size={14} /></div>
+      <Link href={publicationHref(demo ? "/cms/demo" : "/cms", brand)} className="cms-wordmark" onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}><span className="cms-monogram">M</span><span>SHANKEN<small>EDITORIAL WORKSPACE</small></span></Link>
+      <div className="cms-publication"><span className="cms-publication-icon">{selectedBrand.short}</span><div><label htmlFor="cms-brand">Publication</label><select id="cms-brand" value={brand} onChange={e => changePublication(e.target.value)}>{user.brands.map(key => <option key={key} value={key}>{BRANDS[key].name}</option>)}</select></div><ChevronDown size={14} /></div>
       <div className="cms-nav-label">Workspace</div>
       <nav className="cms-navigation" aria-label="CMS navigation">
         {([
@@ -195,32 +213,32 @@ export function CmsWorkspace({ demo = false, user = sampleUser, initialBrand, in
         <button className={state === "review" ? "active" : ""} onClick={() => navigate("", "review")}><ClipboardCheck size={18} /><span>Review queue</span>{!!stats?.review && <em className="gold">{stats.review}</em>}</button>
       </nav>
       <div className="cms-nav-label">Print to web</div>
-      <nav className="cms-navigation" aria-label="Print workflow"><Link href="/admin" onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}><BookOpen size={18} /><span>Issue inbox</span><ArrowUpRight size={14} /></Link><Link href="/admin/new" onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}><FileInput size={18} /><span>Upload an issue</span></Link></nav>
-      <div className="cms-sidebar-bottom"><div className="cms-environment"><span />{demo ? "Interactive demo" : "Development workspace"}</div><div className="cms-user"><span className="cms-avatar">{demo ? "DE" : user.email.slice(0, 2).toUpperCase()}</span><div><strong>{demo ? "Demo editor" : user.email}</strong><small>{demo ? "Sample content only" : `${user.role} access`}</small></div>{!demo && <button title="Sign out" aria-label="Sign out" onClick={logout}><LogOut size={17} /></button>}</div></div>
+      <nav className="cms-navigation" aria-label="Print workflow"><Link href={publicationHref("/admin", brand)} onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}><BookOpen size={18} /><span>Issue inbox</span><ArrowUpRight size={14} /></Link><Link href={publicationHref("/admin/new", brand)} onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}><FileInput size={18} /><span>Upload an issue</span></Link></nav>
+      <div className="cms-sidebar-bottom"><div className="cms-environment"><span />{demo ? "Interactive demo" : "Connected workspace"}</div><div className="cms-user"><span className="cms-avatar">{demo ? "DE" : user.email.slice(0, 2).toUpperCase()}</span><div><strong>{demo ? "Demo editor" : user.email}</strong><small>{demo ? "Sample content only" : `${user.role} access`}</small></div>{!demo && <button title="Sign out" aria-label="Sign out" onClick={logout}><LogOut size={17} /></button>}</div></div>
     </aside>
     <main className="cms-main">
       <header className="cms-workspace-top"><div className="cms-breadcrumb"><button className="cms-mobile-menu" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button><span>{selectedBrand.name}</span><span>/</span><strong>{selected ? "Editor" : "Content"}</strong></div><div className="cms-workspace-tag"><span />Editorial workspace</div></header>
       {demo && <div className="cms-demo-banner"><span><strong>Interactive demo</strong> · Sample content. Your edits are saved only in this browser.</span><Link href="/login" onNavigate={event => { if (!canLeaveEditor()) event.preventDefault(); }}>Open connected workspace <ArrowUpRight size={13} /></Link></div>}
       {selected ? <DocumentEditor key={selected.id} document={selected} demo={demo} onClose={leaveEditor} onSave={saveDocument} onDirtyChange={onDirtyChange} loadHistory={loadHistory} /> : <div className="cms-content-page">
-        <div className="cms-page-heading"><div><div className="cms-eyebrow">{issue ? "Print issue" : "Your publication, in one place"}</div><h1>{issue ? "Issue drafts" : state === "review" ? "Review queue" : kind === "rating" ? "Whisky ratings" : kind === "article" ? "Articles" : kind === "page" ? "Pages" : "Content library"}</h1><p>{issue ? "Review the stories extracted from this issue." : "Write, refine, and organize the stories that make your publication."}</p></div><button className="cms-button" onClick={() => { cancelOpening(); setCreateOpen(true); setCreateKind(kind || "article"); setCreateError(""); }}><Plus size={17} />New content</button></div>
+        <div className="cms-page-heading"><div><div className="cms-eyebrow">{issue ? "Print issue" : "Your publication, in one place"}</div><h1>{issue ? "Issue drafts" : state === "review" ? "Review queue" : kind === "rating" ? "Ratings" : kind === "article" ? "Articles" : kind === "page" ? "Pages" : "Content library"}</h1><p>{issue ? "Review the stories extracted from this issue." : "Write, refine, and organize the stories that make your publication."}</p></div><button className="cms-button" onClick={() => { cancelOpening(); setCreateOpen(true); setCreateKind(kind || "article"); setCreateError(""); }}><Plus size={17} />New content</button></div>
         <div className="cms-metrics">
           {([
             ["Content library", stats?.total, Layers3, "All content", "", ""],
             ["Needs review", stats?.review, ClipboardCheck, "Open queue", "", "review"],
             ["In progress", stats?.drafts, PenLine, "View drafts", "", "draft"],
-            ["Whisky ratings", stats?.ratings, Star, "Browse ratings", "rating", ""],
+            ["Ratings", stats?.ratings, Star, "Browse ratings", "rating", ""],
           ] as const).map(([label, value, Icon, action, nextKind, nextState]) => <button key={label} className="cms-metric" onClick={() => navigate(nextKind, nextState)}><div><span>{label}</span><Icon size={17} /></div><strong>{value === undefined || value === null ? "—" : value.toLocaleString()}</strong><small>{demo ? "Sample records" : action}<ArrowUpRight size={13} /></small></button>)}
         </div>
         <section className="cms-library">
           <div className="cms-library-tools"><div className="cms-library-tabs" aria-label="Filter by editorial status">{[["", "All content"], ["review", "Needs review"], ["draft", "Drafts"], ["published", "Published"], ["unpublished", "Unpublished"]].map(([value, label]) => <button key={value} aria-pressed={state === value} className={state === value ? "active" : ""} onClick={() => filterState(value)}>{label}</button>)}</div><button className="cms-icon-button" title="Refresh content" aria-label="Refresh content" onClick={() => setReload(value => value + 1)}><RefreshCw size={16} /></button></div>
           <div className="cms-filter-bar"><div className="cms-search"><Search size={17} /><input aria-label="Search content" value={search} onChange={e => changeSearch(e.target.value)} placeholder="Search by headline…" />{search && <button aria-label="Clear search" onClick={() => changeSearch("")}><X size={14} /></button>}</div><select aria-label="Content type" value={kind} onChange={e => filterKind(e.target.value as typeof kind)}><option value="">All types</option><option value="article">Articles</option><option value="rating">Ratings</option><option value="page">Pages</option></select>{issue && <button className="cms-filter-chip" onClick={() => { cancelOpening(); setIssue(""); setPage(1); }}>This issue <X size={12} /></button>}</div>
           {error && !loading && <div className="cms-alert" role="alert"><AlertCircle size={18} /><span>{error}</span><button className="cms-button secondary small" onClick={() => setReload(value => value + 1)}>Try again</button></div>}
-          {loading ? <div className="cms-loading">Loading your content…</div> : displayRows.length ? <div className="cms-table-scroll"><table className="cms-content-table"><thead><tr><th>Content</th><th>Type</th><th>Byline</th><th>Status</th><th>Updated</th><th><span className="cms-sr-only">Open</span></th></tr></thead><tbody>{displayRows.map(row => <tr key={row.id}><td><button className="cms-story-link" onClick={() => openDocument(row)} disabled={!!opening}><span className={`cms-content-icon ${row.kind}`}>{row.kind === "rating" ? <Star size={18} /> : row.kind === "page" ? <PanelsTopLeft size={18} /> : <FileText size={18} />}</span><span><strong>{opening === row.id ? "Opening…" : row.title}</strong><small>{row.source_system === "print" ? "Print intake" : row.source_system === "morweb" ? "Archive import" : "Original content"}{row.excerpt && <> <span>·</span> {row.excerpt}</>}</small></span></button></td><td className="cms-type">{row.kind}</td><td>{row.byline || <span className="cms-muted">No byline</span>}</td><td><span className={`cms-state ${row.publication_state}`}><i />{stateLabels[row.publication_state]}</span></td><td><time dateTime={row.updated_at}>{new Date(row.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</time></td><td><button className="cms-icon-button" aria-label={`Edit ${row.title}`} onClick={() => openDocument(row)} disabled={!!opening}><ArrowRight size={17} /></button></td></tr>)}</tbody></table></div> : !error && <div className="cms-empty"><Layers3 size={34} /><h2>{search || kind || state || issue ? "No matching content" : "Your editorial workspace is ready"}</h2><p>{search || kind || state || issue ? "Adjust the filters or search for another headline." : "Create a story or upload a print issue to begin. Archive imports appear here once the development import has been run."}</p><button className="cms-button secondary" onClick={() => { cancelOpening(); setSearch(""); setKind(""); setState(""); setIssue(""); setPage(1); if (!demo && !total) setCreateOpen(true); }}>{search || kind || state || issue ? "Clear filters" : "Create content"}</button></div>}
+          {loading ? <div className="cms-loading">Loading your content…</div> : displayRows.length ? <div className="cms-table-scroll"><table className="cms-content-table"><thead><tr><th>Content</th><th>Type</th><th>Byline</th><th>Status</th><th>Updated</th><th><span className="cms-sr-only">Open</span></th></tr></thead><tbody>{displayRows.map(row => <tr key={row.id}><td><button className="cms-story-link" onClick={() => openDocument(row)} disabled={!!opening}><span className={`cms-content-icon ${row.kind}`}>{row.kind === "rating" ? <Star size={18} /> : row.kind === "page" ? <PanelsTopLeft size={18} /> : <FileText size={18} />}</span><span><strong>{opening === row.id ? "Opening…" : row.title}</strong><small>{row.source_system === "print" ? "Print intake" : row.source_system === "morweb" ? "Archive import" : "Original content"}{row.excerpt && <> <span>·</span> {row.excerpt}</>}</small></span></button></td><td className="cms-type">{row.kind}</td><td>{row.byline || <span className="cms-muted">No byline</span>}</td><td><span className={`cms-state ${row.publication_state}`}><i />{stateLabels[row.publication_state]}</span></td><td><time dateTime={row.updated_at}>{new Date(row.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</time></td><td><button className="cms-icon-button" aria-label={`Edit ${row.title}`} onClick={() => openDocument(row)} disabled={!!opening}><ArrowRight size={17} /></button></td></tr>)}</tbody></table></div> : !error && <div className="cms-empty"><Layers3 size={34} /><h2>{search || kind || state || issue ? "No matching content" : "Your editorial workspace is ready"}</h2><p>{search || kind || state || issue ? "Adjust the filters or search for another headline." : "Create a story or upload a print issue to begin. Archive imports appear here after they have been loaded for this publication."}</p><button className="cms-button secondary" onClick={() => { cancelOpening(); setSearch(""); setKind(""); setState(""); setIssue(""); setPage(1); if (!demo && !total) setCreateOpen(true); }}>{search || kind || state || issue ? "Clear filters" : "Create content"}</button></div>}
           <footer className="cms-table-footer"><span>{displayTotal.toLocaleString()} {demo ? "sample " : ""}{displayTotal === 1 ? "record" : "records"}{displayTotal > 50 && ` · page ${page} of ${pages}`}</span><div><button className="cms-icon-button" aria-label="Previous page" disabled={page <= 1} onClick={() => { cancelOpening(); setPage(page - 1); }}><ChevronLeft size={17} /></button><span>{page}</span><button className="cms-icon-button" aria-label="Next page" disabled={page >= pages} onClick={() => { cancelOpening(); setPage(page + 1); }}><ChevronRight size={17} /></button></div></footer>
         </section>
-        <div className="cms-intake-note"><span className="cms-note-icon"><BookOpen size={22} /></span><div><h3>A direct path from print to web</h3><p>Upload an issue. Review its stories and images. Refine the web edition in your own workspace.</p></div><Link href="/admin/new">Open print intake <ArrowUpRight size={15} /></Link></div>
+        <div className="cms-intake-note"><span className="cms-note-icon"><BookOpen size={22} /></span><div><h3>A direct path from print to web</h3><p>Upload an issue. Review its stories and images. Refine the web edition in your own workspace.</p></div><Link href={publicationHref("/admin/new", brand)}>Open print intake <ArrowUpRight size={15} /></Link></div>
       </div>}
     </main>
-    {createOpen && <div className="cms-modal-backdrop" onClick={() => { if (!creating) setCreateOpen(false); }}><section className="cms-modal" role="dialog" aria-modal="true" aria-labelledby="new-content-title" onClick={e => e.stopPropagation()}><div className="cms-modal-heading"><span className="cms-eyebrow">{selectedBrand.name}</span><button className="cms-icon-button" aria-label="Close new content" onClick={() => setCreateOpen(false)} disabled={creating}><X size={18} /></button></div><h2 id="new-content-title">Start something new.</h2><p>Your document will begin as a private draft.</p><form onSubmit={createDocument}><label>Content type<select value={createKind} onChange={e => setCreateKind(e.target.value as CmsDocumentKind)}><option value="article">Article</option><option value="rating">Whisky rating</option><option value="page">Page</option></select></label><label>Headline<input required autoFocus maxLength={500} value={createTitle} onChange={e => setCreateTitle(e.target.value)} placeholder="Give your draft a working title" /></label>{createError && <div className="cms-alert" role="alert">{createError}</div>}<button type="submit" className="cms-button" disabled={creating || !createTitle.trim()}>{creating ? "Creating…" : "Create draft"}<ArrowRight size={16} /></button></form></section></div>}
+    {createOpen && <div className="cms-modal-backdrop" onClick={() => { if (!creating) setCreateOpen(false); }}><section className="cms-modal" role="dialog" aria-modal="true" aria-labelledby="new-content-title" onClick={e => e.stopPropagation()}><div className="cms-modal-heading"><span className="cms-eyebrow">{selectedBrand.name}</span><button className="cms-icon-button" aria-label="Close new content" onClick={() => setCreateOpen(false)} disabled={creating}><X size={18} /></button></div><h2 id="new-content-title">Start something new.</h2><p>Your document will begin as a private draft.</p><form onSubmit={createDocument}><label>Content type<select value={createKind} onChange={e => setCreateKind(e.target.value as CmsDocumentKind)}><option value="article">Article</option><option value="rating">Rating</option><option value="page">Page</option></select></label><label>Headline<input required autoFocus maxLength={500} value={createTitle} onChange={e => setCreateTitle(e.target.value)} placeholder="Give your draft a working title" /></label>{createError && <div className="cms-alert" role="alert">{createError}</div>}<button type="submit" className="cms-button" disabled={creating || !createTitle.trim()}>{creating ? "Creating…" : "Create draft"}<ArrowRight size={16} /></button></form></section></div>}
   </div>;
 }

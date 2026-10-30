@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { CmsDocument, CmsIngestInput, CmsIngestResult, CmsPrintIngestResult } from "../types";
 
 let db: PGlite;
+let inheritedHistoryPrivileges: Array<{ table_name: string; can_update: boolean; can_delete: boolean; can_truncate: boolean }>;
 
 function source(input: Omit<CmsIngestInput, "source_hash">): CmsIngestInput {
   return { ...input, source_hash: createHash("sha256").update(JSON.stringify(input)).digest("hex") };
@@ -71,13 +72,18 @@ async function count(table: string) {
 beforeAll(async () => {
   db = new PGlite();
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;");
+  // Supabase grants service_role ALL on newly created public tables by default.
+  // A narrower GRANT alone cannot remove those inherited privileges.
+  await db.exec("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;");
   const migrationDir = path.resolve(process.cwd(), "supabase/migrations");
   for (const file of readdirSync(migrationDir).filter((name) => name.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(path.join(migrationDir, file), "utf8"));
+    if (file.endsWith("_cms_foundation.sql")) {
+      inheritedHistoryPrivileges = (await db.query<{ table_name: string; can_update: boolean; can_delete: boolean; can_truncate: boolean }>(
+        "SELECT relname AS table_name, has_table_privilege('service_role',oid,'UPDATE') AS can_update, has_table_privilege('service_role',oid,'DELETE') AS can_delete, has_table_privilege('service_role',oid,'TRUNCATE') AS can_truncate FROM pg_class WHERE oid IN ('public.cms_source_snapshots'::regclass,'public.cms_document_revisions'::regclass) ORDER BY relname",
+      )).rows;
+    }
   }
-  // Supabase service_role already has table grants on the existing RSS schema;
-  // this fresh local PostgreSQL instance has no platform default privileges.
-  await db.exec("GRANT SELECT, INSERT, UPDATE ON public.issues, public.articles, public.article_images TO service_role;");
 }, 60_000);
 
 beforeEach(async () => {
@@ -253,6 +259,29 @@ describe("CMS PostgreSQL transactions", () => {
     await db.exec("RESET ROLE");
     await expect(db.exec("UPDATE public.cms_source_snapshots SET actor='changed'")).rejects.toThrow("append-only");
     await expect(db.exec("DELETE FROM public.cms_document_revisions")).rejects.toThrow("append-only");
+  });
+
+  it("removes Supabase default destructive history privileges instead of relying only on row triggers", async () => {
+    expect(inheritedHistoryPrivileges).toHaveLength(2);
+    for (const before of inheritedHistoryPrivileges) {
+      expect(before).toMatchObject({ can_update: true, can_delete: true, can_truncate: true });
+    }
+    await ingest(morweb());
+    for (const table of ["cms_source_snapshots", "cms_document_revisions"]) {
+      const rights = (await db.query<{ can_select: boolean; can_insert: boolean; can_update: boolean; can_delete: boolean; can_truncate: boolean; can_trigger: boolean }>(
+        "SELECT has_table_privilege('service_role',$1,'SELECT') AS can_select, has_table_privilege('service_role',$1,'INSERT') AS can_insert, has_table_privilege('service_role',$1,'UPDATE') AS can_update, has_table_privilege('service_role',$1,'DELETE') AS can_delete, has_table_privilege('service_role',$1,'TRUNCATE') AS can_truncate, has_table_privilege('service_role',$1,'TRIGGER') AS can_trigger",
+        [`public.${table}`],
+      )).rows[0];
+      expect(rights).toEqual({ can_select: true, can_insert: true, can_update: false, can_delete: false, can_truncate: false, can_trigger: false });
+      await expect(db.exec(`UPDATE public.${table} SET actor='changed'`)).rejects.toThrow("permission denied");
+      await expect(db.exec(`DELETE FROM public.${table}`)).rejects.toThrow("permission denied");
+      await expect(db.exec(`TRUNCATE public.${table}`)).rejects.toThrow("permission denied");
+      expect(await count(table)).toBe(1);
+    }
+    const workingRights = (await db.query<{ can_select: boolean; can_insert: boolean; can_update: boolean; can_delete: boolean; can_truncate: boolean }>(
+      "SELECT has_table_privilege('service_role','public.cms_documents','SELECT') AS can_select, has_table_privilege('service_role','public.cms_documents','INSERT') AS can_insert, has_table_privilege('service_role','public.cms_documents','UPDATE') AS can_update, has_table_privilege('service_role','public.cms_documents','DELETE') AS can_delete, has_table_privilege('service_role','public.cms_documents','TRUNCATE') AS can_truncate",
+    )).rows[0];
+    expect(workingRights).toEqual({ can_select: true, can_insert: true, can_update: true, can_delete: false, can_truncate: false });
   });
 
   it("denies anonymous and ordinary authenticated users direct table and RPC access", async () => {

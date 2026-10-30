@@ -70,7 +70,7 @@ describe("Vercel preview isolation", () => {
       readSession(), readOverview(request("/api/cms/overview?brand=wa")), listDocuments(request("/api/cms/documents?brand=wa")),
       createDocument(request("/api/cms/documents", "POST", {})), readDocument(request(`/api/cms/documents/${id}`), context()),
       editDocument(request(`/api/cms/documents/${id}`, "PATCH", {}), context()), readHistory(request(`/api/cms/documents/${id}/history`), context()),
-      readMedia(request(`/api/cms/documents/${id}/media`), context()), listIssues(),
+      readMedia(request(`/api/cms/documents/${id}/media`), context()), listIssues(request("/api/issues")),
       readIssue(request(`/api/issues/${id}`), { params: Promise.resolve({ issueUuid: id }) }),
       readLegacyRss(request("/api/feed")), processIssue(request("/api/process", "POST", {})),
       createUpload(request("/api/upload-url", "POST", {})), logout(request("/api/logout", "POST")),

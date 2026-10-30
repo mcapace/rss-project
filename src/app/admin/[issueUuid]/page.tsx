@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, ExternalLink, RefreshCw } from "lucide-react";
@@ -10,11 +10,13 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { BRANDS } from "@/lib/brands";
+import { publicationHref } from "@/lib/cms/publications";
+import type { CmsBrand } from "@/lib/cms/types";
 
 interface IssueDetail {
   issue: {
     id: string;
-    brand: string;
+    brand: CmsBrand;
     issue_id: string;
     issue_label: string;
     pdf_key: string;
@@ -46,6 +48,13 @@ export default function IssueStatusPage({ params }: { params: Promise<{ issueUui
   });
   const issue = data?.issue;
 
+  useEffect(() => {
+    if (!issue?.brand) return;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const scopedUrl = publicationHref(current, issue.brand);
+    if (current !== scopedUrl) window.history.replaceState(null, "", scopedUrl);
+  }, [issue?.brand]);
+
   async function retryExtraction() {
     if (!issue || retryPending) return;
     setRetryError(null);
@@ -66,7 +75,7 @@ export default function IssueStatusPage({ params }: { params: Promise<{ issueUui
     }
   }
 
-  const backLink = <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900"><ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to issues</Link>;
+  const backLink = <Link href={publicationHref("/admin", issue?.brand)} className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900"><ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to issues</Link>;
 
   if (!data && !error) return (
     <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-6" aria-busy="true">
@@ -147,7 +156,7 @@ export default function IssueStatusPage({ params }: { params: Promise<{ issueUui
         {!["queued", "processing", "review", "failed", "published"].includes(status) && <p className="text-sm text-gray-600" role="status">The issue status is unavailable. Refresh to check again.</p>}
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
-          {status !== "review" && status !== "published" && typeof articleCount === "number" && articleCount > 0 ? <Link href={cmsUrl} className="text-sm text-[#9D4F15] font-medium underline underline-offset-4">Open existing CMS articles</Link> : <Link href="/cms" className="text-sm text-gray-600 hover:text-gray-900 underline underline-offset-4">Go to CMS</Link>}
+          {status !== "review" && status !== "published" && typeof articleCount === "number" && articleCount > 0 ? <Link href={cmsUrl} className="text-sm text-[#9D4F15] font-medium underline underline-offset-4">Open existing CMS articles</Link> : <Link href={publicationHref("/cms", issue.brand)} className="text-sm text-gray-600 hover:text-gray-900 underline underline-offset-4">Go to CMS</Link>}
           <Button type="button" variant="ghost" size="sm" onClick={() => void mutate()} disabled={isValidating}><RefreshCw className={`w-3.5 h-3.5 ${isValidating ? "animate-spin" : ""}`} aria-hidden="true" /> {isValidating ? "Refreshing…" : "Refresh status"}</Button>
         </div>
       </Card>

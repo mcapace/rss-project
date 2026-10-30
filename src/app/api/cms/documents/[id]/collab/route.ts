@@ -1,3 +1,4 @@
+import * as Y from "yjs";
 import { requireCmsUser } from "@/lib/cms/auth-server";
 import { assertSameOrigin, CmsError, readJson } from "@/lib/cms/access";
 import { cmsDb, databaseError } from "@/lib/cms/db";
@@ -24,7 +25,11 @@ export async function GET(_request: Request, context: Context) {
   } catch (error) { return cmsFailure(error); }
 }
 
-/** Replace the durable state with the merged document (Yjs merges are idempotent, so last-writer wins is safe). */
+/**
+ * Merge the incoming state into the durable copy. Yjs updates are commutative
+ * and idempotent, so merging on the server means a delayed or disconnected
+ * editor can only add what it knows, never roll back what others wrote.
+ */
 export async function PUT(request: Request, context: Context) {
   try {
     assertSameOrigin(request);
@@ -34,7 +39,15 @@ export async function PUT(request: Request, context: Context) {
     const body = await readJson(request, 12_000_000);
     const state = typeof body.state_base64 === "string" ? body.state_base64 : "";
     if (!state || !/^[A-Za-z0-9+/=]+$/.test(state)) throw new CmsError(422, "Send the Yjs state as base64.", "validation_failed");
-    const { data, error } = await cmsDb().from("cms_collab_documents").upsert({ document_id: id, brand: document.brand, state_base64: state, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "document_id" }).select("revision,updated_at").single();
+    const db = cmsDb();
+    const { data: existing, error: readError } = await db.from("cms_collab_documents").select("state_base64,revision").eq("document_id", id).maybeSingle();
+    if (readError) setupGuard(readError);
+    let merged: string;
+    try {
+      const incoming = new Uint8Array(Buffer.from(state, "base64"));
+      merged = existing?.state_base64 ? Buffer.from(Y.mergeUpdates([new Uint8Array(Buffer.from(existing.state_base64, "base64")), incoming])).toString("base64") : Buffer.from(incoming).toString("base64");
+    } catch { throw new CmsError(422, "The Yjs state could not be read.", "validation_failed"); }
+    const { data, error } = await db.from("cms_collab_documents").upsert({ document_id: id, brand: document.brand, state_base64: merged, revision: (existing?.revision ?? 0) + 1, updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "document_id" }).select("revision,updated_at").single();
     if (error) setupGuard(error);
     return cmsJson({ saved: data });
   } catch (error) { return cmsFailure(error); }

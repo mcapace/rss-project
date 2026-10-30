@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorContent, Extension, mergeAttributes, Node, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -160,6 +160,8 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
   const preserveSource = useCallback(() => { setSourceMode(true); setPanel(""); setWarning("This story contains elements the visual editor cannot preserve. Its HTML is kept exactly here; use Preview to read it."); }, []);
 
   const collaborative = Boolean(collab);
+  // What the editor last reported, so an external change to `html` (restore, assistant apply) can be told apart from our own echo.
+  const emitted = useRef<string | null>(null);
   const editor = useEditor({
     extensions: [
       // In collaborative mode history comes from Yjs, so the local undo stack is off.
@@ -172,7 +174,7 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
     ],
     ...(collaborative ? {} : { content: html }), immediatelyRender: false, enableContentCheck: true, editable: !readOnly,
     editorProps: { attributes: { class: "tiptap", "aria-label": "Story body", role: "textbox", "aria-multiline": "true" } },
-    onUpdate: ({ editor }) => onChange(editor.getHTML(), editor.getJSON() as BlockDocument),
+    onUpdate: ({ editor }) => { const next = editor.getHTML(); emitted.current = next; onChange(next, editor.getJSON() as BlockDocument); },
     onContentError: preserveSource,
   }, [collaborative]);
   useEffect(() => { onReady?.(editor); return () => onReady?.(null); }, [editor, onReady]);
@@ -191,8 +193,9 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
   useEffect(() => {
     if (!editor) return;
     editor.setEditable(!sourceMode && !readOnly, false);
-    // A shared document is the source of truth; only the local editor syncs from the html prop.
-    if (collab && !sourceMode) return;
+    // In collaborative mode the shared document is the truth, except when the html changed outside the editor
+    // (draft restore, assistant apply, source view): that change is written into the shared document too.
+    if (collab && !sourceMode && (html === emitted.current || html === editor.getHTML())) return;
     if (!sourceMode && html !== editor.getHTML()) {
       try { editor.commands.setContent(html, { emitUpdate: false, errorOnInvalidContent: true }); }
       catch {

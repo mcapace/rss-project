@@ -71,17 +71,38 @@ export function stripPremiumBlocks(doc: BlockDocument): { document: BlockDocumen
   return { document: { type: "doc", content: walk(doc.content) ?? [] }, removed };
 }
 
-/** Apply the paywall to a document body for a reader. */
+/** The first paragraph in reading order, descending into lists and quotes, so a teaser never leaks a whole container. */
+export function firstParagraph(doc: BlockDocument): BlockNode | null {
+  const walk = (nodes: BlockNode[] | undefined): BlockNode | null => {
+    for (const node of nodes ?? []) {
+      if (node.type === "paragraph") return node;
+      const nested = walk(node.content);
+      if (nested) return nested;
+    }
+    return null;
+  };
+  return walk(doc.content);
+}
+
+/**
+ * Apply the paywall to a document body for a reader. Two rules combine: the
+ * story's own tier (metadata.access.tier) gates the whole body, and any block
+ * marked premium needs a subscriber whatever the story's tier is.
+ */
 export function deliverBody(input: { html: string; body_json: BlockDocument | null; metadata: CmsJsonObject | null }, reader: AccessTier): { html: string; body_json: BlockDocument | null; access: { required: AccessTier; reader: AccessTier; full: boolean; removed_blocks: number } } {
   const required = requiredTier(input.metadata);
-  const full = tierAllows(reader, required);
-  if (full) return { html: input.html, body_json: input.body_json, access: { required, reader, full: true, removed_blocks: 0 } };
+  const storyAllowed = tierAllows(reader, required);
+  const premiumAllowed = tierAllows(reader, "subscriber");
+  if (storyAllowed && premiumAllowed) return { html: input.html, body_json: input.body_json, access: { required, reader, full: true, removed_blocks: 0 } };
   const html = stripPremiumHtml(input.html);
   const blocks = input.body_json ? stripPremiumBlocks(input.body_json) : null;
-  // A document gated as a whole with no per-block marks keeps only its first paragraph as the teaser.
-  if (!html.removed && required !== "free") {
+  if (!storyAllowed && !html.removed) {
+    // Gated as a whole with no per-block marks: only the first paragraph survives as the teaser.
     const teaser = input.html.match(/<p[^>]*>[\s\S]*?<\/p>/)?.[0] ?? "";
-    return { html: `${teaser}<aside data-paywall="true"></aside>`, body_json: input.body_json ? { type: "doc", content: [...input.body_json.content.slice(0, 1), { type: "paywall" }] } : null, access: { required, reader, full: false, removed_blocks: Math.max(1, (input.body_json?.content.length ?? 2) - 1) } };
+    const paragraph = input.body_json ? firstParagraph(input.body_json) : null;
+    const removed = Math.max(1, (input.body_json?.content.length ?? 2) - 1);
+    return { html: `${teaser}<aside data-paywall="true"></aside>`, body_json: input.body_json ? { type: "doc", content: [...(paragraph ? [paragraph] : []), { type: "paywall" }] } : null, access: { required, reader, full: false, removed_blocks: removed } };
   }
+  if (!html.removed) return { html: input.html, body_json: input.body_json, access: { required, reader, full: true, removed_blocks: 0 } };
   return { html: html.html, body_json: blocks?.document ?? null, access: { required, reader, full: false, removed_blocks: html.removed } };
 }

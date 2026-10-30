@@ -1,4 +1,4 @@
-import "server-only";
+// No "server-only" marker: the migration scripts load this under plain Node. It is never imported by client code.
 import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CmsError } from "@/lib/cms/access";

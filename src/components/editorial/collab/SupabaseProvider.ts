@@ -45,7 +45,8 @@ export class SupabaseProvider {
     this.awareness.setLocalStateField("user", { id: grant.user.id, name: grant.user.name, color: grant.user.color });
     this.client = createClient(grant.url, grant.key, { auth: { persistSession: false, autoRefreshToken: false }, realtime: { params: { eventsPerSecond: 20 } } });
     this.client.realtime.setAuth(grant.token);
-    this.channel = this.client.channel(`cms:doc:${documentId}`, { config: { broadcast: { self: false, ack: false }, presence: { key: `${grant.user.id}:${doc.clientID}` } } });
+    // Private channels: Realtime authorization policies on realtime.messages admit only users whose publications include this document.
+    this.channel = this.client.channel(`cms:doc:${documentId}`, { config: { private: true, broadcast: { self: false, ack: false }, presence: { key: `${grant.user.id}:${doc.clientID}` } } });
 
     this.doc.on("update", this.onDocUpdate);
     this.awareness.on("update", this.onAwarenessUpdate);

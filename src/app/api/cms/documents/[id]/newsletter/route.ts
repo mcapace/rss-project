@@ -48,7 +48,7 @@ export async function POST(request: Request, context: Context) {
     const preheader = typeof body.preheader === "string" ? body.preheader.trim().slice(0, 300) || null : null;
     const sendAt = typeof body.send_at === "string" && body.send_at ? new Date(body.send_at) : null;
     if (sendAt && (Number.isNaN(sendAt.getTime()) || sendAt.getTime() < Date.now() - 60_000)) throw new CmsError(422, "The send time must be in the future.", "validation_failed");
-    if (document.publication_state !== "published" && !sendAt && document.metadata.review && typeof document.metadata.review === "object" && (document.metadata.review as { required?: boolean }).required) {
+    if (document.publication_state !== "published" && document.metadata.review && typeof document.metadata.review === "object" && (document.metadata.review as { required?: boolean }).required) {
       throw new CmsError(422, "This story still needs review before it can go out.", "validation_failed");
     }
 

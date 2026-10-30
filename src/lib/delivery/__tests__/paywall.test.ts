@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deliverBody, readerTier, requiredTier, stripPremiumBlocks, stripPremiumHtml, tierAllows } from "../paywall";
+import { deliverBody, firstParagraph, readerTier, requiredTier, stripPremiumBlocks, stripPremiumHtml, tierAllows } from "../paywall";
 
 describe("paywall", () => {
   const html = '<p>Free lede.</p><p data-premium="true">Secret <strong>analysis</strong>.</p><ul data-premium="true"><li><p>Hidden list</p></li></ul><p>Free close.</p>';
@@ -42,5 +42,25 @@ describe("paywall", () => {
     expect(gatedWhole.html).toBe('<p>Lede.</p><aside data-paywall="true"></aside>');
     const open = deliverBody({ html: "<p>Lede.</p>", body_json: null, metadata: {} }, "free");
     expect(open.access.full).toBe(true);
+  });
+
+  it("strips premium blocks from a free story for anyone below subscriber", () => {
+    const anonymous = deliverBody({ html, body_json: null, metadata: {} }, "free");
+    expect(anonymous.html).not.toContain("Secret");
+    expect(anonymous.access).toMatchObject({ required: "free", full: false, removed_blocks: 2 });
+    const registered = deliverBody({ html, body_json: null, metadata: {} }, "registered");
+    expect(registered.html).not.toContain("Secret");
+    const subscriber = deliverBody({ html, body_json: null, metadata: {} }, "subscriber");
+    expect(subscriber.html).toBe(html);
+    expect(subscriber.access.full).toBe(true);
+  });
+
+  it("teases with the first paragraph even when the story opens with a container", () => {
+    const doc = { type: "doc" as const, content: [{ type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "First" }] }, { type: "paragraph", content: [{ type: "text", text: "Second" }] }] }] }, { type: "paragraph", content: [{ type: "text", text: "Third" }] }] };
+    expect(firstParagraph(doc)?.content?.[0].text).toBe("First");
+    const teaser = deliverBody({ html: "<ul><li><p>First</p><p>Second</p></li></ul><p>Third</p>", body_json: doc, metadata: { access: { tier: "subscriber" } } }, "free");
+    expect(JSON.stringify(teaser.body_json)).not.toContain("Second");
+    expect(teaser.body_json?.content).toHaveLength(2);
+    expect(teaser.html).toBe('<p>First</p><aside data-paywall="true"></aside>');
   });
 });

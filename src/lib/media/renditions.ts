@@ -1,4 +1,4 @@
-import "server-only";
+// No "server-only" marker: the migration scripts load this under plain Node. It is never imported by client code.
 import sharp, { type Sharp } from "sharp";
 import type { CmsJsonObject } from "@/lib/cms/types";
 

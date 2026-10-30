@@ -3,7 +3,7 @@
 import { createElement, useCallback, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Check, ChevronsUpDown, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Sun, X } from "lucide-react";
+import { Check, ChevronsUpDown, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Sparkles, Sun, X } from "lucide-react";
 import { BRAND_NAMES, BRAND_SHORT, brandColor } from "@/lib/editorial/helpers";
 import { useEditorial } from "./EditorialProvider";
 import { useAsync, useDismiss, useTheme } from "./hooks";
@@ -11,7 +11,7 @@ import { NAV_GROUPS, type NavItem } from "./nav";
 import { useShell } from "./Shell";
 
 /** Logo heights tuned so the four wordmarks read at a similar visual weight. */
-const BRAND_LOGO_HEIGHT: Record<string, number> = { ws: 21, wa: 24, ca: 16, mw: 11 };
+const BRAND_LOGO_HEIGHT: Record<string, number> = { ws: 26, wa: 30, ca: 19, mw: 13 };
 const HAS_WHITE: Record<string, boolean> = { ws: true, wa: true, ca: true, mw: false };
 
 export function PublicationLogo({ brand, height, className = "" }: { brand: string; height: number; className?: string }) {
@@ -32,13 +32,12 @@ function PublicationSwitcher({ collapsed, onNavigate }: { collapsed: boolean; on
   if (collapsed) {
     return <Link href={href("/cms")} onClick={onNavigate} aria-label={`${BRAND_NAMES[brand]} home`} title={BRAND_NAMES[brand]} className="ed-switcher-mark" data-brand={brand} style={{ background: brandColor(brand) }}>{BRAND_SHORT[brand]}</Link>;
   }
-  return <div ref={ref} className="ed-switcher" style={{ width: "100%" }}>
-    <button type="button" className="ed-switcher-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(value => !value)}>
-      <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 5 }}>
-        <PublicationLogo brand={brand} height={BRAND_LOGO_HEIGHT[brand]} />
-        <span className="ed-switcher-sub">CMS · {roleLabel}</span>
-      </span>
-      <ChevronsUpDown size={14} style={{ color: "var(--muted)", flexShrink: 0 }} aria-hidden />
+  return <div ref={ref} className="ed-switcher">
+    <button type="button" className="ed-switcher-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(value => !value)} title="Switch publication">
+      <span className="ed-brand-dot" style={{ background: brandColor(brand) }} aria-hidden />
+      <span className="ed-switcher-title">{BRAND_NAMES[brand]}</span>
+      <span className="ed-switcher-sub">{roleLabel}</span>
+      <ChevronsUpDown size={13} aria-hidden />
     </button>
     {open && <div role="menu" aria-label="Switch publication" className="ed-menu">
       <p className="ed-menu-label">Publications</p>
@@ -57,8 +56,8 @@ function NavLink({ item, collapsed, badge, onNavigate }: { item: NavItem; collap
   const active = item.match(pathname, search);
   const target = href(item.href);
   return <Link href={target} onClick={onNavigate} data-collapsed={collapsed} title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined} aria-current={active ? "page" : undefined} className="ed-nav-link">
-    {createElement(item.icon, { size: 16, strokeWidth: 1.75, "aria-hidden": true })}
-    <span>{item.label}</span>
+    {createElement(item.icon, { size: 16, strokeWidth: 1.6, "aria-hidden": true })}
+    <span className="label">{item.label}</span>
     {badge != null && badge > 0 && <span className="ed-nav-badge">{badge > 99 ? "99+" : badge}</span>}
     {collapsed && badge != null && badge > 0 && <span className="ed-nav-dot" aria-hidden />}
     {item.liveOnly && demo && <span className="ed-nav-tag">Sign in</span>}
@@ -66,14 +65,19 @@ function NavLink({ item, collapsed, badge, onNavigate }: { item: NavItem; collap
 }
 
 export function Sidebar({ collapsed, onToggleCollapse, onNavigate }: { collapsed: boolean; onToggleCollapse: () => void; onNavigate?: () => void }) {
-  const { brand, data, demo, mutationVersion, setCommandOpen } = useEditorial();
-  const { openCreate } = useShell();
+  const { brand, data, demo, href, mutationVersion, setCommandOpen } = useEditorial();
+  const { openCreate, openAssistant } = useShell();
   const overview = useAsync(`overview:${brand}:${mutationVersion}`, signal => data.overview(brand, signal));
   const { toggle: toggleTheme } = useTheme();
   const visible = (items: NavItem[]) => items.filter(item => !(item.liveOnly && demo));
 
   return <div className="ed-sidebar" data-collapsed={collapsed}>
-    <div className="ed-sidebar-brand"><PublicationSwitcher collapsed={collapsed} onNavigate={onNavigate} /></div>
+    <div className="ed-sidebar-brand">
+      {collapsed
+        ? <PublicationSwitcher collapsed onNavigate={onNavigate} />
+        : <><Link href={href("/cms")} onClick={onNavigate} className="ed-brand-logo" aria-label={`${BRAND_NAMES[brand]} desk`}><PublicationLogo brand={brand} height={BRAND_LOGO_HEIGHT[brand]} /></Link>
+          <PublicationSwitcher collapsed={false} onNavigate={onNavigate} /></>}
+    </div>
     <div className="ed-sidebar-search">
       {collapsed
         ? <button type="button" className="ed-nav-link" data-collapsed="true" aria-label="Search or jump (⌘K)" title="Search or jump (⌘K)" onClick={() => { onNavigate?.(); setCommandOpen(true); }}><Search size={16} strokeWidth={1.75} aria-hidden /></button>
@@ -93,13 +97,18 @@ export function Sidebar({ collapsed, onToggleCollapse, onNavigate }: { collapsed
       })}
     </nav>
     <div className="ed-sidebar-footer">
-      <button type="button" onClick={toggleTheme} className="ed-icon-button" aria-label="Switch light or dark theme" title="Switch light or dark theme">
-        <Sun size={15} strokeWidth={1.75} className="ed-theme-light" aria-hidden /><Moon size={15} strokeWidth={1.75} className="ed-theme-dark" aria-hidden />
-      </button>
-      <button type="button" onClick={onToggleCollapse} className="ed-icon-button" style={{ display: onNavigate ? "none" : undefined }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-        {collapsed ? <PanelLeftOpen size={15} strokeWidth={1.75} aria-hidden /> : <PanelLeftClose size={15} strokeWidth={1.75} aria-hidden />}
-      </button>
-      {onNavigate && <button type="button" onClick={onNavigate} className="ed-icon-button" style={{ marginLeft: "auto" }} aria-label="Close navigation"><X size={15} aria-hidden /></button>}
+      {collapsed
+        ? <button type="button" className="ed-icon-button ai-glow" aria-label="Assistant (⌘J)" title="Assistant (⌘J)" onClick={() => { onNavigate?.(); openAssistant(); }}><Sparkles size={15} strokeWidth={1.75} aria-hidden /></button>
+        : <button type="button" className="ed-assistant-row ai-glow" onClick={() => { onNavigate?.(); openAssistant(); }}><Sparkles size={15} strokeWidth={1.75} aria-hidden /><span>Assistant</span><kbd>⌘J</kbd></button>}
+      <div className="ed-sidebar-tools">
+        <button type="button" onClick={toggleTheme} className="ed-icon-button" aria-label="Switch light or dark theme" title="Switch light or dark theme">
+          <Sun size={15} strokeWidth={1.75} className="ed-theme-light" aria-hidden /><Moon size={15} strokeWidth={1.75} className="ed-theme-dark" aria-hidden />
+        </button>
+        <button type="button" onClick={onToggleCollapse} className="ed-icon-button" style={{ display: onNavigate ? "none" : undefined }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          {collapsed ? <PanelLeftOpen size={15} strokeWidth={1.75} aria-hidden /> : <PanelLeftClose size={15} strokeWidth={1.75} aria-hidden />}
+        </button>
+        {onNavigate && <button type="button" onClick={onNavigate} className="ed-icon-button" style={{ marginLeft: "auto" }} aria-label="Close navigation"><X size={15} aria-hidden /></button>}
+      </div>
     </div>
   </div>;
 }

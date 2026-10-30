@@ -12,12 +12,17 @@ the rest of the app is untouched.
 
 What makes it a CMS rather than a dashboard:
 
-- **The sidebar is the content model.** A black "New document" button sits
-  under the search trigger, then flat labelled groups: Content (All content,
+- **The sidebar is the content model.** The publication's logo is centred at
+  the top with a pill beneath it that names the publication and role and
+  switches publications; then the search trigger, a black "New document"
+  button, and flat labelled groups: Content (All content,
   Articles, Ratings, Pages, Search & images), Workflow (Review queue with its
   count, Drafts, Schedule), Print, Archive and Insights. Type and state rows
   are library links with `?kind=` or `?state=`, and `nav.ts` matches them on
-  the search params so the active row follows the filter.
+  the search params so the active row follows the filter. The review count
+  is a small amber badge. The footer holds the Assistant (⌘J, with the AI
+  ring), the theme toggle and collapse; the floating assistant launcher only
+  shows on small screens.
 - **Compact screen titles.** `PageHeader` is a 19px title with a small icon,
   a one-line lede and the actions on the right, closed by a hairline. The
   library title names the filtered type ("Articles", "Ratings").

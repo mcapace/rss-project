@@ -90,6 +90,8 @@ export interface CmsDocument {
   title: string;
   byline: string;
   body_html: string;
+  /** Structured block layout (TipTap document JSON) kept in step with body_html; null until written by the editor or the normalizer. */
+  body_json: CmsJsonObject | null;
   excerpt: string;
   slug: string | null;
   public_url: string | null;
@@ -139,7 +141,7 @@ export interface CmsPrintIngestResult {
 }
 
 export type CmsDocumentPatch = Partial<Pick<CmsDocument,
-  "title" | "byline" | "body_html" | "excerpt" | "slug" | "public_url" | "metadata" | "publication_state"
+  "title" | "byline" | "body_html" | "body_json" | "excerpt" | "slug" | "public_url" | "metadata" | "publication_state"
 >>;
 
 export interface CmsDocumentRevision {

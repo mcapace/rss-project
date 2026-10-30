@@ -31,5 +31,5 @@ export type SearchMediaHit = {
 
 export type SearchKeywordHit = { keyword: string; kind: "tag" | "category" | "section"; document_count: number };
 
-export type SearchResponse = { query: string; documents: SearchDocumentHit[]; media: SearchMediaHit[]; keywords: SearchKeywordHit[] };
-export type SearchScope = "all" | "documents" | "media" | "keywords";
+export type SearchResponse = { query: string; documents: SearchDocumentHit[]; media: SearchMediaHit[]; keywords: SearchKeywordHit[]; /** True when pgvector matches were blended in. */ semantic?: boolean };
+export type SearchScope = "all" | "documents" | "media" | "keywords" | "ratings";

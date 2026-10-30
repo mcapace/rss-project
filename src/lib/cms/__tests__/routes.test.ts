@@ -33,7 +33,7 @@ const request = (path: string, method = "GET", body?: unknown, origin = "https:/
 });
 const originalDocument: CmsDocument = {
   id: documentId, brand: "wa", kind: "article", source_system: "print",
-  source_key: `issue:${issueId}:folio:10`, source_hash: "a".repeat(64),
+  source_key: `issue:${issueId}:folio:10`, source_hash: "a".repeat(64), body_json: null,
   identity_anchor: { issue_uuid: issueId, anchor_type: "printed_folio", start_page: 10 },
   title: "A private draft", byline: "Writer", body_html: "<p>Draft body.</p>", excerpt: "Summary",
   slug: null, public_url: null, publication_state: "review", published_at: null,

@@ -103,7 +103,7 @@ export function demoDocuments(now: Date = new Date()): CmsDocument[] {
     }) : [];
     return {
       id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
-      brand: seed.brand, kind: seed.kind, source_system: seed.source, source_key: `demo:${n}`,
+      brand: seed.brand, kind: seed.kind, source_system: seed.source, source_key: `demo:${n}`, body_json: null,
       source_hash: String(n % 10).repeat(64), identity_anchor: {},
       title: seed.title, byline: seed.byline, body_html: seed.body, excerpt: seed.excerpt,
       slug: published ? seed.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : null,

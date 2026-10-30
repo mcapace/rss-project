@@ -1,53 +1,51 @@
-# In-house CMS platform blueprint: status and plan
+# In-house CMS platform blueprint: status
 
 This maps the consolidated requirements for the M. Shanken editorial platform
 (Wine Spectator, Cigar Aficionado, Whisky Advocate, Market Watch, Impact
-Databank) against what exists in this repository today, and sets out the order
-of work. Status values: **Built**, **Partly built**, **Planned**, **Decision
-needed**.
+Databank) against what the repository implements. Status values: **Built**,
+**Built, needs configuration** (code and schema are in place; a credential,
+campaign or site-side step remains), **Partly built**.
+
+Everything is additive and ships behind the existing review gate. Migrations:
+`20261101100000_cms_catalog.sql`, `20261101110000_cms_blocks_redirects_delivery.sql`,
+`20261101120000_cms_embeddings.sql`. Environment variables: `.env.example`.
 
 ## 1. Database and core schema
 
-| Requirement | Status | Notes |
+| Requirement | Status | What exists |
 | --- | --- | --- |
-| Relational "Shanken schema" for producers, regions, varieties, vintages, scores, taster profiles | Planned | Ratings today are documents of kind `rating` with a `metadata.rating` object (score, price, producer, category, reviewer). Next step is an additive migration adding `cms_producers`, `cms_regions`, `cms_varieties`, `cms_tasters`, and `cms_ratings` (document id, producer id, region id, variety id, vintage, score, price, drink window, taster id) with foreign keys, plus an editor panel that writes both the relational row and the document. Impact Databank brands, categories and volumes get their own tables in the same style. |
-| Hybrid layout modeling in JSONB for article bodies | Partly built | Bodies are stored as sanitized HTML in `cms_documents.body_html` with structured metadata in JSONB. Moving to a block JSON model (TipTap's document JSON) is a one-column addition (`body_json`) written alongside the HTML; the editor already produces it. Do this with the migration normalization layer so legacy content lands as blocks once. |
-| Multi-tenancy with RLS bound to JWT claims | Partly built | Access is per publication through `app_metadata.cms_role` and `cms_brands` on the Supabase Auth user, enforced in every server route (`assertBrand`). Data access uses the service role, so RLS is not yet the enforcement layer. Next step: policies on `cms_documents` and the new relational tables that read `auth.jwt()->'app_metadata'->'cms_brands'`, and a user-scoped client for reads so RLS is the second lock. |
-| Connection pooling through Supavisor | Planned | Point the server's Supabase URL at the pooler (transaction mode, port 6543) for the worker and API routes; the Next.js app already uses short-lived requests. No code change beyond configuration. |
+| Relational "Shanken schema" | Built | `cms_regions` (hierarchical), `cms_producers`, `cms_varieties`, `cms_tasters`, `cms_ratings` (one row per rating document with score, price, vintage, ABV, drink window, foreign keys to the four catalogs), plus `cms_databank_brands` and `cms_databank_volumes` for Impact Databank. `cms_upsert_rating` keeps the row in step with the editor's `metadata.rating`; the editor's rating panel uses catalog typeaheads (`CatalogField.tsx`, `GET /api/cms/catalog`) so names join existing rows. `cms_search_ratings` and `cms_rating_facets` power faceted search (`GET /api/cms/ratings`, the Ratings scope on `/cms/search`, and the public `GET /api/public/{brand}/ratings`). |
+| Hybrid layout modeling in JSONB | Built | `cms_documents.body_json` holds the block layout as TipTap document JSON, written by the editor on every save next to `body_html`. `src/lib/cms/blocks.ts` converts legacy HTML to blocks and back; `cms_save_document` accepts `body_json`; `cms_set_body_json` backfills without an editorial revision. |
+| Multi-tenancy with RLS bound to JWT claims | Built | `cms_jwt_brands()` reads `app_metadata.cms_role` and `cms_brands` from the JWT. Policies on documents, catalogs, ratings, redirects and newsletter sends let `authenticated` read (and, for reference data, write) only inside the user's publications; documents, ratings and history are still written only through service-role RPCs so revision history cannot be skipped. The service role keeps full access for the server routes. |
+| Connection pooling through Supavisor | Built, needs configuration | The app reaches Postgres only through PostgREST and Realtime, which Supabase pools. Direct connections (ad-hoc SQL, future workers) use `SUPABASE_DB_POOLER_URL`, the Supavisor transaction-mode endpoint on port 6543, documented in `.env.example`. No code path opens port 5432. |
 
 ## 2. Digital experience and editorial functionality
 
-| Requirement | Status | Notes |
+| Requirement | Status | What exists |
 | --- | --- | --- |
-| Edge-authenticated paywalls | Planned | Belongs to the public delivery tier, not the CMS. Subscription tier goes in Auth `app_metadata.subscription`; a Supabase Edge Function or CloudFront Function strips premium blocks before the HTML leaves the edge. The CMS marks premium sections per block, which the block model above makes possible. |
-| Native newsletter pipeline (Daily Alert to ESP) | Planned | Braze is connected to this account. Plan: a `newsletter` flag and send-time on a document, a server route that renders the email template and creates a Braze campaign message, and a status column on the document. The preview matrix below renders the same template so editors see the email before it goes. |
-| Real-time collaborative editing (Supabase Realtime plus Yjs) | Planned | The editor is TipTap, which has first-class Yjs collaboration extensions. Plan: a Realtime channel per document carrying Yjs updates and presence, an awareness-driven cursor layer, and periodic persistence of the Yjs state to `cms_documents.body_json`. Optimistic revisions stay as the save guard. |
-| Visual headless preview matrix | Built | The editor's Preview view renders the draft at desktop, tablet, mobile and email widths side by side in sandboxed iframes fed through `postMessage`. Swap the built-in template for the public site's and the email template once they exist. |
+| Edge-authenticated paywalls | Built, needs configuration | Readers' tiers come from Supabase Auth `app_metadata.subscription` (`tier`, `status`, `expires_at`). Editors set a document's required tier (Publishing panel) or mark single blocks premium (editor More menu, stored as `data-premium="true"` / `premium` attrs). `src/lib/delivery/paywall.ts` strips premium blocks server-side; the Supabase edge function `supabase/functions/paywall` (deployed, `verify_jwt` off because readers may be anonymous) and the Next.js `GET /api/public/{brand}/documents/{slug}` apply the same rule, so premium text never reaches a browser without entitlement. Remaining: the public sites call one of the two and populate `app_metadata.subscription` from the subscription system. |
+| Native newsletter pipeline | Built, needs configuration | The Newsletter card in the editor marks a story as a Daily Alert (or weekly, breaking, custom), renders the email server-side (`src/lib/newsletter/render.ts`, the same template as the email preview), pushes it to Braze through API-triggered campaigns (`src/lib/newsletter/braze-server.ts`: `/campaigns/trigger/send` or `/schedule/create`), and logs every attempt in `cms_newsletter_sends`. Without Braze credentials sends are recorded as simulated. Remaining: create the API-triggered campaigns in Braze and set `BRAZE_REST_ENDPOINT`, `BRAZE_API_KEY` and the campaign ids. |
+| Real-time collaborative editing | Built | TipTap Collaboration with Yjs over Supabase Realtime: `src/components/editorial/collab/SupabaseProvider.ts` broadcasts updates and awareness on one channel per document, newcomers catch up from the durable state in `cms_collab_documents` plus a sync request to peers, carets show each editor's name and color, and presence avatars appear in the editor bar. Saves still go through the revision-checked `cms_save_document`; the shared state is flushed after each save. The demo and workspaces without Realtime fall back to local editing. |
+| Visual headless preview matrix | Built | Desktop, tablet, mobile and email widths side by side, fed through `postMessage`. |
 
 ## 3. Historical data and media migration
 
-| Requirement | Status | Notes |
+| Requirement | Status | What exists |
 | --- | --- | --- |
-| Text structure normalization layer | Partly built | The Morweb importer (`src/lib/cms/morweb.ts`, `scripts/import-morweb.ts`) maps legacy records with a dry run and held records. Its output is HTML; adding a normalization pass (strip legacy inline CSS, map to the block JSON model) is the next step and reuses the sanitizer whitelist. |
-| Legacy ID mapping and 301 redirects | Planned | Documents keep `source_key` and `public_url` from their source. Plan: a `cms_redirects` table (legacy path, document id, status, created from) filled by the importer, a `/api/redirects` export for the edge, and a Next.js `proxy.ts` rule or CloudFront function that answers 301s from it. |
-| Asset extraction and optimization (WebP/AVIF, focal points) | Partly built | Print images are extracted and stored content-addressed in S3; the cropper stores per-size crops and a focal point on each image; the browser extracts a palette. Still to do: a worker step that downloads legacy image URLs found in archived bodies, re-hosts them, and writes WebP/AVIF renditions from the stored crop geometry. |
+| Text structure normalization layer | Built | `src/lib/cms/blocks.ts` parses legacy HTML/XML exports with htmlparser2, drops inline CSS, classes, ids, font tags and layout wrappers, and emits the block document plus clean HTML. The Morweb importer writes `body_json` for every created record; `npm run cms:normalize` backfills existing rows (dry run by default, `--rewrite-html` to also save the cleaned HTML as a revision). |
+| Legacy ID mapping and 301 redirects | Built | `cms_redirects` (legacy host and path, target or document, 301/302/307/308/410, hit counts). `npm run cms:redirects` derives rows from each migrated document's public URL and recorded aliases; a slug change in the editor adds a row automatically. `cms_resolve_redirect` answers lookups; `src/proxy.ts` redirects legacy paths at the edge via `GET /api/redirects/resolve` (cached), and `GET /api/cms/redirects?format=vercel|nginx|cloudfront|json` exports routing files for the public sites' own edge. |
+| Asset extraction and optimization | Built, needs configuration | `npm run cms:rehost` finds legacy image URLs in bodies, downloads them from allowed hosts, stores originals content-addressed in S3, writes WebP and AVIF renditions at 480, 960 and 1600 pixels, detects a focal point with sharp's attention strategy, attaches the image to the document and rewrites the body to the stable `/api/media/{document}/{index}` URL. That route renders any width, format, stored crop preset or focal cover crop on demand with long cache headers for published documents. Remaining: run it against the archive with the real legacy hosts and AWS credentials. |
 
 ## 4. Advanced enhancements
 
-| Requirement | Status | Notes |
+| Requirement | Status | What exists |
 | --- | --- | --- |
-| AI-assisted metadata and tasting tagging | Built | The assistant reviews a story for SEO and GEO and applies headlines, descriptions, slug, keywords, captions and alt text; it describes images for search. Next step for ratings: as a taster types, suggest producer, region and variety matches against the relational tables and flag conflicts. |
-| Search over review databases (pgvector or OpenSearch) | Partly built | Full-text search with ranking and highlights is live (`cms_search_*`). Faceted filtering by score, price and region arrives with the relational ratings tables. Semantic search needs an embeddings provider; recommendation is pgvector with Voyage embeddings so the data stays in Supabase. |
-| Decoupled delivery through APIs and a CDN | Partly built | The CMS is already API-first (`/api/cms/*`) and the public RSS feed is served from the same data. The public sites should read a published-content API (or a read replica view) and build on their own edge deployment; nothing in the CMS depends on them. |
+| AI-assisted metadata and tasting tagging | Built | SEO and GEO review with apply actions, image descriptions for look-based search, and now the catalog typeaheads that suggest producers, regions, varieties and tasters as a taster types, linking the rating to existing records. |
+| Search over review databases | Built, needs configuration | Faceted filtering by score, price, vintage, region, variety, producer and taster is live on top of the relational tables (CMS and public routes). Semantic search uses pgvector: `cms_embeddings` with an HNSW index, `cms_match_embeddings`, Voyage AI `voyage-3` embeddings (`VOYAGE_API_KEY`), refreshed after each save and backfilled with `npm run cms:embed`; the search route blends semantic and lexical hits by reciprocal rank fusion and the UI says when it did. Without a key search stays lexical. |
+| Decoupled delivery architecture | Built | The public sites read `GET /api/public/{brand}/documents` (lists), `GET /api/public/{brand}/documents/{slug}` (full document with blocks, media srcsets and the paywall applied) and `GET /api/public/{brand}/ratings` (faceted reviews), all CORS-open and CDN-cacheable, with the edge function as the lowest-latency path for gated stories. Nothing in those routes depends on the CMS UI. |
 
-## Recommended order
+## Operating notes
 
-1. Relational ratings schema plus the editor panel, with RLS policies on the new tables. This unlocks faceted search and AI tasting suggestions.
-2. Block JSON body column, written by the editor and the importer's normalization pass.
-3. Redirect table and edge export.
-4. Newsletter bridge to Braze with the email preview already in the matrix.
-5. Yjs collaboration on top of TipTap and Supabase Realtime.
-6. Media optimization worker (legacy asset extraction, WebP/AVIF renditions from stored crops).
-7. Edge paywall in the delivery tier once the public sites read from the content API.
-
-Each step is additive and ships behind the existing review gate, so nothing published changes until the delivery tier is ready.
+- Scripts are dry runs by default and write only to a development database named twice (`CMS_IMPORT_SUPABASE_URL` and `--development-target`).
+- Realtime: the browser receives the signed-in user's own access token from `GET /api/cms/realtime`; channels are per document and the durable Yjs state is service-role only.
+- Two editors opening a never-shared story at the same instant could both seed it from the saved body; the first save wins and the second editor reloads. The window is about a second and the seed only happens on an empty shared document.

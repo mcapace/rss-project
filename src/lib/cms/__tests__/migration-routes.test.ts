@@ -30,7 +30,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   document = {
     id: documentId, brand: "wa", kind: "page", source_system: "morweb", source_key: "Pages:12", source_hash: "a".repeat(64), identity_anchor: {},
-    title: "Synthetic page metadata", body_html: "", byline: "", excerpt: "", slug: "synthetic-page", public_url: "https://example.test/synthetic-page",
+    title: "Synthetic page metadata", body_html: "", body_json: null, byline: "", excerpt: "", slug: "synthetic-page", public_url: "https://example.test/synthetic-page",
     publication_state: "review", published_at: null, issue_uuid: null,
     metadata: { review: { required: true, reasons: ["page_body_assembly_required"] } }, revision: 1,
     created_at: "2026-10-30T12:00:00Z", updated_at: "2026-10-30T12:00:00Z",

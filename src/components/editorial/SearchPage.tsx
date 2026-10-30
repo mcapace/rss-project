@@ -10,6 +10,7 @@ import { cropStyle } from "@/lib/editorial/image-tools";
 import { useEditorial } from "./EditorialProvider";
 import { useAsync, useDebounced } from "./hooks";
 import { useShell } from "./Shell";
+import { RatingsSearch } from "./RatingsSearch";
 import { BrandDot, Button, Card, Empty, Notice, PageHeader, Pill, Segmented, SkeletonRows, Tag } from "./ui";
 
 export function PlainImage({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
@@ -33,7 +34,7 @@ export function MediaThumb({ hit, size }: { hit: SearchMediaHit; size?: "sm" }) 
   </div>;
 }
 
-const SCOPES: { id: SearchScope; label: string }[] = [{ id: "all", label: "Everything" }, { id: "documents", label: "Content" }, { id: "media", label: "Images" }, { id: "keywords", label: "Keywords" }];
+const SCOPES: { id: SearchScope; label: string }[] = [{ id: "all", label: "Everything" }, { id: "documents", label: "Content" }, { id: "media", label: "Images" }, { id: "keywords", label: "Keywords" }, { id: "ratings", label: "Ratings" }];
 const EXAMPLES = ["barrels in a dark warehouse", "harvest report", "sky blue vineyard", "Bourbon", "overhead flat lay", "Sample Editor"];
 
 export function SearchPage({ initialQuery, initialScope }: { initialQuery: string; initialScope: string }) {
@@ -49,7 +50,8 @@ export function SearchPage({ initialQuery, initialScope }: { initialQuery: strin
     if (scope !== "all") url.searchParams.set("scope", scope); else url.searchParams.delete("scope");
     window.history.replaceState(null, "", `${url.pathname}${url.search}`);
   }, [debounced, scope]);
-  const enabled = debounced.trim().length >= 2 || scope === "keywords";
+  const ratings = scope === "ratings";
+  const enabled = !ratings && (debounced.trim().length >= 2 || scope === "keywords");
   const result = useAsync(`search:${debounced}:${scope}:${allBrands ? "all" : brand}`, signal => data.search(debounced.trim(), { brand: allBrands ? null : brand, scope, limit: 30 }, signal), { enabled });
   const response: SearchResponse | null = result.data;
   const setupError = result.error && /set up|migration/i.test(result.error);
@@ -67,7 +69,8 @@ export function SearchPage({ initialQuery, initialScope }: { initialQuery: strin
       </div>
     </PageHeader>
 
-    {!enabled && <Card>
+    {ratings && <RatingsSearch query={debounced.trim()} allBrands={allBrands} />}
+    {!enabled && !ratings && <Card>
       <Empty icon={Sparkles} title="Search by words or by the way an image looks" text="Images are searchable by caption, credit, file name and the AI description of their subject, style, mood and colors. Try one of these." action={<div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>{EXAMPLES.map(example => <button key={example} type="button" className="ed-keyword" onClick={() => setQuery(example)}>{example}</button>)}</div>} />
     </Card>}
     {result.error && (setupError ? <Card><Empty icon={SearchIcon} title="Search is not set up yet" text={result.error} /></Card> : <Notice tone="error">{result.error}</Notice>)}
@@ -115,7 +118,7 @@ export function SearchPage({ initialQuery, initialScope }: { initialQuery: strin
 
       <Card flat pad="sm">
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, fontSize: 12.5, color: "var(--muted)" }}>
-          <Sparkles size={14} aria-hidden />You can also search from the assistant: ask “find images of barrels” or “show me stories about harvest”.
+          <Sparkles size={14} aria-hidden />{response.semantic ? "Results blend word matches with meaning (semantic search). " : ""}You can also search from the assistant: ask “find images of barrels” or “show me stories about harvest”.
           <Button size="sm" variant="subtle" style={{ marginLeft: "auto" }} onClick={() => openAssistant(query ? `find ${query}` : undefined)} ai>Open assistant</Button>
           {demo && <span>Demo results come from the sample library.</span>}
         </div>

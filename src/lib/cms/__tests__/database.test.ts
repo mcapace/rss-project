@@ -1,4 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
+import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -101,8 +102,10 @@ async function storedImport(id: string) {
 }
 
 beforeAll(async () => {
-  db = new PGlite();
+  db = new PGlite({ extensions: { pgcrypto } });
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;");
+  // Supabase provides auth.jwt() and an extensions schema; the platform migrations read both.
+  await db.exec("CREATE SCHEMA auth; CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$; CREATE SCHEMA extensions; CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions; GRANT USAGE ON SCHEMA extensions TO anon, authenticated, service_role;");
   // Supabase grants service_role ALL on newly created public tables by default.
   // A narrower GRANT alone cannot remove those inherited privileges.
   await db.exec("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;");
@@ -131,7 +134,7 @@ beforeAll(async () => {
 }, 60_000);
 
 beforeEach(async () => {
-  await db.exec("RESET ROLE; TRUNCATE public.cms_migration_sources, public.cms_document_revisions, public.cms_source_snapshots, public.cms_documents, public.article_images, public.articles, public.issues;");
+  await db.exec("RESET ROLE; TRUNCATE public.cms_migration_sources, public.cms_document_revisions, public.cms_source_snapshots, public.cms_documents, public.article_images, public.articles, public.issues CASCADE;");
   await db.exec("SET ROLE service_role;");
 });
 

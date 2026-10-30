@@ -135,3 +135,25 @@ optional `GOOGLE_WORKSPACE_DOMAIN`), and picks the property; tokens live in
 `cms_google_credentials` (migration `20261031130000`). A service account
 (`GA4_SERVICE_ACCOUNT_JSON` plus `GA4_PROPERTY_ID_WA/_WS/_CA/_MW`) is the
 alternative. The demo shows clearly labelled sample data.
+
+## Phase three: the platform
+
+The blueprint status map in [`platform-blueprint.md`](platform-blueprint.md)
+describes each capability. Where to look in the code:
+
+| Capability | Code |
+| --- | --- |
+| Relational review database and faceted search | `supabase/migrations/20261101100000_cms_catalog.sql`, `src/lib/cms/catalog-server.ts`, `/api/cms/catalog`, `/api/cms/ratings`, `CatalogField.tsx`, `RatingsSearch.tsx` (Ratings scope on `/cms/search`). |
+| Block bodies and normalization | `src/lib/cms/blocks.ts`, `body_json` on every save, `scripts/normalize-bodies.ts`, importer writes blocks for created records. |
+| Premium blocks and the paywall | `Premium` extension in `BodyEditor.tsx` (More menu), reader access tier in the Publishing panel (`metadata.access.tier`), `src/lib/delivery/paywall.ts`, `supabase/functions/paywall`, `/api/public/*`. |
+| Newsletter bridge | `NewsletterCard.tsx`, `/api/cms/documents/[id]/newsletter`, `src/lib/newsletter/`. |
+| Collaboration | `src/components/editorial/collab/`, `/api/cms/realtime`, `/api/cms/documents/[id]/collab`. |
+| Redirect engine | `src/lib/cms/redirects.ts`, `redirects-server.ts`, `/api/cms/redirects`, `/api/redirects/resolve`, the redirect step in `src/proxy.ts`, `scripts/build-redirects.ts`. |
+| Media renditions and re-hosting | `src/lib/media/renditions.ts`, `/api/media/[id]/[index]`, `scripts/rehost-media.ts`. |
+| Semantic search | `src/lib/editorial/server/embeddings.ts`, `src/lib/editorial/rank.ts`, `scripts/embed-content.ts`. |
+
+Tests: `src/lib/cms/__tests__/blocks.test.ts`, `redirects.test.ts`,
+`src/lib/delivery/__tests__/paywall.test.ts`, `src/lib/newsletter/__tests__/render.test.ts`.
+The PGlite database test replays every migration, with `auth.jwt()` and the
+`extensions` schema stubbed; the pgvector migration skips itself where the
+extension is unavailable.

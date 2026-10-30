@@ -6,7 +6,9 @@ import { cmsDb, databaseError } from "@/lib/cms/db";
 import { cmsFailure, cmsJson } from "@/lib/cms/http";
 import { CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES, type CmsBrand } from "@/lib/cms/types";
 import { getS3Client } from "@/lib/s3";
-import type { SearchMediaHit, SearchResponse } from "@/lib/editorial/search-types";
+import { reciprocalRankFusion } from "@/lib/editorial/rank";
+import type { SearchDocumentHit, SearchMediaHit, SearchResponse } from "@/lib/editorial/search-types";
+import { embeddingsConfigured, semanticMatches } from "@/lib/editorial/server/embeddings";
 
 const SCOPES = new Set(["all", "documents", "media", "keywords"]);
 
@@ -41,7 +43,46 @@ export async function GET(request: Request) {
       }
     }
 
-    const mediaHits = ((media.data ?? []) as Omit<SearchMediaHit, "preview_url">[]);
+    // Semantic matches (pgvector) blend with the lexical results by reciprocal rank fusion when a provider is configured.
+    let documentHits = (documents.data ?? []) as SearchDocumentHit[];
+    let mediaHits = ((media.data ?? []) as Omit<SearchMediaHit, "preview_url">[]);
+    let semantic = false;
+    if (embeddingsConfigured() && q.length >= 3 && (wants("documents") || wants("media"))) {
+      try {
+        const matches = await semanticMatches(db, brands, q, scope === "media" ? "media" : scope === "documents" ? "document" : null, Math.min(60, limit * 2), request.signal);
+        semantic = true;
+        const docMatches = matches.filter(match => match.kind === "document" && (!kind || true));
+        const missingDocs = docMatches.map(match => match.document_id).filter(id => !documentHits.some(hit => hit.id === id));
+        if (wants("documents") && missingDocs.length) {
+          const { data: rows } = await db.from("cms_documents").select("id,brand,kind,source_system,title,byline,excerpt,publication_state,issue_uuid,published_at,updated_at").in("id", missingDocs.slice(0, 40));
+          const extra = ((rows ?? []) as Omit<SearchDocumentHit, "rank" | "headline">[]).filter(row => (!kind || row.kind === kind) && (!state || row.publication_state === state)).map(row => ({ ...row, rank: docMatches.find(match => match.document_id === row.id)?.similarity ?? 0, headline: (row.excerpt || "").slice(0, 180) }));
+          const semanticOrder = docMatches.map(match => match.document_id);
+          const merged = reciprocalRankFusion([{ items: documentHits }, { items: extra.concat(documentHits.filter(hit => semanticOrder.includes(hit.id))).sort((a, b) => semanticOrder.indexOf(a.id) - semanticOrder.indexOf(b.id)) }], hit => hit.id);
+          documentHits = merged.map(entry => entry.item).slice(0, limit);
+        }
+        const mediaMatches = matches.filter(match => match.kind === "media" && match.media_index !== null);
+        if (wants("media") && mediaMatches.length) {
+          const missing = mediaMatches.filter(match => !mediaHits.some(hit => hit.document_id === match.document_id && hit.media_index === match.media_index));
+          const ids = [...new Set(missing.map(match => match.document_id))].slice(0, 30);
+          const { data: rows } = ids.length ? await db.from("cms_documents").select("id,brand,issue_uuid,title,metadata").in("id", ids) : { data: [] };
+          const extra: Omit<SearchMediaHit, "preview_url">[] = [];
+          for (const match of missing) {
+            const row = (rows ?? []).find((entry: { id: string }) => entry.id === match.document_id) as { id: string; brand: CmsBrand; issue_uuid: string | null; title: string; metadata: { media?: unknown } } | undefined;
+            const item = Array.isArray(row?.metadata?.media) ? row.metadata.media[match.media_index as number] : null;
+            if (!row || !item || typeof item !== "object") continue;
+            const entry = item as Record<string, unknown>;
+            extra.push({ document_id: row.id, brand: row.brand, issue_uuid: row.issue_uuid, document_title: row.title, media_index: match.media_index as number,
+              file: typeof entry.file === "string" ? entry.file : null, s3_key: typeof entry.s3_key === "string" ? entry.s3_key : null, caption: typeof entry.caption === "string" ? entry.caption : null,
+              credit: typeof entry.credit === "string" ? entry.credit : null, alt: typeof entry.alt === "string" ? entry.alt : null, is_lead: entry.is_lead === true,
+              vision: (entry.vision as SearchMediaHit["vision"]) ?? null, palette: (entry.palette as SearchMediaHit["palette"]) ?? null, crops: (entry.crops as SearchMediaHit["crops"]) ?? null, rank: match.similarity });
+          }
+          const key = (hit: Omit<SearchMediaHit, "preview_url">) => `${hit.document_id}:${hit.media_index}`;
+          const semanticOrder = mediaMatches.map(match => `${match.document_id}:${match.media_index}`);
+          const merged = reciprocalRankFusion([{ items: mediaHits }, { items: extra.concat(mediaHits.filter(hit => semanticOrder.includes(key(hit)))).sort((a, b) => semanticOrder.indexOf(key(a)) - semanticOrder.indexOf(key(b))) }], key);
+          mediaHits = merged.map(entry => entry.item).slice(0, Math.min(60, limit * 2));
+        }
+      } catch { semantic = false; }
+    }
     const bucket = process.env.S3_BUCKET;
     const client = bucket && mediaHits.length ? getS3Client() : null;
     const signed: SearchMediaHit[] = await Promise.all(mediaHits.map(async hit => {
@@ -51,6 +92,6 @@ export async function GET(request: Request) {
       return { ...hit, preview_url };
     }));
 
-    return cmsJson({ query: q, documents: documents.data ?? [], media: signed, keywords: keywords.data ?? [] } satisfies SearchResponse);
+    return cmsJson({ query: q, documents: documentHits, media: signed, keywords: keywords.data ?? [], semantic } satisfies SearchResponse);
   } catch (error) { return cmsFailure(error); }
 }

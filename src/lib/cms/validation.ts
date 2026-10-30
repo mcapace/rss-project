@@ -36,7 +36,7 @@ export function reviewGateValue(value: unknown): CmsReviewGate {
 
 export function documentPatch(input: Record<string, unknown>, current?: Pick<CmsDocument, "metadata" | "publication_state">): CmsDocumentPatch {
   const result: CmsDocumentPatch = {};
-  const allowed = ["title", "byline", "body_html", "excerpt", "slug", "public_url", "metadata", "publication_state"];
+  const allowed = ["title", "byline", "body_html", "body_json", "excerpt", "slug", "public_url", "metadata", "publication_state"];
   if (Object.keys(input).some(key => !allowed.includes(key))) throw new CmsError(422, "The update includes unsupported fields.");
   for (const [key, value] of Object.entries(input)) {
     if (key === "metadata") {
@@ -72,6 +72,12 @@ export function documentPatch(input: Record<string, unknown>, current?: Pick<Cms
       result[key] = val;
     } else if (key === "body_html") {
       result.body_html = sanitizeCmsHtml(textValue(value, "Article body", 1_500_000));
+    } else if (key === "body_json") {
+      if (value === null) result.body_json = null;
+      else {
+        if (!value || typeof value !== "object" || Array.isArray(value) || (value as { type?: unknown }).type !== "doc" || JSON.stringify(value).length > 3_000_000) throw new CmsError(422, "The structured body must be a block document.");
+        result.body_json = value as CmsJsonObject;
+      }
     } else if (key === "title") result.title = textValue(value, "Title", 500).trim();
     else if (key === "byline") result.byline = textValue(value, "Byline", 1000);
     else if (key === "excerpt") result.excerpt = textValue(value, "Summary", 5000);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, CalendarClock, Check, Clock, Crop, Eye, FileText, History, ImageIcon, Info, Layers, Palette, PenLine, RotateCcw, Save, Search, Sparkles, Star, X } from "lucide-react";
+import { Activity, ArrowLeft, CalendarClock, Check, Clock, Crop, Eye, FileText, History, ImageIcon, Info, Layers, Palette, PenLine, Radio, RotateCcw, Save, Search, Sparkles, Star, X } from "lucide-react";
 import type { CmsDocument, CmsDocumentPatch, CmsDocumentRevision, CmsJsonObject, CmsPublicationState } from "@/lib/cms/types";
 import { CONTENT_TYPE_LABELS, SOURCE_SYSTEM_LABELS, reviewReasons, reviewRequired } from "@/lib/cms/organization";
 import { DataError, type MediaItem } from "@/lib/editorial/data";
@@ -18,14 +18,18 @@ import { useEditorial } from "./EditorialProvider";
 import { useAsync } from "./hooks";
 import { usePageTitle, useShell } from "./Shell";
 import { BodyEditor, type InsertableImage } from "./BodyEditor";
+import { CatalogField } from "./CatalogField";
+import { NewsletterCard } from "./NewsletterCard";
+import { useCollaboration } from "./collab/useCollaboration";
+import { ACCESS_TIERS, requiredTier, type AccessTier } from "@/lib/delivery/paywall";
 import { PreviewMatrix } from "./PreviewMatrix";
 import { Button, Card, Empty, Field, IconButton, LinkButton, Notice, Pill, Segmented, Skeleton, SkeletonRows, Switch } from "./ui";
 
-type Draft = Pick<CmsDocument, "title" | "byline" | "body_html" | "excerpt" | "slug" | "public_url" | "publication_state" | "metadata">;
+type Draft = Pick<CmsDocument, "title" | "byline" | "body_html" | "body_json" | "excerpt" | "slug" | "public_url" | "publication_state" | "metadata">;
 type Tab = "write" | "preview" | "history" | "sources" | "media";
-const DRAFT_FIELDS: (keyof Draft)[] = ["title", "byline", "body_html", "excerpt", "slug", "public_url", "publication_state", "metadata"];
+const DRAFT_FIELDS: (keyof Draft)[] = ["title", "byline", "body_html", "body_json", "excerpt", "slug", "public_url", "publication_state", "metadata"];
 
-const toDraft = (doc: CmsDocument): Draft => ({ title: doc.title, byline: doc.byline, body_html: doc.body_html, excerpt: doc.excerpt, slug: doc.slug, public_url: doc.public_url, publication_state: doc.publication_state, metadata: structuredClone(doc.metadata) });
+const toDraft = (doc: CmsDocument): Draft => ({ title: doc.title, byline: doc.byline, body_html: doc.body_html, body_json: doc.body_json ?? null, excerpt: doc.excerpt, slug: doc.slug, public_url: doc.public_url, publication_state: doc.publication_state, metadata: structuredClone(doc.metadata) });
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const draftKey = (id: string) => `editorial-draft:${id}`;
 
@@ -75,6 +79,8 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
   const [compare, setCompare] = useState<CmsDocumentRevision | null>(null);
   const [historyToken, setHistoryToken] = useState(0);
   const saveRef = useRef<() => void>(() => {});
+  // Collaborative editing over Supabase Realtime in the connected workspace; the demo edits locally.
+  const collab = useCollaboration(document?.id ?? null, data, !demo && !!document);
 
   useEffect(() => {
     if (!loaded.data) return;
@@ -124,6 +130,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         return next;
       });
       setLastSaved(saved.updated_at); setHistoryToken(value => value + 1);
+      void collab.provider?.flush();
       toast("Saved", "success");
     } catch (failure) {
       if (failure instanceof DataError && failure.code === "revision_conflict") {
@@ -134,7 +141,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         } catch { setError({ message: failure.message, conflict: true }); }
       } else setError({ message: failure instanceof Error ? failure.message : "The document could not be saved." });
     } finally { setSaving(false); }
-  }, [document, draft, saving, data, toast]);
+  }, [document, draft, saving, data, toast, collab.provider]);
   useEffect(() => { saveRef.current = save; }, [save]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") { event.preventDefault(); saveRef.current(); } };
@@ -242,6 +249,11 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           <Pill tone={document.publication_state !== "published" && schedule ? "scheduled" : document.publication_state} />
         </div>
         <div className="ed-editor-status">
+          {collab.status !== "off" && <span className="ed-presence" title={collab.status === "connected" ? `${collab.peers.length} other${collab.peers.length === 1 ? "" : "s"} editing live` : "Reconnecting to the shared document"}>
+            <Radio size={13} aria-hidden style={{ color: collab.status === "connected" ? "var(--positive)" : "var(--muted)" }} />
+            {collab.peers.slice(0, 4).map(peer => <span key={peer.clientId} className="ed-avatar" style={{ width: 22, height: 22, fontSize: 10, background: peer.color, color: "#fff", boxShadow: "0 0 0 2px var(--surface)" }} title={peer.name}>{peer.name.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase()}</span>)}
+            {collab.peers.length > 4 && <span style={{ fontSize: 11.5, color: "var(--muted)" }}>+{collab.peers.length - 4}</span>}
+          </span>}
           <span>{saving ? "Saving…" : dirty ? "Unsaved changes" : lastSaved ? `Saved ${relativeTime(lastSaved)}` : `Revision ${document.revision}`}</span>
           <IconButton label="Assistant (⌘J)" icon={Sparkles} ai onClick={() => openAssistant()} />
           <Button variant="primary" size="sm" icon={Save} disabled={!dirty || saving} onClick={save} title="Save (⌘S)">{saving ? "Saving…" : "Save"}</Button>
@@ -260,7 +272,10 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           ref={node => { if (node) { node.style.height = "auto"; node.style.height = `${node.scrollHeight}px`; } }}
           onChange={event => { update({ title: event.target.value }); event.target.style.height = "auto"; event.target.style.height = `${event.target.scrollHeight}px`; }} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
         <input className="ed-byline-input" style={{ marginTop: 8 }} value={draft.byline} placeholder="Byline" aria-label="Byline" maxLength={1000} onChange={event => update({ byline: event.target.value })} />
-        <BodyEditor key={`${document.id}:${document.revision}`} html={draft.body_html} onChange={body_html => update({ body_html })} images={insertable} />
+        {collab.ready
+          ? <BodyEditor key={`${document.id}:${collab.status === "off" ? document.revision : "live"}`} html={draft.body_html} onChange={(body_html, body_json) => update({ body_html, body_json: body_json as unknown as CmsJsonObject })} images={insertable}
+              collab={collab.status !== "off" ? { doc: collab.doc, provider: collab.provider, user: collab.user } : undefined} />
+          : <div style={{ marginTop: 14 }}><SkeletonRows rows={4} /></div>}
         <p className="ed-editor-foot"><PenLine size={12} aria-hidden />{words.toLocaleString()} words · {readingMinutes(words)} min read · {CONTENT_TYPE_LABELS[document.kind].singular} · {SOURCE_SYSTEM_LABELS[document.source_system].short}</p>
       </div>}
 
@@ -373,6 +388,11 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
             {schedule && <Button size="sm" variant="subtle" icon={X} aria-label="Clear planned time" onClick={() => updateMeta(metadata => withSchedule(metadata, null))} />}
           </div>
         </Field>
+        <Field label="Reader access" htmlFor="ed-access" hint={requiredTier(draft.metadata) === "free" ? "Everyone can read it. Mark single blocks premium from the editor’s More menu." : "Readers below this tier see the lede and premium blocks are removed at the edge."}>
+          <select id="ed-access" className="ed-select" value={requiredTier(draft.metadata)} onChange={event => updateMeta({ access: { tier: event.target.value as AccessTier } })}>
+            {ACCESS_TIERS.map(tier => <option key={tier} value={tier}>{tier === "free" ? "Free" : tier === "registered" ? "Registered readers" : "Subscribers"}</option>)}
+          </select>
+        </Field>
         {document.published_at && <p style={{ marginTop: 12, fontSize: 12.5, color: "var(--muted)" }}><CalendarClock size={12} aria-hidden style={{ verticalAlign: -1, marginRight: 4 }} />Published {formatDateTime(document.published_at)}</p>}
       </Card>
 
@@ -392,14 +412,22 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
 
       {document.kind === "rating" || document.kind === "product_review" ? <Card pad={false} className="ed-rail-card still">
         <h3>Rating <Star size={14} aria-hidden /></h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <Field label="Score" htmlFor="ed-score"><input id="ed-score" className="ed-input" type="number" min={0} max={100} value={typeof rating.score === "number" ? rating.score : ""} onChange={event => updateMeta({ rating: { ...rating, score: event.target.value === "" ? null : Number(event.target.value) } })} /></Field>
           <Field label="Price" htmlFor="ed-price"><input id="ed-price" className="ed-input" type="number" min={0} step="0.01" value={typeof rating.price === "number" ? rating.price : ""} onChange={event => updateMeta({ rating: { ...rating, price: event.target.value === "" ? null : Number(event.target.value) } })} /></Field>
+          <Field label="Vintage" htmlFor="ed-vintage"><input id="ed-vintage" className="ed-input" type="number" min={1800} max={2100} value={typeof rating.vintage === "number" ? rating.vintage : ""} onChange={event => updateMeta({ rating: { ...rating, vintage: event.target.value === "" ? null : Number(event.target.value) } })} /></Field>
         </div>
-        <Field label="Producer or brand" htmlFor="ed-rating-brand"><input id="ed-rating-brand" className="ed-input" value={typeof rating.brand === "string" ? rating.brand : ""} onChange={event => updateMeta({ rating: { ...rating, brand: event.target.value } })} /></Field>
-        <Field label="Category" htmlFor="ed-rating-category"><input id="ed-rating-category" className="ed-input" value={typeof rating.category === "string" ? rating.category : ""} onChange={event => updateMeta({ rating: { ...rating, category: event.target.value } })} /></Field>
-        <Field label="Reviewer" htmlFor="ed-rating-reviewer"><input id="ed-rating-reviewer" className="ed-input" value={typeof rating.reviewer === "string" ? rating.reviewer : ""} onChange={event => updateMeta({ rating: { ...rating, reviewer: event.target.value } })} /></Field>
+        <CatalogField type="producer" value={typeof rating.producer === "string" ? rating.producer : typeof rating.brand === "string" ? rating.brand : ""} onChange={value => updateMeta({ rating: { ...rating, producer: value } })} placeholder="Winery, distillery or maker" hint="Joins the producer record so every rating of theirs stays linked." />
+        <CatalogField type="region" value={typeof rating.region === "string" ? rating.region : ""} onChange={value => updateMeta({ rating: { ...rating, region: value } })} placeholder="Appellation or region" />
+        <CatalogField type="variety" value={typeof rating.variety === "string" ? rating.variety : ""} onChange={value => updateMeta({ rating: { ...rating, variety: value } })} placeholder="Grape, grain, style or wrapper" />
+        <CatalogField type="taster" value={typeof rating.taster === "string" ? rating.taster : typeof rating.reviewer === "string" ? rating.reviewer : ""} onChange={value => updateMeta({ rating: { ...rating, taster: value } })} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <Field label="Category" htmlFor="ed-rating-category"><input id="ed-rating-category" className="ed-input" value={typeof rating.category === "string" ? rating.category : ""} onChange={event => updateMeta({ rating: { ...rating, category: event.target.value } })} placeholder="Bourbon, Cabernet…" /></Field>
+          <Field label="Drink window" htmlFor="ed-rating-window"><input id="ed-rating-window" className="ed-input" value={typeof rating.drink_window === "string" ? rating.drink_window : ""} onChange={event => updateMeta({ rating: { ...rating, drink_window: event.target.value } })} placeholder="Now through 2035" /></Field>
+        </div>
       </Card> : null}
+
+      <NewsletterCard key={`newsletter:${document.id}`} document={document} dirty={dirty} />
 
       <RailSection title="Search" icon={Search}>
         <Field label="Search title" htmlFor="ed-seo-title" hint={`${String(seo.title ?? "").length}/60`}><input id="ed-seo-title" className="ed-input" maxLength={120} value={typeof seo.title === "string" ? seo.title : ""} onChange={event => updateMeta({ seo: { ...seo, title: event.target.value } })} placeholder={draft.title} /></Field>

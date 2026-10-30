@@ -10,6 +10,7 @@ import type { AudienceReport, ConnectionStatus, PagePerformance } from "./analyt
 import { sampleAudience, samplePagePerformance } from "./analytics-sample";
 import { heuristicAnalysis } from "./seo-heuristics";
 import type { MediaVision, SearchDocumentHit, SearchKeywordHit, SearchMediaHit, SearchResponse, SearchScope } from "./search-types";
+import type { CatalogEntry, CatalogType, CollabState, NewsletterRequest, NewsletterSend, RatingFacets, RatingFilters, RatingHit, RatingSearchResponse, RealtimeGrant } from "./platform-types";
 import { matchScore, stripHtml } from "./helpers";
 
 /* ------------------------------------------------------------------ */
@@ -86,6 +87,16 @@ export interface EditorialData {
   analyticsConnection(brand: CmsBrand, withProperties: boolean, signal?: AbortSignal): Promise<ConnectionStatus>;
   setAnalyticsProperty(brand: CmsBrand, propertyId: string, propertyName: string | null): Promise<ConnectionStatus>;
   disconnectAnalytics(brand: CmsBrand): Promise<ConnectionStatus>;
+  /** The relational review database. */
+  catalogLookup(brand: CmsBrand, type: CatalogType, query: string, signal?: AbortSignal): Promise<CatalogEntry[]>;
+  searchRatings(brand: CmsBrand | null, filters: RatingFilters, signal?: AbortSignal): Promise<RatingSearchResponse>;
+  /** Newsletter sends through the ESP bridge. */
+  newsletterSends(documentId: string, signal?: AbortSignal): Promise<{ sends: NewsletterSend[]; configured: boolean }>;
+  sendNewsletter(documentId: string, input: NewsletterRequest): Promise<NewsletterSend>;
+  /** Real-time collaboration: a Realtime grant and the durable Yjs state. */
+  realtimeGrant(): Promise<RealtimeGrant>;
+  collabState(documentId: string, signal?: AbortSignal): Promise<CollabState>;
+  saveCollabState(documentId: string, stateBase64: string): Promise<void>;
 }
 
 export const PAGE_SIZE = 50;
@@ -201,6 +212,31 @@ export function createLiveData(): EditorialData {
     disconnectAnalytics(brand) {
       return request<ConnectionStatus>(`/api/cms/analytics/connection?brand=${brand}`, { method: "DELETE" });
     },
+    async catalogLookup(brand, type, query, signal) {
+      const result = await request<{ entries: CatalogEntry[] }>(`/api/cms/catalog?${new URLSearchParams({ brand, type, q: query })}`, { signal });
+      return result.entries;
+    },
+    searchRatings(brand, filters, signal) {
+      const params = new URLSearchParams();
+      if (brand) params.set("brand", brand);
+      for (const [key, value] of Object.entries(filters)) if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
+      return request<RatingSearchResponse>(`/api/cms/ratings?${params}`, { signal });
+    },
+    newsletterSends(documentId, signal) {
+      return request<{ sends: NewsletterSend[]; configured: boolean }>(`/api/cms/documents/${encodeURIComponent(documentId)}/newsletter`, { signal });
+    },
+    async sendNewsletter(documentId, input) {
+      const result = await request<{ send: NewsletterSend }>(`/api/cms/documents/${encodeURIComponent(documentId)}/newsletter`, jsonInit("POST", input));
+      return result.send;
+    },
+    realtimeGrant() { return request<RealtimeGrant>("/api/cms/realtime"); },
+    async collabState(documentId, signal) {
+      const result = await request<{ state: CollabState }>(`/api/cms/documents/${encodeURIComponent(documentId)}/collab`, { signal });
+      return result.state;
+    },
+    async saveCollabState(documentId, stateBase64) {
+      await request(`/api/cms/documents/${encodeURIComponent(documentId)}/collab`, jsonInit("PUT", { state_base64: stateBase64 }));
+    },
   };
 }
 
@@ -211,7 +247,7 @@ export function createLiveData(): EditorialData {
 export const DEMO_STORAGE_KEY = "editorial-demo-store-v1";
 export const DEMO_USER: CmsUser = { id: "demo", email: "demo.editor@mshanken.com", role: "admin", brands: [...CMS_BRANDS] };
 
-type DemoStore = { documents: CmsDocument[]; histories: Record<string, CmsDocumentRevision[]> };
+type DemoStore = { documents: CmsDocument[]; histories: Record<string, CmsDocumentRevision[]>; newsletters?: NewsletterSend[] };
 
 function isDocument(value: unknown): value is CmsDocument {
   const doc = value as CmsDocument;
@@ -311,7 +347,7 @@ export function createDemoData(storage: Storage | null = typeof window !== "unde
       const stamp = now().toISOString();
       const document: CmsDocument = {
         id: uuid(), brand: input.brand, kind: input.kind, source_system: "manual", source_key: `manual:${stamp}`,
-        source_hash: "0".repeat(64), identity_anchor: {}, title, byline: "", body_html: "<p></p>", excerpt: "",
+        source_hash: "0".repeat(64), identity_anchor: {}, title, byline: "", body_html: "<p></p>", body_json: null, excerpt: "",
         slug: null, public_url: null, publication_state: "draft", published_at: null, issue_uuid: null,
         metadata: { section: "", categories: [], tags: [], seo: { title: "", description: "", no_index: false } },
         revision: 1, created_at: stamp, updated_at: stamp,
@@ -426,7 +462,90 @@ export function createDemoData(storage: Storage | null = typeof window !== "unde
     },
     async setAnalyticsProperty() { throw new DataError(503, "The demo has no Google connection.", "setup_required"); },
     async disconnectAnalytics() { throw new DataError(503, "The demo has no Google connection.", "setup_required"); },
+    async catalogLookup(brand, type, query) {
+      await latency();
+      return demoCatalog(store.documents, brand, type, query);
+    },
+    async searchRatings(brand, filters) {
+      await latency();
+      return demoRatings(store.documents, brand, filters);
+    },
+    async newsletterSends(documentId) {
+      await latency();
+      return { sends: (store.newsletters ?? []).filter(send => send.document_id === documentId).sort((a, b) => b.created_at.localeCompare(a.created_at)), configured: false };
+    },
+    async sendNewsletter(documentId, input) {
+      await latency();
+      const document = find(documentId);
+      const stamp = now().toISOString();
+      const send: NewsletterSend = { id: uuid(), document_id: documentId, brand: document.brand, kind: input.kind, esp: "braze", status: "simulated", subject: input.subject, preheader: input.preheader ?? null, send_at: input.send_at ?? null, campaign_id: null, dispatch_id: null, error: "Demo: the email was rendered and logged, not sent.", requested_by: DEMO_USER.id, created_at: stamp, updated_at: stamp };
+      store = { ...store, newsletters: [send, ...(store.newsletters ?? [])] };
+      persist();
+      return send;
+    },
+    async realtimeGrant() { throw new DataError(503, "The demo has no Realtime connection.", "setup_required"); },
+    async collabState() { return null; },
+    async saveCollabState() { /* The demo has no shared document. */ },
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Demo review database                                                  */
+/* ------------------------------------------------------------------ */
+
+const slugOf = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function demoRatingRows(documents: CmsDocument[], brand: CmsBrand | null): RatingHit[] {
+  return documents.filter(doc => (doc.kind === "rating" || doc.kind === "product_review") && (!brand || doc.brand === brand)).map(doc => {
+    const rating = (doc.metadata.rating && typeof doc.metadata.rating === "object" && !Array.isArray(doc.metadata.rating) ? doc.metadata.rating : {}) as Record<string, unknown>;
+    const text = (key: string) => typeof rating[key] === "string" && (rating[key] as string).trim() ? (rating[key] as string).trim() : null;
+    const producer = text("producer") ?? text("brand"), region = text("region"), variety = text("variety") ?? text("category"), taster = text("taster") ?? text("reviewer");
+    const vintageMatch = doc.title.match(/\b(19|20)\d{2}\b/);
+    return {
+      document_id: doc.id, brand: doc.brand, title: doc.title, slug: doc.slug, publication_state: doc.publication_state,
+      score: typeof rating.score === "number" ? rating.score : null, price: typeof rating.price === "number" ? rating.price : null,
+      vintage: typeof rating.vintage === "number" ? rating.vintage : vintageMatch ? Number(vintageMatch[0]) : null,
+      product_name: text("product_name") ?? doc.title, category: text("category"),
+      producer, producer_slug: producer ? slugOf(producer) : null, region, region_slug: region ? slugOf(region) : null,
+      variety, variety_slug: variety ? slugOf(variety) : null, taster, taster_slug: taster ? slugOf(taster) : null,
+      drink_window: text("drink_window"), published_at: doc.published_at, updated_at: doc.updated_at, total: 0,
+    };
+  });
+}
+
+export function demoCatalog(documents: CmsDocument[], brand: CmsBrand, type: CatalogType, query: string): CatalogEntry[] {
+  const counts = new Map<string, number>();
+  for (const row of demoRatingRows(documents, brand)) {
+    const name = type === "producer" ? row.producer : type === "region" ? row.region : type === "variety" ? row.variety : row.taster;
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  const q = query.trim().toLowerCase();
+  return [...counts.entries()].filter(([name]) => !q || name.toLowerCase().includes(q)).sort((a, b) => Number(b[0].toLowerCase().startsWith(q)) - Number(a[0].toLowerCase().startsWith(q)) || b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 12)
+    .map(([name, count]) => ({ id: `${type}:${slugOf(name)}`, name, slug: slugOf(name), detail: "", document_count: count }));
+}
+
+export function demoRatings(documents: CmsDocument[], brand: CmsBrand | null, filters: RatingFilters): RatingSearchResponse {
+  const q = filters.q?.trim().toLowerCase() ?? "";
+  const all = demoRatingRows(documents, brand).filter(row => !filters.state || row.publication_state === filters.state);
+  const rows = all.filter(row =>
+    (filters.min_score === undefined || (row.score ?? -1) >= filters.min_score) && (filters.max_score === undefined || (row.score ?? 101) <= filters.max_score)
+    && (filters.min_price === undefined || (row.price ?? -1) >= filters.min_price) && (filters.max_price === undefined || (row.price ?? Infinity) <= filters.max_price)
+    && (filters.vintage_from === undefined || (row.vintage ?? 0) >= filters.vintage_from) && (filters.vintage_to === undefined || (row.vintage ?? 9999) <= filters.vintage_to)
+    && (!filters.region || row.region_slug === filters.region) && (!filters.variety || row.variety_slug === filters.variety)
+    && (!filters.producer || row.producer_slug === filters.producer) && (!filters.taster || row.taster_slug === filters.taster)
+    && (!q || row.title.toLowerCase().includes(q) || (row.producer ?? "").toLowerCase().includes(q)));
+  const sort = filters.sort ?? "score";
+  rows.sort((a, b) => sort === "price" ? (a.price ?? Infinity) - (b.price ?? Infinity) : sort === "price_desc" ? (b.price ?? -1) - (a.price ?? -1) : sort === "vintage" ? (b.vintage ?? 0) - (a.vintage ?? 0) : sort === "recent" ? b.updated_at.localeCompare(a.updated_at) : (b.score ?? -1) - (a.score ?? -1));
+  const facets: RatingFacets = { region: [], variety: [], producer: [], taster: [], score: [], price: [] };
+  const bump = (list: RatingFacets[keyof RatingFacets], value: string | null, label: string | null) => { if (!value || !label) return; const hit = list.find(item => item.value === value); if (hit) hit.count += 1; else list.push({ value, label, count: 1 }); };
+  for (const row of all) {
+    bump(facets.region, row.region_slug, row.region); bump(facets.variety, row.variety_slug, row.variety); bump(facets.producer, row.producer_slug, row.producer); bump(facets.taster, row.taster_slug, row.taster);
+    if (row.score !== null) bump(facets.score, row.score >= 95 ? "95" : row.score >= 90 ? "90" : row.score >= 85 ? "85" : row.score >= 80 ? "80" : "0", row.score >= 95 ? "95 and above" : row.score >= 90 ? "90 to 94" : row.score >= 85 ? "85 to 89" : row.score >= 80 ? "80 to 84" : "Below 80");
+    if (row.price !== null) bump(facets.price, row.price < 20 ? "0" : row.price < 50 ? "20" : row.price < 100 ? "50" : row.price < 250 ? "100" : "250", row.price < 20 ? "Under $20" : row.price < 50 ? "$20 to $49" : row.price < 100 ? "$50 to $99" : row.price < 250 ? "$100 to $249" : "$250 and up");
+  }
+  for (const key of Object.keys(facets) as (keyof RatingFacets)[]) facets[key].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  const offset = filters.offset ?? 0, limit = filters.limit ?? 50;
+  return { ratings: rows.slice(offset, offset + limit).map(row => ({ ...row, total: rows.length })), facets, total: rows.length };
 }
 
 /* ------------------------------------------------------------------ */

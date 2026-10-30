@@ -14,6 +14,8 @@ const ALLOWED_STYLES: Record<string, RegExp[]> = {
   "text-align": [/^(left|right|center|justify)$/],
 };
 const STYLED_TAGS = ["p", "span", "h1", "h2", "h3", "h4", "li", "blockquote", "td", "th", "figcaption"];
+/** Block elements an editor may mark premium; the delivery tier strips them for readers without entitlement. */
+const PREMIUM_TAGS = ["p", "h1", "h2", "h3", "h4", "ul", "ol", "blockquote", "figure", "table", "pre", "hr", "img"];
 
 /** Sanitize the working copy/preview; immutable ingestion snapshots remain untouched. */
 export function sanitizeCmsHtml(html: string): string {
@@ -26,6 +28,7 @@ export function sanitizeCmsHtml(html: string): string {
       // Embeds are stored as a figure holding the canonical link; renderers turn them into players.
       figure: ["data-embed"],
       ...Object.fromEntries(STYLED_TAGS.filter(tag => tag !== "td" && tag !== "th").map(tag => [tag, ["style"]])),
+      ...Object.fromEntries(PREMIUM_TAGS.map(tag => [tag, [...new Set([...(tag === "img" ? ["src", "alt", "title", "width", "height"] : tag === "figure" ? ["data-embed"] : STYLED_TAGS.includes(tag) ? ["style"] : tag === "ol" ? ["start"] : []), "data-premium"])]])),
     },
     allowedStyles: { "*": ALLOWED_STYLES },
     allowedSchemes: ["https", "http", "mailto", "tel"],

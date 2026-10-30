@@ -2,7 +2,7 @@
 export type CmsBrand = "wa" | "ws" | "ca" | "mw";
 export type CmsDocumentKind = "article" | "rating" | "page" | "glossary_entry" | "directory_entry" | "collection_entry" | "product_review" | "legacy_record";
 export type CmsPublicationState = "draft" | "review" | "published" | "unpublished";
-export type CmsSourceSystem = "morweb" | "print" | "manual";
+export type CmsSourceSystem = "morweb" | "print" | "manual" | "web_archive";
 export type CmsJson = string | number | boolean | null | CmsJson[] | { [key: string]: CmsJson };
 export type CmsJsonObject = { [key: string]: CmsJson };
 
@@ -116,7 +116,7 @@ export interface CmsIngestInput {
   excerpt?: string;
   slug?: string | null;
   public_url?: string | null;
-  /** Only Morweb migration may retain a historical published state. Print always starts in review. */
+  /** Only Morweb may retain a historical published state. Print and gated web captures start in review. */
   publication_state?: CmsPublicationState;
   published_at?: string | null;
   issue_uuid?: string | null;

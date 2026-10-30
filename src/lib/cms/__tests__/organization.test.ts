@@ -48,4 +48,12 @@ describe("content homes and promotion", () => {
     const gate = { required: true, reasons: ["duplicate_public_url"] };
     expect(preserveReviewGate({ review: gate }, { categories: ["News"] })).toEqual({ categories: ["News"], review: gate });
   });
+
+  it("rejects array and object statuses instead of coercing them past schedule validation", () => {
+    const organization = sample();
+    for (const status of [["scheduled"], { value: "scheduled" }]) {
+      const malformed = { ...organization, placements: [{ ...organization.placements[0], status, starts_at: null, ends_at: null }] };
+      expect(() => validateOrganization(malformed)).toThrow("Unknown placement status.");
+    }
+  });
 });

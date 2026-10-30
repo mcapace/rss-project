@@ -42,7 +42,7 @@ beforeEach(() => {
   };
   inventory = {
     brand: "wa",
-    documents: { total: 2, by_kind: { ...zeroMap(CMS_DOCUMENT_KINDS), page: 1, article: 1 }, by_publication_state: { ...zeroMap(CMS_PUBLICATION_STATES), review: 1, published: 1 }, by_source_system: { morweb: 2, print: 0, manual: 0 }, review_required: 1, pages_awaiting_assembly: 1 },
+    documents: { total: 2, by_kind: { ...zeroMap(CMS_DOCUMENT_KINDS), page: 1, article: 1 }, by_publication_state: { ...zeroMap(CMS_PUBLICATION_STATES), review: 1, published: 1 }, by_source_system: { morweb: 2, print: 0, manual: 0, web_archive: 0 }, review_required: 1, pages_awaiting_assembly: 1 },
     sources: { total: 5, archive_count: 1, by_source_kind: { ...zeroMap(CMS_MIGRATION_SOURCE_KINDS), page_context: 2, post_version: 3 } },
   };
   sourceError = null;
@@ -167,7 +167,7 @@ describe("document migration sources require exact publication and legacy linkag
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
 
-  it.each(["manual", "print"] as const)("does not attach Morweb evidence to a %s source", async system => {
+  it.each(["manual", "print", "web_archive"] as const)("does not attach Morweb evidence to a %s source", async system => {
     document!.source_system = system;
     expect((await readSources(sourceRoute(), context())).status).toBe(200);
     expect(queries.map(query => query.table)).toEqual(["cms_documents"]);

@@ -1,4 +1,11 @@
-import type { CmsDocumentKind, CmsJson, CmsJsonObject } from "./types";
+import type { CmsDocumentKind, CmsJson, CmsJsonObject, CmsSourceSystem } from "./types";
+
+export const SOURCE_SYSTEM_LABELS: Record<CmsSourceSystem, { short: string; detail: string }> = {
+  morweb: { short: "Archive import", detail: "Morweb archive" },
+  web_archive: { short: "Channel import", detail: "Separate website channel" },
+  print: { short: "Print intake", detail: "Print issue" },
+  manual: { short: "Original content", detail: "Editorial" },
+};
 
 export const CONTENT_TYPE_LABELS: Record<CmsDocumentKind, { singular: string; plural: string }> = {
   article: { singular: "Article", plural: "Articles" },
@@ -48,7 +55,7 @@ function validTimestamp(value: unknown): value is string {
 }
 
 /** A content home and temporary promotion are independent editorial decisions. */
-export function validateOrganization(value: unknown): asserts value is CmsOrganization {
+function validateOrganizationShape(value: unknown, completeSchedule: boolean): asserts value is CmsOrganization {
   if (!object(value)) throw new Error("Organization must be an object.");
   if (value.primary_channel !== null && (typeof value.primary_channel !== "string" || !value.primary_channel.trim() || value.primary_channel.length > 120)) {
     throw new Error("Primary channel must be a name or null.");
@@ -65,20 +72,26 @@ export function validateOrganization(value: unknown): asserts value is CmsOrgani
     if (seen.has(placement.slot)) throw new Error("A placement may have only one assignment per document.");
     seen.add(placement.slot);
     if (typeof placement.label !== "string" || !placement.label.trim() || placement.label.length > 250) throw new Error("A placement needs a label.");
-    if (!["needs_review", "scheduled", "disabled"].includes(String(placement.status))) throw new Error("Unknown placement status.");
+    if (typeof placement.status !== "string" || !["needs_review", "scheduled", "disabled"].includes(placement.status)) throw new Error("Unknown placement status.");
     for (const key of ["starts_at", "ends_at"] as const) {
       if (placement[key] !== null && !validTimestamp(placement[key])) throw new Error("Placement dates must be valid UTC timestamps or empty.");
     }
     if (placement.source_category_id !== undefined && (typeof placement.source_category_id !== "string" || !/^\d+$/.test(placement.source_category_id))) throw new Error("Invalid source category identity.");
-    if (placement.status === "scheduled" && (!placement.starts_at || !placement.ends_at)) throw new Error("A scheduled placement needs both a start and an end.");
-    if (typeof placement.starts_at === "string" && typeof placement.ends_at === "string" && Date.parse(placement.starts_at) >= Date.parse(placement.ends_at)) throw new Error("A placement must end after it starts.");
+    if (completeSchedule && placement.status === "scheduled" && (!placement.starts_at || !placement.ends_at)) throw new Error("A scheduled placement needs both a start and an end.");
+    if (completeSchedule && typeof placement.starts_at === "string" && typeof placement.ends_at === "string" && Date.parse(placement.starts_at) >= Date.parse(placement.ends_at)) throw new Error("A placement must end after it starts.");
   }
 }
 
+export function validateOrganization(value: unknown): asserts value is CmsOrganization {
+  validateOrganizationShape(value, true);
+}
+
 /** Read-only compatibility for earlier imports; it never rewrites their source. */
-export function documentOrganization(metadata: CmsJsonObject): CmsOrganization {
+export function documentOrganization(metadata: CmsJsonObject, options: { editing?: boolean } = {}): CmsOrganization {
   if (object(metadata.organization)) {
-    try { validateOrganization(metadata.organization); return metadata.organization; }
+    // Date fields are entered one at a time. Preserve an incomplete local draft
+    // in the form; the save/API validators still require a complete schedule.
+    try { validateOrganizationShape(metadata.organization, !options.editing); return metadata.organization; }
     catch { /* Older/unrecognized organization data stays in immutable history. */ }
   }
   const sourceCategories = strings(metadata.categories);
@@ -108,6 +121,7 @@ const REVIEW_LABELS: Record<string, string> = {
   ambiguous_content_type: "The content type needs editorial classification.",
   duplicate_public_url: "Another preserved record shares this public URL. Route ownership needs review.",
   public_url_collision: "Another preserved record shares this public URL. Route ownership needs review.",
+  external_channel_import_review: "Content from a separate website channel needs editorial and route review.",
 };
 
 export function reviewReasons(metadata: CmsJsonObject): string[] {

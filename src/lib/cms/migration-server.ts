@@ -45,7 +45,7 @@ export async function getCmsMigrationInventory(brand: CmsBrand, user: CmsUser): 
       total: count(documents.total),
       by_kind: countMap(documents.by_kind, CMS_DOCUMENT_KINDS),
       by_publication_state: countMap(documents.by_publication_state, CMS_PUBLICATION_STATES),
-      by_source_system: countMap(documents.by_source_system, ["morweb", "print", "manual"] as const),
+      by_source_system: countMap(documents.by_source_system, ["morweb", "print", "manual", "web_archive"] as const),
       review_required: count(documents.review_required),
       pages_awaiting_assembly: count(documents.pages_awaiting_assembly),
     },

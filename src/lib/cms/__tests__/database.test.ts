@@ -10,6 +10,7 @@ let inheritedHistoryPrivileges: Array<{ table_name: string; can_update: boolean;
 let preRetentionUpgrade: unknown;
 let postRetentionUpgrade: unknown;
 let postAuxiliaryUpgrade: unknown;
+let postWebArchiveUpgrade: unknown;
 
 function source(input: Omit<CmsIngestInput, "source_hash">): CmsIngestInput {
   return { ...input, source_hash: createHash("sha256").update(JSON.stringify(input)).digest("hex") };
@@ -22,6 +23,15 @@ function morweb(key = "Posts:100", overrides: Partial<Omit<CmsIngestInput, "sour
     publication_state: "published", published_at: "2025-06-01T14:00:00Z",
     metadata: { categories: ["News"], migration: { original_date: "2025-06-01 10:00:00" } },
     source_payload: { id: key, content: "<p>Original article.</p>" },
+    ...overrides,
+  });
+}
+
+function webArchive(key = "public-app:edition:2026:record:1", overrides: Partial<Omit<CmsIngestInput, "source_hash">> = {}) {
+  return morweb(key, {
+    source_system: "web_archive", kind: "directory_entry",
+    metadata: { review: { required: true, reasons: ["external_source_review_required"] } },
+    source_payload: { source_url: "https://example.test/observed-source", captured_at: "2026-10-30T12:00:00Z", original: { title: "Captured public record", body: "Captured public text" } },
     ...overrides,
   });
 }
@@ -111,6 +121,7 @@ beforeAll(async () => {
     await db.exec(readFileSync(path.join(migrationDir, file), "utf8"));
     if (upgradeDocumentId) postRetentionUpgrade = await storedImport(upgradeDocumentId);
     if (file.endsWith("_cms_migration_sources.sql") && preservedImportId) postAuxiliaryUpgrade = await storedImport(preservedImportId);
+    if (file.endsWith("_cms_web_archive_sources.sql") && preservedImportId) postWebArchiveUpgrade = await storedImport(preservedImportId);
     if (file.endsWith("_cms_foundation.sql")) {
       inheritedHistoryPrivileges = (await db.query<{ table_name: string; can_update: boolean; can_delete: boolean; can_truncate: boolean }>(
         "SELECT relname AS table_name, has_table_privilege('service_role',oid,'UPDATE') AS can_update, has_table_privilege('service_role',oid,'DELETE') AS can_delete, has_table_privilege('service_role',oid,'TRUNCATE') AS can_truncate FROM pg_class WHERE oid IN ('public.cms_source_snapshots'::regclass,'public.cms_document_revisions'::regclass) ORDER BY relname",
@@ -131,6 +142,70 @@ describe("CMS PostgreSQL transactions", () => {
     expect(preRetentionUpgrade).toBeDefined();
     expect(postRetentionUpgrade).toEqual(preRetentionUpgrade);
     expect(postAuxiliaryUpgrade).toEqual(preRetentionUpgrade);
+    expect(postWebArchiveUpgrade).toEqual(preRetentionUpgrade);
+  });
+
+  it("requires review for new public web captures and preserves the original input without publishing", async () => {
+    const invalidMetadata: NonNullable<CmsIngestInput["metadata"]>[] = [{}, { review: { required: false, reasons: [] } }, { review: { required: true, reasons: [] } }];
+    for (const metadata of invalidMetadata) {
+      await expect(ingest(webArchive("public-app:ungated", { metadata }))).rejects.toThrow();
+    }
+    expect(await count("cms_documents")).toBe(0);
+    expect(await count("cms_source_snapshots")).toBe(0);
+    expect(await count("cms_document_revisions")).toBe(0);
+
+    const input = webArchive(); // Deliberately includes a source publication flag/date.
+    const created = await ingest(input);
+    const stored = (await db.query<CmsDocument>("SELECT * FROM public.cms_documents WHERE id=$1", [created.document_id])).rows[0];
+    expect(stored).toMatchObject({ source_system: "web_archive", publication_state: "review", published_at: null, revision: 1, metadata: input.metadata });
+    const original = (await db.query<{ payload: unknown }>("SELECT payload FROM public.cms_source_snapshots WHERE id=$1", [created.source_snapshot_id])).rows[0].payload;
+    const { source_hash: omittedHash, ...expectedPayload } = input;
+    expect(omittedHash).toHaveLength(64);
+    expect(original).toEqual(expectedPayload);
+    await expect(save(created.document_id, 1, { metadata: { review: { required: false, reasons: [] } } })).rejects.toThrow("Review gates cannot be changed");
+    await expect(save(created.document_id, 1, { publication_state: "published" })).rejects.toThrow("Publishing is not enabled");
+    await expect(db.query("UPDATE public.cms_documents SET publication_state='published' WHERE id=$1", [created.document_id])).rejects.toThrow("requiring review cannot be published");
+  });
+
+  it("replays web captures idempotently and records changed-source candidates without replacing editorial work", async () => {
+    const input = webArchive();
+    const created = await ingest(input);
+    expect(await ingest(input)).toEqual({ ...created, action: "unchanged" });
+    const edited = await save(created.document_id, 1, { title: "Editor's revised title", body_html: "<p>Editor's revised body.</p>", publication_state: "unpublished" });
+    const changed = webArchive(input.source_key, { title: "Later source title", body_html: "<p>Later captured body.</p>", source_payload: { source_url: "https://example.test/observed-source", original: { body: "Later source version" } } });
+    const candidate = await ingest(changed);
+    expect(candidate).toMatchObject({ action: "candidate", document_id: created.document_id, revision: 2 });
+    expect(candidate.source_snapshot_id).not.toBe(created.source_snapshot_id);
+    expect(await ingest(changed)).toEqual({ ...candidate, action: "unchanged" });
+    const current = (await db.query<{ document: CmsDocument }>("SELECT to_jsonb(d) AS document FROM public.cms_documents d WHERE id=$1", [created.document_id])).rows[0].document;
+    expect(current).toEqual(edited);
+    expect(current.source_hash).toBe(input.source_hash);
+    expect((await db.query<{ payload: { source_payload: unknown } }>("SELECT payload FROM public.cms_source_snapshots WHERE id=$1", [candidate.source_snapshot_id])).rows[0].payload.source_payload).toEqual(changed.source_payload);
+    expect(await count("cms_documents")).toBe(1);
+    expect(await count("cms_source_snapshots")).toBe(2);
+    expect(await count("cms_document_revisions")).toBe(2);
+  });
+
+  it("keeps web identities unique across mapped kinds, publication-scoped, and inaccessible to browser roles", async () => {
+    const input = webArchive();
+    const created = await ingest(input);
+    await expect(ingest(webArchive(input.source_key, { kind: "article" }))).rejects.toThrow("cms_documents_web_archive_source_unique");
+    const otherPublication = await ingest(webArchive(input.source_key, { brand: "ws" }));
+    expect(otherPublication.document_id).not.toBe(created.document_id);
+    await ingest(morweb("Posts:existing-wa"));
+    const wa = (await db.query<{ result: CmsMigrationInventory }>("SELECT public.cms_migration_inventory('wa') AS result")).rows[0].result;
+    const ws = (await db.query<{ result: CmsMigrationInventory }>("SELECT public.cms_migration_inventory('ws') AS result")).rows[0].result;
+    expect(wa.documents).toMatchObject({ total: 2, by_source_system: { morweb: 1, print: 0, manual: 0, web_archive: 1 }, review_required: 1 });
+    expect(ws.documents).toMatchObject({ total: 1, by_source_system: { morweb: 0, print: 0, manual: 0, web_archive: 1 } });
+    const foreignIssue = await issue("review", "ws");
+    await expect(ingest(webArchive("public-app:wrong-issue", { issue_uuid: foreignIssue }))).rejects.toThrow("Issue does not belong to document brand");
+    await expect(ingest(webArchive("public-app:invalid-brand", { brand: "unknown" as CmsIngestInput["brand"] }))).rejects.toThrow("cms_documents_brand_check");
+    expect(await count("cms_documents")).toBe(3);
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`RESET ROLE; SET ROLE ${role};`);
+      await expect(ingest(webArchive(`public-app:${role}`))).rejects.toThrow("permission denied");
+      await expect(db.exec("SELECT public.cms_migration_inventory('wa')")).rejects.toThrow("permission denied");
+    }
   });
 
   it("retains specialized content types without changing source identity on repeated imports", async () => {

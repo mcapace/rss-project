@@ -46,6 +46,7 @@ export function MigrationInventory({ brand, brands }: { brand: CmsBrand; brands:
       <div className="cms-inventory-metrics">
         <section><span>Content records</span><strong>{inventory.documents.total.toLocaleString()}</strong><small>All types in this publication</small></section>
         <section><span>Imported from Morweb</span><strong>{inventory.documents.by_source_system.morweb.toLocaleString()}</strong><small>Preserved source identities</small></section>
+        <section><span>Separate channel imports</span><strong>{inventory.documents.by_source_system.web_archive.toLocaleString()}</strong><small>Retained separately for review</small></section>
         <section><span>Import review required</span><strong>{inventory.documents.review_required.toLocaleString()}</strong><small>Retained for editorial decisions</small></section>
         <section><span>Pages awaiting assembly</span><strong>{inventory.documents.pages_awaiting_assembly.toLocaleString()}</strong><small>Page records are not finished layouts</small></section>
       </div>

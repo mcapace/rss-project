@@ -85,6 +85,34 @@ describe("document editing preserves unsaved work", () => {
     expect(host.textContent).toContain("Unsaved changes");
   });
 
+  it("keeps a placement visible while its schedule is incomplete and validates only on save", async () => {
+    const initial = demoDocuments()[3];
+    const save = vi.fn(async (patch: CmsDocumentPatch) => ({ ...initial, ...patch, revision: 2 }));
+    await act(async () => root.render(<DocumentEditor document={initial} demo onClose={() => {}} onDirtyChange={() => {}} loadHistory={async () => ({ revisions: [], sources: [] })} onSave={save} />));
+    await click("Add homepage placement");
+    await act(async () => {
+      const status = host.querySelector<HTMLSelectElement>('[aria-label="Homepage slider status"]')!;
+      status.value = "scheduled";
+      status.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(host.querySelector('[aria-label="Homepage slider start UTC"]')).not.toBeNull();
+    await click("Save changes");
+    expect(save).not.toHaveBeenCalled();
+    expect(host.querySelector('[role="alert"]')!.textContent).toContain("both a start and an end");
+    await enter('[aria-label="Homepage slider start UTC"]', "2026-10-30T18:00");
+    await enter('[aria-label="Homepage slider end UTC"]', "2026-10-29T18:00");
+    await click("Save changes");
+    expect(save).not.toHaveBeenCalled();
+    expect(host.querySelector<HTMLInputElement>('[aria-label="Homepage slider end UTC"]')!.value).toBe("2026-10-29T18:00");
+    await enter('[aria-label="Homepage slider end UTC"]', "2026-11-02T18:00");
+    await click("Save changes");
+    expect(save).toHaveBeenCalledOnce();
+    expect(save.mock.calls[0][0].metadata?.organization).toMatchObject({ primary_channel: null, placements: [{ status: "scheduled", starts_at: "2026-10-30T18:00:00Z", ends_at: "2026-11-02T18:00:00Z" }] });
+    expect(save.mock.calls[0][0].metadata?.categories).toEqual(initial.metadata.categories);
+    expect(save.mock.calls[0][0]).not.toHaveProperty("public_url");
+    expect(save.mock.calls[0][0]).not.toHaveProperty("publication_state");
+  });
+
   it("requires confirmation before a saved revision replaces unsaved metadata and text", async () => {
     const initial = { ...demoDocuments()[0], revision: 2 };
     const historical = { ...initial, revision: 1, title: "Earlier headline", metadata: { tags: ["Archive"] } };

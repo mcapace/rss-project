@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveRedirect } from "@/lib/cms/redirects-server";
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,7 @@ export async function GET(request: Request) {
   const path = (url.searchParams.get("path") ?? "").slice(0, 2048);
   const host = (url.searchParams.get("host") ?? "").slice(0, 253) || null;
   if (!path.startsWith("/")) return NextResponse.json({ error: "path is required" }, { status: 422 });
+  if (!deliveryEnabled()) return NextResponse.json({ target: null, status: 404, unavailable: true }, { headers: { "Cache-Control": "no-store" } });
   try {
     const hit = await resolveRedirect(path, host);
     return NextResponse.json(hit ? { target: hit.target, status: hit.status, brand: hit.brand } : { target: null, status: 404 }, {

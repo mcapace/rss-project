@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
 import { deliverDocument, getPublishedDocument, isBrand, readerFromRequest } from "@/lib/delivery/content-server";
 
 export const runtime = "nodejs";
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request, { params }: { params: Promise<{ brand: string; slug: string }> }) {
   const { brand, slug } = await params;
   if (!isBrand(brand) || !/^[a-z0-9][a-z0-9-]{0,220}$/i.test(slug)) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if (!deliveryEnabled()) return NextResponse.json({ error: "Content delivery is disabled in this preview." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   try {
     const [document, reader] = await Promise.all([getPublishedDocument(brand, slug), readerFromRequest(request)]);
     if (!document) return NextResponse.json({ error: "Not found." }, { status: 404, headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "public, s-maxage=60" } });

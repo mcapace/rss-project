@@ -1,5 +1,5 @@
 import "server-only";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 import type { CmsJsonObject } from "@/lib/cms/types";
 
 export type RenditionFormat = "webp" | "avif" | "jpeg" | "png";
@@ -44,12 +44,17 @@ export function focalOf(item: CmsJsonObject): RenditionOptions["focal"] {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/** Dimensions after EXIF auto-rotation: orientations 5 to 8 swap width and height, and crops are expressed in that frame. */
+async function orientedSize(image: Sharp): Promise<{ width: number; height: number }> {
+  const meta = await image.metadata();
+  const swap = (meta.orientation ?? 1) >= 5;
+  return { width: (swap ? meta.height : meta.width) ?? 0, height: (swap ? meta.width : meta.height) ?? 0 };
+}
+
 /** Produce one rendition from an original: crop by stored geometry, else cover-crop around the focal point, then resize and encode. */
 export async function renderRendition(source: Buffer | Uint8Array, options: RenditionOptions): Promise<{ body: Buffer; contentType: string; width: number; height: number }> {
   let image = sharp(source, { failOn: "none", limitInputPixels: 80_000_000 }).rotate();
-  const meta = await image.metadata();
-  const srcWidth = meta.width ?? 0;
-  const srcHeight = meta.height ?? 0;
+  const { width: srcWidth, height: srcHeight } = await orientedSize(image);
   if (!srcWidth || !srcHeight) throw new Error("The image could not be read.");
 
   let region = { left: 0, top: 0, width: srcWidth, height: srcHeight };
@@ -83,8 +88,7 @@ export async function renderRendition(source: Buffer | Uint8Array, options: Rend
 /** Where the eye lands, from sharp's attention strategy, as a normalized focal point of the input image. */
 export async function detectFocalPoint(source: Buffer | Uint8Array): Promise<{ x: number; y: number }> {
   const image = sharp(source, { failOn: "none", limitInputPixels: 80_000_000 }).rotate();
-  const meta = await image.metadata();
-  const width = meta.width ?? 0, height = meta.height ?? 0;
+  const { width, height } = await orientedSize(image);
   if (!width || !height) return { x: 0.5, y: 0.5 };
   // A square cover crop with the attention strategy reports the focal point it centred on, in input coordinates.
   const side = Math.min(width, height, 512);

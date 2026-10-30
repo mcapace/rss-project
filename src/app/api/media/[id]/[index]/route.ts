@@ -3,6 +3,7 @@ import { requireCmsUser } from "@/lib/cms/auth-server";
 import { assertBrand, CmsError } from "@/lib/cms/access";
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { cmsFailure } from "@/lib/cms/http";
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
 import { isUuid } from "@/lib/cms/validation";
 import type { CmsJsonObject } from "@/lib/cms/types";
 import { getS3Client } from "@/lib/s3";
@@ -26,6 +27,8 @@ function allowedKey(key: unknown, brand: string, issue: string | null): key is s
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string; index: string }> }) {
   try {
+    // Preview deployments must not serve the inherited database's assets without the explicit opt-in.
+    if (!deliveryEnabled()) throw new CmsError(503, "Connected CMS access is disabled in this preview.", "preview_disabled");
     const { id, index: rawIndex } = await params;
     const index = Number(rawIndex);
     if (!isUuid(id) || !Number.isInteger(index) || index < 0 || index > 500) throw new CmsError(404, "Image not found.");

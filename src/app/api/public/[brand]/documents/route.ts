@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { CMS_DOCUMENT_KINDS } from "@/lib/cms/types";
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
 import { isBrand, listPublishedDocuments } from "@/lib/delivery/content-server";
 import { requiredTier } from "@/lib/delivery/paywall";
 
@@ -14,6 +15,7 @@ const PUBLIC_HEADERS = { "Access-Control-Allow-Origin": "*", "Cache-Control": "p
 export async function GET(request: Request, { params }: { params: Promise<{ brand: string }> }) {
   const { brand } = await params;
   if (!isBrand(brand)) return NextResponse.json({ error: "Unknown publication." }, { status: 404 });
+  if (!deliveryEnabled()) return NextResponse.json({ error: "Content delivery is disabled in this preview." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   const url = new URL(request.url);
   const kind = url.searchParams.get("kind");
   if (kind && !(CMS_DOCUMENT_KINDS as readonly string[]).includes(kind)) return NextResponse.json({ error: "Unknown content type." }, { status: 422 });

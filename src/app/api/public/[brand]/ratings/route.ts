@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { searchRatings } from "@/lib/cms/catalog-server";
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
 import { isBrand } from "@/lib/delivery/content-server";
 import type { RatingFilters } from "@/lib/editorial/platform-types";
 
@@ -12,6 +13,7 @@ const slug = (value: string | null) => value && /^[a-z0-9-]{1,220}$/.test(value)
 export async function GET(request: Request, { params }: { params: Promise<{ brand: string }> }) {
   const { brand } = await params;
   if (!isBrand(brand)) return NextResponse.json({ error: "Unknown publication." }, { status: 404 });
+  if (!deliveryEnabled()) return NextResponse.json({ error: "Content delivery is disabled in this preview." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   const url = new URL(request.url);
   const filters: RatingFilters = {
     q: (url.searchParams.get("q") ?? "").trim().slice(0, 200) || undefined, state: "published",

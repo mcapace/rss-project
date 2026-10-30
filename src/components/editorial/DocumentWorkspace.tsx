@@ -19,7 +19,7 @@ import { useAsync } from "./hooks";
 import { usePageTitle, useShell } from "./Shell";
 import { BodyEditor, type InsertableImage } from "./BodyEditor";
 import { PreviewMatrix } from "./PreviewMatrix";
-import { Button, Card, Empty, Field, LinkButton, Notice, Pill, Segmented, Skeleton, SkeletonRows, Switch, Tag } from "./ui";
+import { Button, Card, Empty, Field, IconButton, LinkButton, Notice, Pill, Segmented, Skeleton, SkeletonRows, Switch } from "./ui";
 
 type Draft = Pick<CmsDocument, "title" | "byline" | "body_html" | "excerpt" | "slug" | "public_url" | "publication_state" | "metadata">;
 type Tab = "write" | "preview" | "history" | "sources" | "media";
@@ -40,6 +40,13 @@ function MediaThumb({ src, alt, style }: { src: string; alt: string; style?: Rea
   return <img src={src} alt={alt} style={style} />;
 }
 
+
+function RailSection({ title, icon: Icon, defaultOpen = false, children }: { title: string; icon: typeof Info; defaultOpen?: boolean; children: React.ReactNode }) {
+  return <details className="ed-card still ed-rail-section" open={defaultOpen || undefined}>
+    <summary><span>{title}</span><Icon size={14} aria-hidden /></summary>
+    <div className="ed-rail-section-body">{children}</div>
+  </details>;
+}
 
 function RevisionDiff({ from, to, label }: { from: Draft; to: Draft; label: string }) {
   const segments = useMemo(() => textDiff(`${from.title}\n${from.byline}\n\n${stripHtml(from.body_html)}`, `${to.title}\n${to.byline}\n\n${stripHtml(to.body_html)}`), [from, to]);
@@ -230,21 +237,18 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <LinkButton href={href("/cms/library")} size="sm" variant="subtle" icon={ArrowLeft}>Library</LinkButton>
           <Pill tone={document.publication_state !== "published" && schedule ? "scheduled" : document.publication_state} />
-          <Tag>{CONTENT_TYPE_LABELS[document.kind].singular}</Tag>
-          <Tag>{SOURCE_SYSTEM_LABELS[document.source_system].short}</Tag>
         </div>
         <div className="ed-editor-status">
-          <span className="ed-wordcount"><PenLine size={13} aria-hidden />{words.toLocaleString()} words · {readingMinutes(words)} min read</span>
           <span>{saving ? "Saving…" : dirty ? "Unsaved changes" : lastSaved ? `Saved ${relativeTime(lastSaved)}` : `Revision ${document.revision}`}</span>
-          <Button size="sm" icon={Sparkles} ai onClick={() => openAssistant()} title="Review for SEO and GEO, or ask (⌘J)">Assistant</Button>
+          <IconButton label="Assistant (⌘J)" icon={Sparkles} ai onClick={() => openAssistant()} />
           <Button variant="primary" size="sm" icon={Save} disabled={!dirty || saving} onClick={save} title="Save (⌘S)">{saving ? "Saving…" : "Save"}</Button>
         </div>
       </div>
 
       {recovered && <div style={{ marginBottom: 12 }}><Notice icon={RotateCcw}><span>You have unsaved edits from an earlier visit to this document.</span> <button type="button" className="ed-link" onClick={() => { setDraft(recovered); setRecovered(null); }}>Restore them</button> · <button type="button" className="ed-link" onClick={() => { setRecovered(null); try { window.localStorage.removeItem(draftKey(document.id)); } catch { /* ignore */ } }}>Discard</button></Notice></div>}
       {error && <div style={{ marginBottom: 12 }}><Notice tone="error" icon={X}>{error.message}{error.conflict && <> <button type="button" className="ed-link" onClick={() => setTab("history")}>Open History</button></>}</Notice></div>}
-      {gate && <div style={{ marginBottom: 12 }}><Notice tone="warning">Editorial review required before this can publish{reasons.length ? `: ${reasons.join(", ")}` : "."}</Notice></div>}
-      {warnings.length > 0 && !gate && <div style={{ marginBottom: 12 }}><Notice>{warnings[0]}</Notice></div>}
+      {gate && <p className="ed-gate"><Info size={13} aria-hidden />Review required before publishing{reasons.length ? `: ${reasons.join(", ")}` : "."}</p>}
+      {warnings.length > 0 && !gate && <p className="ed-gate"><Info size={13} aria-hidden />{warnings[0]}</p>}
 
       <Segmented label="Editor view" value={tab} onChange={setTab} options={tabs} />
 
@@ -254,6 +258,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           onChange={event => { update({ title: event.target.value }); event.target.style.height = "auto"; event.target.style.height = `${event.target.scrollHeight}px`; }} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
         <input className="ed-byline-input" style={{ marginTop: 8 }} value={draft.byline} placeholder="Byline" aria-label="Byline" maxLength={1000} onChange={event => update({ byline: event.target.value })} />
         <BodyEditor key={`${document.id}:${document.revision}`} html={draft.body_html} onChange={body_html => update({ body_html })} images={insertable} />
+        <p className="ed-editor-foot"><PenLine size={12} aria-hidden />{words.toLocaleString()} words · {readingMinutes(words)} min read · {CONTENT_TYPE_LABELS[document.kind].singular} · {SOURCE_SYSTEM_LABELS[document.source_system].short}</p>
       </div>}
 
       {tab === "preview" && <div style={{ marginTop: 16 }}><PreviewMatrix payload={{ title: draft.title, byline: draft.byline, excerpt: draft.excerpt, section: sectionOf(draft.metadata), html: draft.body_html, brand: document.brand, brandName: BRAND_NAMES[document.brand] }} /></div>}
@@ -313,7 +318,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
             const palette = Array.isArray(item.palette) ? (item.palette as string[]) : [];
             const cropCount = Object.keys(crops).length;
             return <Card key={index} pad="sm">
-              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 14, alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 14, alignItems: "start" }}>
                 <div style={{ display: "grid", gap: 6 }}>
                   <button type="button" className="ed-media-tile" data-lead={item.is_lead === true} style={{ aspectRatio: "4 / 3", cursor: preview?.preview_url ? "zoom-in" : "default" }} onClick={() => preview?.preview_url && setCropIndex(index)} title={preview?.preview_url ? "Crop this image" : "No preview available"}>
                     {preview?.preview_url ? <MediaThumb src={preview.preview_url} alt={typeof item.alt === "string" ? item.alt : ""} style={cropStyle(crops["4:3"] ?? crops["3:2"] ?? crops["16:9"] ?? null)} /> : <span style={{ position: "static", display: "grid", placeItems: "center", height: "100%", background: "transparent", color: "var(--muted)" }}><ImageIcon size={20} aria-hidden /></span>}
@@ -331,11 +336,10 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
                     <input className="ed-input" placeholder="Credit" aria-label="Credit" value={typeof item.credit === "string" ? item.credit : ""} onChange={event => set({ credit: event.target.value })} />
                     <input className="ed-input" placeholder="Alt text" aria-label="Alt text" value={typeof item.alt === "string" ? item.alt : ""} onChange={event => set({ alt: event.target.value })} />
                   </div>
-                  {vision ? <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.5 }}><strong style={{ color: "var(--foreground)", fontWeight: 500 }}>Searchable description.</strong> {vision.description} <em style={{ fontStyle: "normal", color: "var(--muted-soft)" }}>· {vision.style}{Array.isArray(vision.tags) && vision.tags.length ? ` · ${vision.tags.slice(0, 6).join(", ")}` : ""}</em></div>
-                    : <p style={{ fontSize: 12.5, color: "var(--muted-soft)" }}>Not yet described. Describing an image lets editors find it by subject, style, mood and color.</p>}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    <Button size="sm" icon={Crop} disabled={!preview?.preview_url} onClick={() => setCropIndex(index)}>Crop</Button>
-                    <Button size="sm" icon={Sparkles} ai disabled={describing !== null} onClick={() => describe(index)}>{describing === index ? "Describing…" : vision ? "Describe again" : "Describe with AI"}</Button>
+                  {vision && <p style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.5, margin: 0 }}>{vision.description} <span style={{ color: "var(--muted-soft)" }}>· {vision.style}</span></p>}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 2, marginLeft: -8 }}>
+                    <Button size="sm" variant="subtle" icon={Crop} disabled={!preview?.preview_url} onClick={() => setCropIndex(index)}>Crop</Button>
+                    <Button size="sm" variant="subtle" icon={Sparkles} disabled={describing !== null} onClick={() => describe(index)}>{describing === index ? "Describing…" : vision ? "Describe again" : "Describe for search"}</Button>
                     {!palette.length && preview?.preview_url && <Button size="sm" variant="subtle" icon={Palette} onClick={async () => { const result = await extractPalette(preview.preview_url as string); if (result?.palette.length) set({ palette: result.palette, palette_names: result.names.join(", ") }); else toast("The palette could not be read from this image.", "error"); }}>Palette</Button>}
                   </div>
                 </div>
@@ -370,7 +374,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
       </Card>
 
       <Card pad={false} className="ed-rail-card still">
-        <h3>Properties <Info size={14} aria-hidden /></h3>
+        <h3>Story <Info size={14} aria-hidden /></h3>
         <Field label="Section" htmlFor="ed-section"><input id="ed-section" className="ed-input" value={sectionOf(draft.metadata)} onChange={event => updateMeta({ section: event.target.value, categories: event.target.value ? [event.target.value] : [] })} placeholder="News, Features, Ratings…" /></Field>
         <Field label="Summary" htmlFor="ed-excerpt" hint="Shown in lists and feeds."><textarea id="ed-excerpt" className="ed-textarea" rows={3} maxLength={5000} value={draft.excerpt} onChange={event => update({ excerpt: event.target.value })} /></Field>
         <Field label="Slug" htmlFor="ed-slug" hint="Lowercase and hyphenated. Existing URLs stay put until a route decision.">
@@ -394,12 +398,11 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         <Field label="Reviewer" htmlFor="ed-rating-reviewer"><input id="ed-rating-reviewer" className="ed-input" value={typeof rating.reviewer === "string" ? rating.reviewer : ""} onChange={event => updateMeta({ rating: { ...rating, reviewer: event.target.value } })} /></Field>
       </Card> : null}
 
-      <Card pad={false} className="ed-rail-card still">
-        <h3>Search <Search size={14} aria-hidden /></h3>
+      <RailSection title="Search" icon={Search}>
         <Field label="Search title" htmlFor="ed-seo-title" hint={`${String(seo.title ?? "").length}/60`}><input id="ed-seo-title" className="ed-input" maxLength={120} value={typeof seo.title === "string" ? seo.title : ""} onChange={event => updateMeta({ seo: { ...seo, title: event.target.value } })} placeholder={draft.title} /></Field>
         <Field label="Search description" htmlFor="ed-seo-description" hint={`${String(seo.description ?? "").length}/160`}><textarea id="ed-seo-description" className="ed-textarea" rows={3} maxLength={320} value={typeof seo.description === "string" ? seo.description : ""} onChange={event => updateMeta({ seo: { ...seo, description: event.target.value } })} placeholder={draft.excerpt} /></Field>
         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 12, fontSize: 13 }}>Hide from search engines <Switch checked={seo.no_index === true} onChange={next => updateMeta({ seo: { ...seo, no_index: next } })} label="Hide from search engines" /></label>
-      </Card>
+      </RailSection>
 
       {performancePath && <Card pad={false} className="ed-rail-card still">
         <h3>Performance <Activity size={14} aria-hidden /></h3>
@@ -415,8 +418,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         </div>}
       </Card>}
 
-      <Card pad={false} className="ed-rail-card still">
-        <h3>Details <History size={14} aria-hidden /></h3>
+      <RailSection title="Details" icon={History}>
         <dl className="ed-props">
           <div><dt>Type</dt><dd>{CONTENT_TYPE_LABELS[document.kind].singular}</dd></div>
           <div><dt>Source</dt><dd title={SOURCE_SYSTEM_LABELS[document.source_system].detail}>{SOURCE_SYSTEM_LABELS[document.source_system].short}</dd></div>
@@ -427,7 +429,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           <div><dt>Publication</dt><dd style={{ textTransform: "uppercase" }}>{brand}</dd></div>
         </dl>
         <div style={{ marginTop: 12 }}><Button size="sm" variant="subtle" icon={Eye} onClick={() => setTab("preview")}>Preview</Button></div>
-      </Card>
+      </RailSection>
     </aside>
   </div>;
 }

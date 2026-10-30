@@ -10,6 +10,19 @@ import { useAsync, useDismiss, useTheme } from "./hooks";
 import { ARCHIVE_NAV, PRIMARY_NAV, PRINT_NAV, type NavItem } from "./nav";
 import { useShell } from "./Shell";
 
+/** Logo heights tuned so the four wordmarks read at a similar visual weight. */
+const BRAND_LOGO_HEIGHT: Record<string, number> = { ws: 21, wa: 24, ca: 16, mw: 11 };
+const HAS_WHITE: Record<string, boolean> = { ws: true, wa: true, ca: true, mw: false };
+
+export function PublicationLogo({ brand, height, className = "" }: { brand: string; height: number; className?: string }) {
+  return <span className={`ed-logo ${className}`} style={{ height }} data-invert-dark={HAS_WHITE[brand] ? undefined : "true"}>
+    {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by height */}
+    <img className="ed-logo-light" src={`/brands-cms/${brand}.png`} alt={BRAND_NAMES[brand as keyof typeof BRAND_NAMES] ?? brand} style={{ height }} />
+    {HAS_WHITE[brand] && /* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by height */
+      <img className="ed-logo-dark" src={`/brands-cms/${brand}-white.png`} alt="" aria-hidden style={{ height }} />}
+  </span>;
+}
+
 function PublicationSwitcher({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { brand, brands, setBrand, user, demo, href } = useEditorial();
   const [open, setOpen] = useState(false);
@@ -21,9 +34,8 @@ function PublicationSwitcher({ collapsed, onNavigate }: { collapsed: boolean; on
   }
   return <div ref={ref} className="ed-switcher" style={{ width: "100%" }}>
     <button type="button" className="ed-switcher-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(value => !value)}>
-      <span className="ed-switcher-mark" data-brand={brand} style={{ background: brandColor(brand) }}>{BRAND_SHORT[brand]}</span>
-      <span style={{ minWidth: 0, flex: 1 }}>
-        <span className="ed-switcher-title">{BRAND_NAMES[brand]}</span>
+      <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 5 }}>
+        <PublicationLogo brand={brand} height={BRAND_LOGO_HEIGHT[brand]} />
         <span className="ed-switcher-sub">M. Shanken · {roleLabel}</span>
       </span>
       <ChevronsUpDown size={14} style={{ color: "var(--muted)", flexShrink: 0 }} aria-hidden />
@@ -42,7 +54,7 @@ function NavLink({ item, collapsed, badge, onNavigate }: { item: NavItem; collap
   const pathname = usePathname();
   const { href, demo } = useEditorial();
   const active = item.match(pathname);
-  const target = item.href.startsWith("/cms") || item.href.startsWith("/admin") ? href(item.href) : item.href;
+  const target = href(item.href);
   return <Link href={target} onClick={onNavigate} data-collapsed={collapsed} title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined} aria-current={active ? "page" : undefined} className="ed-nav-link">
     {createElement(item.icon, { size: 16, strokeWidth: 1.75, "aria-hidden": true })}
     <span>{item.label}</span>

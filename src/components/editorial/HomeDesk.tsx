@@ -55,27 +55,17 @@ export function HomeDesk() {
   return <div className="ed-stack">
     <section className="ed-hero">
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 20 }}>
-        <div className="ed-hero-copy">
+        <div className="ed-hero-copy" style={{ maxWidth: 640 }}>
           <p className="muted" style={{ fontSize: 12.5, fontWeight: 500 }}>{greeting(now)}, {firstName} · {BRAND_NAMES[brand]}</p>
           <h2 style={{ marginTop: 6 }}>
             {overview.data ? <>{overview.data.review} {overview.data.review === 1 ? "story needs" : "stories need"} review{upcoming.length ? `, ${upcoming.length} scheduled ahead` : ""}.</> : <Skeleton width={320} height={28} style={{ background: "rgb(255 255 255 / 0.12)" }} />}
           </h2>
-          <p style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.55 }}>Print intake, imported archives and new writing land here. Review what arrived, schedule what is ready, and keep every story&rsquo;s history.</p>
+          <p style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.55 }}>Review what arrived, schedule what is ready, and keep every story&rsquo;s history.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 }}>
             <Button icon={Plus} onClick={() => openCreate("article")}>New article</Button>
             <LinkButton href={href("/cms/review")} variant="primary" className="secondary" icon={ClipboardCheck}>Open review queue</LinkButton>
             {!demo && <LinkButton href={href("/admin/new")} variant="primary" className="secondary" icon={FileInput}>Upload an issue</LinkButton>}
           </div>
-        </div>
-        <div className="ed-hero-stats">
-          {[
-            ["Needs review", overview.data?.review],
-            ["Drafts", overview.data?.drafts],
-            ["Published, 7 days", published.data ? publishedThisWeek.length : undefined],
-            ["Scheduled", scheduled.data ? scheduled.data.scheduled.length : undefined],
-          ].map(([label, value]) => <div key={label as string} className="ed-hero-stat">
-            <strong>{value == null ? <Skeleton width={36} height={26} style={{ background: "rgb(255 255 255 / 0.12)" }} /> : value}</strong><span>{label}</span>
-          </div>)}
         </div>
       </div>
     </section>

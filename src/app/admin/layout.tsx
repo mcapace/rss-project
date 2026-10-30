@@ -1,9 +1,9 @@
-import { CmsAccessScreen } from "@/components/cms/CmsAccessScreen";
-import { authorizeCmsPage } from "@/lib/cms/page-access";
+import type { ReactNode } from "react";
+import { WorkspaceLayout } from "@/components/editorial/WorkspaceLayout";
 
 export const dynamic = "force-dynamic";
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const access = await authorizeCmsPage("/admin");
-  if (!access.ok) return <CmsAccessScreen reason={access.reason} />;
-  return children;
+
+/** Print intake pages live in the same editorial shell as /cms. */
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return <WorkspaceLayout>{children}</WorkspaceLayout>;
 }

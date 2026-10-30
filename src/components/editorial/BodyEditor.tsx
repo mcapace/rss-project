@@ -12,7 +12,8 @@ import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Code2, Eraser, Heading2, Heading3, Highlighter, ImagePlus, Italic, Link as LinkIcon, List, ListOrdered, Minus, Quote, Redo2, SquareCode, Strikethrough, Subscript as SubIcon, Superscript as SupIcon, Table as TableIcon, Underline, Undo2, Video } from "lucide-react";
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Code2, Eraser, Heading2, Heading3, Highlighter, ImagePlus, Italic, Link as LinkIcon, List, ListOrdered, Minus, MoreHorizontal, Quote, Redo2, SquareCode, Strikethrough, Subscript as SubIcon, Superscript as SupIcon, Table as TableIcon, Type, Underline, Undo2, Video } from "lucide-react";
+import { useDismiss } from "./hooks";
 import { Notice } from "./ui";
 
 /* ------------------------------------------------------------------ */
@@ -117,6 +118,10 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
   const [field, setField] = useState("");
   const [fieldError, setFieldError] = useState("");
   const [warning, setWarning] = useState("");
+  const [menu, setMenu] = useState<"" | "style" | "more">("");
+  const closeMenu = useCallback(() => setMenu(""), []);
+  const menuRef = useDismiss(menu === "style", closeMenu);
+  const moreRef = useDismiss(menu === "more", closeMenu);
   const preserveSource = useCallback(() => { setSourceMode(true); setPanel(""); setWarning("This story contains elements the visual editor cannot preserve. Its HTML is kept exactly here; use Preview to read it."); }, []);
 
   const editor = useEditor({
@@ -196,40 +201,49 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
 
   return <div className="ed-body">
     <div className="ed-body-toolbar" role="toolbar" aria-label="Text formatting">
-      <select className="ed-select ed-font-select" aria-label="Font" disabled={disabled} value={FONTS.some(font => font.value === active?.font) ? active?.font ?? "" : ""} onChange={event => event.target.value ? chain().setFontFamily(event.target.value).run() : chain().unsetFontFamily().run()}>
-        {FONTS.map(font => <option key={font.label} value={font.value}>{font.label}</option>)}
-      </select>
-      <select className="ed-select ed-font-select" aria-label="Size" disabled={disabled} value={active?.size ?? ""} onChange={event => event.target.value ? chain().setFontSize(event.target.value).run() : chain().unsetFontSize().run()}>
-        {SIZES.map(size => <option key={size || "default"} value={size}>{size || "Size"}</option>)}
-      </select>
-      <input type="color" className="ed-color-input" aria-label="Text color" title="Text color" disabled={disabled} value={/^#[0-9a-f]{6}$/i.test(active?.color ?? "") ? active!.color : "#171717"} onChange={event => chain().setColor(event.target.value).run()} />
+      <div ref={menuRef} style={{ display: "contents" }}>
+        <button type="button" title="Text style" aria-label="Text style" aria-haspopup="menu" aria-expanded={menu === "style"} disabled={disabled} onClick={() => setMenu(menu === "style" ? "" : "style")} style={{ width: "auto", padding: "0 8px", gap: 4, fontSize: 12.5, fontWeight: 500 }}><Type size={15} strokeWidth={1.8} />Style<ChevronDown size={12} /></button>
+        {menu === "style" && <div className="ed-menu ed-tool-popover" role="menu" aria-label="Text style">
+          <label>Font<select className="ed-select" aria-label="Font" value={FONTS.some(font => font.value === active?.font) ? active?.font ?? "" : ""} onChange={event => { if (event.target.value) chain().setFontFamily(event.target.value).run(); else chain().unsetFontFamily().run(); }}>{FONTS.map(font => <option key={font.label} value={font.value}>{font.label}</option>)}</select></label>
+          <label>Size<select className="ed-select" aria-label="Size" value={active?.size ?? ""} onChange={event => { if (event.target.value) chain().setFontSize(event.target.value).run(); else chain().unsetFontSize().run(); }}>{SIZES.map(size => <option key={size || "default"} value={size}>{size || "Default"}</option>)}</select></label>
+          <label>Color<span style={{ display: "flex", alignItems: "center", gap: 8 }}><input type="color" className="ed-color-input" aria-label="Text color" value={/^#[0-9a-f]{6}$/i.test(active?.color ?? "") ? active!.color : "#171717"} onChange={event => chain().setColor(event.target.value).run()} /><button type="button" className="ed-button sm" style={{ width: "auto" }} onClick={() => chain().unsetColor().run()}>Reset</button></span></label>
+          <label>Emphasis<span style={{ display: "flex", gap: 4 }}>
+            <button type="button" className="ed-button sm" aria-pressed={active?.highlight} style={{ width: "auto" }} onClick={() => chain().toggleHighlight({ color: "#fff3a3" }).run()}><Highlighter size={13} /> Highlight</button>
+            <button type="button" className="ed-button sm" aria-pressed={active?.strike} style={{ width: "auto" }} onClick={() => chain().toggleStrike().run()}><Strikethrough size={13} /> Strike</button>
+            <button type="button" className="ed-button sm" aria-pressed={active?.sub} style={{ width: "auto" }} onClick={() => chain().toggleSubscript().run()}><SubIcon size={13} /></button>
+            <button type="button" className="ed-button sm" aria-pressed={active?.sup} style={{ width: "auto" }} onClick={() => chain().toggleSuperscript().run()}><SupIcon size={13} /></button>
+          </span></label>
+        </div>}
+      </div>
       <span className="sep" aria-hidden />
       {tool("Bold", Bold, active?.bold, () => chain().toggleBold().run())}
       {tool("Italic", Italic, active?.italic, () => chain().toggleItalic().run())}
       {tool("Underline", Underline, active?.underline, () => chain().toggleUnderline().run())}
-      {tool("Strikethrough", Strikethrough, active?.strike, () => chain().toggleStrike().run())}
-      {tool("Highlight", Highlighter, active?.highlight, () => chain().toggleHighlight({ color: "#fff3a3" }).run())}
-      {tool("Subscript", SubIcon, active?.sub, () => chain().toggleSubscript().run())}
-      {tool("Superscript", SupIcon, active?.sup, () => chain().toggleSuperscript().run())}
       <span className="sep" aria-hidden />
       {tool("Heading", Heading2, active?.h2, () => chain().toggleHeading({ level: 2 }).run())}
       {tool("Subheading", Heading3, active?.h3, () => chain().toggleHeading({ level: 3 }).run())}
       {tool("Bulleted list", List, active?.bullet, () => chain().toggleBulletList().run())}
       {tool("Numbered list", ListOrdered, active?.ordered, () => chain().toggleOrderedList().run())}
       {tool("Quote", Quote, active?.quote, () => chain().toggleBlockquote().run())}
-      {tool("Code block", SquareCode, active?.code, () => chain().toggleCodeBlock().run())}
-      {tool("Divider", Minus, false, () => chain().setHorizontalRule().run())}
-      <span className="sep" aria-hidden />
-      {tool("Align left", AlignLeft, active?.left, () => chain().setTextAlign("left").run())}
-      {tool("Align center", AlignCenter, active?.center, () => chain().setTextAlign("center").run())}
-      {tool("Align right", AlignRight, active?.right, () => chain().setTextAlign("right").run())}
-      {tool("Justify", AlignJustify, active?.justify, () => chain().setTextAlign("justify").run())}
       <span className="sep" aria-hidden />
       <button type="button" title="Link" aria-label="Link" aria-pressed={active?.link || panel === "link"} disabled={disabled} onClick={() => openPanel("link")}><LinkIcon size={16} strokeWidth={1.8} /></button>
       <button type="button" title="Insert image" aria-label="Insert image" aria-pressed={panel === "image"} disabled={disabled} onClick={() => openPanel("image")}><ImagePlus size={16} strokeWidth={1.8} /></button>
       <button type="button" title="Embed video" aria-label="Embed video" aria-pressed={panel === "video"} disabled={disabled} onClick={() => openPanel("video")}><Video size={16} strokeWidth={1.8} /></button>
-      {tool("Insert table", TableIcon, false, () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
-      {tool("Clear formatting", Eraser, false, () => chain().unsetAllMarks().clearNodes().run())}
+      <div ref={moreRef} style={{ display: "contents" }}>
+        <button type="button" title="More formatting" aria-label="More formatting" aria-haspopup="menu" aria-expanded={menu === "more"} disabled={disabled} onClick={() => setMenu(menu === "more" ? "" : "more")}><MoreHorizontal size={16} strokeWidth={1.8} /></button>
+        {menu === "more" && <div className="ed-menu" role="menu" aria-label="More formatting" style={{ left: "auto", right: 0 }}>
+          {([
+            ["Align left", AlignLeft, active?.left, () => chain().setTextAlign("left").run()],
+            ["Align center", AlignCenter, active?.center, () => chain().setTextAlign("center").run()],
+            ["Align right", AlignRight, active?.right, () => chain().setTextAlign("right").run()],
+            ["Justify", AlignJustify, active?.justify, () => chain().setTextAlign("justify").run()],
+            ["Code block", SquareCode, active?.code, () => chain().toggleCodeBlock().run()],
+            ["Divider", Minus, false, () => chain().setHorizontalRule().run()],
+            ["Insert table", TableIcon, false, () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()],
+            ["Clear formatting", Eraser, false, () => chain().unsetAllMarks().clearNodes().run()],
+          ] as const).map(([label, Icon, on, run]) => <button key={label} type="button" role="menuitemcheckbox" aria-checked={!!on} className="ed-menu-item" data-active={!!on} onClick={() => { run(); setMenu(""); }}><Icon size={15} aria-hidden /><span>{label}</span></button>)}
+        </div>}
+      </div>
       <span className="spacer" />
       <button type="button" title="Undo" aria-label="Undo" disabled={disabled} onClick={() => chain().undo().run()}><Undo2 size={16} strokeWidth={1.8} /></button>
       <button type="button" title="Redo" aria-label="Redo" disabled={disabled} onClick={() => chain().redo().run()}><Redo2 size={16} strokeWidth={1.8} /></button>

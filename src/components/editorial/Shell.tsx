@@ -30,10 +30,11 @@ type ShellContextValue = {
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
+/** Pages rendered outside the shell (tests, embeds) get inert shell controls. */
+const DETACHED_SHELL: ShellContextValue = { title: null, setTitle: () => {}, openCreate: () => {}, setDirty: () => {}, openAssistant: () => {}, setAssistantContext: () => {} };
+
 export function useShell(): ShellContextValue {
-  const value = useContext(ShellContext);
-  if (!value) throw new Error("useShell must be used inside Shell.");
-  return value;
+  return useContext(ShellContext) ?? DETACHED_SHELL;
 }
 
 /** Sets the breadcrumb title for the current page while mounted. */

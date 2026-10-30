@@ -1,8 +1,9 @@
-import { CmsAccessScreen } from "@/components/cms/CmsAccessScreen";
-import { authorizeCmsPage } from "@/lib/cms/page-access";
+import type { ReactNode } from "react";
+import { WorkspaceLayout } from "@/components/editorial/WorkspaceLayout";
+
 export const dynamic = "force-dynamic";
-export default async function ReaderLayout({ children }: { children: React.ReactNode }) {
-  const access = await authorizeCmsPage("/reader");
-  if (!access.ok) return <CmsAccessScreen reason={access.reason} />;
-  return children;
+
+/** The legacy edition reader lives in the same editorial shell as /cms. */
+export default function ReaderLayout({ children }: { children: ReactNode }) {
+  return <WorkspaceLayout>{children}</WorkspaceLayout>;
 }

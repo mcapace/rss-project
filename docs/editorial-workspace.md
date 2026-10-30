@@ -19,8 +19,26 @@ changes. Every style is scoped under the `.ed` class in
 | `/cms/schedule` | Publishing calendar: published items by publication date and drafts with a planned time, plus an upcoming list. |
 | `/cms/print` | Print intake: issue status, worker progress, extraction stats, links to candidates and to `/admin/[issue]`. Polls while an issue processes. |
 | `/cms/migration` | Migration inventory for the selected publication. |
+| `/admin/new` | Upload an issue: publication picker with the publication logos, issue ID and name, table-of-contents pages, PDF drop zone with progress. |
+| `/admin/[issueUuid]` | Issue status: extraction steps, live refresh while the worker runs, counts of articles, images and notes, retry, link to the candidates. Adopts the issue's own publication if the URL names another. |
+| `/reader` | Legacy editions: published RSS editions from the earlier workflow, with an item list, preview pane, image gallery and GUID copy. |
+| `/login` | Sign-in card in the same style, with the publication logos and a link to the demo. |
 
-The old demo link `/cms/demo` redirects to `/cms?demo=1`.
+`/admin` redirects to `/cms/print`, which is the issue inbox. The error and
+not-found pages use the same card. The old demo link `/cms/demo` redirects to
+`/cms?demo=1`.
+
+## Every page shares the shell
+
+`src/components/editorial/WorkspaceLayout.tsx` is the server layout used by
+`/cms`, `/admin` and `/reader`: it loads the session (`loadWorkspaceAccess`)
+and renders `CmsRoot`, which picks the demo or the connected workspace. The
+theme boot script runs from the root layout so sign-in and error pages respect
+the stored light or dark preference too. The earlier Tailwind header, the
+`components/ui` kit and the `cms.css` access screen are gone; everything
+renders through the `.ed` design system. The publication logos live in
+`public/brands-cms/` (`PublicationLogo` in `Sidebar.tsx` swaps the white
+variant in dark mode and inverts Market Watch, which has none).
 
 ## Demo and connected modes
 

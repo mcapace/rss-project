@@ -12,6 +12,10 @@ export function AccessScreen({ reason }: { reason: "setup" | "denied" | "unavail
   return <main className="ed ed-access">
     <section className="ed-card pad ed-access-card still">
       <span className="ed-wordmark"><span className="ed-wordmark-mark">MS</span><span>Editorial</span></span>
+      <div className="ed-logo-row" aria-label="Publications">
+        {["ws", "wa", "ca", "mw"].map(brand => /* eslint-disable-next-line @next/next/no-img-element -- static brand asset */
+          <img key={brand} src={`/brands-cms/${brand}.png`} alt="" style={{ height: brand === "wa" ? 18 : brand === "mw" ? 9 : 13 }} />)}
+      </div>
       <h1>{content.title}</h1>
       <p>{content.text}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 22 }}>

@@ -36,6 +36,7 @@ export const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...PRINT_NAV, ...ARCHIVE_NAV]
 /** The section a path belongs to, for breadcrumbs and the mobile tab bar. */
 export function sectionFor(pathname: string): { label: string; href: string; icon: LucideIcon } {
   if (pathname.startsWith("/cms/doc/")) return { label: "Content library", href: "/cms/library", icon: LibraryBig };
+  if (pathname.startsWith("/admin/") && pathname !== "/admin/new") return { label: "Print intake", href: "/cms/print", icon: FileInput };
   const item = ALL_NAV.find(entry => entry.match(pathname));
   return item ? { label: item.label, href: item.href, icon: item.icon } : { label: "Workspace", href: "/cms", icon: Newspaper };
 }

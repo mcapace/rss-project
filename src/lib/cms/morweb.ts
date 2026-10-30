@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { CmsBrand, CmsDocumentKind, CmsIngestInput, CmsJsonObject, CmsPublicationState } from "./types";
+import { CMS_DOCUMENT_KINDS } from "./types";
 
 type RawRecord = Record<string, unknown>;
 
@@ -17,6 +18,8 @@ export interface MorwebEnvelope {
 export interface MorwebImportOptions {
   brand?: CmsBrand;
   sourceOrigin?: string;
+  /** Preserve every structurally valid identity by default. Strict mode holds records needing review. */
+  policy?: "preserve" | "strict";
   /** Explicit, reviewed mappings keyed by Posts:123 or Pages:456. */
   kindOverrides?: Record<string, CmsDocumentKind>;
   publicationOverrides?: Record<string, { state: CmsPublicationState; evidence: string }>;
@@ -40,6 +43,7 @@ export interface MorwebPreparedRecord {
   document: CmsIngestInput | null;
   public_url: string | null;
   findings: MorwebFinding[];
+  review_reasons: string[];
   media: { url: string; status: "captured" | "missing" | "unverified" }[];
 }
 
@@ -47,11 +51,15 @@ export interface MorwebImportPlan {
   documents: CmsIngestInput[];
   report: {
     format: "morweb-import-plan";
+    policy: "preserve" | "strict";
     source_records: number;
     unique_identities: number;
     duplicate_identical_records: number;
     eligible_records: number;
     held_records: number;
+    fatal_records: number;
+    review_required_records: number;
+    review_required_by_kind: Record<CmsDocumentKind, number>;
     eligible_by_kind: Record<CmsDocumentKind, number>;
     classified_by_kind: Record<CmsDocumentKind, number>;
     eligible_by_publication_state: Record<CmsPublicationState, number>;
@@ -65,9 +73,14 @@ export interface MorwebImportPlan {
   };
 }
 
-const ARTICLE_CATEGORY_IDS = new Set(["18", "34", "37", "51", "52", "53", "54", "60", "70", "71", "72"]);
-const SPECIAL_CATEGORY_IDS = new Set(["32", "33", "62", "74", "84", "87"]);
-const ARTICLE_CATEGORY_NAMES = new Set(["news", "whisky life", "whisky 101", "magazine", "whisky gear", "insights", "rating & reviews", "migrated", "migration", "uncategorized", "whiskyfest"]);
+const ARTICLE_CATEGORY_IDS = new Set(["18", "28", "34", "37", "51", "52", "54", "60", "65", "70", "71", "72", "79"]);
+const TEST_CATEGORY_IDS = new Set(["66", "67", "77", "78", "81", "84", "86", "87"]);
+const TYPED_CATEGORY_IDS: Record<string, CmsDocumentKind> = { "32": "collection_entry", "33": "directory_entry", "50": "rating", "62": "glossary_entry", "74": "product_review" };
+const ARTICLE_CATEGORY_NAMES = new Set(["news", "whisky life", "whisky 101", "magazine", "whisky gear", "insights", "rating & reviews", "migrated", "migration", "whiskyfest", "homepage slider", "homepage news slider", "90plus"]);
+const PLACEMENT_CATEGORIES = {
+  "28": { slot: "homepage_slider", label: "Homepage Slider" },
+  "65": { slot: "homepage_news_slider", label: "Homepage News Slider" },
+} as const;
 const DATE_KEYS = ["date", "created", "modified", "published_date", "publish_dateStamp", "unpublished_date", "secondary_date"];
 const PUBLICATION_KEYS = ["published", "published_flag", "published_switch", "published_class", "status", "status_id", "publish", "draft", "archive", "unpublished_flag", "secondary_flag"];
 const SEO_KEYS = ["canonical_url", "meta_title", "meta_description", "meta_keywords", "og_title", "og_description", "og_image", "no_index", "no_follow", "noindex", "nosearch"];
@@ -82,6 +95,10 @@ function string(value: unknown): string {
 
 function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.map(string).filter(Boolean) : [];
+}
+
+function taxonomyIds(value: unknown): string[] {
+  return [...new Set(strings(value).map(id => id.replace(/^id(?=\d+$)/, "")))];
 }
 
 function pick(record: RawRecord, keys: string[]): CmsJsonObject {
@@ -180,17 +197,22 @@ function resolveUrl(value: unknown, origin: string): string | null {
   } catch { return null; }
 }
 
-function classify(record: RawRecord, sourceCollection: "Posts" | "Pages", override?: CmsDocumentKind): CmsDocumentKind | null {
-  if (override) return override;
-  if (sourceCollection === "Pages") return "page";
-  const ids = strings(record.category_selected);
-  if (ids.includes("50")) return "rating";
-  if (ids.some(id => SPECIAL_CATEGORY_IDS.has(id))) return null;
-  const customType = string(object(record.custom_fields)?.custom_post_type ?? record.custom_post_type).trim();
-  if (customType && !["post", "blog", "article"].includes(customType)) return null;
-  if (ids.some(id => ARTICLE_CATEGORY_IDS.has(id))) return "article";
+function classify(record: RawRecord, sourceCollection: "Posts" | "Pages", override?: CmsDocumentKind): { kind: CmsDocumentKind; review: boolean } {
+  if (override) return { kind: override, review: override === "legacy_record" };
+  if (sourceCollection === "Pages") return { kind: "page", review: false };
+  const ids = taxonomyIds(record.category_selected);
+  if (ids.some(id => TEST_CATEGORY_IDS.has(id))) return { kind: "legacy_record", review: true };
+  const customType = string(object(record.custom_fields)?.custom_post_type ?? record.custom_post_type).trim().toLowerCase();
+  const unknownCustomType = Boolean(customType && !["post", "blog", "article"].includes(customType));
+  const typed = [...new Set(ids.map(id => TYPED_CATEGORY_IDS[id]).filter(Boolean))];
+  // A rating can also be in a Top 20 collection. Preserve its known type, but require
+  // review when a source mixes more than one structured content type.
+  if (ids.includes("50")) return { kind: "rating", review: typed.length > 1 || unknownCustomType };
+  if (typed.length === 1 && !unknownCustomType) return { kind: typed[0], review: false };
+  if (typed.length > 1 || unknownCustomType) return { kind: "legacy_record", review: true };
+  if (ids.some(id => ARTICLE_CATEGORY_IDS.has(id))) return { kind: "article", review: false };
   const labels = string(record.category).toLowerCase().split(",").map(part => part.trim());
-  return labels.some(label => ARTICLE_CATEGORY_NAMES.has(label)) ? "article" : null;
+  return labels.some(label => ARTICLE_CATEGORY_NAMES.has(label)) ? { kind: "article", review: false } : { kind: "legacy_record", review: true };
 }
 
 function sourceState(envelope: MorwebEnvelope, override?: NonNullable<MorwebImportOptions["publicationOverrides"]>[string]): { state: CmsPublicationState; resolved: boolean } {
@@ -267,39 +289,45 @@ export function prepareMorwebRecord(envelope: MorwebEnvelope, options: MorwebImp
   const id = string(record.id).trim();
   const sourceKey = `${envelope.source_collection}:${id || "missing-id"}`;
   const findings: MorwebFinding[] = [];
+  const reviewReasons = new Set<string>();
   const add = (code: string, severity: "warning" | "error", message: string) => findings.push({ source_key: sourceKey, code, severity, message });
+  const review = (code: string, message: string) => { reviewReasons.add(code); add(code, "warning", message); };
   if (!id || !/^\d+$/.test(id)) add("invalid_source_id", "error", "A numeric source ID is required; titles and row positions cannot identify records.");
   if (envelope.source_cache_key && envelope.source_cache_key !== id) add("cache_identity_mismatch", "error", "Cache key and source record ID disagree.");
-  if ((string(record.private) && string(record.private) !== "0") || (string(record.req_auth) && string(record.req_auth) !== "0")) add("access_policy_mapping_required", "error", "Restricted source content needs a matching access policy before it can be imported.");
-  const kind = classify(record, envelope.source_collection, options.kindOverrides?.[sourceKey]);
-  if (!kind) add("unmapped_post_type", "error", "This source type needs a reviewed content-model mapping; it has not been converted into an article.");
+  if ((string(record.private) && string(record.private) !== "0") || (string(record.req_auth) && string(record.req_auth) !== "0")) review("access_policy_mapping_required", "Restricted source content is retained for review; an equivalent access policy is required before publication.");
+  const classification = classify(record, envelope.source_collection, options.kindOverrides?.[sourceKey]);
+  const kind = classification.kind;
+  if (classification.review) review("ambiguous_content_type", "The source has an ambiguous, test, or unrecognized type. Its identity and original fields are retained for a later model decision.");
   const title = string(record.title || record.name).trim();
-  if (!title) add("missing_title", "error", "The source record has no title.");
+  if (!title) review("missing_title", "The source record has no title; an empty title is retained without inventing a headline.");
   const body = envelope.source_collection === "Pages" ? envelope.body_html : typeof record.content === "string" ? record.content : undefined;
-  if (body === undefined) add(envelope.source_collection === "Pages" ? "page_body_assembly_required" : "missing_body", "error", envelope.source_collection === "Pages" ? "Page metadata and captured Blocks require template-aware assembly before import." : "The source record lacks its content field.");
-  else if (!body.trim()) add("empty_body", "error", "The source content field is empty; confirm whether this is an intentional placeholder or an incomplete capture before import.");
+  if (body === undefined) review(envelope.source_collection === "Pages" ? "page_body_assembly_required" : "missing_body", envelope.source_collection === "Pages" ? "Page metadata is retained with an empty normalized body. Captured Blocks still require template-aware assembly." : "The source record lacks its content field; the identity is retained with an empty normalized body.");
+  else if (!body.trim()) review("empty_body", "The source content field is empty; this record is retained for review as a placeholder or incomplete capture.");
   const route = envelope.source_collection === "Pages" ? record.path : record.alias_url || record.alias;
   const publicUrl = resolveUrl(route, origin);
-  if (!publicUrl) add("unresolved_public_url", "warning", "No usable existing public URL was found; no slug has been invented.");
+  if (!publicUrl) review("unresolved_public_url", "No usable existing public URL was found; no slug has been invented.");
   const stateOverride = options.publicationOverrides?.[sourceKey];
   const state = sourceState(envelope, stateOverride);
-  if (!state.resolved) add("unresolved_publication_state", "warning", "Publication controls are unknown or inconsistent; the proposed record is in review.");
+  if (!state.resolved) review("unresolved_publication_state", "Publication controls are unknown or inconsistent; the retained record requires review.");
   if (stateOverride && !stateOverride.evidence.trim()) add("publication_override_without_evidence", "error", "An explicit state override requires its evidence.");
   if (Number(record.unpublished_flag) === 1 || Number(record.secondary_flag) === 1) add("legacy_schedule_review", "warning", "Legacy unpublish or secondary-date behavior needs an explicit scheduling decision.");
   const dates = pick(record, DATE_KEYS);
   if (Object.values(dates).some(value => typeof value === "string" && value && !/^0{4}-/.test(value))) add("source_timezone_unresolved", "warning", "Source date strings are retained unchanged; no UTC offset has been invented.");
-  const author = kind ? byline(record, kind) : "";
-  if (kind && kind !== "page" && !author) add("unresolved_editorial_byline", "warning", "No editorial byline was resolved; the CMS account name is retained only as source metadata.");
+  const author = byline(record, kind);
+  if (kind !== "page" && !author) add("unresolved_editorial_byline", "warning", "No editorial byline was resolved; the CMS account name is retained only as source metadata.");
   const custom = object(record.custom_fields) ?? {};
-  const categories = taxonomyNames(strings(record.category_selected), record.category, options.categoryNames);
-  const tags = taxonomyNames(strings(record.tag_selected), record.tag, options.tagNames);
+  if (Object.keys(custom).some(key => key in record && stableJson(custom[key]) !== stableJson(record[key]))) review("conflicting_custom_fields", "Nested and flattened custom fields disagree. The nested values are proposed, and all originals are retained for review.");
+  const categoryIds = taxonomyIds(record.category_selected);
+  const categories = taxonomyNames(categoryIds, record.category, options.categoryNames);
+  const tags = taxonomyNames(taxonomyIds(record.tag_selected), record.tag, options.tagNames);
   if (categories.unresolved || tags.unresolved) add("taxonomy_relationships_pending", "warning", "Some category/tag IDs lack a verified definition; display labels and original IDs are retained separately.");
   const rating: CmsJsonObject = {};
   if (kind === "rating") {
     const score = string(custom.custom_rating_score ?? record.custom_rating_score).trim();
     const numericScore = score === "" ? NaN : Number(score);
-    if (!Number.isInteger(numericScore) || numericScore < 0 || numericScore > 100) add("invalid_rating_score", "error", "A Ratings record has a missing or invalid score; the original fields are retained for review.");
-    rating.score = Number.isFinite(numericScore) ? numericScore : null;
+    const validScore = Number.isInteger(numericScore) && numericScore >= 0 && numericScore <= 100;
+    if (!validScore) review("invalid_rating_score", "A Ratings record has a missing or invalid score; a null score and all original fields are retained for review.");
+    rating.score = validScore ? numericScore : null;
     const price = string(custom.custom_rating_price ?? record.custom_rating_price).trim();
     rating.price_raw = price;
     rating.price = /^\d+(?:\.\d+)?$/.test(price) && Number.isFinite(Number(price)) ? Number(price) : null;
@@ -331,6 +359,22 @@ export function prepareMorwebRecord(envelope: MorwebEnvelope, options: MorwebImp
     taxonomy: pick(record, ["category", "category_selected", "tag", "tag_selected"]),
     categories: categories.names,
     tags: tags.names,
+    organization: {
+      primary_channel: null,
+      topics: [],
+      source_categories: categories.names,
+      placements: categoryIds.flatMap(categoryId => {
+        const placement = PLACEMENT_CATEGORIES[categoryId as keyof typeof PLACEMENT_CATEGORIES];
+        return placement ? [{ ...placement, starts_at: null, ends_at: null, status: "needs_review", source_category_id: categoryId }] : [];
+      }),
+    },
+    review: { required: reviewReasons.size > 0, reasons: [...reviewReasons].sort() },
+    migration: {
+      source_public_url: publicUrl,
+      source_route: string(route),
+      source_publication_state: state.state,
+      body_status: body === undefined ? (envelope.source_collection === "Pages" ? "metadata_only" : "missing") : body.trim() ? (envelope.source_collection === "Pages" ? "assembled" : "captured") : "empty",
+    },
     seo: {
       title: string(record.meta_title), description: string(record.meta_description),
       canonical_url: resolveUrl(record.canonical_url, origin),
@@ -345,22 +389,23 @@ export function prepareMorwebRecord(envelope: MorwebEnvelope, options: MorwebImp
     ...(envelope.page_context_count !== undefined ? { captured_page_context_count: envelope.page_context_count } : {}),
   };
   let document: CmsIngestInput | null = null;
-  if (kind && !findings.some(finding => finding.severity === "error")) {
+  if (!findings.some(finding => finding.severity === "error") && (options.policy !== "strict" || reviewReasons.size === 0)) {
     const input: Omit<CmsIngestInput, "source_hash"> = {
       brand: options.brand ?? "wa", kind, source_system: "morweb", source_key: sourceKey,
       title, body_html: body ?? "", byline: author, excerpt: string(record.description),
       slug: publicUrl ? new URL(publicUrl).pathname.replace(/^\//, "") : null,
-      public_url: publicUrl, publication_state: state.state, published_at: null,
+      public_url: publicUrl, publication_state: reviewReasons.size > 0 ? "review" : state.state, published_at: null,
       issue_uuid: null, identity_anchor: { source_collection: envelope.source_collection, source_record_id: id },
       metadata, source_payload: sourcePayload,
     };
     document = { ...input, source_hash: hashMorwebInput(input) };
   }
-  return { source_key: sourceKey, source_collection: envelope.source_collection, kind, document, public_url: publicUrl, findings, media };
+  return { source_key: sourceKey, source_collection: envelope.source_collection, kind, document, public_url: publicUrl, findings, review_reasons: [...reviewReasons].sort(), media };
 }
 
 export function planMorwebImport(input: unknown, options: MorwebImportOptions = {}): MorwebImportPlan {
   options = { ...archiveTaxonomy(input), ...options };
+  const policy = options.policy ?? "preserve";
   const envelopes = readMorwebInput(input);
   const prepared: MorwebPreparedRecord[] = [];
   const unique = new Map<string, { fingerprint: string; record: MorwebPreparedRecord }>();
@@ -385,12 +430,29 @@ export function planMorwebImport(input: unknown, options: MorwebImportOptions = 
     if (records.length < 2) continue;
     collisions.push({ public_url: url, source_keys: records.map(record => record.source_key) });
     for (const record of records) {
-      record.findings.push({ source_key: record.source_key, code: "public_url_collision", severity: "error", message: "Multiple legacy identities claim this public URL. No record or URL has been overwritten or silently renamed." });
-      record.document = null;
+      record.findings.push({ source_key: record.source_key, code: "public_url_collision", severity: "warning", message: "Multiple legacy identities claim this public URL. All identities are retained for review with an unassigned normalized URL; the original route remains in source metadata." });
+      record.review_reasons = [...new Set([...record.review_reasons, "public_url_collision"])].sort();
+      if (policy === "strict") { record.document = null; continue; }
+      if (record.document) {
+        const { source_hash: previousHash, ...input } = record.document;
+        void previousHash;
+        input.public_url = null;
+        input.slug = null;
+        input.publication_state = "review";
+        input.metadata = {
+          ...input.metadata,
+          review: { required: true, reasons: record.review_reasons },
+          migration_warnings: record.findings.filter(finding => finding.severity === "warning").map(finding => finding.code),
+        };
+        record.document = { ...input, source_hash: hashMorwebInput(input) };
+      }
     }
   }
-  const byKind = { article: 0, rating: 0, page: 0 };
+  const byKind = Object.fromEntries(CMS_DOCUMENT_KINDS.map(kind => [kind, 0])) as Record<CmsDocumentKind, number>;
   const classified = { ...byKind };
+  const reviewByKind = { ...byKind };
+  let reviewCount = 0;
+  let fatalCount = 0;
   const states = { draft: 0, review: 0, published: 0, unpublished: 0 };
   const media = new Map<string, "captured" | "missing" | "unverified">();
   const findingCounts: Record<string, number> = {};
@@ -400,8 +462,10 @@ export function planMorwebImport(input: unknown, options: MorwebImportOptions = 
   const held: MorwebImportPlan["report"]["held"] = [];
   for (const result of prepared) {
     if (result.kind) classified[result.kind]++;
+    if (result.review_reasons.length) { reviewCount++; if (result.kind) reviewByKind[result.kind]++; }
+    if (result.findings.some(finding => finding.severity === "error")) fatalCount++;
     for (const asset of result.media) media.set(asset.url, asset.status);
-    if (!result.document) { held.push({ source_key: result.source_key, reasons: [...new Set(result.findings.filter(finding => finding.severity === "error").map(finding => finding.code))] }); continue; }
+    if (!result.document) { held.push({ source_key: result.source_key, reasons: [...new Set([...result.findings.filter(finding => finding.severity === "error").map(finding => finding.code), ...result.review_reasons])].sort() }); continue; }
     documents.push(result.document);
     byKind[result.document.kind]++;
     states[result.document.publication_state ?? "review"]++;
@@ -409,8 +473,9 @@ export function planMorwebImport(input: unknown, options: MorwebImportOptions = 
   return {
     documents,
     report: {
-      format: "morweb-import-plan", source_records: envelopes.length, unique_identities: prepared.length,
+      format: "morweb-import-plan", policy, source_records: envelopes.length, unique_identities: prepared.length,
       duplicate_identical_records: duplicates, eligible_records: documents.length, held_records: held.length,
+      fatal_records: fatalCount, review_required_records: reviewCount, review_required_by_kind: reviewByKind,
       eligible_by_kind: byKind, classified_by_kind: classified, eligible_by_publication_state: states,
       finding_counts: findingCounts, findings, held, url_collisions: collisions,
       media: { unique_references: media.size, captured: [...media.values()].filter(status => status === "captured").length, missing: [...media.values()].filter(status => status === "missing").length, unverified: [...media.values()].filter(status => status === "unverified").length },

@@ -53,18 +53,20 @@ describe("document editing preserves unsaved work", () => {
     expect(save.mock.calls[1][0]).toMatchObject({ title: "Newer edit typed during save", body_html: "<p>Newer body typed during save.</p>" });
   });
 
-  it("accepts spaces and commas while editing taxonomy, and sends clean string arrays", async () => {
+  it("accepts topic edits while retaining original source categories and tags", async () => {
     const initial = demoDocuments()[0];
     const save = vi.fn(async (patch: CmsDocumentPatch) => ({ ...initial, ...patch, revision: 2 }));
     await act(async () => root.render(<DocumentEditor document={initial} demo onClose={() => {}} onDirtyChange={() => {}} loadHistory={async () => ({ revisions: [], sources: [] })} onSave={save} />));
-    const categories = [...host.querySelectorAll("label")].find(item => item.textContent === "Categories")!.querySelector("input")!;
+    const categories = [...host.querySelectorAll("label")].find(item => item.textContent === "Topics")!.querySelector("input")!;
     categories.id = "test-categories";
     await enter("#test-categories", "News, Whisky ");
     expect(categories.value).toBe("News, Whisky ");
     await enter("#test-categories", "News, Whisky Life, ");
     expect(categories.value).toBe("News, Whisky Life, ");
     await click("Save changes");
-    expect(save.mock.calls[0][0].metadata?.categories).toEqual(["News", "Whisky Life"]);
+    expect(save.mock.calls[0][0].metadata?.organization).toMatchObject({ topics: ["News", "Whisky Life"], primary_channel: null });
+    expect(save.mock.calls[0][0].metadata?.categories).toEqual(initial.metadata.categories);
+    expect(save.mock.calls[0][0].metadata?.tags).toEqual(initial.metadata.tags);
   });
 
   it("requires confirmation before source text replaces an unsaved draft", async () => {

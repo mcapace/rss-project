@@ -149,6 +149,19 @@ describe("CMS routes enforce authorization before privileged work", () => {
     expect(response.headers.get("Vary")).toBe("Cookie");
   });
 
+  it("accepts the retained content types while keeping creation and listings scoped to the publication", async () => {
+    for (const kind of ["glossary_entry", "directory_entry", "collection_entry", "product_review", "legacy_record"]) {
+      expect((await listDocuments(request(`/api/cms/documents?kind=${kind}`))).status).toBe(200);
+      expect(queries.at(-1)!.methods.eq).toHaveBeenCalledWith("kind", kind);
+      expect(queries.at(-1)!.methods.in).toHaveBeenCalledWith("brand", ["wa"]);
+      expect((await createDocument(request("/api/cms/documents", "POST", { brand: "wa", kind, title: "Specialized content" }))).status).toBe(201);
+      expect(rpc.mock.calls.at(-1)).toEqual(["cms_ingest_document", expect.objectContaining({
+        p_document: expect.objectContaining({ brand: "wa", kind, source_system: "manual", publication_state: "draft" }),
+        p_actor: editor.id,
+      })]);
+    }
+  });
+
   it("rejects forged origins before sign-in, saving, creation or logout", async () => {
     const responses = await Promise.all([
       login(request("/api/login", "POST", { email: "editor@example.test", password: "test" }, "https://evil.example")),
@@ -164,6 +177,55 @@ describe("CMS routes enforce authorization before privileged work", () => {
 });
 
 describe("CMS editing and media routes", () => {
+  it("preserves incomplete review records and nullable scores during ordinary editorial saves", async () => {
+    document = { ...originalDocument, kind: "rating", title: "", body_html: "", metadata: {
+      review: { required: true, reasons: ["missing_title", "invalid_rating_score"] },
+      rating: { score: null, price: null },
+    } };
+    rpc.mockResolvedValue({ data: { ...document, revision: 2 }, error: null });
+    const response = await editDocument(request(`/api/cms/documents/${documentId}`, "PATCH", {
+      expected_revision: 1, patch: { title: "", body_html: "<p>Copy under review.</p>", metadata: { rating: { score: null, price: null } } },
+    }), context());
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("cms_save_document", expect.objectContaining({
+      p_patch: { title: "", body_html: "<p>Copy under review.</p>", metadata: { rating: { score: null, price: null } } },
+      p_expected_revision: 1,
+    }));
+    // Unmentioned metadata is merged by the atomic save; no gate-clear operation is emitted.
+    expect(rpc.mock.calls[0][1].p_patch.metadata).not.toHaveProperty("review");
+  });
+
+  it("rejects client attempts to clear review requirements or publish incomplete records before the save RPC", async () => {
+    document!.metadata.review = { required: true, reasons: ["page_body_assembly_required"] };
+    const patches = [
+      { metadata: { review: null } },
+      { metadata: { review: { required: false, reasons: [] } } },
+      { metadata: { review: { required: true, reasons: ["different_reason"] } } },
+      { metadata: { review: { required: "true", reasons: ["page_body_assembly_required"] } } },
+      { publication_state: "published" },
+    ];
+    for (const patch of patches) {
+      expect((await editDocument(request(`/api/cms/documents/${documentId}`, "PATCH", { expected_revision: 1, patch }), context())).status).toBe(422);
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("allows an unchanged review gate to round-trip without treating it as resolved", async () => {
+    document!.metadata.review = { required: true, reasons: ["missing_body"] };
+    const response = await editDocument(request(`/api/cms/documents/${documentId}`, "PATCH", {
+      expected_revision: 1, patch: { metadata: { review: { reasons: ["missing_body"], required: true }, seo: { title: "Pending" } } },
+    }), context());
+    expect(response.status).toBe(200);
+    expect(rpc.mock.calls[0][1].p_patch.metadata.review).toEqual(document!.metadata.review);
+  });
+
+  it("rejects empty titles without a stored review gate and invalid organization metadata", async () => {
+    for (const patch of [{ title: " " }, { metadata: { organization: "invalid" } }]) {
+      expect((await editDocument(request(`/api/cms/documents/${documentId}`, "PATCH", { expected_revision: 1, patch }), context())).status).toBe(422);
+    }
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("passes the verified actor and expected revision to an atomic save, sanitizing working HTML", async () => {
     const response = await editDocument(request(`/api/cms/documents/${documentId}`, "PATCH", {
       expected_revision: 1, actor: "forged-admin", patch: { body_html: '<p>New text</p><script>alert(1)</script><img src="x" onerror="alert(2)">' },

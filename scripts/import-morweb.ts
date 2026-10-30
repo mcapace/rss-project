@@ -7,6 +7,7 @@ import { gunzipSync } from "node:zlib";
 import { createClient } from "@supabase/supabase-js";
 import { planMorwebImport, type MorwebImportOptions } from "../src/lib/cms/morweb";
 import type { CmsBrand, CmsIngestResult } from "../src/lib/cms/types";
+import { CMS_DOCUMENT_KINDS } from "../src/lib/cms/types";
 
 const MAX_INPUT_BYTES = 1024 * 1024 * 1024;
 
@@ -41,7 +42,7 @@ function validateMappings(value: unknown): MorwebImportOptions {
   const result: MorwebImportOptions = {};
   if (mappings.kindOverrides !== undefined) {
     const kinds = record(mappings.kindOverrides);
-    if (!kinds || Object.entries(kinds).some(([key, kind]) => !/^(Posts|Pages):\d+$/.test(key) || !["article", "rating", "page"].includes(String(kind)))) throw new Error("kindOverrides require scoped source keys and an article/rating/page kind.");
+    if (!kinds || Object.entries(kinds).some(([key, kind]) => !/^(Posts|Pages):\d+$/.test(key) || !CMS_DOCUMENT_KINDS.some(allowed => allowed === kind))) throw new Error("kindOverrides require scoped source keys and a supported CMS document kind.");
     result.kindOverrides = kinds as NonNullable<MorwebImportOptions["kindOverrides"]>;
   }
   if (mappings.publicationOverrides !== undefined) {
@@ -70,6 +71,7 @@ export async function runMorwebCli(args: string[], runtime: MorwebCliRuntime = {
   const { values } = parseArgs({ args, options: {
     input: { type: "string" }, report: { type: "string" }, brand: { type: "string", default: "wa" },
     origin: { type: "string", default: "https://whiskyadvocate.com" }, mappings: { type: "string" },
+    policy: { type: "string", default: "preserve" },
     apply: { type: "boolean", default: false }, "allow-held": { type: "boolean", default: false },
     "development-target": { type: "string" }, help: { type: "boolean", default: false },
   }, strict: true, allowPositionals: false });
@@ -81,9 +83,10 @@ Options:
   --brand wa|ws|ca|mw           Destination publication (default: wa)
   --origin https://...         Original website origin (default: https://whiskyadvocate.com)
   --mappings /private/map.json Reviewed kind/publication/asset mappings
+  --policy preserve|strict    Retain valid identities by default; strict holds review-gated records
   --apply                     Import eligible records into a DEVELOPMENT database
   --development-target HOST   Must exactly match CMS_IMPORT_SUPABASE_URL's hostname
-  --allow-held                Explicitly leave reported held records unimported
+  --allow-held                In strict mode, explicitly leave review-gated records unimported
 
 Apply requires CMS_IMPORT_SUPABASE_URL and CMS_IMPORT_SERVICE_ROLE_KEY. The CLI
 does not load .env files or reuse the app's database credentials. Raw content and
@@ -93,13 +96,15 @@ Keep input and report files outside this repository.`);
   }
   if (!values.input) throw new Error("--input is required. See --help.");
   if (!["wa", "ws", "ca", "mw"].includes(values.brand!)) throw new Error("--brand must be wa, ws, ca, or mw.");
+  if (values.policy !== "preserve" && values.policy !== "strict") throw new Error("--policy must be preserve or strict.");
   let sourceOrigin: URL;
   try { sourceOrigin = new URL(values.origin!); } catch { throw new Error("--origin is not a valid URL."); }
   if (!["http:", "https:"].includes(sourceOrigin.protocol) || sourceOrigin.username || sourceOrigin.password || sourceOrigin.pathname !== "/" || sourceOrigin.search) throw new Error("--origin must be an HTTP(S) origin without a path, credentials, or query.");
   const mappings = values.mappings ? validateMappings(await readJson(resolve(values.mappings))) : {};
-  const plan = planMorwebImport(await readJson(resolve(values.input)), { ...mappings, brand: values.brand as CmsBrand, sourceOrigin: sourceOrigin.origin });
+  const plan = planMorwebImport(await readJson(resolve(values.input)), { ...mappings, brand: values.brand as CmsBrand, sourceOrigin: sourceOrigin.origin, policy: values.policy });
   const summary = {
     mode: values.apply ? "development-apply" : "dry-run",
+    policy: plan.report.policy,
     source_records: plan.report.source_records,
     unique_identities: plan.report.unique_identities,
     duplicate_identical_records: plan.report.duplicate_identical_records,
@@ -107,6 +112,9 @@ Keep input and report files outside this repository.`);
     eligible_by_kind: plan.report.eligible_by_kind,
     eligible_by_publication_state: plan.report.eligible_by_publication_state,
     held_records: plan.report.held_records,
+    fatal_records: plan.report.fatal_records,
+    review_required_records: plan.report.review_required_records,
+    review_required_by_kind: plan.report.review_required_by_kind,
     finding_counts: plan.report.finding_counts,
     url_collision_count: plan.report.url_collisions.length,
     media: plan.report.media,
@@ -116,6 +124,7 @@ Keep input and report files outside this repository.`);
   if (reportPath) await assertReportIsNotInput(reportPath, [resolve(values.input), ...(values.mappings ? [resolve(values.mappings)] : [])]);
   if (reportPath) await writeFile(reportPath, JSON.stringify(plan.report, null, 2) + "\n", { mode: 0o600 });
   runtime.log(JSON.stringify(summary, null, 2));
+  if (plan.report.fatal_records) throw new Error("The plan contains structural errors. Resolve invalid identities or conflicting source versions before applying; --allow-held cannot bypass them.");
   if (!values.apply) return;
   if (!reportPath) throw new Error("Development apply requires --report so each result and any held records are retained locally.");
   if (plan.report.held_records && !values["allow-held"]) throw new Error("The plan contains held records. Resolve them or use --allow-held to import only the explicitly reported eligible subset.");

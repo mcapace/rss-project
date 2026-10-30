@@ -35,7 +35,7 @@ describe("Morweb development CLI boundaries", () => {
   it("runs offline by default, without database credentials", async () => {
     const result = await run([]);
     expect(result.status, result.stderr).toBe(0);
-    expect(JSON.parse(result.stdout)).toMatchObject({ mode: "dry-run", eligible_records: 1, target_write_performed: false });
+    expect(JSON.parse(result.stdout)).toMatchObject({ mode: "dry-run", policy: "preserve", eligible_records: 1, target_write_performed: false });
   });
 
   it("refuses to overwrite its input with a report", async () => {
@@ -61,5 +61,43 @@ describe("Morweb development CLI boundaries", () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("not valid JSON");
     expect(result.stderr).not.toContain("this-is-private-source-content");
+  });
+
+  it("retains incomplete identities by default and offers explicit strict holds", async () => {
+    const source = JSON.parse(readFileSync(input, "utf8"));
+    source.Posts["901"].content = "";
+    writeFileSync(input, JSON.stringify(source));
+    const preserve = await run([]);
+    expect(preserve.status).toBe(0);
+    expect(JSON.parse(preserve.stdout)).toMatchObject({ eligible_records: 1, held_records: 0, review_required_records: 1 });
+    const strict = await run(["--policy", "strict"]);
+    expect(strict.status).toBe(0);
+    expect(JSON.parse(strict.stdout)).toMatchObject({ eligible_records: 0, held_records: 1, fatal_records: 0 });
+  });
+
+  it("cannot bypass structural identity errors with allow-held", async () => {
+    const source = JSON.parse(readFileSync(input, "utf8"));
+    source.Posts["901"].id = "902";
+    writeFileSync(input, JSON.stringify(source));
+    const report = join(directory, "report.json");
+    const result = await run(["--apply", "--allow-held", "--report", report]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("structural errors");
+    expect(result.stderr).toContain("cannot bypass");
+    expect(JSON.parse(readFileSync(report, "utf8"))).toMatchObject({ fatal_records: 1, target_write_performed: false });
+  });
+
+  it("accepts reviewed mappings to newly supported content kinds", async () => {
+    const mappings = join(directory, "mappings.json");
+    writeFileSync(mappings, JSON.stringify({ kindOverrides: { "Posts:901": "product_review" } }));
+    const result = await run(["--mappings", mappings]);
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout).eligible_by_kind.product_review).toBe(1);
+  });
+
+  it("rejects an unknown preservation policy before reading or applying data", async () => {
+    const result = await run(["--policy", "ignore-everything"]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("--policy must be preserve or strict");
   });
 });

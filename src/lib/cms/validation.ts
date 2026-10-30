@@ -1,6 +1,7 @@
 import { CmsError } from "./access";
-import { CMS_BRANDS, CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES, type CmsBrand, type CmsDocumentPatch, type CmsJsonObject } from "./types";
+import { CMS_BRANDS, CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES, type CmsBrand, type CmsDocument, type CmsDocumentPatch, type CmsJsonObject, type CmsReviewGate } from "./types";
 import { sanitizeCmsHtml } from "./html";
+import { validateOrganization } from "./organization";
 
 export function textValue(value: unknown, name: string, max = 500, required = false): string {
   if (typeof value !== "string" || value.length > max || (required && !value.trim())) {
@@ -21,7 +22,19 @@ export function kindValue(value: unknown) {
 
 export function isUuid(value: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
 
-export function documentPatch(input: Record<string, unknown>): CmsDocumentPatch {
+export function reviewGateValue(value: unknown): CmsReviewGate {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new CmsError(422, "Review details must be an object.");
+  const gate = value as Record<string, unknown>;
+  if (Object.keys(gate).some(key => key !== "required" && key !== "reasons") ||
+    typeof gate.required !== "boolean" || !Array.isArray(gate.reasons) || gate.reasons.length > 100 ||
+    gate.reasons.some(reason => typeof reason !== "string" || !/^[a-z][a-z0-9_]{0,119}$/.test(reason)) ||
+    (gate.required && gate.reasons.length === 0)) {
+    throw new CmsError(422, "Review details require a boolean flag and valid reason codes.");
+  }
+  return { required: gate.required, reasons: gate.reasons as string[] };
+}
+
+export function documentPatch(input: Record<string, unknown>, current?: Pick<CmsDocument, "metadata" | "publication_state">): CmsDocumentPatch {
   const result: CmsDocumentPatch = {};
   const allowed = ["title", "byline", "body_html", "excerpt", "slug", "public_url", "metadata", "publication_state"];
   if (Object.keys(input).some(key => !allowed.includes(key))) throw new CmsError(422, "The update includes unsupported fields.");
@@ -29,6 +42,17 @@ export function documentPatch(input: Record<string, unknown>): CmsDocumentPatch 
     if (key === "metadata") {
       if (!value || typeof value !== "object" || Array.isArray(value) || JSON.stringify(value).length > 250_000) throw new CmsError(422, "Invalid document metadata.");
       const metadata = value as CmsJsonObject;
+      if (metadata.review !== undefined) {
+        const review = reviewGateValue(metadata.review);
+        if (current?.metadata.review === undefined ||
+          JSON.stringify(review) !== JSON.stringify(reviewGateValue(current.metadata.review))) {
+          throw new CmsError(422, "Review requirements cannot be changed by an ordinary save.");
+        }
+      }
+      if (metadata.organization !== undefined) {
+        try { validateOrganization(metadata.organization); }
+        catch (error) { throw new CmsError(422, error instanceof Error ? error.message : "Invalid content organization."); }
+      }
       const rating = metadata.rating;
       if (rating !== null && rating !== undefined && (typeof rating !== "object" || Array.isArray(rating))) {
         throw new CmsError(422, "Rating details must be an object.");
@@ -48,10 +72,16 @@ export function documentPatch(input: Record<string, unknown>): CmsDocumentPatch 
       result[key] = val;
     } else if (key === "body_html") {
       result.body_html = sanitizeCmsHtml(textValue(value, "Article body", 1_500_000));
-    } else if (key === "title") result.title = textValue(value, "Title", 500, true).trim();
+    } else if (key === "title") result.title = textValue(value, "Title", 500).trim();
     else if (key === "byline") result.byline = textValue(value, "Byline", 1000);
     else if (key === "excerpt") result.excerpt = textValue(value, "Summary", 5000);
   }
+  const review = result.metadata?.review ?? current?.metadata.review;
+  const requiresReview = review === undefined ? false : reviewGateValue(review).required;
+  if (requiresReview && (result.publication_state ?? current?.publication_state) === "published") {
+    throw new CmsError(422, "This content requires review before it can be published.");
+  }
+  if (result.title === "" && !requiresReview) throw new CmsError(422, "A title is required unless the record is retained for review.");
   return result;
 }
 

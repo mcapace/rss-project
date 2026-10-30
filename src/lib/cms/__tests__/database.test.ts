@@ -3,10 +3,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { CmsDocument, CmsIngestInput, CmsIngestResult, CmsPrintIngestResult } from "../types";
+import { CMS_DOCUMENT_KINDS, CMS_MIGRATION_SOURCE_KINDS, type CmsDocument, type CmsDocumentKind, type CmsIngestInput, type CmsIngestResult, type CmsJson, type CmsMigrationInventory, type CmsMigrationSourceInput, type CmsMigrationSourceResult, type CmsPrintIngestResult } from "../types";
 
 let db: PGlite;
 let inheritedHistoryPrivileges: Array<{ table_name: string; can_update: boolean; can_delete: boolean; can_truncate: boolean }>;
+let preRetentionUpgrade: unknown;
+let postRetentionUpgrade: unknown;
+let postAuxiliaryUpgrade: unknown;
 
 function source(input: Omit<CmsIngestInput, "source_hash">): CmsIngestInput {
   return { ...input, source_hash: createHash("sha256").update(JSON.stringify(input)).digest("hex") };
@@ -64,9 +67,27 @@ async function save(id: string, revision: number, patch: object) {
   return result.rows[0].result;
 }
 
+function auxiliary(key = "Posts:source-version", overrides: Partial<CmsMigrationSourceInput> = {}): CmsMigrationSourceInput {
+  const payload = overrides.payload ?? { id: key, content: "<script>preserved as inert source text</script>" };
+  return { brand: "wa", archive_sha256: "a".repeat(64), source_kind: "post_version", source_key: key,
+    payload_sha256: createHash("sha256").update(JSON.stringify(payload)).digest("hex"), payload, captured_at: null, ...overrides };
+}
+
+async function ingestAuxiliary(input: CmsMigrationSourceInput) {
+  return (await db.query<{ result: CmsMigrationSourceResult }>(
+    "SELECT public.cms_ingest_migration_source($1::jsonb,'test-archiver') AS result", [JSON.stringify(input)],
+  )).rows[0].result;
+}
+
 async function count(table: string) {
   // table names below are static test-owned identifiers, never request input.
   return (await db.query<{ n: number }>(`SELECT count(*)::integer AS n FROM public.${table}`)).rows[0].n;
+}
+
+async function storedImport(id: string) {
+  return (await db.query<{ records: unknown }>(
+    "SELECT jsonb_build_object('document',(SELECT to_jsonb(d) FROM public.cms_documents d WHERE id=$1),'sources',(SELECT jsonb_agg(to_jsonb(s) ORDER BY id) FROM public.cms_source_snapshots s WHERE document_id=$1),'revisions',(SELECT jsonb_agg(to_jsonb(r) ORDER BY revision) FROM public.cms_document_revisions r WHERE document_id=$1)) AS records", [id],
+  )).rows[0].records;
 }
 
 beforeAll(async () => {
@@ -76,8 +97,20 @@ beforeAll(async () => {
   // A narrower GRANT alone cannot remove those inherited privileges.
   await db.exec("ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;");
   const migrationDir = path.resolve(process.cwd(), "supabase/migrations");
+  let preservedImportId: string | undefined;
   for (const file of readdirSync(migrationDir).filter((name) => name.endsWith(".sql")).sort()) {
+    let upgradeDocumentId: string | undefined;
+    if (file.endsWith("_cms_retained_content_types.sql")) {
+      const imported = await ingest(morweb("Posts:pre-retention-upgrade"));
+      await save(imported.document_id, 1, { title: "Existing editor's headline", metadata: { seo: { title: "Existing SEO" } } });
+      await ingest(morweb("Posts:pre-retention-upgrade", { body_html: "<p>Previously captured source candidate.</p>" }));
+      upgradeDocumentId = imported.document_id;
+      preservedImportId = imported.document_id;
+      preRetentionUpgrade = await storedImport(upgradeDocumentId);
+    }
     await db.exec(readFileSync(path.join(migrationDir, file), "utf8"));
+    if (upgradeDocumentId) postRetentionUpgrade = await storedImport(upgradeDocumentId);
+    if (file.endsWith("_cms_migration_sources.sql") && preservedImportId) postAuxiliaryUpgrade = await storedImport(preservedImportId);
     if (file.endsWith("_cms_foundation.sql")) {
       inheritedHistoryPrivileges = (await db.query<{ table_name: string; can_update: boolean; can_delete: boolean; can_truncate: boolean }>(
         "SELECT relname AS table_name, has_table_privilege('service_role',oid,'UPDATE') AS can_update, has_table_privilege('service_role',oid,'DELETE') AS can_delete, has_table_privilege('service_role',oid,'TRUNCATE') AS can_truncate FROM pg_class WHERE oid IN ('public.cms_source_snapshots'::regclass,'public.cms_document_revisions'::regclass) ORDER BY relname",
@@ -87,13 +120,98 @@ beforeAll(async () => {
 }, 60_000);
 
 beforeEach(async () => {
-  await db.exec("RESET ROLE; TRUNCATE public.cms_document_revisions, public.cms_source_snapshots, public.cms_documents, public.article_images, public.articles, public.issues;");
+  await db.exec("RESET ROLE; TRUNCATE public.cms_migration_sources, public.cms_document_revisions, public.cms_source_snapshots, public.cms_documents, public.article_images, public.articles, public.issues;");
   await db.exec("SET ROLE service_role;");
 });
 
 afterAll(async () => { await db?.close(); });
 
 describe("CMS PostgreSQL transactions", () => {
+  it("leaves existing edited documents and their complete history unchanged during the retention upgrade", () => {
+    expect(preRetentionUpgrade).toBeDefined();
+    expect(postRetentionUpgrade).toEqual(preRetentionUpgrade);
+    expect(postAuxiliaryUpgrade).toEqual(preRetentionUpgrade);
+  });
+
+  it("retains specialized content types without changing source identity on repeated imports", async () => {
+    const kinds: CmsDocumentKind[] = ["glossary_entry", "directory_entry", "collection_entry", "product_review", "legacy_record"];
+    for (const kind of kinds) {
+      const input = morweb(`Posts:${kind}`, { kind });
+      const created = await ingest(input);
+      expect((await ingest(input))).toMatchObject({ document_id: created.document_id, action: "unchanged", revision: 1 });
+      expect((await db.query<{ kind: string }>("SELECT kind FROM public.cms_documents WHERE id=$1", [created.document_id])).rows[0].kind).toBe(kind);
+    }
+    await expect(ingest(morweb("Posts:glossary_entry", { kind: "legacy_record" }))).rejects.toThrow("cms_documents_morweb_source_unique");
+    expect(await count("cms_documents")).toBe(kinds.length);
+    expect(await count("cms_source_snapshots")).toBe(kinds.length);
+  });
+
+  it("retains incomplete originals with empty titles and null scores as review items without inventing content", async () => {
+    const input = morweb("Posts:incomplete-rating", {
+      kind: "rating", title: "", body_html: "",
+      metadata: { review: { required: true, reasons: ["missing_title", "missing_body", "invalid_rating_score"] }, rating: { score: null, price: null } },
+      source_payload: { title: null, content: "", published: "2", custom_rating_score: "" },
+    });
+    const created = await ingest(input);
+    const doc = (await db.query<CmsDocument>("SELECT * FROM public.cms_documents WHERE id=$1", [created.document_id])).rows[0];
+    expect(doc).toMatchObject({ title: "", body_html: "", publication_state: "review", published_at: null, metadata: { rating: { score: null, price: null } } });
+    const { source_hash, ...original } = input;
+    expect(doc.source_hash).toBe(source_hash);
+    expect((await db.query<{ payload: unknown }>("SELECT payload FROM public.cms_source_snapshots WHERE document_id=$1", [created.document_id])).rows[0].payload).toEqual(original);
+    const edited = await save(created.document_id, 1, { body_html: "<p>Editorial work in progress.</p>", publication_state: "draft", metadata: { seo: { title: "Pending review" } } });
+    expect(edited.metadata.review).toEqual(input.metadata!.review);
+    expect(edited.metadata.rating).toEqual({ score: null, price: null });
+    expect((await ingest(input)).action).toBe("unchanged");
+    const after = (await db.query<CmsDocument>("SELECT * FROM public.cms_documents WHERE id=$1", [created.document_id])).rows[0];
+    expect(after).toMatchObject({ body_html: "<p>Editorial work in progress.</p>", publication_state: "draft", revision: 2 });
+    expect(await count("cms_source_snapshots")).toBe(1);
+  });
+
+  it("keeps review requirements through ordinary saves and rejects attempts to clear or bypass them", async () => {
+    const gate = { required: true, reasons: ["page_body_assembly_required"] };
+    const created = await ingest(morweb("Pages:pending-template", { kind: "page", body_html: "", metadata: { review: gate } }));
+    for (const review of [null, {}, { required: false, reasons: [] }, { required: true, reasons: ["different_reason"] }]) {
+      await expect(save(created.document_id, 1, { metadata: { review } })).rejects.toThrow("Review gates cannot be changed");
+    }
+    await expect(save(created.document_id, 1, { publication_state: "published" })).rejects.toThrow("Publishing is not enabled");
+    await expect(db.query("UPDATE public.cms_documents SET publication_state='published' WHERE id=$1", [created.document_id])).rejects.toThrow("requiring review cannot be published");
+    await expect(db.query("UPDATE public.cms_documents SET metadata='{}'::jsonb WHERE id=$1", [created.document_id])).rejects.toThrow("Review gates cannot be changed");
+    expect(await count("cms_document_revisions")).toBe(1);
+    const saved = await save(created.document_id, 1, { metadata: { review: gate, seo: { title: "A page under review" } }, publication_state: "unpublished" });
+    expect(saved.metadata.review).toEqual(gate);
+    expect(saved.publication_state).toBe("unpublished");
+    expect(saved.revision).toBe(2);
+  });
+
+  it("rejects malformed review gates and unreviewed missing titles atomically", async () => {
+    const invalidReviews: CmsJson[] = [null, [], true, { required: "true", reasons: ["missing_body"] }, { required: true, reasons: [] }, { required: true, reasons: [42] }, { required: true, reasons: ["not a code"] }, { required: true, reasons: ["missing_body"], extra: true }];
+    for (const [index, review] of invalidReviews.entries()) {
+      await expect(ingest(morweb(`Posts:invalid-review-${index}`, { metadata: { review } }))).rejects.toThrow();
+    }
+    await expect(ingest(morweb("Posts:missing-title", { title: "" }))).rejects.toThrow("cms_documents_title_check");
+    await expect(ingest(morweb("Posts:missing-title-false-gate", { title: "", metadata: { review: { required: false, reasons: [] } } }))).rejects.toThrow("cms_documents_title_check");
+    expect(await count("cms_documents")).toBe(0);
+    expect(await count("cms_source_snapshots")).toBe(0);
+    expect(await count("cms_document_revisions")).toBe(0);
+  });
+
+  it("retains a colliding source URL as a separate review record without overwriting its current owner", async () => {
+    const publicUrl = "https://whiskyadvocate.com/Shared-Source-Alias";
+    const owner = await ingest(morweb("Posts:url-owner", { public_url: publicUrl }));
+    const originalOwner = await storedImport(owner.document_id);
+    const duplicate = morweb("Posts:url-duplicate", { kind: "legacy_record", public_url: null,
+      metadata: { review: { required: true, reasons: ["duplicate_public_url"] }, migration: { original_public_url: publicUrl } },
+      source_payload: { id: "url-duplicate", original_public_url: publicUrl },
+    });
+    const retained = await ingest(duplicate);
+    expect(retained.document_id).not.toBe(owner.document_id);
+    expect(await storedImport(owner.document_id)).toEqual(originalOwner);
+    expect((await db.query<CmsDocument>("SELECT * FROM public.cms_documents WHERE id=$1", [retained.document_id])).rows[0]).toMatchObject({ public_url: null, publication_state: "review", source_key: "Posts:url-duplicate" });
+    const snapshot = (await db.query<{ payload: CmsIngestInput }>("SELECT payload FROM public.cms_source_snapshots WHERE document_id=$1", [retained.document_id])).rows[0];
+    expect(snapshot.payload.source_payload?.original_public_url).toBe(publicUrl);
+    expect(await count("cms_documents")).toBe(2);
+  });
+
   it("admits one issue queue request and rejects overlapping dispatches", async () => {
     const queue = () => db.query<{ result: { id: string; status: string; cms_intake_token: string } }>(
       "SELECT public.cms_queue_issue('wa','2026-11','November 2026','pdfs/inbox/wa-2026-11.pdf',ARRAY[3,4]) AS result",
@@ -294,7 +412,153 @@ describe("CMS PostgreSQL transactions", () => {
       await db.exec(`SET ROLE ${role}`);
       await expect(db.exec("SELECT * FROM public.cms_documents")).rejects.toThrow("permission denied");
       await expect(db.exec("SELECT public.cms_ingest_document('{}'::jsonb,'attacker')")).rejects.toThrow("permission denied");
+      await expect(db.exec("SELECT public.cms_guard_retained_document()")).rejects.toThrow("permission denied");
       await db.exec("RESET ROLE");
     }
+  });
+});
+
+describe("Immutable captured migration sources", () => {
+  it("preserves source order and exact idempotency inside a bounded batch", async () => {
+    const inputs = [auxiliary("Posts:31:version"), auxiliary("Pages:7:context", { source_kind: "page_context" })];
+    const batch = () => db.query<{ result: CmsMigrationSourceResult[] }>(
+      "SELECT public.cms_ingest_migration_sources_batch($1::jsonb,'test-archiver') AS result", [JSON.stringify(inputs)],
+    );
+    const created = (await batch()).rows[0].result;
+    expect(created.map(item => item.source_key)).toEqual(inputs.map(item => item.source_key));
+    expect(created.map(item => item.action)).toEqual(["created", "created"]);
+    const repeated = (await batch()).rows[0].result;
+    expect(repeated.map(item => item.id)).toEqual(created.map(item => item.id));
+    expect(repeated.map(item => item.action)).toEqual(["unchanged", "unchanged"]);
+    expect(await count("cms_migration_sources")).toBe(2);
+  });
+
+  it("rolls back the whole source batch on conflicting captured data or mixed scope", async () => {
+    const original = auxiliary("Posts:42:stable");
+    await ingestAuxiliary(original);
+    const batch = (rows: unknown[]) => db.query(
+      "SELECT public.cms_ingest_migration_sources_batch($1::jsonb,'test-archiver')", [JSON.stringify(rows)],
+    );
+    await expect(batch([auxiliary("Posts:43:new"), { ...original, payload: { content: "Changed under the same hash" } }])).rejects.toThrow("source_hash_collision");
+    expect(await count("cms_migration_sources")).toBe(1);
+    await expect(batch([auxiliary("Posts:43:new"), auxiliary("Posts:44:other", { brand: "ws" })])).rejects.toThrow("same publication and archive");
+    await expect(batch([auxiliary("Posts:43:new"), auxiliary("Posts:44:other", { archive_sha256: "b".repeat(64) })])).rejects.toThrow("same publication and archive");
+    expect(await count("cms_migration_sources")).toBe(1);
+  });
+
+  it("rejects oversized source batches and keeps the batch entry point service-only", async () => {
+    const batch = (value: unknown) => db.query(
+      "SELECT public.cms_ingest_migration_sources_batch($1::jsonb,'test-archiver')", [JSON.stringify(value)],
+    );
+    await expect(batch({})).rejects.toThrow("must be an array");
+    await expect(batch([])).rejects.toThrow("1 to 100 rows");
+    await expect(batch(Array.from({ length: 101 }, (_, i) => auxiliary(`Posts:${i}:version`)))).rejects.toThrow("1 to 100 rows");
+    await expect(batch([auxiliary("Posts:large:version", { payload: { text: "x".repeat(4_194_304) } })])).rejects.toThrow("4 MiB");
+    expect(await count("cms_migration_sources")).toBe(0);
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`RESET ROLE; SET ROLE ${role};`);
+      await expect(batch([auxiliary()])).rejects.toThrow("permission denied");
+    }
+  });
+
+  it("returns publication-scoped coverage and page-assembly counts without exposing source payloads", async () => {
+    await ingest(morweb("Posts:wa-inventory"));
+    await ingest(morweb("Pages:wa-template", { kind: "page", body_html: "", metadata: { review: { required: true, reasons: ["page_body_assembly_required"] } } }));
+    await ingest(morweb("Posts:ws-inventory", { brand: "ws", kind: "rating" }));
+    await ingestAuxiliary(auxiliary("Posts:wa-inventory"));
+    await ingestAuxiliary(auxiliary("Page:wa-context", { source_kind: "page_context", archive_sha256: "b".repeat(64) }));
+    await ingestAuxiliary(auxiliary("Posts:ws-inventory", { brand: "ws" }));
+    const inventory = (await db.query<{ result: CmsMigrationInventory }>("SELECT public.cms_migration_inventory('wa') AS result")).rows[0].result;
+    expect(inventory).toMatchObject({ brand: "wa", documents: {
+      total: 2, by_kind: { article: 1, page: 1, rating: 0 }, by_publication_state: { published: 1, review: 1 },
+      by_source_system: { morweb: 2, print: 0, manual: 0 }, review_required: 1, pages_awaiting_assembly: 1,
+    }, sources: { total: 2, archive_count: 2, by_source_kind: { post_version: 1, page_context: 1, media_file: 0 } } });
+    expect(Object.keys(inventory.documents.by_kind).sort()).toEqual([...CMS_DOCUMENT_KINDS].sort());
+    expect(Object.keys(inventory.sources.by_source_kind).sort()).toEqual([...CMS_MIGRATION_SOURCE_KINDS].sort());
+    expect(JSON.stringify(inventory)).not.toMatch(/inert source text|Original article|wa-template/);
+    const empty = (await db.query<{ result: CmsMigrationInventory }>("SELECT public.cms_migration_inventory('ca') AS result")).rows[0].result;
+    expect(empty.documents.total).toBe(0);
+    expect(Object.values(empty.documents.by_kind).every(n => n === 0)).toBe(true);
+    expect(empty.sources.total).toBe(0);
+    expect(Object.values(empty.sources.by_source_kind).every(n => n === 0)).toBe(true);
+    await expect(db.exec("SELECT public.cms_migration_inventory('unknown')")).rejects.toThrow("supported publication");
+  });
+
+  it("preserves every allowed capture type privately, including source parts and inert editor markup", async () => {
+    for (const source_kind of CMS_MIGRATION_SOURCE_KINDS) {
+      const input = auxiliary(`capture:${source_kind}`, { source_kind, source_sha256: "b".repeat(64) });
+      const result = await ingestAuxiliary(input);
+      expect(result).toMatchObject({ action: "created", brand: "wa", source_kind, source_key: input.source_key, payload_sha256: input.payload_sha256 });
+      expect((await ingestAuxiliary(input))).toEqual({ ...result, action: "unchanged" });
+      expect((await db.query<{ payload: unknown; captured_at: null }>("SELECT payload,captured_at FROM public.cms_migration_sources WHERE id=$1", [result.id])).rows[0]).toEqual({ payload: input.payload, captured_at: null });
+    }
+    expect(await count("cms_migration_sources")).toBe(CMS_MIGRATION_SOURCE_KINDS.length);
+    expect(await count("cms_documents")).toBe(0);
+    expect(await count("cms_document_revisions")).toBe(0);
+  });
+
+  it("keeps prior versions and repeated block IDs in distinct capture contexts without deduplicating away evidence", async () => {
+    const older = auxiliary("Posts:42", { payload: { title: "Earlier source", content: "Earlier body" } });
+    const latest = auxiliary("Posts:42", { payload: { title: "Latest source", content: "Latest body" } });
+    const oldResult = await ingestAuxiliary(older);
+    const newResult = await ingestAuxiliary(latest);
+    expect(newResult.id).not.toBe(oldResult.id);
+    for (const key of ["Page:10:context:A", "Page:20:context:B"]) {
+      await ingestAuxiliary(auxiliary(key, { source_kind: "page_context", payload: { Blocks: { "123": { base_id: "5", content: "Shared-looking block" } } } }));
+    }
+    expect(await count("cms_migration_sources")).toBe(4);
+    expect((await db.query<{ payload: unknown }>("SELECT payload FROM public.cms_migration_sources WHERE id=$1", [oldResult.id])).rows[0].payload).toEqual(older.payload);
+  });
+
+  it("is idempotent under competing writes and rejects a reused hash with different captured data", async () => {
+    const input = auxiliary("capture:stable", { source_sha256: "c".repeat(64), captured_at: "2026-10-29T12:00:00Z" });
+    const results = await Promise.all([ingestAuxiliary(input), ingestAuxiliary(input)]);
+    expect(results.map(result => result.action).sort()).toEqual(["created", "unchanged"]);
+    expect(results[0].id).toBe(results[1].id);
+    for (const changed of [
+      { ...input, payload: { content: "Different payload claiming the same digest" } },
+      { ...input, source_sha256: "d".repeat(64) },
+      { ...input, captured_at: "2026-10-29T12:00:01Z" },
+    ]) await expect(ingestAuxiliary(changed)).rejects.toThrow("source_hash_collision");
+    expect(await count("cms_migration_sources")).toBe(1);
+  });
+
+  it("requires a content-only source kind, a source digest for split parts, and explicit capture timezones", async () => {
+    await expect(ingestAuxiliary({ ...auxiliary(), source_kind: "user_credentials" } as unknown as CmsMigrationSourceInput)).rejects.toThrow("cms_migration_sources_source_kind_check");
+    await expect(ingestAuxiliary(auxiliary("capture:part", { source_kind: "source_part" }))).rejects.toThrow("check constraint");
+    await expect(ingestAuxiliary(auxiliary("capture:local-time", { captured_at: "2026-10-29 12:00:00" }))).rejects.toThrow("explicit timezone");
+    expect(await count("cms_migration_sources")).toBe(0);
+  });
+
+  it("rejects oversized and deeply nested payloads before storing any partial archive row", async () => {
+    await expect(ingestAuxiliary(auxiliary("capture:too-many-bytes", { payload: { text: "x".repeat(2_097_152) } }))).rejects.toThrow("exceeds 2 MiB");
+    await expect(ingestAuxiliary(auxiliary("capture:too-many-nodes", { payload: Array.from({ length: 100_000 }, () => null) }))).rejects.toThrow("100000 value nodes");
+    let nested: CmsJson[] = [null];
+    for (let depth = 1; depth < 64; depth++) nested = [nested];
+    await expect(ingestAuxiliary(auxiliary("capture:too-deep", { payload: nested }))).rejects.toThrow("64 nesting levels");
+    expect(await count("cms_migration_sources")).toBe(0);
+  });
+
+  it("denies browser access and every service-role mutation except append-only insertion", async () => {
+    const created = await ingestAuxiliary(auxiliary());
+    const rights = (await db.query<Record<string, boolean>>(
+      "SELECT has_table_privilege('service_role','public.cms_migration_sources','SELECT') AS can_select,has_table_privilege('service_role','public.cms_migration_sources','INSERT') AS can_insert,has_table_privilege('service_role','public.cms_migration_sources','UPDATE') AS can_update,has_table_privilege('service_role','public.cms_migration_sources','DELETE') AS can_delete,has_table_privilege('service_role','public.cms_migration_sources','TRUNCATE') AS can_truncate,has_table_privilege('service_role','public.cms_migration_sources','TRIGGER') AS can_trigger",
+    )).rows[0];
+    expect(rights).toEqual({ can_select: true, can_insert: true, can_update: false, can_delete: false, can_truncate: false, can_trigger: false });
+    for (const sql of ["UPDATE public.cms_migration_sources SET actor='changed'", "DELETE FROM public.cms_migration_sources", "TRUNCATE public.cms_migration_sources"]) {
+      await expect(db.exec(sql)).rejects.toThrow("permission denied");
+    }
+    await db.exec("RESET ROLE");
+    await expect(db.exec("UPDATE public.cms_migration_sources SET actor='changed'")).rejects.toThrow("append-only");
+    await expect(db.exec("DELETE FROM public.cms_migration_sources")).rejects.toThrow("append-only");
+    expect((await db.query<{ relrowsecurity: boolean }>("SELECT relrowsecurity FROM pg_class WHERE oid='public.cms_migration_sources'::regclass")).rows[0].relrowsecurity).toBe(true);
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`SET ROLE ${role}`);
+      await expect(db.exec("SELECT * FROM public.cms_migration_sources")).rejects.toThrow("permission denied");
+      await expect(db.exec("SELECT public.cms_ingest_migration_source('{}'::jsonb,'caller')")).rejects.toThrow("permission denied");
+      await expect(db.exec("SELECT public.cms_migration_inventory('wa')")).rejects.toThrow("permission denied");
+      await db.exec("RESET ROLE");
+    }
+    expect((await db.query<{ id: string }>("SELECT id FROM public.cms_migration_sources")).rows[0].id).toBe(created.id);
   });
 });

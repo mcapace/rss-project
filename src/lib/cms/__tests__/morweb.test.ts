@@ -47,15 +47,16 @@ describe("Morweb migration adapter", () => {
     expect(result.document?.source_payload?.record).toHaveProperty("custom_fields");
   });
 
-  it("holds missing scores and distinct legacy post types instead of coercing them", () => {
+  it("retains missing scores and distinct legacy post types with their own models", () => {
     const result = planMorwebImport([
       post("103", { category_selected: ["50"], custom_fields: { custom_rating_score: "" } }),
       post("104", { category_selected: ["33"], category: "Clubs" }),
       post("105", { category_selected: ["62"], category: "Glossary" }),
     ]);
-    expect(result.documents).toHaveLength(0);
-    expect(result.report.held_records).toBe(3);
-    expect(result.report.finding_counts).toMatchObject({ invalid_rating_score: 1, unmapped_post_type: 2 });
+    expect(result.documents.map(document => document.kind)).toEqual(["rating", "directory_entry", "glossary_entry"]);
+    expect(result.report.held_records).toBe(0);
+    expect(result.report.review_required_records).toBe(1);
+    expect(result.documents[0]).toMatchObject({ publication_state: "review", metadata: { rating: { score: null }, review: { required: true, reasons: ["invalid_rating_score"] } } });
   });
 
   it("requires a complete observed publication combination; unknown flags go to review", () => {
@@ -66,13 +67,21 @@ describe("Morweb migration adapter", () => {
     expect(unpublished.document?.publication_state).toBe("unpublished");
   });
 
-  it("holds every conflicting URL owner, including across content kinds", () => {
+  it("retains every conflicting URL owner with the original route and no invented replacement", () => {
     const first = post("108", { alias: "collision" });
     const second = post("109", { alias: "collision" });
     const result = planMorwebImport([first, second]);
-    expect(result.documents).toHaveLength(0);
+    expect(result.documents).toHaveLength(2);
     expect(result.report.url_collisions).toEqual([{ public_url: "https://whiskyadvocate.com/collision", source_keys: ["Posts:108", "Posts:109"] }]);
-    expect(result.report.held.every(record => record.reasons.includes("public_url_collision"))).toBe(true);
+    expect(result.report.held_records).toBe(0);
+    for (const document of result.documents) {
+      expect(document).toMatchObject({ public_url: null, slug: null, publication_state: "review", metadata: {
+        review: { required: true, reasons: ["public_url_collision"] },
+        migration: { source_public_url: "https://whiskyadvocate.com/collision", source_route: "collision" },
+      } });
+      const { source_hash, ...payload } = document;
+      expect(source_hash).toBe(hashMorwebInput(payload));
+    }
     expect(first.record.alias).toBe("collision");
   });
 
@@ -83,6 +92,7 @@ describe("Morweb migration adapter", () => {
     expect(duplicate.documents).toHaveLength(1);
     const conflict = planMorwebImport([a, post("110", { content: "<p>Another version.</p>" })]);
     expect(conflict.documents).toHaveLength(0);
+    expect(conflict.report.fatal_records).toBe(1);
     expect(conflict.report.held[0].reasons).toContain("conflicting_source_versions");
   });
 
@@ -99,12 +109,18 @@ describe("Morweb migration adapter", () => {
     expect(() => readMorwebInput({ ...source, records: [{ ...source.records[0], latest_record_sha256: "missing" }] })).toThrow(/no unique declared latest/);
   });
 
-  it("holds Page metadata until its body is assembled and excludes a 404 shared shell as evidence", () => {
+  it("retains Page metadata as review records and excludes a 404 shared shell as body evidence", () => {
     const page = { id: "501", title: "Synthetic contact", path: "contact", publish: "1", published: "0000-00-00" };
     const result = planMorwebImport({ format: "whisky_advocate_migration_archive", records: [{
       source_collection: "Pages", source_record_id: "501", latest_record_sha256: "page-hash", versions: [{ record_sha256: "page-hash", raw_record: page }],
     }], page_block_context_captures: [{ linked_source_identity: { source_collection: "Pages", source_record_id: "501" }, qualified_http200_editor_dataset: false, response_http_status: 404 }] });
-    expect(result.report.held[0].reasons).toContain("page_body_assembly_required");
+    expect(result.documents[0]).toMatchObject({ kind: "page", body_html: "", publication_state: "review", metadata: {
+      captured_page_context_count: 0,
+      review: { required: true, reasons: ["page_body_assembly_required"] },
+      migration: { body_status: "metadata_only", source_publication_state: "published" },
+    } });
+    expect(result.documents[0].source_payload?.record).toEqual(page);
+    expect(result.report.held_records).toBe(0);
     const assembled = prepareMorwebRecord({ source_collection: "Pages", record: page, body_html: "<p>Assembled body.</p>" });
     expect(assembled.document).toMatchObject({ source_key: "Pages:501", kind: "page", publication_state: "published" });
     expect(assembled.document?.source_payload?.record).toEqual(page);
@@ -129,9 +145,10 @@ describe("Morweb migration adapter", () => {
     expect(result.documents[0].body_html).toContain("/files/a.jpg");
   });
 
-  it("holds restricted content until an equivalent target access policy exists", () => {
+  it("retains restricted content in review pending an equivalent target access policy", () => {
     const result = prepareMorwebRecord(post("114", { private: "1" }));
-    expect(result.document).toBeNull();
+    expect(result.document).toMatchObject({ publication_state: "review", metadata: { review: { required: true, reasons: ["access_policy_mapping_required"] } } });
+    expect(result.document?.source_payload?.record).toHaveProperty("private", "1");
     expect(result.findings.some(f => f.code === "access_policy_mapping_required")).toBe(true);
   });
 
@@ -151,7 +168,72 @@ describe("Morweb migration adapter", () => {
 
   it("does not treat an empty preserved content field as a ready article", () => {
     const result = prepareMorwebRecord(post("116", { content: "" }));
-    expect(result.document).toBeNull();
-    expect(result.findings.some(finding => finding.code === "empty_body" && finding.severity === "error")).toBe(true);
+    expect(result.document).toMatchObject({ body_html: "", publication_state: "review", metadata: { review: { required: true, reasons: ["empty_body"] } } });
+    expect(result.findings.some(finding => finding.code === "empty_body" && finding.severity === "warning")).toBe(true);
+  });
+
+  it("maps captured structured types and retains ambiguous/test records without loss", () => {
+    const result = planMorwebImport([
+      post("201", { category_selected: ["32"], category: "Top20" }),
+      post("202", { category_selected: ["74"], category: "TopShelf" }),
+      post("203", { category_selected: [""], category: "" }),
+      post("204", { category_selected: ["53"], category: "Uncategorized" }),
+      post("205", { category_selected: ["84"], category: "RatingsTest", custom_fields: { custom_rating_score: "95" } }),
+      post("206", { category_selected: ["18"], custom_fields: { custom_post_type: "unknown-widget" } }),
+    ]);
+    expect(result.documents.map(document => document.kind)).toEqual(["collection_entry", "product_review", "legacy_record", "legacy_record", "legacy_record", "legacy_record"]);
+    expect(result.report).toMatchObject({ eligible_records: 6, held_records: 0, fatal_records: 0, review_required_records: 4 });
+    for (const document of result.documents.slice(2)) expect(document.metadata?.review).toEqual({ required: true, reasons: ["ambiguous_content_type"] });
+  });
+
+  it("separates homepage placements from permanent channels and unknown scheduling", () => {
+    const result = planMorwebImport([
+      post("207", { category_selected: ["id28", "id65"], category: "Homepage Slider, Homepage News Slider", tag_selected: ["12"], tag: "Synthetic tag" }),
+      post("208", { category_selected: ["79"], category: "90Plus" }),
+    ]);
+    expect(result.documents.every(document => document.kind === "article")).toBe(true);
+    expect(result.documents[0].metadata?.organization).toEqual({
+      primary_channel: null, topics: [], source_categories: ["Homepage Slider", "Homepage News Slider"],
+      placements: [
+        { slot: "homepage_slider", label: "Homepage Slider", starts_at: null, ends_at: null, status: "needs_review", source_category_id: "28" },
+        { slot: "homepage_news_slider", label: "Homepage News Slider", starts_at: null, ends_at: null, status: "needs_review", source_category_id: "65" },
+      ],
+    });
+    expect(result.documents[1].metadata?.organization).toMatchObject({ primary_channel: null, placements: [] });
+    expect(result.documents[0].metadata?.tags).toEqual(["Synthetic tag"]);
+  });
+
+  it("keeps strict review holds optional while structural errors remain fatal in either policy", () => {
+    const rows = [post("209", { content: "" }), post("210", { category_selected: [], category: "" }), post("211")];
+    const preserve = planMorwebImport(rows);
+    const strict = planMorwebImport(rows, { policy: "strict" });
+    expect(preserve.report).toMatchObject({ policy: "preserve", eligible_records: 3, held_records: 0, fatal_records: 0 });
+    expect(strict.report).toMatchObject({ policy: "strict", eligible_records: 1, held_records: 2, fatal_records: 0 });
+    for (const policy of ["preserve", "strict"] as const) {
+      const invalid = planMorwebImport([post("not-an-id"), { ...post("212"), source_cache_key: "999" }], { policy });
+      expect(invalid.report.fatal_records).toBe(2);
+      expect(invalid.documents).toHaveLength(0);
+    }
+    expect(prepareMorwebRecord(post("0")).document?.source_key).toBe("Posts:0");
+  });
+
+  it("retains missing titles, bodies, and invalid public URLs without inventing content", () => {
+    const source = post("213", { title: "", content: null, alias: "javascript:alert(1)" });
+    const result = prepareMorwebRecord(source);
+    expect(result.document).toMatchObject({ title: "", body_html: "", public_url: null, publication_state: "review" });
+    expect(result.review_reasons).toEqual(["missing_body", "missing_title", "unresolved_public_url"]);
+    expect(result.document?.source_payload?.record).toEqual(source.record);
+  });
+
+  it("stores invalid numeric scores as null and gates conflicting custom fields", () => {
+    const result = prepareMorwebRecord(post("214", { category_selected: ["50"], custom_rating_score: "91", custom_fields: { custom_rating_score: "101" } }));
+    expect(result.document).toMatchObject({ publication_state: "review", metadata: { rating: { score: null }, review: { required: true, reasons: ["conflicting_custom_fields", "invalid_rating_score"] } } });
+    expect(result.document?.source_payload?.record).toHaveProperty("custom_rating_score", "91");
+  });
+
+  it("does not let a source publication override bypass a content review gate", () => {
+    const result = prepareMorwebRecord(post("215", { content: "" }), { publicationOverrides: { "Posts:215": { state: "published", evidence: "Synthetic reviewed source state" } } });
+    expect(result.document?.publication_state).toBe("review");
+    expect(result.document?.metadata?.migration).toMatchObject({ source_publication_state: "published" });
   });
 });

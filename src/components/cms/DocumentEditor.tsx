@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Save, Eye, PencilLine, History, Image as ImageIcon, FileClock, ChevronDown, AlertCircle, RotateCcw, ExternalLink } from "lucide-react";
 import type { CmsDocument, CmsDocumentPatch, CmsDocumentRevision, CmsJson, CmsJsonObject } from "@/lib/cms/types";
+import { CONTENT_TYPE_LABELS, PLACEMENT_LABELS, documentOrganization, preserveReviewGate, reviewReasons, reviewRequired, validateOrganization, type CmsPlacement } from "@/lib/cms/organization";
 import { RichEditor } from "./RichEditor";
 import { ArticlePreview } from "./ArticlePreview";
+import { MigrationSources } from "./MigrationSources";
 
 export interface SourceReview {
   id: string; source_hash: string; created_at: string; is_candidate: boolean;
@@ -59,6 +61,12 @@ export function DocumentEditor({ document, demo, onClose, onSave, onDirtyChange,
   const wordCount = draft.body_html.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length;
   const rating = object(draft.metadata.rating);
   const seo = object(draft.metadata.seo);
+  const migration = object(draft.metadata.migration);
+  const sourcePublicUrl = document.public_url || (typeof migration.source_public_url === "string" ? migration.source_public_url : null);
+  const organization = documentOrganization(draft.metadata);
+  const needsReview = reviewRequired(draft.metadata);
+  const findings = reviewReasons(draft.metadata);
+  const maySaveTitle = !!draft.title.trim() || needsReview;
   const media = Array.isArray(draft.metadata.media) ? draft.metadata.media : [];
   const mediaIdentity = JSON.stringify([document.id, document.revision, ...media.map(value => mediaKey(object(value)))]);
   const mediaUrls = mediaResult.identity === mediaIdentity ? mediaResult.urls : {};
@@ -95,8 +103,17 @@ export function DocumentEditor({ document, demo, onClose, onSave, onDirtyChange,
     setDraft(previous => ({ ...previous, [key]: value })); setSaved(false);
   }
   function meta(key: string, value: CmsJson) { setDraft(previous => ({ ...previous, metadata: { ...previous.metadata, [key]: value } })); setSaved(false); }
+  function updatePlacement(index: number, change: Partial<Pick<CmsPlacement, "status" | "starts_at" | "ends_at">>) {
+    meta("organization", { ...organization, placements: organization.placements.map((item, itemIndex) => itemIndex === index ? { ...item, ...change } : item) });
+  }
+  function addPlacement() {
+    const slot = (Object.keys(PLACEMENT_LABELS) as CmsPlacement["slot"][]).find(key => !organization.placements.some(item => item.slot === key));
+    if (slot) meta("organization", { ...organization, placements: [...organization.placements, { slot, label: PLACEMENT_LABELS[slot], status: "needs_review", starts_at: null, ends_at: null }] });
+  }
   async function save() {
-    if (savePending.current || !dirty || !draft.title.trim()) return;
+    if (savePending.current || !dirty || !maySaveTitle) return;
+    try { if (draft.metadata.organization !== undefined) validateOrganization(draft.metadata.organization); }
+    catch (err) { setError(err instanceof Error ? err.message : "Check the organization settings."); return; }
     savePending.current = true;
     const submitted = draft;
     setSaving(true); setError("");
@@ -112,7 +129,7 @@ export function DocumentEditor({ document, demo, onClose, onSave, onDirtyChange,
   function restore(version: CmsDocumentRevision) {
     if ((dirty || saving) && !window.confirm("Replace your unsaved text and metadata with this saved version? Editorial status will stay unchanged.")) return;
     const prior = version.snapshot;
-    setDraft(previous => ({ ...previous, title: prior.title, byline: prior.byline, body_html: prior.body_html, excerpt: prior.excerpt, slug: prior.slug, public_url: prior.public_url, metadata: prior.metadata }));
+    setDraft(previous => ({ ...previous, title: prior.title, byline: prior.byline, body_html: prior.body_html, excerpt: prior.excerpt, slug: prior.slug, public_url: prior.public_url, metadata: preserveReviewGate(previous.metadata, prior.metadata) }));
     setContentEpoch(value => value + 1); setTab("content"); setPreview(false); setSaved(false); setSelectedRevision(null);
   }
 
@@ -122,14 +139,14 @@ export function DocumentEditor({ document, demo, onClose, onSave, onDirtyChange,
       <div className="cms-document-actions">
         <span className={`cms-save-state ${dirty ? "unsaved" : ""}`} role="status">{dirty ? "Unsaved changes" : saved ? <><Check size={14} /> Saved</> : `Version ${document.revision}`}</span>
         <button className="cms-button secondary" onClick={() => { setPreview(!preview); setTab("content"); }}>{preview ? <PencilLine size={15} /> : <Eye size={15} />}{preview ? "Edit" : "Preview"}</button>
-        <button className="cms-button" onClick={save} disabled={!dirty || saving || !draft.title.trim()}><Save size={15} />{saving ? "Saving…" : "Save changes"}</button>
+        <button className="cms-button" onClick={save} disabled={!dirty || saving || !maySaveTitle}><Save size={15} />{saving ? "Saving…" : "Save changes"}</button>
       </div>
     </div>
     {error && <div className="cms-alert" role="alert"><AlertCircle size={18} /><div>{error}<p>Your unsaved text remains in the editor.</p></div></div>}
     <div className="cms-editor-grid">
       <div className="cms-writing-column">
         <div className="cms-document-heading">
-          <div className="cms-eyebrow">{document.kind} <span> / </span> {document.source_system === "print" ? String(document.metadata.issue_label || "Print intake") : document.source_system === "morweb" ? "Archive import" : "Original content"}</div>
+          <div className="cms-eyebrow">{CONTENT_TYPE_LABELS[document.kind].singular} <span> / </span> {document.source_system === "print" ? String(document.metadata.issue_label || "Print intake") : document.source_system === "morweb" ? "Archive import" : "Original content"}</div>
           <label className="cms-sr-only" htmlFor="document-title">Headline</label>
           <textarea id="document-title" className="cms-headline" rows={2} value={draft.title} maxLength={500} onChange={e => update("title", e.target.value)} placeholder="Write a headline" />
           <div className="cms-byline"><label htmlFor="document-byline">By</label><input id="document-byline" placeholder="Add the editorial byline" value={draft.byline} onChange={e => update("byline", e.target.value)} /></div>
@@ -167,6 +184,7 @@ export function DocumentEditor({ document, demo, onClose, onSave, onDirtyChange,
                 <ArticlePreview title={source.title} byline={source.byline} html={source.body_html} />
                 <div className="cms-source-actions"><p>Use the headline, byline, and body as an unsaved edit. Existing revisions remain available.</p><button className="cms-button secondary small" onClick={() => adopt(source)}>Use this text</button></div>
               </details>)}
+              {!demo && document.source_system === "morweb" && <MigrationSources key={document.id} documentId={document.id} />}
             </>}
             {tab === "history" && <><h2>Revision history</h2><p className="cms-muted">Every save creates a version. Restoring text creates a new edit when you save it.</p>
               <div className="cms-history-list">{history?.revisions.map(version => <button key={version.id} onClick={() => setSelectedRevision(version)} className={selectedRevision?.id === version.id ? "selected" : ""}><span className="cms-history-icon"><History size={17} /></span><span><strong>Version {version.revision}{version.revision === document.revision && " · Current"}</strong><small>{version.reason === "ingest" ? "Imported source" : "Editorial save"}</small></span><time>{date(version.created_at)}</time></button>)}</div>
@@ -177,10 +195,13 @@ export function DocumentEditor({ document, demo, onClose, onSave, onDirtyChange,
         </div>
       </div>
       <aside className="cms-properties">
+        {needsReview && <section className="cms-property-card cms-import-review"><h3>Import review</h3><p>This record is retained. Resolve these findings before it can be published:</p><ul>{findings.length ? findings.map((finding, index) => <li key={index}>{finding}</li>) : <li>Editorial review is required.</li>}</ul><p className="cms-fineprint">Editing the story keeps these findings for review.</p></section>}
         <section className="cms-property-card"><h3>Editorial status</h3><label>Status<select value={draft.publication_state} onChange={e => update("publication_state", e.target.value)}><option value="draft">Draft</option><option value="review">Needs review</option><option value="unpublished">Unpublished</option>{document.publication_state === "published" && <option value="published">Published in source</option>}</select></label><p className="cms-fineprint">This workspace prepares content. Website publishing will be connected separately.</p><div className="cms-property-detail"><span>Last saved</span><strong>{date(document.updated_at)}</strong></div><div className="cms-property-detail"><span>Content source</span><strong>{document.source_system === "morweb" ? "Morweb archive" : document.source_system === "print" ? "Print issue" : "Editorial"}</strong></div></section>
         {document.kind === "rating" && <section className="cms-property-card"><h3>Rating</h3><div className="cms-rating-numbers"><label>Score<input type="number" min="0" max="100" value={typeof rating.score === "number" ? rating.score : ""} onChange={e => meta("rating", { ...rating, score: e.target.value === "" ? null : Number(e.target.value) })} /></label><label>Price<input type="number" min="0" step="0.01" value={typeof rating.price === "number" ? rating.price : ""} onChange={e => meta("rating", { ...rating, price: e.target.value === "" ? null : Number(e.target.value) })} /></label></div>{["brand", "category", "issue", "reviewer"].map(field => <label key={field}>{field}<input value={String(rating[field] || "")} onChange={e => meta("rating", { ...rating, [field]: e.target.value })} /></label>)}</section>}
-        <section className="cms-property-card"><h3>Organization</h3><label>Categories<input key={`categories:${document.revision}:${contentEpoch}`} defaultValue={Array.isArray(draft.metadata.categories) ? draft.metadata.categories.filter(value => typeof value === "string").join(", ") : ""} placeholder="Separate with commas" onChange={e => meta("categories", e.target.value.split(",").map(s => s.trim()).filter(Boolean))} /></label><label>Tags<input key={`tags:${document.revision}:${contentEpoch}`} defaultValue={Array.isArray(draft.metadata.tags) ? draft.metadata.tags.filter(value => typeof value === "string").join(", ") : ""} placeholder="Separate with commas" onChange={e => meta("tags", e.target.value.split(",").map(s => s.trim()).filter(Boolean))} /></label></section>
-        <section className="cms-property-card"><h3>Search & sharing</h3><label>URL slug<input value={draft.slug || ""} onChange={e => update("slug", e.target.value || null)} placeholder="article-url" /></label><label>Search title<input value={String(seo.title || "")} maxLength={250} onChange={e => meta("seo", { ...seo, title: e.target.value })} /></label><label>Search description<textarea rows={3} value={String(seo.description || "")} onChange={e => meta("seo", { ...seo, description: e.target.value })} /></label><label className="cms-checkbox"><input type="checkbox" checked={seo.no_index === true} onChange={e => meta("seo", { ...seo, no_index: e.target.checked })} />Exclude from search engines</label>{document.public_url && /^https?:\/\//.test(document.public_url) && <a className="cms-source-link" href={document.public_url} target="_blank" rel="noreferrer">Original public page <ExternalLink size={13} /></a>}</section>
+        <section className="cms-property-card"><h3>Permanent home & topics</h3><div className="cms-channel-value"><span>Primary channel</span><strong>{organization.primary_channel || "Awaiting channel review"}</strong></div>{!organization.primary_channel && <p className="cms-fineprint">Existing content and URLs are retained while the new channel structure is reviewed.</p>}<label>Topics<input key={`topics:${document.revision}:${contentEpoch}`} defaultValue={organization.topics.join(", ")} placeholder="Separate topics with commas" onChange={e => meta("organization", { ...organization, topics: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} /></label></section>
+        <section className="cms-property-card"><h3>Homepage placements</h3><p className="cms-fineprint">Promotion has its own schedule. Ending a placement keeps the story, permanent channel, and URL.</p>{organization.placements.map((placement, index) => <div className="cms-placement-card" key={placement.slot}><strong>{PLACEMENT_LABELS[placement.slot]}</strong><label>Placement status<select aria-label={`${PLACEMENT_LABELS[placement.slot]} status`} value={placement.status} onChange={e => updatePlacement(index, { status: e.target.value as CmsPlacement["status"] })}><option value="needs_review">Needs review</option><option value="scheduled">Scheduled</option><option value="disabled">Disabled</option></select></label>{placement.status === "needs_review" && placement.source_category_id && <p className="cms-fineprint">The source category was preserved. Its promotion dates were not supplied.</p>}<div className="cms-placement-dates">{(["starts_at", "ends_at"] as const).map(field => <label key={field}>{field === "starts_at" ? "Starts (UTC)" : "Ends (UTC)"}<input aria-label={`${PLACEMENT_LABELS[placement.slot]} ${field === "starts_at" ? "start" : "end"} UTC`} type="datetime-local" value={placement[field]?.slice(0, 16) || ""} onChange={e => updatePlacement(index, { [field]: e.target.value ? `${e.target.value}:00Z` : null })} /></label>)}</div></div>)}{!organization.placements.length && <p className="cms-fineprint">No homepage promotion assigned.</p>}{organization.placements.length < Object.keys(PLACEMENT_LABELS).length && <button type="button" className="cms-button secondary small" onClick={addPlacement}>Add homepage placement</button>}</section>
+        <section className="cms-property-card"><h3>Source classification</h3><p className="cms-fineprint">Original categories and tags remain available for migration review.</p><div className="cms-source-taxonomy"><span>Categories</span><p>{organization.source_categories.join(", ") || "None supplied"}</p><span>Tags</span><p>{Array.isArray(draft.metadata.tags) ? draft.metadata.tags.filter(value => typeof value === "string").join(", ") || "None supplied" : "None supplied"}</p></div></section>
+        <section className="cms-property-card"><h3>Search & sharing</h3><label>URL slug<input value={draft.slug || ""} onChange={e => update("slug", e.target.value || null)} placeholder="article-url" /></label><label>Search title<input value={String(seo.title || "")} maxLength={250} onChange={e => meta("seo", { ...seo, title: e.target.value })} /></label><label>Search description<textarea rows={3} value={String(seo.description || "")} onChange={e => meta("seo", { ...seo, description: e.target.value })} /></label><label className="cms-checkbox"><input type="checkbox" checked={seo.no_index === true} onChange={e => meta("seo", { ...seo, no_index: e.target.checked })} />Exclude from search engines</label>{sourcePublicUrl && /^https?:\/\//.test(sourcePublicUrl) && <a className="cms-source-link" href={sourcePublicUrl} target="_blank" rel="noreferrer">Original public page <ExternalLink size={13} /></a>}</section>
       </aside>
     </div>
   </section>;

@@ -22,11 +22,11 @@ export async function PATCH(request: Request, context: Context) {
     assertSameOrigin(request);
     const user = await requireCmsUser();
     const { id } = await context.params;
-    await getCmsDocument(id, user);
+    const current = await getCmsDocument(id, user);
     const body = await readJson(request);
     if (!Number.isInteger(body.expected_revision) || Number(body.expected_revision) < 1) throw new CmsError(422, "Save requires the version you opened.");
     if (!body.patch || typeof body.patch !== "object" || Array.isArray(body.patch)) throw new CmsError(422, "Provide the document changes.");
-    const patch = documentPatch(body.patch as Record<string, unknown>);
+    const patch = documentPatch(body.patch as Record<string, unknown>, current);
     const { data, error } = await cmsDb().rpc("cms_save_document", {
       p_document_id: id, p_expected_revision: body.expected_revision, p_patch: patch, p_actor: user.id,
     });

@@ -152,7 +152,7 @@ export function SidePanel({ open, onClose, title, children, footer }: { open: bo
     <div className="ed-panel-scrim" onClick={onClose} aria-hidden />
     <aside ref={ref} role="dialog" aria-modal="true" aria-label={title} className="ed-panel">
       <div className="ed-panel-head"><h2>{title}</h2><IconButton label="Close" icon={X} small onClick={onClose} /></div>
-      <div className="ed-panel-body">{children}</div>
+      <div className="ed-panel-body" style={title === "Assistant" ? { padding: 0, display: "flex", flexDirection: "column" } : undefined}>{children}</div>
       {footer && <div className="ed-panel-foot">{footer}</div>}
     </aside>
   </>;

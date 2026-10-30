@@ -3,7 +3,7 @@
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, Plus } from "lucide-react";
+import { LayoutGrid, Plus, Sparkles } from "lucide-react";
 import type { CmsDocumentKind } from "@/lib/cms/types";
 import { CONTENT_TYPE_LABELS } from "@/lib/cms/organization";
 import { BRAND_NAMES } from "@/lib/editorial/helpers";
@@ -13,7 +13,8 @@ import { PRIMARY_NAV } from "./nav";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
-import { Button, Dialog, Field, Toasts } from "./ui";
+import { Button, Dialog, Field, SidePanel, Toasts } from "./ui";
+import { Assistant, type AssistantContext } from "./Assistant";
 
 type ShellContextValue = {
   title: string | null;
@@ -21,6 +22,10 @@ type ShellContextValue = {
   openCreate: (kind?: CmsDocumentKind) => void;
   /** Pages set this while they hold unsaved work so navigation can warn. */
   setDirty: (dirty: boolean) => void;
+  /** Open the assistant panel, optionally sending a first message. */
+  openAssistant: (prompt?: string) => void;
+  /** A document page registers itself so the assistant can read and change it. */
+  setAssistantContext: (context: AssistantContext | null) => void;
 };
 
 const ShellContext = createContext<ShellContextValue | null>(null);
@@ -79,7 +84,7 @@ function MobileTabBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
   const { href } = useEditorial();
   return <nav className="ed-tabbar" aria-label="Workspace sections">
-    {PRIMARY_NAV.map(item => <Link key={item.href} href={href(item.href)} className="ed-tab" aria-current={item.match(pathname) ? "page" : undefined}>
+    {PRIMARY_NAV.slice(0, 4).map(item => <Link key={item.href} href={href(item.href)} className="ed-tab" aria-current={item.match(pathname) ? "page" : undefined}>
       {createElement(item.icon, { size: 18, strokeWidth: 1.75, "aria-hidden": true })}{item.label.split(" ")[0]}
     </Link>)}
     <button type="button" className="ed-tab" onClick={onOpenMenu}><LayoutGrid size={18} strokeWidth={1.75} aria-hidden />More</button>
@@ -94,6 +99,11 @@ export function Shell({ children, wide }: { children: ReactNode; wide?: boolean 
   const [title, setTitle] = useState<string | null>(null);
   const [create, setCreate] = useState<{ open: boolean; kind: CmsDocumentKind; epoch: number }>({ open: false, kind: "article", epoch: 0 });
   const [dirty, setDirty] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantPrompt, setAssistantPrompt] = useState<string | undefined>(undefined);
+  const [assistantContext, setAssistantContext] = useState<AssistantContext | null>(null);
+  const closeAssistant = useCallback(() => setAssistantOpen(false), []);
+  const openAssistant = useCallback((prompt?: string) => { setAssistantPrompt(prompt); setAssistantOpen(true); }, []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
   const sheetRef = useLayer(mobileOpen, closeMobile);
   const [mobilePath, setMobilePath] = useState(pathname);
@@ -109,12 +119,13 @@ export function Shell({ children, wide }: { children: ReactNode; wide?: boolean 
       const target = event.target as HTMLElement | null;
       const typing = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable);
       if (!typing && !event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === "n") { event.preventDefault(); setCreate(current => ({ open: true, kind: "article", epoch: current.epoch + 1 })); }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "j") { event.preventDefault(); setAssistantOpen(value => !value); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   const openCreate = useCallback((kind: CmsDocumentKind = "article") => setCreate(current => ({ open: true, kind, epoch: current.epoch + 1 })), []);
-  const value = useMemo<ShellContextValue>(() => ({ title, setTitle, openCreate, setDirty }), [title, openCreate]);
+  const value = useMemo<ShellContextValue>(() => ({ title, setTitle, openCreate, setDirty, openAssistant, setAssistantContext }), [title, openCreate, openAssistant]);
 
   return <ShellContext.Provider value={value}>
     <div className="ed ed-shell">
@@ -136,6 +147,10 @@ export function Shell({ children, wide }: { children: ReactNode; wide?: boolean 
         </main>
         <MobileTabBar onOpenMenu={() => setMobileOpen(true)} />
       </div>
+      <button type="button" className="ed-assistant-launcher ai-glow" onClick={() => openAssistant()} aria-label="Open the assistant (⌘J)" title="Assistant (⌘J)"><Sparkles size={15} strokeWidth={1.75} aria-hidden />Assistant<kbd>⌘J</kbd></button>
+      <SidePanel open={assistantOpen} onClose={closeAssistant} title="Assistant">
+        <Assistant context={assistantContext} initialPrompt={assistantPrompt} onConsumedPrompt={() => setAssistantPrompt(undefined)} />
+      </SidePanel>
       <CommandPalette />
       <CreateDialog key={create.epoch} open={create.open} kind={create.kind} onClose={() => setCreate(current => ({ ...current, open: false }))} />
       <Toasts toasts={toasts} onDismiss={dismissToast} />

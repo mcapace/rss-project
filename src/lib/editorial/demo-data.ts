@@ -67,6 +67,16 @@ const SEEDS: Seed[] = [
   { brand: "mw", title: "Directory: sample distributor profile", byline: "", kind: "directory_entry", state: "unpublished", source: "morweb", section: "Directory", excerpt: "An imported directory record.", body: "<p>Sample distributor serving three states, founded 1962.</p>", agoHours: 200 },
 ];
 
+/** Sample image descriptions so the demo can be searched by subject, style and color. */
+const LOOKS = [
+  { description: "Oak barrels stacked in a dim rickhouse, warm light raking across the staves and a figure in silhouette at the far end.", style: "moody low-key documentary photograph", mood: "quiet, warm", tags: ["barrels", "warehouse", "rickhouse", "oak", "silhouette", "low light"], subjects: ["barrels", "warehouse interior"], colors: ["amber", "dark brown", "charcoal"], palette: ["#5a3b1e", "#b67a3a", "#1f1a17", "#d9b27c"] },
+  { description: "A close product shot of a bottle and tulip glass on slate, with a soft gradient background and a single highlight on the glass.", style: "clean studio product photograph", mood: "calm, premium", tags: ["bottle", "glass", "slate", "studio", "product shot"], subjects: ["bottle", "glass"], colors: ["gold", "slate gray", "black"], palette: ["#2b2b2e", "#c9a24a", "#6b6f78", "#f1e7cf"] },
+  { description: "Rows of vines on a hillside under a bright blue sky, with a stone winery building in the distance and dry golden grass in the foreground.", style: "bright wide landscape photograph", mood: "open, sunny", tags: ["vineyard", "hillside", "landscape", "sky", "winery"], subjects: ["vineyard", "landscape"], colors: ["sky blue", "green", "golden"], palette: ["#3a78c2", "#4f7a3a", "#c9a84a", "#e8e2d0"] },
+  { description: "Hands rolling a cigar at a wooden workbench, tobacco leaves spread around, lit by a window to the left.", style: "intimate reportage photograph", mood: "focused, textured", tags: ["hands", "craft", "tobacco", "workshop", "window light"], subjects: ["hands", "cigar rolling"], colors: ["tobacco brown", "cream", "olive"], palette: ["#6d4a2c", "#e4d7bd", "#6e6a3a", "#2a2320"] },
+  { description: "A retail shelf lined with spirits bottles and price tags, shot straight on under cool fluorescent light.", style: "flat documentary photograph", mood: "neutral, busy", tags: ["retail", "shelf", "bottles", "store", "price tags"], subjects: ["store shelf", "bottles"], colors: ["cool white", "red", "green"], palette: ["#e9edf0", "#b02a2a", "#2f7a43", "#3b3b40"] },
+  { description: "An overhead flat lay of a tasting mat, four glasses in a row, a notebook and a pen, on pale linen.", style: "airy overhead flat lay", mood: "orderly, light", tags: ["flat lay", "tasting", "glasses", "notebook", "linen"], subjects: ["tasting glasses", "notebook"], colors: ["cream", "amber", "white"], palette: ["#f4efe6", "#c58f3b", "#ffffff", "#8a8577"] },
+];
+
 const ISSUE_IDS: Record<CmsBrand, string> = {
   wa: "10000000-0000-4000-8000-000000000001",
   ws: "10000000-0000-4000-8000-000000000002",
@@ -82,10 +92,15 @@ export function demoDocuments(now: Date = new Date()): CmsDocument[] {
     const n = index + 1;
     const published = seed.state === "published";
     const publishAt = seed.publishOffsetHours != null ? hoursAgo(now, -seed.publishOffsetHours) : null;
-    const media = seed.media ? Array.from({ length: seed.media }, (_, i) => ({
-      s3_key: `cms/print/${seed.brand}/${ISSUE_IDS[seed.brand]}/${"0".repeat(64)}/images/${n}${i}.jpg`,
-      sha256: `${n}${i}`.padEnd(64, "a"), file: `p0${n}${i}_x${i + 1}.jpg`, caption: i === 0 ? "Lead image from the print layout." : "", credit: "Sample photographer", alt: "", is_lead: i === 0,
-    })) : [];
+    const media = seed.media ? Array.from({ length: seed.media }, (_, i) => {
+      const look = LOOKS[(n + i / 2) % LOOKS.length];
+      return {
+        s3_key: `cms/print/${seed.brand}/${ISSUE_IDS[seed.brand]}/${"0".repeat(64)}/images/${n}${i}.jpg`,
+        sha256: `${n}${i}`.padEnd(64, "a"), file: `p0${n}${i}_x${i + 1}.jpg`, caption: i === 0 ? "Lead image from the print layout." : "", credit: "Sample photographer", alt: "", is_lead: i === 0,
+        // Described images are what make "search by the look" work in the demo.
+        ...(i % 2 === 0 ? { vision: { ...look, described_at: hoursAgo(now, seed.agoHours + 1), model: "sample" }, palette: look.palette, palette_names: look.colors.join(", ") } : {}),
+      };
+    }) : [];
     return {
       id: `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`,
       brand: seed.brand, kind: seed.kind, source_system: seed.source, source_key: `demo:${n}`,

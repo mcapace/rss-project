@@ -1,4 +1,4 @@
-import { Archive, CalendarDays, ClipboardCheck, FileInput, House, LibraryBig, Newspaper, Plus, Rss, type LucideIcon } from "lucide-react";
+import { Activity, Archive, CalendarDays, ClipboardCheck, FileInput, House, LibraryBig, Newspaper, Plus, Rss, Search, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -17,6 +17,8 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/cms/library", label: "Content library", icon: LibraryBig, match: p => p.startsWith("/cms/library") || p.startsWith("/cms/doc/"), keywords: "articles ratings pages documents search list" },
   { href: "/cms/review", label: "Review queue", icon: ClipboardCheck, match: p => p === "/cms/review", badge: "review", keywords: "needs review approve candidates" },
   { href: "/cms/schedule", label: "Schedule", icon: CalendarDays, match: p => p === "/cms/schedule", keywords: "calendar publish dates planned" },
+  { href: "/cms/search", label: "Search", icon: Search, match: p => p === "/cms/search", keywords: "find images content keywords look style" },
+  { href: "/cms/audience", label: "Audience", icon: Activity, match: p => p === "/cms/audience", keywords: "analytics ga4 google readers sessions traffic scorecards" },
 ];
 
 export const PRINT_NAV: NavItem[] = [

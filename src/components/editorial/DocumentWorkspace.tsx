@@ -2,16 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarClock, Check, Clock, Eye, FileText, History, ImageIcon, Info, Layers, PenLine, RotateCcw, Save, Search, Star, X } from "lucide-react";
+import { Activity, ArrowLeft, CalendarClock, Check, Clock, Crop, Eye, FileText, History, ImageIcon, Info, Layers, Palette, PenLine, RotateCcw, Save, Search, Sparkles, Star, X } from "lucide-react";
 import type { CmsDocument, CmsDocumentPatch, CmsDocumentRevision, CmsJsonObject, CmsPublicationState } from "@/lib/cms/types";
 import { CONTENT_TYPE_LABELS, SOURCE_SYSTEM_LABELS, reviewReasons, reviewRequired } from "@/lib/cms/organization";
 import { DataError, type MediaItem } from "@/lib/editorial/data";
-import { diffSummary, formatDateTime, isoToLocalInput, localInputToIso, readingMinutes, relativeTime, scheduleOf, sectionOf, slugify, STATE_LABELS, stringList, stripHtml, textDiff, withSchedule, wordCount } from "@/lib/editorial/helpers";
+import type { AssistDocument } from "@/lib/editorial/assist-types";
+import { cropStyle, extractPalette, type CropRect, type FocalPoint } from "@/lib/editorial/image-tools";
+import type { MediaVision } from "@/lib/editorial/search-types";
+import { ImageCropper, type CropSet } from "./ImageCropper";
+import { Sparkline } from "./charts";
+import type { ApplyAction } from "./Assistant";
+import { BRAND_NAMES, diffSummary, formatDateTime, isoToLocalInput, localInputToIso, readingMinutes, relativeTime, scheduleOf, sectionOf, slugify, STATE_LABELS, stringList, stripHtml, textDiff, withSchedule, wordCount } from "@/lib/editorial/helpers";
 import { rememberDocument } from "@/lib/editorial/scheduling";
 import { useEditorial } from "./EditorialProvider";
 import { useAsync } from "./hooks";
 import { usePageTitle, useShell } from "./Shell";
-import { BodyEditor } from "./BodyEditor";
+import { BodyEditor, type InsertableImage } from "./BodyEditor";
+import { PreviewMatrix } from "./PreviewMatrix";
 import { Button, Card, Empty, Field, LinkButton, Notice, Pill, Segmented, Skeleton, SkeletonRows, Switch, Tag } from "./ui";
 
 type Draft = Pick<CmsDocument, "title" | "byline" | "body_html" | "excerpt" | "slug" | "public_url" | "publication_state" | "metadata">;
@@ -28,17 +35,11 @@ function patchFor(document: CmsDocument, draft: Draft): CmsDocumentPatch {
   return patch;
 }
 
-function MediaThumb({ src, alt }: { src: string; alt: string }) {
+function MediaThumb({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
   // eslint-disable-next-line @next/next/no-img-element -- Presigned S3 and data URLs cannot go through the image optimizer.
-  return <img src={src} alt={alt} />;
+  return <img src={src} alt={alt} style={style} />;
 }
 
-function escapeHtml(value: string) { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;"); }
-
-function PreviewFrame({ title, byline, excerpt, section, html }: { title: string; byline: string; excerpt: string; section: string; html: string }) {
-  const content = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'"><style>body{font:17px/1.7 Georgia,'Times New Roman',serif;color:#1b1b1b;background:#fff;margin:0;padding:48px 24px;overflow-wrap:anywhere}main{max-width:680px;margin:0 auto}.kicker{font:600 12px/1.4 system-ui,sans-serif;letter-spacing:.02em;color:#0e7c6f}h1{font:600 38px/1.1 system-ui,sans-serif;letter-spacing:-.02em;margin:8px 0 12px}.dek{font:17px/1.5 system-ui,sans-serif;color:#5e5e5e;margin:0 0 18px}.byline{font:13px/1.5 system-ui,sans-serif;color:#5e5e5e;padding:0 0 18px;margin:0 0 28px;border-bottom:1px solid #e5e5e5}h2{font:600 26px/1.25 system-ui,sans-serif;margin:36px 0 10px}h3{font:600 20px/1.3 system-ui,sans-serif;margin:28px 0 8px}a{color:#0e7c6f}img{max-width:100%;height:auto;border-radius:6px}blockquote{border-left:2px solid #d4d4d4;padding-left:20px;margin:28px 0;color:#5e5e5e}table{border-collapse:collapse;width:100%}td,th{border:1px solid #e5e5e5;padding:8px}hr{border:0;border-top:1px solid #e5e5e5;margin:32px 0}</style></head><body><main>${section ? `<p class="kicker">${escapeHtml(section)}</p>` : ""}<h1>${escapeHtml(title || "Untitled")}</h1>${excerpt ? `<p class="dek">${escapeHtml(excerpt)}</p>` : ""}<p class="byline">${byline ? `By ${escapeHtml(byline)} · ` : ""}Preview</p>${html}</main></body></html>`;
-  return <iframe title="Article preview" sandbox="" referrerPolicy="no-referrer" srcDoc={content} style={{ width: "100%", minHeight: "70vh", border: "1px solid var(--border)", borderRadius: 12, background: "#fff" }} />;
-}
 
 function RevisionDiff({ from, to, label }: { from: Draft; to: Draft; label: string }) {
   const segments = useMemo(() => textDiff(`${from.title}\n${from.byline}\n\n${stripHtml(from.body_html)}`, `${to.title}\n${to.byline}\n\n${stripHtml(to.body_html)}`), [from, to]);
@@ -51,13 +52,15 @@ function RevisionDiff({ from, to, label }: { from: Draft; to: Draft; label: stri
   </div>;
 }
 
-export function DocumentWorkspace({ id }: { id: string }) {
+export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?: string }) {
   const { data, href, toast, demo, brand } = useEditorial();
-  const { setDirty: setShellDirty } = useShell();
+  const { setDirty: setShellDirty, openAssistant, setAssistantContext } = useShell();
   const loaded = useAsync(`doc:${id}`, signal => data.getDocument(id, signal));
   const [document, setDocument] = useState<CmsDocument | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [tab, setTab] = useState<Tab>("write");
+  const [tab, setTab] = useState<Tab>(["write", "preview", "history", "sources", "media"].includes(initialTab ?? "") ? (initialTab as Tab) : "write");
+  const [cropIndex, setCropIndex] = useState<number | null>(null);
+  const [describing, setDescribing] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<{ message: string; conflict?: boolean } | null>(null);
   const [recovered, setRecovered] = useState<Draft | null>(null);
@@ -132,8 +135,81 @@ export function DocumentWorkspace({ id }: { id: string }) {
   }, []);
 
   const history = useAsync(`history:${id}:${document?.revision ?? 0}:${historyToken}`, signal => data.history(id, signal), { enabled: !!document && (tab === "history" || tab === "sources") });
-  const media = useAsync(`media:${id}`, signal => data.media(id, signal), { enabled: !!document && tab === "media" });
+  const media = useAsync(`media:${id}`, signal => data.media(id, signal), { enabled: !!document });
   const mediaMeta = useMemo(() => (Array.isArray(draft?.metadata.media) ? draft.metadata.media : []) as CmsJsonObject[], [draft]);
+  const draftRef = useRef(draft);
+  useEffect(() => { draftRef.current = draft; }, [draft]);
+
+  // The assistant reads the live draft and applies suggestions straight into it.
+  useEffect(() => {
+    if (!document) return;
+    const getDocument = (): AssistDocument => {
+      const current = draftRef.current ?? toDraft(document);
+      const seo = (current.metadata.seo && typeof current.metadata.seo === "object" && !Array.isArray(current.metadata.seo) ? current.metadata.seo : {}) as CmsJsonObject;
+      const items = (Array.isArray(current.metadata.media) ? current.metadata.media : []) as CmsJsonObject[];
+      return {
+        brand: document.brand, kind: document.kind, title: current.title, byline: current.byline, excerpt: current.excerpt, section: sectionOf(current.metadata),
+        tags: stringList(current.metadata.tags), slug: current.slug, public_url: current.public_url,
+        seo: { title: typeof seo.title === "string" ? seo.title : "", description: typeof seo.description === "string" ? seo.description : "" },
+        body_text: stripHtml(current.body_html),
+        media: items.map((item, index) => ({ index, caption: typeof item.caption === "string" ? item.caption : "", alt: typeof item.alt === "string" ? item.alt : "", credit: typeof item.credit === "string" ? item.credit : "", file: typeof item.file === "string" ? item.file : "" })),
+      };
+    };
+    const apply = (action: ApplyAction) => {
+      const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      switch (action.type) {
+        case "title": update({ title: action.value }); break;
+        case "excerpt": update({ excerpt: action.value }); break;
+        case "slug": update({ slug: action.value }); break;
+        case "seo_title": updateMeta(metadata => ({ ...metadata, seo: { ...(metadata.seo as CmsJsonObject | undefined ?? {}), title: action.value } })); break;
+        case "meta_description": updateMeta(metadata => ({ ...metadata, seo: { ...(metadata.seo as CmsJsonObject | undefined ?? {}), description: action.value } })); break;
+        case "keywords": updateMeta(metadata => ({ ...metadata, tags: [...new Set([...stringList(metadata.tags), ...action.value])] })); break;
+        case "caption": updateMeta(metadata => ({ ...metadata, media: ((Array.isArray(metadata.media) ? metadata.media : []) as CmsJsonObject[]).map((item, index) => index === action.index ? { ...item, caption: action.caption || item.caption, alt: action.alt || item.alt } : item) })); break;
+        case "direct_answer": setDraft(current => current ? { ...current, body_html: `<p><strong>${escape(action.value)}</strong></p>${current.body_html}` } : current); break;
+        case "faq": setDraft(current => current ? { ...current, body_html: `${current.body_html}<h2>Frequently asked questions</h2>${action.value.map(item => `<h3>${escape(item.question)}</h3><p>${escape(item.answer)}</p>`).join("")}` } : current); break;
+      }
+    };
+    setAssistantContext({ documentId: document.id, getDocument, apply });
+    return () => setAssistantContext(null);
+  }, [document, update, updateMeta, setAssistantContext]);
+
+  const insertable = useMemo<InsertableImage[]>(() => (media.data ?? []).filter(item => item.preview_url).map(item => ({ src: item.preview_url as string, alt: item.alt ?? "", caption: item.caption ?? "" })), [media.data]);
+  const performancePath = document?.publication_state === "published" ? (document.public_url ? (() => { try { return new URL(document.public_url).pathname; } catch { return null; } })() : document.slug ? `/${document.slug}` : null) : null;
+  const performance = useAsync(`performance:${id}:${performancePath}`, signal => data.pagePerformance(brand, performancePath as string, 28, signal), { enabled: !!performancePath });
+
+  const setMediaItem = useCallback((index: number, changes: CmsJsonObject | ((item: CmsJsonObject) => CmsJsonObject)) => updateMeta(metadata => ({
+    ...metadata, media: ((Array.isArray(metadata.media) ? metadata.media : []) as CmsJsonObject[]).map((item, i) => i === index ? (typeof changes === "function" ? changes(item) : { ...item, ...changes }) : item),
+  })), [updateMeta]);
+
+  // Pull a palette from each preview once so images can be searched by color.
+  useEffect(() => {
+    const items = media.data;
+    if (!items || !draft) return;
+    let cancelled = false;
+    (async () => {
+      for (const item of items) {
+        const current = (draftRef.current?.metadata.media as CmsJsonObject[] | undefined)?.[item.index];
+        if (!item.preview_url || !current || Array.isArray(current.palette)) continue;
+        const result = await extractPalette(item.preview_url);
+        if (cancelled || !result?.palette.length) continue;
+        setMediaItem(item.index, entry => ({ ...entry, palette: result.palette, palette_names: result.names.join(", ") }));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per media load
+  }, [media.data]);
+
+  async function describe(index: number) {
+    if (!document) return;
+    setDescribing(index);
+    try {
+      const vision: MediaVision = await data.describeMedia(document.id, index);
+      setMediaItem(index, { vision: vision as unknown as CmsJsonObject });
+      toast("Image described. Save to make it searchable.", "success");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "The image could not be described.", "error");
+    } finally { setDescribing(null); }
+  }
 
   if (loaded.error) return <Card><Empty icon={FileText} title="This document could not be opened" text={loaded.error} action={<LinkButton href={href("/cms/library")} icon={ArrowLeft}>Back to the library</LinkButton>} /></Card>;
   if (!document || !draft) return <div className="ed-editor"><div className="ed-editor-main"><Skeleton width="60%" height={34} /><div style={{ marginTop: 24 }}><SkeletonRows rows={6} /></div></div><div className="ed-editor-rail"><Card pad="sm"><SkeletonRows rows={4} /></Card></div></div>;
@@ -160,6 +236,7 @@ export function DocumentWorkspace({ id }: { id: string }) {
         <div className="ed-editor-status">
           <span className="ed-wordcount"><PenLine size={13} aria-hidden />{words.toLocaleString()} words · {readingMinutes(words)} min read</span>
           <span>{saving ? "Saving…" : dirty ? "Unsaved changes" : lastSaved ? `Saved ${relativeTime(lastSaved)}` : `Revision ${document.revision}`}</span>
+          <Button size="sm" icon={Sparkles} ai onClick={() => openAssistant()} title="Review for SEO and GEO, or ask (⌘J)">Assistant</Button>
           <Button variant="primary" size="sm" icon={Save} disabled={!dirty || saving} onClick={save} title="Save (⌘S)">{saving ? "Saving…" : "Save"}</Button>
         </div>
       </div>
@@ -176,10 +253,10 @@ export function DocumentWorkspace({ id }: { id: string }) {
           ref={node => { if (node) { node.style.height = "auto"; node.style.height = `${node.scrollHeight}px`; } }}
           onChange={event => { update({ title: event.target.value }); event.target.style.height = "auto"; event.target.style.height = `${event.target.scrollHeight}px`; }} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
         <input className="ed-byline-input" style={{ marginTop: 8 }} value={draft.byline} placeholder="Byline" aria-label="Byline" maxLength={1000} onChange={event => update({ byline: event.target.value })} />
-        <BodyEditor key={`${document.id}:${document.revision}`} html={draft.body_html} onChange={body_html => update({ body_html })} />
+        <BodyEditor key={`${document.id}:${document.revision}`} html={draft.body_html} onChange={body_html => update({ body_html })} images={insertable} />
       </div>}
 
-      {tab === "preview" && <div style={{ marginTop: 16 }}><PreviewFrame title={draft.title} byline={draft.byline} excerpt={draft.excerpt} section={sectionOf(draft.metadata)} html={draft.body_html} /></div>}
+      {tab === "preview" && <div style={{ marginTop: 16 }}><PreviewMatrix payload={{ title: draft.title, byline: draft.byline, excerpt: draft.excerpt, section: sectionOf(draft.metadata), html: draft.body_html, brand: document.brand, brandName: BRAND_NAMES[document.brand] }} /></div>}
 
       {tab === "history" && <div style={{ marginTop: 16, display: "grid", gap: 16 }}>
         {history.loading && !history.data ? <SkeletonRows rows={4} /> : history.error ? <Notice tone="error">{history.error}</Notice> : <>
@@ -231,21 +308,46 @@ export function DocumentWorkspace({ id }: { id: string }) {
           {mediaMeta.map((item, index) => {
             const preview = media.data?.find(entry => entry.index === index) ?? (null as MediaItem | null);
             const set = (changes: CmsJsonObject) => updateMeta(metadata => ({ ...metadata, media: mediaMeta.map((entry, i) => i === index ? { ...entry, ...changes } : changes.is_lead === true ? { ...entry, is_lead: false } : entry) }));
+            const crops = (item.crops && typeof item.crops === "object" && !Array.isArray(item.crops) ? item.crops : {}) as Record<string, CropRect>;
+            const vision = (item.vision && typeof item.vision === "object" && !Array.isArray(item.vision) ? item.vision : null) as MediaVision | null;
+            const palette = Array.isArray(item.palette) ? (item.palette as string[]) : [];
+            const cropCount = Object.keys(crops).length;
             return <Card key={index} pad="sm">
-              <div style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 14, alignItems: "start" }}>
-                <div className="ed-media-tile" data-lead={item.is_lead === true}>{preview?.preview_url ? <MediaThumb src={preview.preview_url} alt={typeof item.alt === "string" ? item.alt : ""} /> : <span style={{ position: "static", display: "grid", placeItems: "center", height: "100%", background: "transparent", color: "var(--muted)" }}><ImageIcon size={20} aria-hidden /></span>}{item.is_lead === true && <span>Lead</span>}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 14, alignItems: "start" }}>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <button type="button" className="ed-media-tile" data-lead={item.is_lead === true} style={{ aspectRatio: "4 / 3", cursor: preview?.preview_url ? "zoom-in" : "default" }} onClick={() => preview?.preview_url && setCropIndex(index)} title={preview?.preview_url ? "Crop this image" : "No preview available"}>
+                    {preview?.preview_url ? <MediaThumb src={preview.preview_url} alt={typeof item.alt === "string" ? item.alt : ""} style={cropStyle(crops["4:3"] ?? crops["3:2"] ?? crops["16:9"] ?? null)} /> : <span style={{ position: "static", display: "grid", placeItems: "center", height: "100%", background: "transparent", color: "var(--muted)" }}><ImageIcon size={20} aria-hidden /></span>}
+                    {item.is_lead === true && <span>Lead</span>}
+                  </button>
+                  {palette.length > 0 && <span className="ed-swatches" title={typeof item.palette_names === "string" ? item.palette_names : ""} aria-label={`Palette: ${typeof item.palette_names === "string" ? item.palette_names : ""}`}>{palette.slice(0, 4).map(color => <i key={color} style={{ background: color }} />)}</span>}
+                </div>
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}><span style={{ fontSize: 12.5, color: "var(--muted)" }}>{typeof item.file === "string" ? item.file : `Image ${index + 1}`}</span><label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>Lead image <Switch checked={item.is_lead === true} onChange={next => set({ is_lead: next })} label={`Use image ${index + 1} as the lead`} /></label></div>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{typeof item.file === "string" ? item.file : `Image ${index + 1}`}{cropCount ? ` · ${cropCount} crop${cropCount === 1 ? "" : "s"}` : ""}</span>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>Lead image <Switch checked={item.is_lead === true} onChange={next => set({ is_lead: next })} label={`Use image ${index + 1} as the lead`} /></label>
+                  </div>
                   <input className="ed-input" placeholder="Caption" aria-label="Caption" value={typeof item.caption === "string" ? item.caption : ""} onChange={event => set({ caption: event.target.value })} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     <input className="ed-input" placeholder="Credit" aria-label="Credit" value={typeof item.credit === "string" ? item.credit : ""} onChange={event => set({ credit: event.target.value })} />
                     <input className="ed-input" placeholder="Alt text" aria-label="Alt text" value={typeof item.alt === "string" ? item.alt : ""} onChange={event => set({ alt: event.target.value })} />
+                  </div>
+                  {vision ? <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.5 }}><strong style={{ color: "var(--foreground)", fontWeight: 500 }}>Searchable description.</strong> {vision.description} <em style={{ fontStyle: "normal", color: "var(--muted-soft)" }}>· {vision.style}{Array.isArray(vision.tags) && vision.tags.length ? ` · ${vision.tags.slice(0, 6).join(", ")}` : ""}</em></div>
+                    : <p style={{ fontSize: 12.5, color: "var(--muted-soft)" }}>Not yet described. Describing an image lets editors find it by subject, style, mood and color.</p>}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    <Button size="sm" icon={Crop} disabled={!preview?.preview_url} onClick={() => setCropIndex(index)}>Crop</Button>
+                    <Button size="sm" icon={Sparkles} ai disabled={describing !== null} onClick={() => describe(index)}>{describing === index ? "Describing…" : vision ? "Describe again" : "Describe with AI"}</Button>
+                    {!palette.length && preview?.preview_url && <Button size="sm" variant="subtle" icon={Palette} onClick={async () => { const result = await extractPalette(preview.preview_url as string); if (result?.palette.length) set({ palette: result.palette, palette_names: result.names.join(", ") }); else toast("The palette could not be read from this image.", "error"); }}>Palette</Button>}
                   </div>
                 </div>
               </div>
             </Card>;
           })}
         </div>}
+        <ImageCropper key={cropIndex ?? "none"} open={cropIndex !== null} onClose={() => setCropIndex(null)} title={draft.title}
+          src={cropIndex !== null ? media.data?.find(entry => entry.index === cropIndex)?.preview_url ?? null : null}
+          crops={cropIndex !== null ? ((mediaMeta[cropIndex]?.crops && typeof mediaMeta[cropIndex].crops === "object" ? mediaMeta[cropIndex].crops : {}) as CropSet) : {}}
+          focal={cropIndex !== null && mediaMeta[cropIndex]?.focal && typeof mediaMeta[cropIndex].focal === "object" ? (mediaMeta[cropIndex].focal as FocalPoint) : null}
+          onSave={(crops, focal) => { if (cropIndex !== null) { setMediaItem(cropIndex, { crops: crops as unknown as CmsJsonObject, focal: focal as unknown as CmsJsonObject }); toast("Crops saved to the draft. Save to keep them.", "success"); } }} />
       </div>}
     </div>
 
@@ -298,6 +400,20 @@ export function DocumentWorkspace({ id }: { id: string }) {
         <Field label="Search description" htmlFor="ed-seo-description" hint={`${String(seo.description ?? "").length}/160`}><textarea id="ed-seo-description" className="ed-textarea" rows={3} maxLength={320} value={typeof seo.description === "string" ? seo.description : ""} onChange={event => updateMeta({ seo: { ...seo, description: event.target.value } })} placeholder={draft.excerpt} /></Field>
         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 12, fontSize: 13 }}>Hide from search engines <Switch checked={seo.no_index === true} onChange={next => updateMeta({ seo: { ...seo, no_index: next } })} label="Hide from search engines" /></label>
       </Card>
+
+      {performancePath && <Card pad={false} className="ed-rail-card still">
+        <h3>Performance <Activity size={14} aria-hidden /></h3>
+        {performance.loading && !performance.data ? <SkeletonRows rows={2} /> : performance.error ? <p style={{ fontSize: 12.5, color: "var(--muted)" }}>{/connected|setup/i.test(performance.error) ? <>Connect Google Analytics on the <Link className="ed-link" href={href("/cms/audience")}>Audience page</Link> to see this story&rsquo;s readers.</> : performance.error}</p> : performance.data && <div className="ed-perf">
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
+            <div><strong style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>{performance.data.pageViews.toLocaleString()}</strong><div style={{ fontSize: 12, color: "var(--muted)" }}>page views, 28 days{performance.data.source === "sample" ? " · sample" : ""}</div></div>
+            <Sparkline values={performance.data.daily.map(day => day.pageViews)} color={`var(--chart-${brand})`} />
+          </div>
+          <div className="ed-perf-row"><span>Sessions</span><b>{performance.data.sessions.toLocaleString()}</b></div>
+          <div className="ed-perf-row"><span>Engagement rate</span><b>{Math.round(performance.data.engagementRate * 100)}%</b></div>
+          <div className="ed-perf-row"><span>Avg. engagement</span><b>{Math.floor(performance.data.avgEngagementSeconds / 60)}m {Math.round(performance.data.avgEngagementSeconds % 60)}s</b></div>
+          <div className="ed-perf-row"><span>Path</span><b style={{ fontWeight: 400, overflowWrap: "anywhere", textAlign: "right" }}>{performance.data.path}</b></div>
+        </div>}
+      </Card>}
 
       <Card pad={false} className="ed-rail-card still">
         <h3>Details <History size={14} aria-hidden /></h3>

@@ -58,3 +58,62 @@ from the workspace: the server's review gate is unchanged.
 schedules, saved views, ranking) and the demo store (filtering, optimistic
 revisions, persistence, creation, issues, inventory). Run `npm test`,
 `npm run typecheck` and `npm run build` as usual.
+
+## Phase two: editor, images, assistant, search, audience
+
+**Rich editor.** The body editor (`src/components/editorial/BodyEditor.tsx`)
+adds fonts, sizes, text color, highlight, alignment, sub/superscript, code
+blocks, tables, image insertion from the story's attached media or a URL, and
+video embeds. Embeds are stored as `<figure data-embed="video">` holding the
+canonical YouTube or Vimeo link, so the sanitizer keeps them and renderers turn
+them into players; the editor shows the player in place. The HTML source view
+remains for anything the visual editor cannot represent. `sanitizeCmsHtml`
+(`src/lib/cms/html.ts`) now keeps a strict whitelist of inline styles (color,
+background color, font family and size, line height, text alignment) plus
+`mark`, `pre`, `code` and the embed figure; everything else is still removed.
+
+**Preview matrix.** The editor's Preview view renders the draft at desktop (1200px), tablet (768px), mobile (390px) and email (600px) widths side by side in sandboxed iframes, fed through `postMessage` so they update as you type. The site and newsletter templates in `PreviewMatrix.tsx` are stand-ins to be replaced by the public site's and the ESP's templates.
+
+**Image cropper.** From a story's Media tab, Crop opens a tool with aspect
+presets (16:9, 3:2, 4:3, 1:1, 4:5, 2:3, free), drag and resize, a focal point,
+and a download of the cropped file when the browser is allowed to read the
+image. Crops are stored as normalized geometry per preset in
+`metadata.media[i].crops`, with `metadata.media[i].focal`; previews honor
+them with CSS. Delivery renders the actual cuts from the geometry.
+
+**Assistant.** The panel (⌘J, or the launcher) has two modes. *SEO & GEO
+review* sends the open story to `POST /api/cms/assist` (mode `seo`), which
+runs `claude-opus-5-5` with a structured output schema and returns headline
+options, search title, meta description, summary, slug, keywords, captions and
+alt text, a quotable direct answer, an FAQ block, named entities and ranked
+issues; every item has an Apply button that edits the draft. *Ask* chats about
+the open story (mode `chat`) and understands search intents such as "find images
+of barrels" or "show me stories about harvest", which run the unified search.
+Media descriptions (mode `describe`) send a presigned image to the model and
+store subject, style, mood, tags and colors on the media item. The server needs
+`ANTHROPIC_API_KEY`; without it, or in the demo, rule-based checks in
+`src/lib/editorial/seo-heuristics.ts` stand in and say so.
+
+**Unified search.** `/cms/search`, the ⌘K bar and the assistant all use
+`GET /api/cms/search`, backed by the additive migration
+`supabase/migrations/20261031120000_cms_search.sql`: a generated `tsvector`
+column with a GIN index on `cms_documents`, and three functions
+(`cms_search_documents`, `cms_search_media`, `cms_search_keywords`). Images are
+found by caption, credit, file name and the stored AI description, so a search
+like "moody barrel room" or "sky blue vineyard" finds images by their look. The
+browser also extracts a four-color palette with plain color names for each
+image, which is searchable too. Until the migration is applied the route
+returns 503 with a clear message.
+
+**Audience.** `/cms/audience` shows GA4 scorecards (sessions, readers, new
+readers, page views, engagement rate, average engagement) with prior-period
+deltas, a daily sessions chart with a crosshair tooltip and optional
+cross-publication comparison, top pages, channels and devices. Published
+stories show a Performance panel in the editor. Connection works the same way
+as the audience dashboard: an administrator clicks Connect Google Analytics,
+signs in with Google (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+`GOOGLE_REDIRECT_URI` set to this site's `/api/cms/analytics/callback`,
+optional `GOOGLE_WORKSPACE_DOMAIN`), and picks the property; tokens live in
+`cms_google_credentials` (migration `20261031130000`). A service account
+(`GA4_SERVICE_ACCOUNT_JSON` plus `GA4_PROPERTY_ID_WA/_WS/_CA/_MW`) is the
+alternative. The demo shows clearly labelled sample data.

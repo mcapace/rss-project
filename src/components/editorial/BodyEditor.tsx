@@ -1,32 +1,137 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import { useCallback, useEffect, useState } from "react";
+import { EditorContent, mergeAttributes, Node, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
-import { Bold, Code2, Heading2, Heading3, Italic, Link as LinkIcon, List, ListOrdered, Minus, Quote, Redo2, Strikethrough, Underline, Undo2 } from "lucide-react";
+import { TextStyleKit } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
+import TextAlign from "@tiptap/extension-text-align";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
+import Placeholder from "@tiptap/extension-placeholder";
+import CharacterCount from "@tiptap/extension-character-count";
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Code2, Eraser, Heading2, Heading3, Highlighter, ImagePlus, Italic, Link as LinkIcon, List, ListOrdered, Minus, Quote, Redo2, SquareCode, Strikethrough, Subscript as SubIcon, Superscript as SupIcon, Table as TableIcon, Underline, Undo2, Video } from "lucide-react";
 import { Notice } from "./ui";
 
+/* ------------------------------------------------------------------ */
+/* Video embed: stored as <figure data-embed="video"><a href=…>…</a></figure> */
+/* so the sanitizer keeps it and renderers turn the link into a player. */
+/* ------------------------------------------------------------------ */
+
+export function embedFor(url: string): { provider: "youtube" | "vimeo"; id: string; src: string } | null {
+  try {
+    const parsed = new URL(url.trim());
+    const host = parsed.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") { const id = parsed.pathname.slice(1).split("/")[0]; return id ? { provider: "youtube", id, src: `https://www.youtube-nocookie.com/embed/${id}` } : null; }
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "youtube-nocookie.com") {
+      const id = parsed.searchParams.get("v") || parsed.pathname.match(/\/(?:embed|shorts|live)\/([\w-]{6,})/)?.[1];
+      return id && /^[\w-]{6,}$/.test(id) ? { provider: "youtube", id, src: `https://www.youtube-nocookie.com/embed/${id}` } : null;
+    }
+    if (host === "vimeo.com" || host === "player.vimeo.com") {
+      const id = parsed.pathname.match(/(\d{6,})/)?.[1];
+      return id ? { provider: "vimeo", id, src: `https://player.vimeo.com/video/${id}` } : null;
+    }
+  } catch { /* not a URL */ }
+  return null;
+}
+
+const VideoEmbed = Node.create({
+  name: "videoEmbed",
+  group: "block",
+  atom: true,
+  draggable: true,
+  addAttributes() { return { href: { default: "" }, caption: { default: "" } }; },
+  parseHTML() {
+    return [{
+      tag: "figure[data-embed]",
+      getAttrs: element => {
+        const figure = element as HTMLElement;
+        const link = figure.querySelector("a");
+        const href = link?.getAttribute("href") ?? "";
+        return embedFor(href) ? { href, caption: figure.querySelector("figcaption")?.textContent ?? "" } : false;
+      },
+    }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    const href = String(HTMLAttributes.href ?? "");
+    const embed = embedFor(href);
+    const children: unknown[] = [["a", { href, rel: "noopener noreferrer", target: "_blank" }, embed ? `Watch on ${embed.provider === "youtube" ? "YouTube" : "Vimeo"}` : "Watch video"]];
+    if (HTMLAttributes.caption) children.push(["figcaption", {}, String(HTMLAttributes.caption)]);
+    return ["figure", mergeAttributes({ "data-embed": "video" }), ...children] as never;
+  },
+  addNodeView() {
+    return ({ node }) => {
+      const embed = embedFor(String(node.attrs.href ?? ""));
+      const figure = document.createElement("figure");
+      figure.setAttribute("data-embed", "video");
+      const frame = document.createElement("div");
+      frame.className = "ed-embed";
+      if (embed) {
+        const iframe = document.createElement("iframe");
+        iframe.src = embed.src; iframe.title = `${embed.provider} video`; iframe.loading = "lazy"; iframe.allow = "accelerometer; encrypted-media; picture-in-picture"; iframe.referrerPolicy = "strict-origin-when-cross-origin";
+        iframe.setAttribute("allowfullscreen", "true");
+        frame.appendChild(iframe);
+      } else {
+        const card = document.createElement("div"); card.className = "ed-embed-card"; card.textContent = `Video: ${node.attrs.href}`; frame.appendChild(card);
+      }
+      figure.appendChild(frame);
+      if (node.attrs.caption) { const caption = document.createElement("figcaption"); caption.textContent = String(node.attrs.caption); figure.appendChild(caption); }
+      return { dom: figure };
+    };
+  },
+});
+
+/* ------------------------------------------------------------------ */
+
+export type InsertableImage = { src: string; alt: string; caption: string };
+
+const FONTS = [
+  { label: "Default", value: "" },
+  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Sans", value: "Inter, system-ui, sans-serif" },
+  { label: "Display", value: "'Playfair Display', Georgia, serif" },
+  { label: "Mono", value: "'JetBrains Mono', ui-monospace, monospace" },
+];
+const SIZES = ["", "14px", "16px", "18px", "20px", "24px", "28px"];
+
+type Props = {
+  html: string;
+  onChange: (html: string) => void;
+  readOnly?: boolean;
+  /** Images attached to the document, offered by the insert-image control. */
+  images?: InsertableImage[];
+  /** Called when the editor is ready so the page can wire actions (for example inserting an FAQ). */
+  onReady?: (editor: Editor | null) => void;
+};
+
 /**
- * The story body. Rich text through TipTap; anything TipTap cannot represent
- * switches to a lossless HTML view so imported markup is never silently dropped.
+ * The story body. Rich text through TipTap with styles, fonts, colors, alignment,
+ * tables, images and video embeds; anything TipTap cannot represent switches to a
+ * lossless HTML view so imported markup is never silently dropped.
  */
-export function BodyEditor({ html, onChange, readOnly = false }: { html: string; onChange: (html: string) => void; readOnly?: boolean }) {
+export function BodyEditor({ html, onChange, readOnly = false, images = [], onReady }: Props) {
   const [sourceMode, setSourceMode] = useState(false);
-  const [linkOpen, setLinkOpen] = useState(false);
-  const [link, setLink] = useState("");
-  const [linkError, setLinkError] = useState("");
+  const [panel, setPanel] = useState<"" | "link" | "video" | "image">("");
+  const [field, setField] = useState("");
+  const [fieldError, setFieldError] = useState("");
   const [warning, setWarning] = useState("");
-  const preserveSource = () => { setSourceMode(true); setLinkOpen(false); setWarning("This story contains elements the visual editor cannot preserve. Its HTML is kept exactly here; use Preview to read it."); };
+  const preserveSource = useCallback(() => { setSourceMode(true); setPanel(""); setWarning("This story contains elements the visual editor cannot preserve. Its HTML is kept exactly here; use Preview to read it."); }, []);
 
   const editor = useEditor({
-    extensions: [StarterKit.configure({ heading: { levels: [2, 3, 4] }, link: { openOnClick: false }, codeBlock: false }), Image, TableKit],
+    extensions: [
+      StarterKit.configure({ heading: { levels: [2, 3, 4] }, link: { openOnClick: false } }),
+      Image.configure({ inline: false, allowBase64: false }), TableKit, TextStyleKit, Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }), Subscript, Superscript, VideoEmbed, CharacterCount,
+      Placeholder.configure({ placeholder: "Start the story…" }),
+    ],
     content: html, immediatelyRender: false, enableContentCheck: true, editable: !readOnly,
     editorProps: { attributes: { class: "tiptap", "aria-label": "Story body", role: "textbox", "aria-multiline": "true" } },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     onContentError: preserveSource,
   });
+  useEffect(() => { onReady?.(editor); return () => onReady?.(null); }, [editor, onReady]);
 
   useEffect(() => {
     if (!editor) return;
@@ -38,32 +143,47 @@ export function BodyEditor({ html, onChange, readOnly = false }: { html: string;
         preserveSource();
       }
     }
-  }, [editor, html, sourceMode, readOnly]);
+  }, [editor, html, sourceMode, readOnly, preserveSource]);
 
   const active = useEditorState({ editor, selector: ({ editor }) => ({
     bold: !!editor?.isActive("bold"), italic: !!editor?.isActive("italic"), underline: !!editor?.isActive("underline"), strike: !!editor?.isActive("strike"),
     h2: !!editor?.isActive("heading", { level: 2 }), h3: !!editor?.isActive("heading", { level: 3 }),
-    bullet: !!editor?.isActive("bulletList"), ordered: !!editor?.isActive("orderedList"), quote: !!editor?.isActive("blockquote"), link: !!editor?.isActive("link"),
+    bullet: !!editor?.isActive("bulletList"), ordered: !!editor?.isActive("orderedList"), quote: !!editor?.isActive("blockquote"), code: !!editor?.isActive("codeBlock"),
+    link: !!editor?.isActive("link"), highlight: !!editor?.isActive("highlight"), sub: !!editor?.isActive("subscript"), sup: !!editor?.isActive("superscript"),
+    left: !!editor?.isActive({ textAlign: "left" }), center: !!editor?.isActive({ textAlign: "center" }), right: !!editor?.isActive({ textAlign: "right" }), justify: !!editor?.isActive({ textAlign: "justify" }),
+    font: (editor?.getAttributes("textStyle").fontFamily as string | undefined) ?? "", size: (editor?.getAttributes("textStyle").fontSize as string | undefined) ?? "",
+    color: (editor?.getAttributes("textStyle").color as string | undefined) ?? "",
+    words: editor?.storage.characterCount?.words?.() ?? 0,
   }) });
 
-  const commands = [
-    { label: "Bold", Icon: Bold, on: active?.bold, run: () => editor?.chain().focus().toggleBold().run() },
-    { label: "Italic", Icon: Italic, on: active?.italic, run: () => editor?.chain().focus().toggleItalic().run() },
-    { label: "Underline", Icon: Underline, on: active?.underline, run: () => editor?.chain().focus().toggleUnderline().run() },
-    { label: "Strikethrough", Icon: Strikethrough, on: active?.strike, run: () => editor?.chain().focus().toggleStrike().run() },
-    null,
-    { label: "Heading", Icon: Heading2, on: active?.h2, run: () => editor?.chain().focus().toggleHeading({ level: 2 }).run() },
-    { label: "Subheading", Icon: Heading3, on: active?.h3, run: () => editor?.chain().focus().toggleHeading({ level: 3 }).run() },
-    { label: "Bulleted list", Icon: List, on: active?.bullet, run: () => editor?.chain().focus().toggleBulletList().run() },
-    { label: "Numbered list", Icon: ListOrdered, on: active?.ordered, run: () => editor?.chain().focus().toggleOrderedList().run() },
-    { label: "Quote", Icon: Quote, on: active?.quote, run: () => editor?.chain().focus().toggleBlockquote().run() },
-    { label: "Divider", Icon: Minus, on: false, run: () => editor?.chain().focus().setHorizontalRule().run() },
-    null,
-    { label: "Link", Icon: LinkIcon, on: active?.link, run: () => { setLink(editor?.getAttributes("link").href || ""); setLinkError(""); setLinkOpen(value => !value); } },
-  ] as const;
+  const disabled = sourceMode || readOnly || !editor;
+  const tool = (label: string, Icon: typeof Bold, on: boolean | undefined, run: () => void) => <button key={label} type="button" title={label} aria-label={label} aria-pressed={on} disabled={disabled} onClick={run}><Icon size={16} strokeWidth={1.8} /></button>;
+  const chain = () => editor!.chain().focus();
 
+  function openPanel(next: typeof panel) {
+    setFieldError("");
+    if (panel === next) { setPanel(""); return; }
+    setField(next === "link" ? (editor?.getAttributes("link").href as string | undefined) ?? "" : "");
+    setPanel(next);
+  }
+  function submitPanel(event: React.FormEvent) {
+    event.preventDefault();
+    const value = field.trim();
+    if (panel === "link") {
+      if (!value) chain().extendMarkRange("link").unsetLink().run();
+      else if (/^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i.test(value)) chain().extendMarkRange("link").setLink({ href: value }).run();
+      else { setFieldError("Enter an https:// URL, a site path, an email or a telephone link."); return; }
+    } else if (panel === "video") {
+      if (!embedFor(value)) { setFieldError("Paste a YouTube or Vimeo link."); return; }
+      chain().insertContent({ type: "videoEmbed", attrs: { href: value, caption: "" } }).run();
+    } else if (panel === "image") {
+      if (!/^https?:\/\//i.test(value)) { setFieldError("Enter an https:// image URL or pick an attached image."); return; }
+      chain().setImage({ src: value, alt: "" }).run();
+    }
+    setPanel("");
+  }
   function switchMode() {
-    setLinkOpen(false); setLinkError("");
+    setPanel(""); setFieldError("");
     if (!sourceMode) { setSourceMode(true); return; }
     if (!editor) return;
     try { editor.commands.setContent(html, { emitUpdate: false, errorOnInvalidContent: true }); }
@@ -76,27 +196,58 @@ export function BodyEditor({ html, onChange, readOnly = false }: { html: string;
 
   return <div className="ed-body">
     <div className="ed-body-toolbar" role="toolbar" aria-label="Text formatting">
-      {commands.map((command, index) => command === null ? <span key={`sep-${index}`} className="sep" aria-hidden /> :
-        <button key={command.label} type="button" title={command.label} aria-label={command.label} aria-pressed={command.on} disabled={sourceMode || readOnly || !editor} onClick={command.run}><command.Icon size={16} strokeWidth={1.8} /></button>)}
-      <span className="spacer" />
-      <button type="button" title="Undo" aria-label="Undo" disabled={sourceMode || readOnly || !editor} onClick={() => editor?.chain().focus().undo().run()}><Undo2 size={16} strokeWidth={1.8} /></button>
-      <button type="button" title="Redo" aria-label="Redo" disabled={sourceMode || readOnly || !editor} onClick={() => editor?.chain().focus().redo().run()}><Redo2 size={16} strokeWidth={1.8} /></button>
+      <select className="ed-select ed-font-select" aria-label="Font" disabled={disabled} value={FONTS.some(font => font.value === active?.font) ? active?.font ?? "" : ""} onChange={event => event.target.value ? chain().setFontFamily(event.target.value).run() : chain().unsetFontFamily().run()}>
+        {FONTS.map(font => <option key={font.label} value={font.value}>{font.label}</option>)}
+      </select>
+      <select className="ed-select ed-font-select" aria-label="Size" disabled={disabled} value={active?.size ?? ""} onChange={event => event.target.value ? chain().setFontSize(event.target.value).run() : chain().unsetFontSize().run()}>
+        {SIZES.map(size => <option key={size || "default"} value={size}>{size || "Size"}</option>)}
+      </select>
+      <input type="color" className="ed-color-input" aria-label="Text color" title="Text color" disabled={disabled} value={/^#[0-9a-f]{6}$/i.test(active?.color ?? "") ? active!.color : "#171717"} onChange={event => chain().setColor(event.target.value).run()} />
       <span className="sep" aria-hidden />
-      <button type="button" title={sourceMode ? "Back to the visual editor" : "Edit HTML"} aria-label="Edit HTML" aria-pressed={sourceMode} disabled={readOnly} onClick={switchMode} style={{ width: "auto", padding: "0 8px", gap: 6, fontSize: 12, fontWeight: 500 }}><Code2 size={15} strokeWidth={1.8} /> HTML</button>
+      {tool("Bold", Bold, active?.bold, () => chain().toggleBold().run())}
+      {tool("Italic", Italic, active?.italic, () => chain().toggleItalic().run())}
+      {tool("Underline", Underline, active?.underline, () => chain().toggleUnderline().run())}
+      {tool("Strikethrough", Strikethrough, active?.strike, () => chain().toggleStrike().run())}
+      {tool("Highlight", Highlighter, active?.highlight, () => chain().toggleHighlight({ color: "#fff3a3" }).run())}
+      {tool("Subscript", SubIcon, active?.sub, () => chain().toggleSubscript().run())}
+      {tool("Superscript", SupIcon, active?.sup, () => chain().toggleSuperscript().run())}
+      <span className="sep" aria-hidden />
+      {tool("Heading", Heading2, active?.h2, () => chain().toggleHeading({ level: 2 }).run())}
+      {tool("Subheading", Heading3, active?.h3, () => chain().toggleHeading({ level: 3 }).run())}
+      {tool("Bulleted list", List, active?.bullet, () => chain().toggleBulletList().run())}
+      {tool("Numbered list", ListOrdered, active?.ordered, () => chain().toggleOrderedList().run())}
+      {tool("Quote", Quote, active?.quote, () => chain().toggleBlockquote().run())}
+      {tool("Code block", SquareCode, active?.code, () => chain().toggleCodeBlock().run())}
+      {tool("Divider", Minus, false, () => chain().setHorizontalRule().run())}
+      <span className="sep" aria-hidden />
+      {tool("Align left", AlignLeft, active?.left, () => chain().setTextAlign("left").run())}
+      {tool("Align center", AlignCenter, active?.center, () => chain().setTextAlign("center").run())}
+      {tool("Align right", AlignRight, active?.right, () => chain().setTextAlign("right").run())}
+      {tool("Justify", AlignJustify, active?.justify, () => chain().setTextAlign("justify").run())}
+      <span className="sep" aria-hidden />
+      <button type="button" title="Link" aria-label="Link" aria-pressed={active?.link || panel === "link"} disabled={disabled} onClick={() => openPanel("link")}><LinkIcon size={16} strokeWidth={1.8} /></button>
+      <button type="button" title="Insert image" aria-label="Insert image" aria-pressed={panel === "image"} disabled={disabled} onClick={() => openPanel("image")}><ImagePlus size={16} strokeWidth={1.8} /></button>
+      <button type="button" title="Embed video" aria-label="Embed video" aria-pressed={panel === "video"} disabled={disabled} onClick={() => openPanel("video")}><Video size={16} strokeWidth={1.8} /></button>
+      {tool("Insert table", TableIcon, false, () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}
+      {tool("Clear formatting", Eraser, false, () => chain().unsetAllMarks().clearNodes().run())}
+      <span className="spacer" />
+      <button type="button" title="Undo" aria-label="Undo" disabled={disabled} onClick={() => chain().undo().run()}><Undo2 size={16} strokeWidth={1.8} /></button>
+      <button type="button" title="Redo" aria-label="Redo" disabled={disabled} onClick={() => chain().redo().run()}><Redo2 size={16} strokeWidth={1.8} /></button>
+      <span className="sep" aria-hidden />
+      <button type="button" title={sourceMode ? "Back to the visual editor" : "Edit HTML source"} aria-label="Edit HTML source" aria-pressed={sourceMode} disabled={readOnly} onClick={switchMode} style={{ width: "auto", padding: "0 8px", gap: 6, fontSize: 12, fontWeight: 500 }}><Code2 size={15} strokeWidth={1.8} /> HTML</button>
     </div>
     {warning && <div style={{ marginTop: 10 }}><Notice tone="warning">{warning}</Notice></div>}
-    {linkOpen && !sourceMode && <form style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginTop: 10 }} onSubmit={event => {
-      event.preventDefault();
-      const value = link.trim();
-      if (!value) editor?.chain().focus().extendMarkRange("link").unsetLink().run();
-      else if (/^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i.test(value)) editor?.chain().focus().extendMarkRange("link").setLink({ href: value }).run();
-      else { setLinkError("Enter an https:// URL, a site path, an email or a telephone link."); return; }
-      setLinkOpen(false);
-    }}>
-      <input className="ed-input" style={{ flex: "1 1 240px", maxWidth: 420 }} aria-label="Link URL" placeholder="https://" value={link} onChange={event => setLink(event.target.value)} autoFocus />
-      <button type="submit" className="ed-button sm primary">Apply link</button>
-      <button type="button" className="ed-button sm" onClick={() => setLinkOpen(false)}>Cancel</button>
-      {linkError && <span role="alert" style={{ color: "var(--negative)", fontSize: 12.5 }}>{linkError}</span>}
+    {panel && !sourceMode && <form style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginTop: 10 }} onSubmit={submitPanel}>
+      <input className="ed-input" style={{ flex: "1 1 260px", maxWidth: 480 }} aria-label={panel === "link" ? "Link URL" : panel === "video" ? "Video URL" : "Image URL"} placeholder={panel === "link" ? "https://" : panel === "video" ? "https://www.youtube.com/watch?v=… or vimeo.com/…" : "https://…/image.jpg"} value={field} onChange={event => setField(event.target.value)} autoFocus />
+      <button type="submit" className="ed-button sm primary">{panel === "link" ? "Apply link" : panel === "video" ? "Embed" : "Insert"}</button>
+      <button type="button" className="ed-button sm" onClick={() => setPanel("")}>Cancel</button>
+      {fieldError && <span role="alert" style={{ color: "var(--negative)", fontSize: 12.5 }}>{fieldError}</span>}
+      {panel === "image" && images.length > 0 && <div style={{ flexBasis: "100%", display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {images.map(image => <button key={image.src} type="button" className="ed-media-tile" style={{ width: 72, height: 54, aspectRatio: "auto" }} title={image.caption || image.alt || "Insert this image"} onClick={() => { chain().setImage({ src: image.src, alt: image.alt, title: image.caption || undefined }).run(); setPanel(""); }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Presigned preview. */}
+          <img src={image.src} alt={image.alt} />
+        </button>)}
+      </div>}
     </form>}
     <div className="ed-prose" style={{ marginTop: 14 }}>
       {sourceMode ? <textarea aria-label="Story HTML" className="ed-source" value={html} spellCheck={false} readOnly={readOnly} onChange={event => onChange(event.target.value)} /> : <EditorContent editor={editor} />}

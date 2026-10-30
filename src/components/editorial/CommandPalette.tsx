@@ -2,7 +2,7 @@
 
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CornerDownLeft, FileText, Newspaper, Plus, Search, Star, SunMoon, type LucideIcon } from "lucide-react";
+import { ArrowRight, CornerDownLeft, FileText, Newspaper, Plus, Search, Sparkles, Star, SunMoon, type LucideIcon } from "lucide-react";
 import type { CmsBrand } from "@/lib/cms/types";
 import { BRAND_NAMES, brandColor, matchScore, relativeTime, STATE_LABELS } from "@/lib/editorial/helpers";
 import type { DocumentRow } from "@/lib/editorial/data";
@@ -17,7 +17,7 @@ type Item = { id: string; group: string; label: string; detail?: string; icon: L
 export function CommandPalette() {
   const router = useRouter();
   const { commandOpen, setCommandOpen, href, brand, brands, setBrand, data, demo } = useEditorial();
-  const { openCreate } = useShell();
+  const { openCreate, openAssistant } = useShell();
   const { toggle: toggleTheme } = useTheme();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -70,7 +70,9 @@ export function CommandPalette() {
       { id: "new-rating", group: "Create", label: "New rating", icon: Star, keywords: "create review score tasting note", run: () => { close(); openCreate("rating"); } },
       { id: "new-page", group: "Create", label: "New page", icon: FileText, keywords: "create landing standalone", run: () => { close(); openCreate("page"); } },
       { id: "theme", group: "Actions", label: "Switch light or dark theme", icon: SunMoon, keywords: "dark mode light appearance", run: () => { close(); toggleTheme(); } },
+      { id: "assistant", group: "Actions", label: "Open the assistant", icon: Sparkles, keywords: "ai ask seo geo review help chat", run: () => { close(); openAssistant(); } },
     ];
+    const everywhere: Item[] = q.length >= 2 ? [{ id: "search-all", group: "Search", label: `Search everywhere for “${q}”`, icon: Search, detail: "content, images, keywords", run: () => go(href("/cms/search", { q })) }] : [];
     const documents: Item[] = shownResults.map(row => ({
       id: `doc:${row.id}`, group: "Documents", label: row.title || "Untitled", icon: FileText, dot: brandColor(row.brand),
       detail: `${STATE_LABELS[row.publication_state]} · ${relativeTime(row.updated_at)}`,
@@ -81,8 +83,8 @@ export function CommandPalette() {
       .filter(entry => entry.score > 0)
       .sort((a, b) => b.score - a.score)
       .map(entry => entry.item);
-    return q.length >= 2 ? [...documents, ...ranked] : ranked;
-  }, [query, shownResults, brands, brand, demo, href, go, close, setBrand, openCreate, toggleTheme]);
+    return q.length >= 2 ? [...documents, ...everywhere, ...ranked] : ranked;
+  }, [query, shownResults, brands, brand, demo, href, go, close, setBrand, openCreate, toggleTheme, openAssistant]);
 
   const [itemsKey, setItemsKey] = useState("");
   const nextItemsKey = `${items.length}:${query}`;

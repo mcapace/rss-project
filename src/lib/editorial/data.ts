@@ -5,6 +5,12 @@ import type {
 import { CMS_BRANDS, CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES } from "@/lib/cms/types";
 import type { CmsUser } from "@/lib/cms/access";
 import { demoDocuments, demoIssues, demoRevision } from "./demo-data";
+import type { AssistChatReply, AssistDocument, AssistRequest, SeoGeoAnalysis } from "./assist-types";
+import type { AudienceReport, ConnectionStatus, PagePerformance } from "./analytics-types";
+import { sampleAudience, samplePagePerformance } from "./analytics-sample";
+import { heuristicAnalysis } from "./seo-heuristics";
+import type { MediaVision, SearchDocumentHit, SearchKeywordHit, SearchMediaHit, SearchResponse, SearchScope } from "./search-types";
+import { matchScore, stripHtml } from "./helpers";
 
 /* ------------------------------------------------------------------ */
 /* Shapes                                                             */
@@ -68,6 +74,18 @@ export interface EditorialData {
   signOut(): Promise<void>;
   /** Fires after any mutation so views can refresh. */
   subscribe(listener: () => void): () => void;
+  /** Unified search over documents, attached images and keywords. */
+  search(query: string, options?: { brand?: CmsBrand | null; scope?: SearchScope; kind?: string; state?: string; limit?: number }, signal?: AbortSignal): Promise<SearchResponse>;
+  /** The editorial assistant. */
+  analyze(document: AssistDocument, signal?: AbortSignal): Promise<SeoGeoAnalysis>;
+  chat(request: Extract<AssistRequest, { mode: "chat" }>, signal?: AbortSignal): Promise<AssistChatReply>;
+  describeMedia(documentId: string, index: number, signal?: AbortSignal): Promise<MediaVision>;
+  /** Audience analytics. */
+  audience(brand: CmsBrand, days: number, signal?: AbortSignal): Promise<AudienceReport>;
+  pagePerformance(brand: CmsBrand, path: string, days: number, signal?: AbortSignal): Promise<PagePerformance>;
+  analyticsConnection(brand: CmsBrand, withProperties: boolean, signal?: AbortSignal): Promise<ConnectionStatus>;
+  setAnalyticsProperty(brand: CmsBrand, propertyId: string, propertyName: string | null): Promise<ConnectionStatus>;
+  disconnectAnalytics(brand: CmsBrand): Promise<ConnectionStatus>;
 }
 
 export const PAGE_SIZE = 50;
@@ -147,6 +165,42 @@ export function createLiveData(): EditorialData {
       await request("/api/logout", { method: "POST" });
     },
     subscribe: listener => emitter.subscribe(listener),
+    search(query, options = {}, signal) {
+      const params = new URLSearchParams({ q: query, scope: options.scope ?? "all" });
+      if (options.brand) params.set("brand", options.brand);
+      if (options.kind) params.set("kind", options.kind);
+      if (options.state) params.set("state", options.state);
+      if (options.limit) params.set("limit", String(options.limit));
+      return request<SearchResponse>(`/api/cms/search?${params}`, { signal });
+    },
+    async analyze(document, signal) {
+      const result = await request<{ analysis: SeoGeoAnalysis }>("/api/cms/assist", { ...jsonInit("POST", { mode: "seo", document }), signal });
+      return result.analysis;
+    },
+    chat(requestBody, signal) {
+      return request<AssistChatReply>("/api/cms/assist", { ...jsonInit("POST", requestBody), signal });
+    },
+    async describeMedia(documentId, index, signal) {
+      const result = await request<{ vision: MediaVision }>("/api/cms/assist", { ...jsonInit("POST", { mode: "describe", document_id: documentId, media_index: index }), signal });
+      return result.vision;
+    },
+    async audience(brand, days, signal) {
+      const result = await request<{ report: AudienceReport }>(`/api/cms/analytics?brand=${brand}&days=${days}`, { signal });
+      return result.report;
+    },
+    async pagePerformance(brand, path, days, signal) {
+      const result = await request<{ page: PagePerformance }>(`/api/cms/analytics?brand=${brand}&days=${days}&path=${encodeURIComponent(path)}`, { signal });
+      return result.page;
+    },
+    analyticsConnection(brand, withProperties, signal) {
+      return request<ConnectionStatus>(`/api/cms/analytics/connection?brand=${brand}${withProperties ? "&properties=1" : ""}`, { signal });
+    },
+    setAnalyticsProperty(brand, propertyId, propertyName) {
+      return request<ConnectionStatus>("/api/cms/analytics/connection", jsonInit("POST", { brand, property_id: propertyId, property_name: propertyName }));
+    },
+    disconnectAnalytics(brand) {
+      return request<ConnectionStatus>(`/api/cms/analytics/connection?brand=${brand}`, { method: "DELETE" });
+    },
   };
 }
 
@@ -328,5 +382,129 @@ export function createDemoData(storage: Storage | null = typeof window !== "unde
     },
     async signOut() { /* The demo has no session. */ },
     subscribe: listener => emitter.subscribe(listener),
+    async search(query, options = {}) {
+      await latency();
+      return demoSearch(store.documents, query, options);
+    },
+    async analyze(document) {
+      await new Promise(resolve => setTimeout(resolve, 700));
+      return heuristicAnalysis(document);
+    },
+    async chat(requestBody) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const last = requestBody.messages[requestBody.messages.length - 1]?.content ?? "";
+      const doc = requestBody.document;
+      const reply = doc
+        ? `In the demo I can run the structured review (the “Review for SEO and GEO” button) and search. For “${last.slice(0, 80)}”: the connected workspace answers with Claude using the open story, “${doc.title}”, as context, and suggests copy you can paste straight into the editor.`
+        : `In the demo the assistant runs rule-based checks and search only. In the connected workspace this question goes to Claude. Try “find images of barrels” or open a story and ask for a sharper headline.`;
+      return { reply, source: "heuristic" };
+    },
+    async describeMedia(id, index) {
+      await new Promise(resolve => setTimeout(resolve, 900));
+      const document = find(id);
+      const media = Array.isArray(document.metadata.media) ? document.metadata.media : [];
+      const item = (media[index] && typeof media[index] === "object" ? media[index] : {}) as Record<string, unknown>;
+      const subject = typeof item.caption === "string" && item.caption ? item.caption.replace(/\.$/, "") : document.title;
+      return {
+        description: `Sample description: an editorial photograph for “${document.title}”, ${subject.toLowerCase()}, with soft directional light and a shallow depth of field.`,
+        style: "editorial photograph, shallow depth of field", mood: "warm, considered",
+        tags: ["sample", "editorial", document.brand, ...(typeof document.metadata.section === "string" ? [document.metadata.section.toLowerCase()] : [])],
+        subjects: [subject.split(" ").slice(0, 3).join(" ")], colors: ["amber", "charcoal", "cream"],
+        described_at: now().toISOString(), model: "sample",
+      };
+    },
+    async audience(brand, days) {
+      await latency();
+      return sampleAudience(brand, days, now());
+    },
+    async pagePerformance(brand, path, days) {
+      await latency();
+      return samplePagePerformance(brand, path, days, now());
+    },
+    async analyticsConnection(brand) {
+      return { brand, oauth_available: false, connected: false, google_email: null, property_id: null, property_name: null, connected_by: null, connected_at: null, service_account_property: null, properties: [], properties_error: null };
+    },
+    async setAnalyticsProperty() { throw new DataError(503, "The demo has no Google connection.", "setup_required"); },
+    async disconnectAnalytics() { throw new DataError(503, "The demo has no Google connection.", "setup_required"); },
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Demo search over the local store                                     */
+/* ------------------------------------------------------------------ */
+
+function markText(text: string, terms: string[]): string {
+  if (!terms.length) return text;
+  const pattern = new RegExp(`(${terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
+  return text.replace(pattern, "<mark>$1</mark>");
+}
+
+function snippet(text: string, terms: string[]): string {
+  const lower = text.toLowerCase();
+  const hit = terms.map(term => lower.indexOf(term)).filter(index => index >= 0).sort((a, b) => a - b)[0] ?? -1;
+  const start = Math.max(0, hit - 70);
+  const slice = text.slice(start, start + 180).trim();
+  return markText(`${start > 0 ? "…" : ""}${slice}${start + 180 < text.length ? "…" : ""}`, terms);
+}
+
+export function demoSearch(documents: CmsDocument[], query: string, options: { brand?: CmsBrand | null; scope?: SearchScope; kind?: string; state?: string; limit?: number } = {}): SearchResponse {
+  const q = query.trim().toLowerCase();
+  const terms = q.split(/\s+/).filter(Boolean);
+  const scope = options.scope ?? "all";
+  const limit = options.limit ?? 20;
+  const scoped = documents.filter(doc => !options.brand || doc.brand === options.brand);
+  const textOf = (doc: CmsDocument) => stripHtml(doc.body_html);
+  const hits = (field: string) => terms.filter(term => field.toLowerCase().includes(term)).length;
+
+  const docs: SearchDocumentHit[] = (scope === "all" || scope === "documents") && q ? scoped
+    .filter(doc => (!options.kind || doc.kind === options.kind) && (!options.state || doc.publication_state === options.state))
+    .map(doc => {
+      const body = textOf(doc);
+      const tags = [...(Array.isArray(doc.metadata.tags) ? doc.metadata.tags : []), ...(Array.isArray(doc.metadata.categories) ? doc.metadata.categories : [])].join(" ");
+      const rank = matchScore(q, doc.title) / 20 + hits(doc.title) * 2 + hits(doc.byline) + hits(doc.excerpt) + hits(tags) * 1.5 + hits(body) * 0.8;
+      return { doc, body, rank };
+    })
+    .filter(entry => entry.rank > 0)
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, limit)
+    .map(({ doc, body, rank }) => ({
+      id: doc.id, brand: doc.brand, kind: doc.kind, source_system: doc.source_system, title: doc.title, byline: doc.byline, excerpt: doc.excerpt,
+      publication_state: doc.publication_state, issue_uuid: doc.issue_uuid, published_at: doc.published_at, updated_at: doc.updated_at, rank,
+      headline: snippet(body || doc.excerpt, terms),
+    })) : [];
+
+  const media: SearchMediaHit[] = (scope === "all" || scope === "media") && q ? scoped.flatMap(doc => {
+    const items = Array.isArray(doc.metadata.media) ? doc.metadata.media : [];
+    return items.map((raw, index): SearchMediaHit | null => {
+      const item = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+      const vision = (item.vision && typeof item.vision === "object" ? item.vision : null) as MediaVision | null;
+      const haystack = [item.caption, item.alt, item.credit, item.file, item.palette_names, vision?.description, vision?.style, vision?.mood, ...(vision?.tags ?? []), ...(vision?.subjects ?? []), ...(vision?.colors ?? [])].filter((value): value is string => typeof value === "string").join(" ");
+      const rank = hits(haystack);
+      return rank > 0 ? {
+        document_id: doc.id, brand: doc.brand, issue_uuid: doc.issue_uuid, document_title: doc.title, media_index: index,
+        file: typeof item.file === "string" ? item.file : null, s3_key: typeof item.s3_key === "string" ? item.s3_key : null,
+        caption: typeof item.caption === "string" ? item.caption : null, credit: typeof item.credit === "string" ? item.credit : null, alt: typeof item.alt === "string" ? item.alt : null,
+        is_lead: item.is_lead === true, vision: vision as SearchMediaHit["vision"], palette: Array.isArray(item.palette) ? item.palette as string[] : null, crops: (item.crops && typeof item.crops === "object" ? item.crops : null) as SearchMediaHit["crops"],
+        rank, preview_url: null,
+      } : null;
+    }).filter((hit): hit is SearchMediaHit => hit !== null);
+  }).sort((a, b) => b.rank - a.rank).slice(0, Math.min(60, limit * 2)) : [];
+
+  const counts = new Map<string, SearchKeywordHit>();
+  if (scope === "all" || scope === "keywords") {
+    for (const doc of scoped) {
+      const add = (keyword: unknown, kind: SearchKeywordHit["kind"]) => {
+        if (typeof keyword !== "string" || !keyword.trim()) return;
+        const key = `${kind}:${keyword.trim().toLowerCase()}`;
+        if (q && !key.includes(q)) return;
+        const existing = counts.get(key);
+        if (existing) existing.document_count += 1; else counts.set(key, { keyword: keyword.trim().toLowerCase(), kind, document_count: 1 });
+      };
+      (Array.isArray(doc.metadata.tags) ? doc.metadata.tags : []).forEach(tag => add(tag, "tag"));
+      (Array.isArray(doc.metadata.categories) ? doc.metadata.categories : []).forEach(category => add(category, "category"));
+      add(doc.metadata.section, "section");
+    }
+  }
+  const keywords = [...counts.values()].sort((a, b) => b.document_count - a.document_count || a.keyword.localeCompare(b.keyword)).slice(0, 30);
+  return { query: query.trim(), documents: docs, media, keywords };
 }

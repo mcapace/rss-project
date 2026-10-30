@@ -94,11 +94,12 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
     const timer = setTimeout(() => {
       try {
         if (dirty) window.localStorage.setItem(draftKey(document.id), JSON.stringify({ revision: document.revision, draft }));
-        else window.localStorage.removeItem(draftKey(document.id));
+        // Keep a recoverable draft in storage until the editor chooses Restore or Discard.
+        else if (!recovered) window.localStorage.removeItem(draftKey(document.id));
       } catch { /* storage unavailable */ }
     }, 600);
     return () => clearTimeout(timer);
-  }, [draft, document, dirty]);
+  }, [draft, document, dirty, recovered]);
   usePageTitle(draft?.title?.trim() || (document ? "Untitled" : null));
 
   const update = useCallback((changes: Partial<Draft>) => setDraft(current => current ? { ...current, ...changes } : current), []);
@@ -180,9 +181,11 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
     return () => setAssistantContext(null);
   }, [document, update, updateMeta, setAssistantContext]);
 
-  const insertable = useMemo<InsertableImage[]>(() => (media.data ?? []).filter(item => item.preview_url).map(item => ({ src: item.preview_url as string, alt: item.alt ?? "", caption: item.caption ?? "" })), [media.data]);
+  // Insert a stable media URL, never the five-minute presigned preview; the demo's placeholders are already stable.
+  const insertable = useMemo<InsertableImage[]>(() => (media.data ?? []).filter(item => item.preview_url).map(item => ({ src: demo || !document ? item.preview_url as string : `/api/media/${document.id}/${item.index}?w=1600`, preview: item.preview_url as string, alt: item.alt ?? "", caption: item.caption ?? "" })), [media.data, demo, document]);
   const performancePath = document?.publication_state === "published" ? (document.public_url ? (() => { try { return new URL(document.public_url).pathname; } catch { return null; } })() : document.slug ? `/${document.slug}` : null) : null;
-  const performance = useAsync(`performance:${id}:${performancePath}`, signal => data.pagePerformance(brand, performancePath as string, 28, signal), { enabled: !!performancePath });
+  const documentBrand = document?.brand ?? brand;
+  const performance = useAsync(`performance:${id}:${documentBrand}:${performancePath}`, signal => data.pagePerformance(documentBrand, performancePath as string, 28, signal), { enabled: !!performancePath });
 
   const setMediaItem = useCallback((index: number, changes: CmsJsonObject | ((item: CmsJsonObject) => CmsJsonObject)) => updateMeta(metadata => ({
     ...metadata, media: ((Array.isArray(metadata.media) ? metadata.media : []) as CmsJsonObject[]).map((item, i) => i === index ? (typeof changes === "function" ? changes(item) : { ...item, ...changes }) : item),
@@ -409,7 +412,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         {performance.loading && !performance.data ? <SkeletonRows rows={2} /> : performance.error ? <p style={{ fontSize: 12.5, color: "var(--muted)" }}>{/connected|setup/i.test(performance.error) ? <>Connect Google Analytics on the <Link className="ed-link" href={href("/cms/audience")}>Audience page</Link> to see this story&rsquo;s readers.</> : performance.error}</p> : performance.data && <div className="ed-perf">
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
             <div><strong style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.02em" }}>{performance.data.pageViews.toLocaleString()}</strong><div style={{ fontSize: 12, color: "var(--muted)" }}>page views, 28 days{performance.data.source === "sample" ? " · sample" : ""}</div></div>
-            <Sparkline values={performance.data.daily.map(day => day.pageViews)} color={`var(--chart-${brand})`} />
+            <Sparkline values={performance.data.daily.map(day => day.pageViews)} color={`var(--chart-${documentBrand})`} />
           </div>
           <div className="ed-perf-row"><span>Sessions</span><b>{performance.data.sessions.toLocaleString()}</b></div>
           <div className="ed-perf-row"><span>Engagement rate</span><b>{Math.round(performance.data.engagementRate * 100)}%</b></div>

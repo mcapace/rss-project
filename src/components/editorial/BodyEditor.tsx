@@ -86,7 +86,7 @@ const VideoEmbed = Node.create({
 
 /* ------------------------------------------------------------------ */
 
-export type InsertableImage = { src: string; alt: string; caption: string };
+export type InsertableImage = { src: string; alt: string; caption: string; /** Thumbnail for the picker when it differs from the inserted src. */ preview?: string };
 
 const FONTS = [
   { label: "Default", value: "" },
@@ -259,7 +259,7 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
       {panel === "image" && images.length > 0 && <div style={{ flexBasis: "100%", display: "flex", gap: 8, flexWrap: "wrap" }}>
         {images.map(image => <button key={image.src} type="button" className="ed-media-tile" style={{ width: 72, height: 54, aspectRatio: "auto" }} title={image.caption || image.alt || "Insert this image"} onClick={() => { chain().setImage({ src: image.src, alt: image.alt, title: image.caption || undefined }).run(); setPanel(""); }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- Presigned preview. */}
-          <img src={image.src} alt={image.alt} />
+          <img src={image.preview ?? image.src} alt={image.alt} />
         </button>)}
       </div>}
     </form>}

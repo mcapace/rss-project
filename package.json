@@ -7,28 +7,47 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:worker": "python -m unittest discover -s worker/tests -v",
+    "cms:import": "node --import tsx scripts/import-morweb.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",
     "@aws-sdk/s3-request-presigner": "^3.1121.0",
-    "@supabase/supabase-js": "^2.112.4",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
+    "@tiptap/extension-image": "3.32.2",
+    "@tiptap/extension-link": "3.32.2",
+    "@tiptap/extension-table": "3.32.2",
+    "@tiptap/extension-underline": "3.32.2",
+    "@tiptap/react": "3.32.2",
+    "@tiptap/starter-kit": "3.32.2",
     "lucide-react": "^1.38.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "rss-parser": "^3.13.0",
+    "sanitize-html": "2.18.1",
+    "server-only": "0.0.1",
     "swr": "^2.5.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "2.16.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "jsdom": "30.1.3",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

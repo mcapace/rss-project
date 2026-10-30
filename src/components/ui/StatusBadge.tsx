@@ -32,7 +32,7 @@ export function StatusBadge({ status, brand, className = "" }: StatusBadgeProps)
       textColor: "#4B5563",
     },
     processing: {
-      label: "Processing",
+      label: "Extracting",
       dotColor: brandConfig?.accent || "#D97706",
       bgColor: "#FEF3C7",
       borderColor: "#FDE68A",
@@ -40,7 +40,7 @@ export function StatusBadge({ status, brand, className = "" }: StatusBadgeProps)
       pulse: true,
     },
     review: {
-      label: "Review",
+      label: "Drafts ready",
       dotColor: "#0284C7",
       bgColor: "#E0F2FE",
       borderColor: "#BAE6FD",
@@ -62,7 +62,7 @@ export function StatusBadge({ status, brand, className = "" }: StatusBadgeProps)
     },
   };
 
-  const config = statusConfigs[normStatus] || statusConfigs.queued;
+  const config = statusConfigs[normStatus] || { ...statusConfigs.queued, label: "Unknown" };
 
   return (
     <span

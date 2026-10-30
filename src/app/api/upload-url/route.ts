@@ -1,41 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { requireCmsUser } from "@/lib/cms/auth-server";
+import { assertBrand, assertSameOrigin, CmsError, readJson } from "@/lib/cms/access";
+import { brandValue, textValue } from "@/lib/cms/validation";
+import { cmsJson, cmsFailure } from "@/lib/cms/http";
 import { createPresignedUploadUrl } from "@/lib/s3";
-
 export const runtime = "nodejs";
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { brand, issueId, filename } = body;
-
-    if (!brand || !issueId) {
-      return NextResponse.json(
-        { error: "brand and issueId are required fields." },
-        { status: 400 }
-      );
-    }
-
-    const normBrand = String(brand).toLowerCase().trim();
-    const normIssueId = String(issueId).trim();
-
-    // S3 inbox key pattern per spec: pdfs/inbox/{brand}-{issueId}.pdf
-    const pdfKey = `pdfs/inbox/${normBrand}-${normIssueId}.pdf`;
-
-    const uploadUrl = await createPresignedUploadUrl({
-      key: pdfKey,
-      contentType: "application/pdf",
-      expiresInSeconds: 1800, // 30 minutes
-    });
-
-    return NextResponse.json({
-      uploadUrl,
-      pdfKey,
-    });
-  } catch (error: any) {
-    console.error("Error generating presigned upload URL:", error);
-    return NextResponse.json(
-      { error: error?.message || "Failed to generate presigned upload URL" },
-      { status: 500 }
-    );
-  }
+    assertSameOrigin(request);
+    const user = await requireCmsUser();
+    const input = await readJson(request, 16_000);
+    const brand = brandValue(input.brand);
+    assertBrand(user, brand);
+    const issueId = textValue(input.issueId, "Issue ID", 80, true);
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(issueId)) throw new CmsError(422, "Use letters, numbers, dashes, or underscores for the issue ID.");
+    const pdfKey = `pdfs/inbox/${brand}/${issueId}/${randomUUID()}.pdf`;
+    const uploadUrl = await createPresignedUploadUrl({ key: pdfKey, contentType: "application/pdf", expiresInSeconds: 900 });
+    return cmsJson({ uploadUrl, pdfKey, uploadHeaders: { "Content-Type": "application/pdf", "If-None-Match": "*" } });
+  } catch (error) { return cmsFailure(error); }
 }

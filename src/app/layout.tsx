@@ -22,9 +22,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Editions — Digital Publishing Platform",
+  title: "M. Shanken — Editorial CMS",
   description:
-    "Internal digital edition RSS publishing platform for M. Shanken Communications.",
+    "An in-house editorial workspace for articles, ratings, pages, and print-to-web drafts.",
 };
 
 export default function RootLayout({

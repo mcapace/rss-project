@@ -10,17 +10,21 @@ Usage:
 import sys, os, json, hashlib
 import pymupdf
 from config import BRANDS
+from validate_inputs import validate_issue
 
 
 def extract(brand_key: str, issue_id: str, pdf_path: str, out_root: str = "output"):
     brand_key = brand_key.lower()
-    if brand_key not in BRANDS:
-        raise ValueError(f"Unknown brand '{brand_key}'. Supported: {list(BRANDS.keys())}")
+    validate_issue(brand_key, issue_id)
     cfg = BRANDS[brand_key]
     out_dir = os.path.join(out_root, brand_key, issue_id)
     img_dir = os.path.join(out_dir, "images")
     os.makedirs(img_dir, exist_ok=True)
 
+    source_digest = hashlib.sha256()
+    with open(pdf_path, "rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            source_digest.update(chunk)
     doc = pymupdf.open(pdf_path)
     pages, seen_hashes = [], {}
     stats = {"total_xrefs": 0, "kept": 0, "skipped_small": 0, "skipped_dupe": 0}
@@ -52,7 +56,7 @@ def extract(brand_key: str, issue_id: str, pdf_path: str, out_root: str = "outpu
                or len(data) < cfg["min_image_bytes"]:
                 stats["skipped_small"] += 1
                 continue
-            digest = hashlib.md5(data).hexdigest()
+            digest = hashlib.sha256(data).hexdigest()
             if digest in seen_hashes:               # same asset placed twice (spreads, TOC thumbs)
                 stats["skipped_dupe"] += 1
                 fname = seen_hashes[digest]
@@ -65,12 +69,15 @@ def extract(brand_key: str, issue_id: str, pdf_path: str, out_root: str = "outpu
             # where the image sits on the page (for article association)
             rects = page.get_image_rects(xref)
             bbox = [round(v, 1) for v in rects[0]] if rects else None
-            page_images.append({"file": fname, "w": w, "h": h, "bbox": bbox})
+            page_images.append({"file": fname, "w": w, "h": h, "bbox": bbox,
+                                "sha256": digest, "page": pno + 1})
 
         pages.append({"page": pno + 1, "blocks": blocks, "images": page_images})
 
     manifest = {
         "brand": brand_key, "issue_id": issue_id,
+        "source_pdf_sha256": source_digest.hexdigest(),
+        "source_pdf_bytes": os.path.getsize(pdf_path),
         "page_count": len(doc), "stats": stats, "pages": pages,
     }
     with open(os.path.join(out_dir, "pages.json"), "w") as f:

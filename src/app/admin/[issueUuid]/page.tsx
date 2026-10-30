@@ -1,23 +1,9 @@
 "use client";
 
-import { use, useState, useTransition } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import {
-  ArrowLeft,
-  Copy,
-  Check,
-  ExternalLink,
-  RotateCw,
-  AlertTriangle,
-  FileCheck2,
-  Image as ImageIcon,
-  BookOpen,
-  Globe,
-  Sparkles,
-  Layers,
-  FileText,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ExternalLink, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -25,419 +11,145 @@ import { BrandMark } from "@/components/ui/BrandMark";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { BRANDS } from "@/lib/brands";
 
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  const data = await res.json();
-  if (!res.ok || data.error) {
-    throw new Error(data.error || "Failed to fetch data");
-  }
+interface IssueDetail {
+  issue: {
+    id: string;
+    brand: string;
+    issue_id: string;
+    issue_label: string;
+    pdf_key: string;
+    status: string;
+    created_at: string;
+    error?: string | null;
+    toc_pages?: number[];
+    stats?: { cms_document_count?: number; warning_count?: number } | null;
+  };
+  articleCount: number;
+  imageCount?: number;
+  feedUrl?: string;
+}
+
+async function fetchIssue(url: string): Promise<IssueDetail> {
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error(data.error || "Could not load the issue.");
   return data;
-};
+}
 
-export default function IssueStatusPage({
-  params,
-}: {
-  params: Promise<{ issueUuid: string }>;
-}) {
-  const resolvedParams = use(params);
-  const { issueUuid } = resolvedParams;
-
-  const [copied, setCopied] = useState(false);
-  const [retryPending, startRetryTransition] = useTransition();
+export default function IssueStatusPage({ params }: { params: Promise<{ issueUuid: string }> }) {
+  const { issueUuid } = use(params);
+  const [retryPending, setRetryPending] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
+  const { data, error, mutate, isValidating } = useSWR<IssueDetail, Error>(`/api/issues/${encodeURIComponent(issueUuid)}`, fetchIssue, {
+    refreshInterval: (latest) => latest?.issue?.status === "queued" || latest?.issue?.status === "processing" ? 5000 : 0,
+    revalidateOnFocus: true,
+  });
+  const issue = data?.issue;
 
-  // Poll every 5s while processing or queued
-  const { data, error, mutate } = useSWR(
-    `/api/issues/${issueUuid}`,
-    fetcher,
-    {
-      refreshInterval: (latestData) => {
-        const currentStatus = latestData?.issue?.status;
-        if (currentStatus === "queued" || currentStatus === "processing") {
-          return 5000;
-        }
-        return 0; // stop polling once published or failed
-      },
-      revalidateOnFocus: true,
+  async function retryExtraction() {
+    if (!issue || retryPending) return;
+    setRetryError(null);
+    setRetryPending(true);
+    try {
+      const response = await fetch("/api/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brand: issue.brand, issueId: issue.issue_id, issueLabel: issue.issue_label, tocPages: issue.toc_pages?.join(",") || "3,4", pdfKey: issue.pdf_key }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) throw new Error(result.error || "Extraction could not restart.");
+      await mutate();
+    } catch (failure) {
+      setRetryError(failure instanceof Error ? failure.message : "Extraction could not restart.");
+    } finally {
+      setRetryPending(false);
     }
+  }
+
+  const backLink = <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900"><ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to issues</Link>;
+
+  if (!data && !error) return (
+    <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-6" aria-busy="true">
+      {backLink}<p className="sr-only" role="status">Loading issue…</p><Skeleton className="w-64 h-10 rounded" /><Card padding="lg"><Skeleton className="h-36 rounded-xl" /></Card>
+    </main>
   );
 
-  const issue = data?.issue;
-  const brand = issue ? BRANDS[issue.brand] || BRANDS.mw : BRANDS.mw;
-  const status = issue?.status || "processing";
-  const stats = issue?.stats;
+  if (!issue) return (
+    <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-6">
+      {backLink}
+      <Card padding="lg"><h1 className="font-serif text-2xl text-gray-900">Could not load this issue</h1><p role="alert" className="text-sm text-red-700 mt-3">{error?.message || "Issue information is unavailable."}</p><Button type="button" variant="outline" className="mt-5" disabled={isValidating} onClick={() => void mutate()}>Try again</Button></Card>
+    </main>
+  );
 
-  const copyFeedUrl = () => {
-    if (!issue) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const fullUrl = `${origin}${data.feedUrl}`;
-    navigator.clipboard.writeText(fullUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleRetry = () => {
-    if (!issue) return;
-    setRetryError(null);
-    startRetryTransition(async () => {
-      try {
-        const res = await fetch("/api/process", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            brand: issue.brand,
-            issueId: issue.issue_id,
-            issueLabel: issue.issue_label,
-            tocPages: issue.toc_pages?.join(",") || "3,4",
-            pdfKey: issue.pdf_key,
-          }),
-        });
-
-        const resData = await res.json();
-        if (!res.ok || resData.error) {
-          throw new Error(resData.error || "Retry initiation failed");
-        }
-        mutate();
-      } catch (err: any) {
-        setRetryError(err.message || "Failed to trigger retry");
-      }
-    });
-  };
-
-  // Three-step pipeline logic for progress animation
-  // 1. Extracting (pages/images) -> 2. Segmenting (Claude AI structuring) -> 3. Publishing (S3/Supabase)
-  const isQueued = status === "queued";
-  const isProcessing = status === "processing";
-  const isPublished = status === "published";
-  const isFailed = status === "failed";
-
-  if (!data && !error) {
-    return (
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
-        <div>
-          <Skeleton className="w-24 h-4 rounded mb-3" />
-          <div className="flex justify-between items-center">
-            <Skeleton className="w-64 h-9 rounded" />
-            <Skeleton className="w-24 h-6 rounded-full" />
-          </div>
-        </div>
-        <Card elevated padding="lg" className="space-y-6">
-          <div className="flex justify-between items-center pb-6 border-b border-gray-100">
-            <div className="flex items-center gap-3.5">
-              <Skeleton className="w-8 h-8 rounded" />
-              <div>
-                <Skeleton className="w-48 h-6 rounded mb-1" />
-                <Skeleton className="w-32 h-3 rounded" />
-              </div>
-            </div>
-            <Skeleton className="w-24 h-6 rounded" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-          </div>
-        </Card>
-      </main>
-    );
-  }
+  const status = issue.status;
+  const articleCount = data?.articleCount ?? issue.stats?.cms_document_count;
+  const warningCount = issue.stats?.warning_count;
+  const cmsUrl = `/cms?issue=${encodeURIComponent(issue.id)}&brand=${encodeURIComponent(issue.brand)}`;
 
   return (
-    <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
-      {/* Back Link & Page Title */}
-      <div>
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors mb-3"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Issues</span>
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
-              Publishing Pipeline • Issue Status
-            </span>
-            <h1 className="font-serif text-3xl sm:text-4xl text-gray-900 font-normal tracking-tight mt-1">
-              {issue?.issue_label || "Issue Processing"}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={status} brand={issue?.brand} />
-          </div>
+    <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-7">
+      <div className="space-y-4">
+        {backLink}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">Print to web</p><h1 className="font-serif text-3xl sm:text-4xl text-gray-900 mt-1">{issue.issue_label}</h1></div>
+          <StatusBadge status={status} brand={issue.brand} />
         </div>
       </div>
 
-      {/* Hero Card */}
-      <Card elevated padding="lg" className="space-y-8">
-        {/* Header with Brand, Label, ID & Date */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
-          <div className="flex items-center gap-3.5">
-            <BrandMark brand={issue?.brand || "mw"} size="lg" />
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-serif text-2xl text-gray-900 font-normal">
-                  {issue?.issue_label || "Loading..."}
-                </h2>
-                <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                  {issue?.issue_id}
-                </span>
-              </div>
-              <p className="text-xs font-mono text-gray-500 mt-1">
-                {issue?.pdf_key || "Direct S3 PDF Package"}
-              </p>
-            </div>
-          </div>
+      {error && <div role="alert" className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-800"><p className="font-semibold">The status could not be refreshed.</p><p>{error.message} The information below may be out of date.</p></div>}
 
-          <div className="text-left sm:text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-              Registered
-            </div>
-            <div className="text-xs font-mono text-gray-900 mt-0.5">
-              {issue?.created_at
-                ? new Date(issue.created_at).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "—"}
-            </div>
-          </div>
+      <Card elevated padding="lg" className="space-y-7">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-gray-100">
+          <div className="flex items-center gap-3"><BrandMark brand={issue.brand} size="lg" /><div><p className="font-medium text-gray-900">{BRANDS[issue.brand]?.name ?? issue.brand}</p><p className="text-xs text-gray-500 mt-1">Issue ID: {issue.issue_id}</p></div></div>
+          <p className="text-xs text-gray-500">{issue.created_at ? `Added ${new Date(issue.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}` : ""}</p>
         </div>
 
-        {/* PROCESSING / QUEUED STATE */}
-        {(isProcessing || isQueued) && (
-          <div className="space-y-8 py-4">
-            {/* 3-Step Progress Indicator */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Step 1: Extracting */}
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                    Step 1
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse" />
-                </div>
-                <div className="text-sm font-semibold text-gray-900 mt-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#C9A227]" />
-                  <span>Extracting</span>
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1">
-                  Parsing PDF pages, text coordinates, and raw images.
-                </p>
-              </div>
-
-              {/* Step 2: Segmenting */}
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                    Step 2
-                  </span>
-                  <Sparkles className="w-3.5 h-3.5 text-[#C9A227] opacity-60" />
-                </div>
-                <div className="text-sm font-semibold text-gray-900 mt-2 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#C9A227]" />
-                  <span>Segmenting</span>
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1">
-                  Claude AI TOC mapping & BlueToad HTML formatting.
-                </p>
-              </div>
-
-              {/* Step 3: Publishing */}
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 relative overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                    Step 3
-                  </span>
-                  <Globe className="w-3.5 h-3.5 text-gray-400 opacity-60" />
-                </div>
-                <div className="text-sm font-semibold text-gray-900 mt-2 flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-gray-400" />
-                  <span>Publishing</span>
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1">
-                  Writing S3 images and Supabase article database.
-                </p>
-              </div>
-            </div>
-
-            {/* Live Polling Status Note */}
-            <div className="p-5 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <RotateCw className="w-4 h-4 text-[#C9A227] animate-spin" />
-                <div>
-                  <div className="text-xs font-semibold text-gray-900">
-                    GitHub Worker running in background
-                  </div>
-                  <div className="text-[11px] text-gray-500">
-                    Polling live status every 5 seconds. Processing typically takes 3–8 minutes.
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 px-2 py-1 bg-white rounded border border-gray-200 shadow-xs">
-                Live SWR
-              </span>
-            </div>
-          </div>
+        {(status === "queued" || status === "processing") && (
+          <section className="p-6 rounded-xl bg-amber-50/60 border border-amber-200 space-y-3" aria-labelledby="extraction-title">
+            <div className="flex items-center gap-3"><RefreshCw className="w-5 h-5 text-amber-700 animate-spin" aria-hidden="true" /><h2 id="extraction-title" className="font-serif text-2xl text-gray-900">{status === "queued" ? "Extraction requested" : "Extraction in progress"}</h2></div>
+            <p className="text-sm leading-relaxed text-gray-700">{status === "queued" ? "The request is queued or being processed. This page will update when the drafts are ready or the attempt needs attention." : "The issue is being prepared for editorial review. Articles and source images will appear in the CMS when extraction finishes."}</p>
+            <p className="text-xs text-gray-600">You can leave this page and return to the issue list to check its status.</p>
+          </section>
         )}
 
-        {/* PUBLISHED SUCCESS STATE */}
-        {isPublished && (
-          <div className="space-y-6 py-2">
-            <div className="p-6 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                  <Check className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-serif text-xl text-gray-900 font-normal">
-                    Issue Successfully Published
-                  </h3>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    Live RSS feed is active and ready for migration tool consumption.
-                  </p>
-                </div>
-              </div>
-
-              {/* Feed URL Field */}
-              <div className="space-y-1.5 pt-2">
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-gray-600">
-                  Public RSS Feed URL
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 px-4 py-2.5 bg-white border border-emerald-200 rounded-lg text-xs font-mono text-emerald-800 font-medium truncate select-all shadow-xs">
-                    {typeof window !== "undefined"
-                      ? `${window.location.origin}${data.feedUrl}`
-                      : data?.feedUrl}
-                  </div>
-                  <Button
-                    onClick={copyFeedUrl}
-                    variant="ghost"
-                    size="md"
-                    className="shrink-0 font-mono text-xs bg-white hover:bg-gray-50"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                        <span className="text-emerald-700 font-medium">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5 mr-1.5" />
-                        <span>Copy Feed</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Metrics Breakdown */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-[#C9A227]" />
-                  <span>Articles</span>
-                </div>
-                <div className="text-2xl font-mono text-gray-900 font-semibold mt-1">
-                  {data?.articleCount ?? "—"}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-[#C9A227]" />
-                  <span>Extracted Images</span>
-                </div>
-                <div className="text-2xl font-mono text-gray-900 font-semibold mt-1">
-                  {data?.imageCount ?? "—"}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 col-span-2 sm:col-span-1">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-[#C9A227]" />
-                  <span>Format</span>
-                </div>
-                <div className="text-xs font-mono text-gray-900 mt-2 font-medium">
-                  RSS 2.0 • BlueToad
-                </div>
-              </div>
-            </div>
-
-            {/* Actions Bar */}
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-100">
-              <a
-                href={data?.feedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="ghost" size="md">
-                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                  Open Feed XML
-                </Button>
-              </a>
-
-              <Link
-                href={`/?url=${encodeURIComponent(
-                  typeof window !== "undefined"
-                    ? `${window.location.origin}${data?.feedUrl}`
-                    : data?.feedUrl || ""
-                )}`}
-              >
-                <Button variant="primary" size="md">
-                  <Globe className="w-3.5 h-3.5 mr-1.5" />
-                  Preview in Reader
-                </Button>
-              </Link>
-            </div>
-          </div>
+        {status === "review" && (
+          <section className="p-6 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-5" aria-labelledby="drafts-title">
+            <div className="flex items-center gap-3"><Check className="w-6 h-6 text-emerald-700" aria-hidden="true" /><h2 id="drafts-title" className="font-serif text-2xl text-gray-900">Drafts ready</h2></div>
+            <p className="text-sm leading-relaxed text-gray-700">Open the articles in the CMS to review their text, bylines, images, and extraction notes before publishing. Re-extraction keeps existing editorial changes and adds source candidates for review.</p>
+            <dl className="flex flex-wrap gap-x-10 gap-y-4">
+              {typeof articleCount === "number" && <div><dt className="text-xs text-gray-600">CMS articles</dt><dd className="text-3xl font-semibold text-gray-900 tabular-nums mt-1">{articleCount}</dd></div>}
+              {typeof data?.imageCount === "number" && <div><dt className="text-xs text-gray-600">Source images</dt><dd className="text-3xl font-semibold text-gray-900 tabular-nums mt-1">{data.imageCount}</dd></div>}
+              {typeof warningCount === "number" && <div><dt className="text-xs text-gray-600">Extraction notes</dt><dd className="text-3xl font-semibold text-gray-900 tabular-nums mt-1">{warningCount}</dd></div>}
+            </dl>
+            <Link href={cmsUrl} className="inline-flex items-center gap-2 rounded-lg bg-[#B85D19] px-5 py-3 text-sm font-semibold text-white hover:bg-[#9D4F15] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2">Review articles in CMS <ArrowRight className="w-4 h-4" aria-hidden="true" /></Link>
+          </section>
         )}
 
-        {/* FAILED STATE */}
-        {isFailed && (
-          <div className="space-y-6 py-2">
-            <div className="p-6 rounded-xl bg-rose-50 border border-rose-200 space-y-3">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="font-serif text-lg text-rose-950 font-normal">
-                    Processing Execution Failed
-                  </h3>
-                  <p className="text-xs text-rose-700 mt-1 font-mono break-words">
-                    {issue?.error || "Unknown worker failure during PDF extraction or Claude segmentation."}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {retryError && (
-              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs">
-                {retryError}
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-              <Link href="/admin">
-                <Button variant="ghost" size="md">
-                  Return to Issues
-                </Button>
-              </Link>
-              <Button
-                onClick={handleRetry}
-                variant="primary"
-                size="md"
-                isLoading={retryPending}
-              >
-                <RotateCw className="w-3.5 h-3.5 mr-1.5" />
-                Retry Pipeline
-              </Button>
-            </div>
-          </div>
+        {status === "failed" && (
+          <section className="p-6 rounded-xl bg-red-50 border border-red-200 space-y-4" aria-labelledby="failure-title">
+            <div className="flex items-center gap-3"><AlertTriangle className="w-5 h-5 text-red-700" aria-hidden="true" /><h2 id="failure-title" className="font-serif text-2xl text-gray-900">Extraction needs attention</h2></div>
+            <p className="text-sm text-red-800">{issue.error || "The issue could not be fully extracted. Retry the extraction, or check the PDF and table of contents pages."}</p>
+            <p className="text-sm text-gray-700">Previously saved CMS articles remain available.</p>
+            <Button type="button" variant="outline" onClick={() => void retryExtraction()} isLoading={retryPending}><RefreshCw className="w-4 h-4" aria-hidden="true" /> Retry extraction</Button>
+            {retryError && <p role="alert" className="text-sm text-red-800">{retryError}</p>}
+          </section>
         )}
+
+        {status === "published" && (
+          <section className="rounded-xl border border-gray-200 bg-gray-50 p-6 space-y-3" aria-labelledby="legacy-title">
+            <h2 id="legacy-title" className="font-serif text-2xl text-gray-900">Previously published issue</h2>
+            <p className="text-sm text-gray-600">This issue was published through the earlier feed workflow. New PDF extractions create articles for review in the CMS.</p>
+            {typeof articleCount === "number" && <p className="text-sm text-gray-700">{articleCount} articles in the legacy issue.</p>}
+            {data?.feedUrl && <a href={data.feedUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-gray-700 underline underline-offset-4 hover:text-[#B85D19]">Open legacy RSS feed <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" /></a>}
+          </section>
+        )}
+
+        {!["queued", "processing", "review", "failed", "published"].includes(status) && <p className="text-sm text-gray-600" role="status">The issue status is unavailable. Refresh to check again.</p>}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
+          {status !== "review" && status !== "published" && typeof articleCount === "number" && articleCount > 0 ? <Link href={cmsUrl} className="text-sm text-[#9D4F15] font-medium underline underline-offset-4">Open existing CMS articles</Link> : <Link href="/cms" className="text-sm text-gray-600 hover:text-gray-900 underline underline-offset-4">Go to CMS</Link>}
+          <Button type="button" variant="ghost" size="sm" onClick={() => void mutate()} disabled={isValidating}><RefreshCw className={`w-3.5 h-3.5 ${isValidating ? "animate-spin" : ""}`} aria-hidden="true" /> {isValidating ? "Refreshing…" : "Refresh status"}</Button>
+        </div>
       </Card>
     </main>
   );

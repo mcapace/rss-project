@@ -8,9 +8,10 @@ import { CorporateLogo } from "@/components/ui/CorporateLogo";
 export function TopNav() {
   const pathname = usePathname();
 
-  const isIssuesActive = pathname === "/admin" || pathname.startsWith("/admin/");
+  if (pathname.startsWith("/cms") || pathname === "/login") return null;
+
   const isNewIssueActive = pathname === "/admin/new";
-  const isReaderActive = pathname === "/";
+  const isReaderActive = pathname === "/reader";
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-200">
@@ -20,21 +21,21 @@ export function TopNav() {
           <div className="flex items-center gap-2.5">
             <CorporateLogo height={18} linked onDark={false} />
             <span className="text-[9px] uppercase font-mono tracking-widest text-gray-500 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200">
-              RSS
+              CMS
             </span>
           </div>
 
           {/* Desktop Nav Links */}
           <nav className="hidden sm:flex items-center gap-1">
             <Link
-              href="/admin"
+              href="/cms"
               className={`px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition-all ${
-                isIssuesActive && !isNewIssueActive
+                pathname === "/cms"
                   ? "bg-gray-100 text-gray-900 border border-gray-200 font-semibold"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              Issues
+              Content library
             </Link>
             <Link
               href="/admin/new"
@@ -47,14 +48,14 @@ export function TopNav() {
               New Issue
             </Link>
             <Link
-              href="/"
+              href="/reader"
               className={`px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition-all ${
                 isReaderActive
                   ? "bg-gray-100 text-gray-900 border border-gray-200 font-semibold"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              Reader
+              Legacy RSS
             </Link>
           </nav>
         </div>

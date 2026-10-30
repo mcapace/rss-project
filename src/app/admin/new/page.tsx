@@ -1,428 +1,203 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  UploadCloud,
-  FileText,
-  ArrowLeft,
-  Sparkles,
-  AlertCircle,
-  CheckCircle2,
-  X,
-} from "lucide-react";
+import useSWR from "swr";
+import { AlertCircle, ArrowLeft, FileText, Sparkles, UploadCloud, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandMark } from "@/components/ui/BrandMark";
-import { BRANDS, BrandKey } from "@/lib/brands";
+import { BRANDS } from "@/lib/brands";
+
+interface SessionResponse { user: { brands: string[] } }
+interface UploadResponse { uploadUrl: string; pdfKey: string; uploadHeaders: Record<string, string>; error?: string }
+const brandOptions = [BRANDS.wa, ...Object.values(BRANDS).filter((brand) => brand.id !== "wa")];
+const inputClass = "w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600 disabled:opacity-50";
+
+async function fetchSession(url: string): Promise<SessionResponse> {
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error(data.error || "Could not load your publication access.");
+  return data;
+}
 
 export default function NewIssuePage() {
   const router = useRouter();
-
-  const [selectedBrand, setSelectedBrand] = useState<BrandKey>("mw");
-  const [issueId, setIssueId] = useState("2026-09");
-  const [issueLabel, setIssueLabel] = useState("September 2026");
+  const { data: session, error: sessionError, mutate: refreshSession } = useSWR<SessionResponse, Error>("/api/cms/session", fetchSession);
+  const [brandChoice, setBrandChoice] = useState<string | null>(null);
+  const availableBrands = brandOptions.filter((brand) => session?.user.brands.includes(brand.id));
+  const selectedBrand = availableBrands.find((brand) => brand.id === brandChoice)?.id ?? availableBrands[0]?.id ?? "wa";
+  const [issueId, setIssueId] = useState("");
+  const [issueLabel, setIssueLabel] = useState("");
   const [tocPages, setTocPages] = useState("3,4");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  // Upload states
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState<
-    "idle" | "requesting_url" | "uploading_s3" | "triggering_process" | "done"
-  >("idle");
+  const [uploadStage, setUploadStage] = useState<"idle" | "preparing" | "uploading" | "extracting" | "done">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const brandList: BrandKey[] = ["mw", "ws", "ca"];
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
-        setErrorMessage("Please select a valid PDF file.");
-        return;
-      }
-      if (file.size > 500 * 1024 * 1024) {
-        setErrorMessage("PDF file size exceeds maximum limit of 500MB.");
-        return;
-      }
-      setErrorMessage(null);
-      setSelectedFile(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
-        setErrorMessage("Please select a valid PDF file.");
-        return;
-      }
-      if (file.size > 500 * 1024 * 1024) {
-        setErrorMessage("PDF file size exceeds maximum limit of 500MB.");
-        return;
-      }
-      setErrorMessage(null);
-      setSelectedFile(file);
-    }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024 * 1024) {
-      return (bytes / 1024).toFixed(1) + " KB";
-    }
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedFile) {
-      setErrorMessage("Please select a PDF file to upload.");
+  function selectFile(file?: File) {
+    if (!file || isUploading) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setSelectedFile(null);
+      setErrorMessage("Please choose a PDF file.");
       return;
     }
-    if (!issueId.trim() || !issueLabel.trim()) {
-      setErrorMessage("Issue ID and Issue Label are required.");
+    if (file.size === 0 || file.size > 500 * 1024 * 1024) {
+      setSelectedFile(null);
+      setErrorMessage("Choose a PDF larger than 0 bytes and no larger than 500 MB.");
       return;
     }
+    setErrorMessage(null);
+    setSelectedFile(file);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isUploading) return;
+    const cleanId = issueId.trim();
+    const cleanLabel = issueLabel.trim();
+    const pageStrings = tocPages.split(",").map((page) => page.trim());
+    if (!availableBrands.some((brand) => brand.id === selectedBrand)) { setErrorMessage("Choose a publication you can edit."); return; }
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(cleanId)) { setErrorMessage("Issue ID must be 1–80 letters, numbers, hyphens, or underscores, starting with a letter or number."); return; }
+    if (!cleanLabel || cleanLabel.length > 200) { setErrorMessage("Enter an issue name of 1–200 characters."); return; }
+    if (pageStrings.length > 20 || pageStrings.some((page) => !/^[1-9]\d*$/.test(page) || Number(page) > 2000)) { setErrorMessage("Enter up to 20 table of contents PDF page numbers from 1 to 2000, separated by commas."); return; }
+    if (!selectedFile) { setErrorMessage("Choose the issue PDF before continuing."); return; }
 
     setIsUploading(true);
     setErrorMessage(null);
     setUploadProgress(0);
-
     try {
-      // Step 1: Request presigned S3 PUT URL
-      setUploadStage("requesting_url");
-      const urlRes = await fetch("/api/upload-url", {
+      setUploadStage("preparing");
+      const uploadResponse = await fetch("/api/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brand: selectedBrand,
-          issueId: issueId.trim(),
-          filename: selectedFile.name,
-        }),
+        body: JSON.stringify({ brand: selectedBrand, issueId: cleanId, filename: selectedFile.name }),
       });
+      const upload: UploadResponse = await uploadResponse.json();
+      if (!uploadResponse.ok || upload.error) throw new Error(upload.error || "Could not prepare this upload.");
+      if (!upload.uploadUrl || !upload.pdfKey || !upload.uploadHeaders) throw new Error("The upload could not be prepared. Please try again.");
 
-      const urlData = await urlRes.json();
-      if (!urlRes.ok || urlData.error) {
-        throw new Error(urlData.error || "Failed to generate S3 upload URL");
-      }
-
-      const { uploadUrl, pdfKey } = urlData;
-
-      // Step 2: Upload directly to S3 using XMLHttpRequest for progress tracking
-      setUploadStage("uploading_s3");
+      setUploadStage("uploading");
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open("PUT", uploadUrl, true);
-        xhr.setRequestHeader("Content-Type", "application/pdf");
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round(
-              (event.loaded / event.total) * 100
-            );
-            setUploadProgress(percentComplete);
-          }
+        xhr.open("PUT", upload.uploadUrl, true);
+        xhr.timeout = 15 * 60 * 1000;
+        // Every signed header is part of the upload contract, including the overwrite guard.
+        for (const [name, value] of Object.entries(upload.uploadHeaders)) xhr.setRequestHeader(name, value);
+        xhr.upload.onprogress = (progress) => {
+          if (progress.lengthComputable) setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
         };
-
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(
-              new Error(
-                `S3 upload failed with status ${xhr.status} ${xhr.statusText}. Ensure S3 CORS permits PUT from this domain.`
-              )
-            );
-          }
+          if (xhr.status >= 200 && xhr.status < 300) { setUploadProgress(100); resolve(); }
+          else reject(new Error("The PDF upload was not accepted. Please try again."));
         };
-
-        xhr.onerror = () => {
-          reject(
-            new Error(
-              "Network error during direct S3 upload. Check AWS S3 bucket CORS permissions."
-            )
-          );
-        };
-
+        xhr.onerror = () => reject(new Error("The PDF upload could not finish. Check your connection and try again."));
+        xhr.ontimeout = () => reject(new Error("The upload took too long. Check your connection and try again."));
+        xhr.onabort = () => reject(new Error("The PDF upload was interrupted. Please try again."));
         xhr.send(selectedFile);
       });
 
-      // Step 3: Trigger backend processing and redirect
-      setUploadStage("triggering_process");
-      const procRes = await fetch("/api/process", {
+      setUploadStage("extracting");
+      const processResponse = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brand: selectedBrand,
-          issueId: issueId.trim(),
-          issueLabel: issueLabel.trim(),
-          tocPages: tocPages.trim(),
-          pdfKey,
-        }),
+        body: JSON.stringify({ brand: selectedBrand, issueId: cleanId, issueLabel: cleanLabel, tocPages: [...new Set(pageStrings.map(Number))].sort((a, b) => a - b).join(","), pdfKey: upload.pdfKey }),
       });
-
-      const procData = await procRes.json();
-      if (!procRes.ok || procData.error) {
-        throw new Error(procData.error || "Failed to register issue in database");
-      }
-
+      const result = await processResponse.json();
+      if (!processResponse.ok || result.error) throw new Error(result.error || "The PDF uploaded, but extraction could not start.");
+      if (typeof result.issueUuid !== "string" || !result.issueUuid) throw new Error("The issue could not be opened. Check the issue list before trying again.");
       setUploadStage("done");
-      const targetUuid = procData.issueUuid;
-      router.push(`/admin/${targetUuid}`);
-    } catch (err: any) {
-      console.error("Upload workflow failed:", err);
-      setErrorMessage(
-        err.message || "An unexpected error occurred during the upload process."
-      );
+      router.push(`/admin/${encodeURIComponent(result.issueUuid)}`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
       setIsUploading(false);
       setUploadStage("idle");
     }
-  };
+  }
 
   return (
-    <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-10 space-y-8">
-      {/* Back Link & Header */}
+    <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-10 space-y-7">
       <div>
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors mb-3"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Issues</span>
-        </Link>
-        <div className="flex items-baseline justify-between">
-          <div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
-              Publishing Pipeline
-            </span>
-            <h1 className="font-serif text-3xl text-gray-900 font-normal tracking-tight mt-1">
-              New Issue
-            </h1>
-          </div>
-        </div>
+        <Link href="/admin" className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 mb-4"><ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to issues</Link>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">Print to web</p>
+        <h1 className="font-serif text-3xl text-gray-900 mt-1">New print issue</h1>
+        <p className="text-sm text-gray-600 mt-2">Upload the issue PDF to prepare articles and images for editorial review.</p>
       </div>
 
-      {/* Main Form Card */}
-      <Card elevated padding="lg" className="space-y-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Brand Selector Tiles */}
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
-              Select Brand
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {brandList.map((key) => {
-                const brand = BRANDS[key];
-                const isSelected = selectedBrand === key;
-                return (
-                  <button
-                    type="button"
-                    key={key}
-                    disabled={isUploading}
-                    onClick={() => setSelectedBrand(key)}
-                    className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between h-28 ${
-                      isSelected
-                        ? "bg-amber-50/50 border-amber-500 ring-1 ring-amber-500/40 shadow-xs"
-                        : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                    }`}
-                  >
-                    <BrandMark brand={key} size="md" />
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900 tracking-tight">
-                        {brand.name}
-                      </div>
-                      <div className="text-[11px] font-mono text-gray-500 mt-0.5">
-                        {brand.short}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <span
-                        className="absolute top-3 right-3 w-2 h-2 rounded-full"
-                        style={{ backgroundColor: brand.accent }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
+      {sessionError && <div role="alert" className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-800"><p>{sessionError.message}</p><Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void refreshSession()}>Reload access</Button></div>}
+
+      <Card elevated padding="lg">
+        <form onSubmit={handleSubmit} className="space-y-7">
+          <fieldset disabled={isUploading || !session || !!sessionError} className="space-y-3">
+            <legend className="text-xs font-semibold uppercase tracking-wider text-gray-600">Publication</legend>
+            {!session && !sessionError && <p className="text-sm text-gray-500" role="status">Loading publications…</p>}
+            {session && availableBrands.length === 0 && <p role="alert" className="text-sm text-red-700">Your account has no publication access. Ask your CMS administrator to assign a publication.</p>}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {availableBrands.map((brand) => (
+                <button key={brand.id} type="button" aria-pressed={selectedBrand === brand.id} onClick={() => setBrandChoice(brand.id)} className={`p-3 rounded-xl border text-left h-28 flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 disabled:opacity-50 ${selectedBrand === brand.id ? "bg-amber-50 border-amber-600 shadow-xs" : "bg-white border-gray-200 hover:bg-gray-50"}`}>
+                  <BrandMark brand={brand.id} size="md" />
+                  <span className="text-xs font-semibold text-gray-900">{brand.name}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <label htmlFor="issue-id" className="block text-xs font-semibold text-gray-700">Issue ID</label>
+              <input id="issue-id" type="text" value={issueId} onChange={(event) => setIssueId(event.target.value)} disabled={isUploading} placeholder="e.g. fall-2026" maxLength={80} required aria-describedby="issue-id-help" className={inputClass} />
+              <p id="issue-id-help" className="text-xs text-gray-500">A stable reference using letters, numbers, hyphens, or underscores. Reuse it when re-extracting this issue.</p>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="issue-name" className="block text-xs font-semibold text-gray-700">Issue name</label>
+              <input id="issue-name" type="text" value={issueLabel} onChange={(event) => setIssueLabel(event.target.value)} disabled={isUploading} placeholder="e.g. Fall 2026" maxLength={200} required aria-describedby="issue-name-help" className={inputClass} />
+              <p id="issue-name-help" className="text-xs text-gray-500">The name editors will see in the CMS.</p>
             </div>
           </div>
 
-          {/* Issue Identification Inputs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
-                Issue ID
-              </label>
-              <input
-                type="text"
-                disabled={isUploading}
-                value={issueId}
-                onChange={(e) => setIssueId(e.target.value)}
-                placeholder="e.g. 2026-09"
-                required
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-mono placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
-              />
-              <p className="text-[11px] text-gray-500">
-                Folder / URL identifier (YYYY-MM)
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
-                Issue Label
-              </label>
-              <input
-                type="text"
-                disabled={isUploading}
-                value={issueLabel}
-                onChange={(e) => setIssueLabel(e.target.value)}
-                placeholder="e.g. September 2026"
-                required
-                className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-serif placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
-              />
-              <p className="text-[11px] text-gray-500">
-                Human-readable title displayed in feeds
-              </p>
-            </div>
-          </div>
-
-          {/* Table of Contents Pages */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
-              TOC Pages
-            </label>
-            <input
-              type="text"
-              disabled={isUploading}
-              value={tocPages}
-              onChange={(e) => setTocPages(e.target.value)}
-              placeholder="3,4"
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-mono placeholder-gray-400 focus:outline-none focus:border-[#C9A227] focus:ring-1 focus:ring-[#C9A227] disabled:opacity-50"
-            />
-            <p className="text-[11px] text-gray-500">
-              Printed pages holding the table of contents (comma-separated, default &quot;3,4&quot;)
-            </p>
-          </div>
-
-          {/* PDF Dropzone */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-600">
-              Print-Production PDF
-            </label>
+            <label htmlFor="toc-pages" className="block text-xs font-semibold text-gray-700">Table of contents pages</label>
+            <input id="toc-pages" type="text" value={tocPages} onChange={(event) => setTocPages(event.target.value)} disabled={isUploading} placeholder="3,4" required aria-describedby="toc-pages-help" className={inputClass} />
+            <p id="toc-pages-help" className="text-xs text-gray-500">PDF page numbers containing the table of contents, separated by commas. Count the cover as page 1; these may differ from printed page numbers.</p>
+          </div>
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="application/pdf,.pdf"
-              className="hidden"
-            />
-
+          <div className="space-y-2">
+            <label htmlFor="issue-pdf" className="block text-xs font-semibold text-gray-700">Issue PDF</label>
+            <input id="issue-pdf" type="file" ref={fileInputRef} accept="application/pdf,.pdf" disabled={isUploading} onChange={(event) => selectFile(event.target.files?.[0])} className="sr-only" tabIndex={-1} />
             {!selectedFile ? (
-              <div
-                onClick={() => !isUploading && fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                className="border border-dashed border-gray-300 hover:border-gray-400 rounded-xl p-8 text-center bg-gray-50/70 transition-colors cursor-pointer group"
-              >
-                <UploadCloud className="w-8 h-8 mx-auto text-gray-400 group-hover:text-gray-700 transition-colors mb-3" />
-                <div className="text-sm font-medium text-gray-800">
-                  Drop print-ready PDF here, or browse
-                </div>
-                <p className="text-xs text-gray-500 mt-1 font-mono">
-                  Accepts .pdf up to 500MB • Direct S3 upload
-                </p>
-              </div>
+              <button type="button" disabled={isUploading} onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); selectFile(event.dataTransfer.files?.[0]); }} className="w-full border border-dashed border-gray-300 hover:border-amber-600 rounded-xl p-8 text-center bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">
+                <UploadCloud className="w-8 h-8 mx-auto text-gray-400 mb-3" aria-hidden="true" />
+                <span className="block text-sm font-medium text-gray-800">Drop a PDF here, or choose a file</span>
+                <span className="block text-xs text-gray-500 mt-1">PDF files up to 500 MB</span>
+              </button>
             ) : (
-              <div className="border border-gray-200 bg-white rounded-xl p-4 flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-[#C9A227] shrink-0">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <div className="text-sm font-medium text-gray-900 truncate font-mono">
-                      {selectedFile.name}
-                    </div>
-                    <div className="text-xs text-gray-500 font-mono mt-0.5">
-                      {formatFileSize(selectedFile.size)}
-                    </div>
-                  </div>
-                </div>
-
-                {!isUploading && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFile(null)}
-                    className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 ml-3 shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+              <div className="border border-gray-200 rounded-xl p-4 flex items-center gap-3">
+                <FileText className="w-6 h-6 shrink-0 text-[#B85D19]" aria-hidden="true" />
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium text-gray-900 break-all">{selectedFile.name}</p><p className="text-xs text-gray-500 mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</p></div>
+                <button type="button" disabled={isUploading} aria-label="Remove selected PDF" onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-amber-600 disabled:opacity-40"><X className="w-4 h-4" aria-hidden="true" /></button>
               </div>
             )}
           </div>
 
-          {/* Upload Progress Bar */}
+          <p className="rounded-xl bg-amber-50 border border-amber-100 p-4 text-sm text-amber-950">Extracted articles enter the CMS for review. Editors check the text, bylines, images, and extraction notes before publishing. Re-extraction preserves saved editorial changes.</p>
+
           {isUploading && (
-            <div className="space-y-2 p-4 rounded-xl bg-gray-50 border border-gray-200">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-gray-900 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse" />
-                  {uploadStage === "requesting_url" && "Requesting presigned upload URL..."}
-                  {uploadStage === "uploading_s3" && `Uploading PDF to S3 inbox (${uploadProgress}%)...`}
-                  {uploadStage === "triggering_process" && "Registering issue & triggering pipeline..."}
-                  {uploadStage === "done" && "Upload complete! Redirecting..."}
-                </span>
-                <span className="font-mono text-[#C9A227] font-semibold">
-                  {uploadProgress}%
-                </span>
-              </div>
-
-              {/* Gold Progress Bar */}
-              <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#C9A227] to-[#E5BE43] transition-all duration-150 ease-out"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
+            <div className="space-y-3 p-4 rounded-xl bg-gray-50 border border-gray-200">
+              <p className="text-sm font-medium text-gray-900" role="status" aria-live="polite">{uploadStage === "preparing" ? "Preparing upload…" : uploadStage === "uploading" ? `Uploading PDF: ${uploadProgress}%` : uploadStage === "extracting" ? "Starting extraction…" : "Opening the issue…"}</p>
+              {uploadStage === "uploading" && <progress aria-label="PDF upload progress" value={uploadProgress} max={100} className="w-full h-2 accent-amber-700" />}
+              <p className="text-xs text-gray-500">Keep this page open until the upload finishes.</p>
             </div>
           )}
 
-          {/* Inline Error Banner */}
-          {errorMessage && (
-            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <div className="text-xs space-y-0.5">
-                <strong className="font-semibold">Upload failure:</strong>
-                <p className="text-red-600">{errorMessage}</p>
-              </div>
-            </div>
-          )}
+          {errorMessage && <div role="alert" className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 flex items-start gap-3"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" /><p className="text-sm">{errorMessage}</p></div>}
 
-          {/* Submit Actions */}
-          <div className="pt-2 flex items-center justify-end gap-3 border-t border-gray-100">
-            <Link href="/admin">
-              <Button type="button" variant="ghost" size="md" disabled={isUploading}>
-                Cancel
-              </Button>
-            </Link>
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              isLoading={isUploading}
-              disabled={isUploading || !selectedFile}
-            >
-              <Sparkles className="w-4 h-4 mr-1.5" />
-              {isUploading ? "Uploading..." : "Start Processing"}
+          <div className="pt-5 flex items-center justify-end gap-3 border-t border-gray-100">
+            <Button type="button" variant="ghost" disabled={isUploading} onClick={() => router.push("/admin")}>Cancel</Button>
+            <Button type="submit" variant="brand" brand={selectedBrand} isLoading={isUploading} disabled={isUploading || !selectedFile || !session || !!sessionError || availableBrands.length === 0}>
+              <Sparkles className="w-4 h-4" aria-hidden="true" /> {isUploading ? "Preparing issue…" : "Upload & extract"}
             </Button>
           </div>
         </form>

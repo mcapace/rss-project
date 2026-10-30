@@ -75,9 +75,10 @@ runner. For an existing project, apply only unapplied migrations:
 4. `supabase/migrations/20261030153019_cms_service_role_privileges.sql`
 
 If the first two migrations are already recorded as applied in the development
-project, apply only the new foundation migration. The foundation migration is
-additive and is intended to run once; it is not a reset script. It retains the
-legacy `issues`, `articles`, and `article_images` tables while adding the CMS
+project, apply only the two new CMS migrations: foundation and privilege hardening.
+The foundation migration is additive and is intended to run once; it is not a
+reset script. It retains the legacy `issues`, `articles`, and `article_images`
+tables while adding the CMS
 records, immutable source snapshots, editorial revisions, and atomic intake/save
 functions. The privilege migration explicitly removes Supabase's inherited
 service-role defaults before granting only the operations the CMS needs. History

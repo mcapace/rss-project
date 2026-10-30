@@ -99,12 +99,15 @@ describe("workspace asynchronous selection", () => {
     const selector = host.querySelector<HTMLSelectElement>("#cms-brand")!;
     expect([...selector.options].map(option => option.value)).toEqual(["wa", "ws", "ca", "mw"]);
     expect(host.querySelectorAll(".cms-story-link").length).toBeGreaterThan(0);
+    expect(host.querySelector<HTMLAnchorElement>(".cms-demo-banner a")?.getAttribute("href")).toBe("/cms?brand=wa");
     await act(async () => { selector.value = "ws"; selector.dispatchEvent(new Event("change", { bubbles: true })); });
     expect(host.querySelectorAll(".cms-story-link")).toHaveLength(0);
     expect(host.querySelector(".cms-metric strong")?.textContent).toBe("0");
     expect(host.querySelector(".cms-breadcrumb")?.textContent).toContain("Wine Spectator");
+    expect(host.querySelector<HTMLAnchorElement>(".cms-demo-banner a")?.getAttribute("href")).toBe("/cms?brand=ws");
     await act(async () => { selector.value = "wa"; selector.dispatchEvent(new Event("change", { bubbles: true })); });
     expect(host.querySelectorAll(".cms-story-link").length).toBeGreaterThan(0);
+    expect(host.querySelector<HTMLAnchorElement>(".cms-demo-banner a")?.getAttribute("href")).toBe("/cms?brand=wa");
     expect(fetch).not.toHaveBeenCalled();
   });
 });

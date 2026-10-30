@@ -1,18 +1,44 @@
 # Editorial workspace (the `/cms` redesign)
 
-The `/cms` pages share one shell modeled on the Cork audience dashboard: a
-quiet, near-monochrome workspace with one accent (a deep teal, reserved for
-links, focus and data), a slim collapsible navigation rail, a `⌘K` command bar,
-one inverted ink hero per page, thick glass cards over a fixed ambient field,
-Inter in sentence case, light and dark themes, and motion only for state
-changes. Every style is scoped under the `.ed` class in
-`src/components/editorial/editorial.css`, so the rest of the app is untouched.
+The `/cms` pages share one shell that takes its design language from the Cork
+audience dashboard but reads as a content tool, not a report: a quiet,
+near-monochrome workbench with one accent (a deep teal, reserved for links,
+focus and data), Inter in sentence case, light and dark themes, a `⌘K` command
+bar, the AI ring on every assistant action, and motion only for state changes.
+Surfaces are flat white sheets with hairline borders on a plain grey field;
+there are no heroes, KPI tiles or glass cards in page content. Every style is
+scoped under the `.ed` class in `src/components/editorial/editorial.css`, so
+the rest of the app is untouched.
+
+What makes it a CMS rather than a dashboard:
+
+- **The sidebar is the content model.** A black "New document" button sits
+  under the search trigger, then flat labelled groups: Content (All content,
+  Articles, Ratings, Pages, Search & images), Workflow (Review queue with its
+  count, Drafts, Schedule), Print, Archive and Insights. Type and state rows
+  are library links with `?kind=` or `?state=`, and `nav.ts` matches them on
+  the search params so the active row follows the filter.
+- **Compact screen titles.** `PageHeader` is a 19px title with a small icon,
+  a one-line lede and the actions on the right, closed by a hairline. The
+  library title names the filtered type ("Articles", "Ratings").
+- **The desk is a work list.** `/cms` shows one strip of counts (all
+  content, needs review, drafts, scheduled, published this week, ratings), a
+  row of "Start" tiles per content type, and panels of dense rows: needs
+  review, in progress, scheduled, print intake, recently edited, published
+  this week.
+- **The editor is a document.** A sticky document bar (back, title, state,
+  presence, saved state, assistant, Save) sits under the top bar; Write /
+  Preview / History / Sources / Media are underline tabs; the body is written
+  on a white sheet beside a 336px properties rail.
+- **Workflow states are tinted.** Status pills carry a soft background in the
+  state's colour (amber for review, green for published, teal for scheduled,
+  red for unpublished, grey for drafts), so a table scans by state.
 
 ## Pages
 
 | Route | What it does |
 | --- | --- |
-| `/cms` | Home desk: greeting hero with live counts, KPI strip, review queue, recently edited, coming up (planned publish times), print intake, published this week. |
+| `/cms` | Desk: a strip of live counts, "Start" tiles per content type, and panels for needs review, in progress, scheduled, print intake, recently edited and published this week. |
 | `/cms/library` | Content library: search, status segments with counts, type filter, sortable dense table, saved views (per browser), multi-select with bulk state changes, CSV export, `j`/`k`/`x`/`↵` keyboard navigation, pagination, compact density. Supports `?issue=` to show one print issue's candidates. |
 | `/cms/doc/[id]` | Document workspace: headline and byline, TipTap body with a lossless HTML fallback, Write / Preview / History / Sources / Media views, revision timeline with word-level diff and restore-to-draft, source candidates with adopt-into-draft, media captions and lead image, publishing panel (state, planned publish time), properties (section, summary, slug, URL, tags), rating fields, search metadata, `⌘S` save with optimistic-revision conflict handling and local unsaved-edit recovery. |
 | `/cms/review` | Review queue grouped by print issue or source, oldest first, with a quick "back to draft" action. |

@@ -126,7 +126,7 @@ export function Library({ initial }: { initial: LibraryInitial }) {
   const stateCounts: Partial<Record<string, number>> = overview.data ? { "": overview.data.total, draft: overview.data.drafts, review: overview.data.review } : {};
 
   return <>
-    <PageHeader icon={LibraryBig} title="Content library" lede="Every article, rating, page and imported record for this publication, with its source and state."
+    <PageHeader icon={LibraryBig} title={kind ? CONTENT_TYPE_LABELS[kind].plural : state ? `${STATE_LABELS[state]} content` : "All content"} lede={kind ? `Every ${CONTENT_TYPE_LABELS[kind].singular.toLowerCase()} in this publication, with its source and state.` : "Every article, rating, page and imported record for this publication, with its source and state."}
       actions={<>
         <div ref={viewsRef} style={{ position: "relative" }}>
           <Button icon={Bookmark} aria-haspopup="menu" aria-expanded={viewsOpen} onClick={() => setViewsOpen(value => !value)}>Views{views.length ? ` (${views.length})` : ""}</Button>

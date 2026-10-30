@@ -244,11 +244,11 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
   const tabs: { id: Tab; label: string }[] = [{ id: "write", label: "Write" }, { id: "preview", label: "Preview" }, { id: "history", label: "History" }, { id: "sources", label: "Sources" }, ...(mediaMeta.length ? [{ id: "media" as Tab, label: `Media (${mediaMeta.length})` }] : [])];
   const warnings = stringList(document.metadata.warnings);
 
-  return <div className="ed-editor">
-    <div className="ed-editor-main">
-      <div className="ed-editor-bar">
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+  return <div className="ed-doc">
+    <div className="ed-editor-bar">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: "1 1 240px" }}>
           <LinkButton href={href("/cms/library")} size="sm" variant="subtle" icon={ArrowLeft}>Library</LinkButton>
+          <span className="ed-doc-bar-title" title={draft.title}>{draft.title || "Untitled"}</span>
           <Pill tone={document.publication_state !== "published" && schedule ? "scheduled" : document.publication_state} />
         </div>
         <div className="ed-editor-status">
@@ -261,16 +261,17 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           <IconButton label="Assistant (⌘J)" icon={Sparkles} ai onClick={() => openAssistant()} />
           <Button variant="primary" size="sm" icon={Save} disabled={!dirty || saving} onClick={save} title="Save (⌘S)">{saving ? "Saving…" : "Save"}</Button>
         </div>
-      </div>
-
+    </div>
+    <div className="ed-editor">
+    <div className="ed-editor-main">
       {recovered && <div style={{ marginBottom: 12 }}><Notice icon={RotateCcw}><span>You have unsaved edits from an earlier visit to this document.</span> <button type="button" className="ed-link" onClick={() => { setDraft(recovered); setBodyReplaced(true); setRecovered(null); }}>Restore them</button> · <button type="button" className="ed-link" onClick={() => { setRecovered(null); try { window.localStorage.removeItem(draftKey(document.id)); } catch { /* ignore */ } }}>Discard</button></Notice></div>}
       {error && <div style={{ marginBottom: 12 }}><Notice tone="error" icon={X}>{error.message}{error.conflict && <> <button type="button" className="ed-link" onClick={() => setTab("history")}>Open History</button></>}</Notice></div>}
       {gate && <p className="ed-gate"><Info size={13} aria-hidden />Review required before publishing{reasons.length ? `: ${reasons.join(", ")}` : "."}</p>}
       {warnings.length > 0 && !gate && <p className="ed-gate"><Info size={13} aria-hidden />{warnings[0]}</p>}
 
-      <Segmented label="Editor view" value={tab} onChange={setTab} options={tabs} />
+      <div className="ed-doc-tabs"><Segmented label="Editor view" value={tab} onChange={setTab} options={tabs} /></div>
 
-      {tab === "write" && <div style={{ marginTop: 20 }}>
+      {tab === "write" && <div className="ed-canvas">
         <textarea className="ed-title-input" rows={1} value={draft.title} placeholder="Headline" aria-label="Title" maxLength={500}
           ref={node => { if (node) { node.style.height = "auto"; node.style.height = `${node.scrollHeight}px`; } }}
           onChange={event => { update({ title: event.target.value }); event.target.style.height = "auto"; event.target.style.height = `${event.target.scrollHeight}px`; }} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
@@ -465,5 +466,6 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         <div style={{ marginTop: 12 }}><Button size="sm" variant="subtle" icon={Eye} onClick={() => setTab("preview")}>Preview</Button></div>
       </RailSection>
     </aside>
+    </div>
   </div>;
 }

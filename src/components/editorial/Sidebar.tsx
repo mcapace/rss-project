@@ -2,12 +2,12 @@
 
 import { createElement, useCallback, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Check, ChevronDown, ChevronsUpDown, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Sun, X } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Check, ChevronsUpDown, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Sun, X } from "lucide-react";
 import { BRAND_NAMES, BRAND_SHORT, brandColor } from "@/lib/editorial/helpers";
 import { useEditorial } from "./EditorialProvider";
 import { useAsync, useDismiss, useTheme } from "./hooks";
-import { ARCHIVE_NAV, PRIMARY_NAV, PRINT_NAV, type NavItem } from "./nav";
+import { NAV_GROUPS, type NavItem } from "./nav";
 import { useShell } from "./Shell";
 
 /** Logo heights tuned so the four wordmarks read at a similar visual weight. */
@@ -36,7 +36,7 @@ function PublicationSwitcher({ collapsed, onNavigate }: { collapsed: boolean; on
     <button type="button" className="ed-switcher-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(value => !value)}>
       <span style={{ minWidth: 0, flex: 1, display: "grid", gap: 5 }}>
         <PublicationLogo brand={brand} height={BRAND_LOGO_HEIGHT[brand]} />
-        <span className="ed-switcher-sub">M. Shanken · {roleLabel}</span>
+        <span className="ed-switcher-sub">CMS · {roleLabel}</span>
       </span>
       <ChevronsUpDown size={14} style={{ color: "var(--muted)", flexShrink: 0 }} aria-hidden />
     </button>
@@ -52,8 +52,9 @@ function PublicationSwitcher({ collapsed, onNavigate }: { collapsed: boolean; on
 
 function NavLink({ item, collapsed, badge, onNavigate }: { item: NavItem; collapsed: boolean; badge?: number; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const search = useSearchParams();
   const { href, demo } = useEditorial();
-  const active = item.match(pathname);
+  const active = item.match(pathname, search);
   const target = href(item.href);
   return <Link href={target} onClick={onNavigate} data-collapsed={collapsed} title={collapsed ? item.label : undefined} aria-label={collapsed ? item.label : undefined} aria-current={active ? "page" : undefined} className="ed-nav-link">
     {createElement(item.icon, { size: 16, strokeWidth: 1.75, "aria-hidden": true })}
@@ -65,27 +66,11 @@ function NavLink({ item, collapsed, badge, onNavigate }: { item: NavItem; collap
 }
 
 export function Sidebar({ collapsed, onToggleCollapse, onNavigate }: { collapsed: boolean; onToggleCollapse: () => void; onNavigate?: () => void }) {
-  const pathname = usePathname();
   const { brand, data, demo, mutationVersion, setCommandOpen } = useEditorial();
   const { openCreate } = useShell();
   const overview = useAsync(`overview:${brand}:${mutationVersion}`, signal => data.overview(brand, signal));
   const { toggle: toggleTheme } = useTheme();
   const visible = (items: NavItem[]) => items.filter(item => !(item.liveOnly && demo));
-  const printActive = PRINT_NAV.some(item => item.match(pathname));
-  const archiveActive = ARCHIVE_NAV.some(item => item.match(pathname));
-
-  const group = (id: string, label: string, active: boolean, items: NavItem[], icon: NavItem["icon"]) => {
-    if (!items.length) return null;
-    if (collapsed) return <div key={id}><div className="ed-nav-divider" />{items.map(item => <NavLink key={item.href} item={item} collapsed onNavigate={onNavigate} />)}</div>;
-    return <details key={active ? `${id}-active` : id} open={active || undefined} className="ed-nav-group">
-      <summary className="ed-nav-link">
-        {createElement(icon, { size: 16, strokeWidth: 1.75, "aria-hidden": true })}
-        <span>{label}</span>
-        <ChevronDown size={14} className="ed-nav-chevron" aria-hidden />
-      </summary>
-      <div className="ed-nav-group-items">{items.map(item => <NavLink key={item.href} item={item} collapsed={false} onNavigate={onNavigate} />)}</div>
-    </details>;
-  };
 
   return <div className="ed-sidebar" data-collapsed={collapsed}>
     <div className="ed-sidebar-brand"><PublicationSwitcher collapsed={collapsed} onNavigate={onNavigate} /></div>
@@ -93,16 +78,19 @@ export function Sidebar({ collapsed, onToggleCollapse, onNavigate }: { collapsed
       {collapsed
         ? <button type="button" className="ed-nav-link" data-collapsed="true" aria-label="Search or jump (⌘K)" title="Search or jump (⌘K)" onClick={() => { onNavigate?.(); setCommandOpen(true); }}><Search size={16} strokeWidth={1.75} aria-hidden /></button>
         : <button type="button" className="ed-command-trigger" aria-label="Search or jump (⌘K)" onClick={() => { onNavigate?.(); setCommandOpen(true); }}><Search size={14} strokeWidth={2} aria-hidden /><span>Search or jump to…</span><kbd>⌘K</kbd></button>}
+      {collapsed
+        ? <button type="button" className="ed-nav-link" data-collapsed="true" aria-label="New document" title="New document (N)" onClick={() => { onNavigate?.(); openCreate(); }}><Plus size={16} strokeWidth={1.75} aria-hidden /></button>
+        : <button type="button" className="ed-new-button" onClick={() => { onNavigate?.(); openCreate(); }}><Plus size={15} strokeWidth={2} aria-hidden /><span>New document</span><kbd>N</kbd></button>}
     </div>
     <nav aria-label="Main navigation">
-      <div style={{ display: "grid", gap: 1 }}>
-        {PRIMARY_NAV.map(item => <NavLink key={item.href} item={item} collapsed={collapsed} badge={item.badge === "review" ? overview.data?.review ?? undefined : undefined} onNavigate={onNavigate} />)}
-        {collapsed
-          ? <button type="button" className="ed-nav-link" data-collapsed="true" aria-label="New document" title="New document" onClick={() => { onNavigate?.(); openCreate(); }}><Plus size={16} strokeWidth={1.75} aria-hidden /></button>
-          : <button type="button" className="ed-nav-link" onClick={() => { onNavigate?.(); openCreate(); }}><Plus size={16} strokeWidth={1.75} aria-hidden /><span>New document</span><kbd>N</kbd></button>}
-      </div>
-      {group("print", "Print", printActive, visible(PRINT_NAV), PRINT_NAV[0].icon)}
-      {group("archive", "Archive", archiveActive, visible(ARCHIVE_NAV), ARCHIVE_NAV[0].icon)}
+      {NAV_GROUPS.map(group => {
+        const items = visible(group.items);
+        if (!items.length) return null;
+        return <div key={group.id} className="ed-nav-group-flat">
+          {group.label && (collapsed ? <div className="ed-nav-divider" /> : <div className="ed-nav-section">{group.label}</div>)}
+          {items.map(item => <NavLink key={item.href} item={item} collapsed={collapsed} badge={item.badge === "review" ? overview.data?.review ?? undefined : undefined} onNavigate={onNavigate} />)}
+        </div>;
+      })}
     </nav>
     <div className="ed-sidebar-footer">
       <button type="button" onClick={toggleTheme} className="ed-icon-button" aria-label="Switch light or dark theme" title="Switch light or dark theme">

@@ -1,8 +1,6 @@
-import { CmsWorkspace } from "@/components/cms/CmsWorkspace";
-import { resolveCmsBrand } from "@/lib/cms/publications";
-import { CMS_BRANDS } from "@/lib/cms/types";
-export default async function CmsDemoPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const params = await searchParams;
-  const brand = resolveCmsBrand(params.brand, CMS_BRANDS);
-  return <CmsWorkspace key={brand} demo initialBrand={brand} />;
+import { DemoRedirect } from "@/components/editorial/DemoRedirect";
+
+/** The demo lives at /cms?demo=1 so every page shares one shell; this keeps the old link working. */
+export default function CmsDemoPage() {
+  return <DemoRedirect />;
 }

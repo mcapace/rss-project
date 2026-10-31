@@ -13,7 +13,7 @@
 <header class="mast">
   <nav aria-label="Sections"><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
-  <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
+  <div class="tools"><a class="pill fest-pill" href="#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
 <div class="story-stage" id="storyStage">
@@ -45,6 +45,25 @@
 </section>
 
 <div class="ad ad-billboard" data-slot="wa_home_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
+<section class="band">
+  <div class="fest glass" id="whiskyfest">
+    <div class="fest-copy">
+      <span class="mono">WhiskyFest New York · Friday, November 20</span>
+      <h2 class="d2">Over 100 pours, one night, and the Whisky of the Year announced live.</h2>
+      <p>New York Marriott Marquis. Seminars 2 to 4pm, the Grand Tasting 6:30 to 9:30pm. Rare and ultra-aged whiskies, the distillers and blenders who made them, and dinner through the night.</p>
+      <div class="fest-count" aria-label="Time until WhiskyFest" id="festCount"><div><b data-k="d">20</b><span>days</span></div><div><b data-k="h">00</b><span>hours</span></div><div><b data-k="m">00</b><span>minutes</span></div></div>
+      <div class="fest-tiers">
+        <a href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967"><strong>Premium</strong><em>$295</em><span>Grand Tasting, Glencairn glass, tote, buffet</span></a>
+        <a href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967"><strong>Seminar package</strong><em>$550</em><span>Afternoon seminars plus VIP entry at 6pm</span></a>
+        <a href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967"><strong>All-Access</strong><em>$725</em><span>The lounge and pours only All-Access guests get</span></a>
+      </div>
+      <div class="actions"><a class="pill solid" href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967">Buy tickets</a><a class="pill" href="https://www.whiskyfest.com/">Seminars and FAQ</a><a class="pill" href="stories.html#tag=WhiskyFest">WhiskyFest news</a></div>
+    </div>
+    <div class="fest-art"><img src="img/whiskyfest.jpg" alt="Guests at WhiskyFest New York" loading="lazy"><img class="fest-art-2" src="img/whiskyfest-2.jpg" alt="Bottles on the stage at WhiskyFest" loading="lazy"></div>
+    <div class="fest-news" id="festNews"></div>
+  </div>
+</section>
+
 <section class="band">
   <div class="band-head"><div><span class="mono">Latest</span><h2 class="d2" style="margin-top:10px">News</h2></div><a class="pill" href="stories.html#news">All news</a></div>
   <div class="front" id="front"></div>
@@ -133,6 +152,16 @@ WA.ready(function (data) {
   WA.scrollAnswer = function () { var st = document.getElementById("storyStage"); window.scrollTo({ top: st.offsetTop + st.offsetHeight - 150, behavior: "smooth" }); };
   var fresh = data.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 4);
   document.getElementById("fresh").innerHTML = fresh.map(function (r) { return WA.bottleCard(r); }).join("");
+  // WhiskyFest: a live count to the doors, and the latest WhiskyFest stories.
+  (function () {
+    var when = new Date("2026-11-20T18:30:00-05:00"), el = document.getElementById("festCount");
+    function tick() { var ms = Math.max(0, when - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60; el.querySelector("[data-k=d]").textContent = d; el.querySelector("[data-k=h]").textContent = String(h).padStart(2, "0"); el.querySelector("[data-k=m]").textContent = String(m).padStart(2, "0"); }
+    tick(); setInterval(tick, 30000);
+    WA.stories(function (all) {
+      var fest = all.filter(function (st) { return /whiskyfest/i.test(st.title + " " + (st.tags || []).join(" ")); }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 3);
+      document.getElementById("festNews").innerHTML = fest.map(function (st) { return '<a class="fest-story" href="' + WA.storyHref(st) + '"><span class="mono">' + WA.when(st.d) + "</span><strong>" + st.title + "</strong></a>"; }).join("");
+    });
+  })();
   // The demo: a shelf is scanned on a loop until a real photo arrives.
   (function () {
     var phone = document.getElementById("demoPhone"), marks = document.getElementById("demoMarks"), capText = document.getElementById("demoCapText");

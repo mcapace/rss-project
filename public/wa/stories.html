@@ -12,7 +12,7 @@
 <header class="mast">
   <nav aria-label="Sections"><a href="finder.html">Ratings</a><a href="stories.html" aria-current="page">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
-  <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
+  <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 <div class="ad ad-billboard" data-slot="wa_stories_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 
@@ -45,15 +45,16 @@ WA.ready(function (data) {
   WA.stories(function (all) {
     var shown = 0, rows = [];
     function render(sec, reset) {
-      rows = all.filter(function (s) { return sec === "all" || s.sec === sec; });
-      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").innerHTML = TITLE[sec]; var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : ""; }
+      var tag = /^tag=/.test(sec) ? decodeURIComponent(sec.slice(4)).toLowerCase() : "";
+      rows = all.filter(function (s) { return tag ? (s.tags || []).concat([s.title]).join(" ").toLowerCase().indexOf(tag) >= 0 : sec === "all" || s.sec === sec; });
+      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").textContent = tag ? decodeURIComponent(sec.slice(4)) : (TITLE[sec] || "Stories"); var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : ""; }
       var next = rows.slice(3 + shown, 3 + shown + 30); shown += next.length;
       document.getElementById("list").innerHTML += next.map(WA.storyRow).join("");
       document.getElementById("more").style.display = 3 + shown < rows.length ? "" : "none";
       document.querySelectorAll("#sections button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sec") === sec)); });
     }
     var current = "all";
-    function go(sec) { current = WA.SECTION[sec] ? sec : "all"; document.getElementById("list").innerHTML = ""; render(current, true); }
+    function go(sec) { current = WA.SECTION[sec] || /^tag=/.test(sec) ? sec : "all"; document.getElementById("list").innerHTML = ""; render(current, true); }
     document.getElementById("sections").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var sec = b.getAttribute("data-sec"); history.replaceState(null, "", sec === "all" ? "stories.html" : "#" + sec); go(sec); });
     document.getElementById("more").addEventListener("click", function () { render(current, false); });
     go((location.hash || "").slice(1)); addEventListener("hashchange", function () { go((location.hash || "").slice(1)); });

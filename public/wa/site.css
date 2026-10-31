@@ -1543,3 +1543,21 @@ body[data-menu="true"] { overflow: hidden; }
 @media (max-width: 860px) { .rot-stage { min-height: 0; } .front .rot-slide.on { position: relative; height: auto; } .front .rot-slide.on img { min-height: 0; height: auto; aspect-ratio: 16 / 10; } }
 @media (max-width: 860px) { .front .story.lead.has-img.rot-slide.on { position: relative; height: auto; min-height: 0; grid-template-rows: auto auto auto auto; } .front .story.lead.has-img.rot-slide.on img { min-height: 0; height: auto; aspect-ratio: 16 / 10; } .front .rot-slide .tag { margin-top: 2px; } }
 @media (max-width: 640px) { .ask { width: 100%; max-width: 100%; } .ask form { flex-wrap: nowrap; padding-left: 14px; } .ask form > * { min-width: 0; } .ask input { width: 0; flex: 1 1 0; } .ask .go { padding: 0 14px; flex: 0 0 auto; } }
+
+/* The News band as it was: the lead card beside the list, with the lead rotating through the five. */
+.front.rotator { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.rot-stage { border: 0; background: none; }
+.rot-dots { position: absolute; right: 18px; bottom: 18px; z-index: 3; display: flex; gap: 6px; }
+.rot-dot { position: relative; width: 26px; height: 6px; padding: 0; border: 0; border-radius: 999px; background: rgba(42,35,64,0.18); overflow: hidden; cursor: pointer; }
+.rot-dot .rot-bar { position: absolute; left: 0; top: 0; bottom: 0; height: auto; width: 0; background: var(--copper); }
+.rot-dot[aria-current="true"] .rot-bar { animation: rot-fill var(--rot-ms, 6500ms) linear forwards; }
+@media (prefers-reduced-motion: reduce) { .rot-dot[aria-current="true"] .rot-bar { animation: none; width: 100%; } }
+@media (max-width: 860px) { .rot-dots { right: 14px; bottom: 14px; } .front .story.lead.has-img.rot-slide.on { padding-bottom: 34px; } }
+
+/* The menu reads like the nav: the same size and weight, nothing heavier. */
+.menu-group a { font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; padding: 6px 0; }
+.menu-group a:hover, .menu-group a[aria-current="page"] { color: var(--ink); }
+.menu-group a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--amber); display: inline-block; }
+.menu-cols .menu-group a { font-size: 14px; font-weight: 400; }
+.menu-head img { width: 132px; }
+@media (max-width: 860px) { .front.rotator { grid-template-columns: 1fr; } }

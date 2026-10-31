@@ -272,24 +272,22 @@ WA.ready(function (data) {
     var byId = {}, bySlug = {}; all.forEach(function (st) { byId[st.id] = st; bySlug[st.slug] = st; });
     var front = document.getElementById("front"), timer = null, at = 0, five = [], STEP = 6500;
     function slide(st, i) { return '<a class="story lead has-img rot-slide" data-i="' + i + '" href="' + WA.storyHref(st) + '"' + (i ? ' aria-hidden="true" tabindex="-1"' : "") + '>' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="' + (i ? "lazy" : "eager") + '">' : "") + '<span class="tag">' + (st.label === "sponsored" ? "Sponsored" : st.label === "archive" ? "From the archive" : st.label === "editors" ? "Editors' pick" : WA.SECTION[st.sec] || "News") + " · " + WA.when(st.d) + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
-    function item(st, i) { return '<button type="button" class="rot-item" data-i="' + i + '" aria-current="' + (i === 0) + '"><span class="rot-n">0' + (i + 1) + '</span><span><span class="rot-t">' + st.title + '</span><span class="rot-s">' + (st.label === "sponsored" ? "Sponsored" : (WA.SECTION[st.sec] || "News")) + " · " + WA.when(st.d) + '</span></span><i class="rot-bar" aria-hidden="true"></i></button>'; }
+    function dot(st, i) { return '<button type="button" class="rot-dot" data-i="' + i + '" aria-label="Story ' + (i + 1) + ': ' + st.title.replace(/"/g, "&quot;") + '" aria-current="' + (i === 0) + '"><i class="rot-bar" aria-hidden="true"></i></button>'; }
     function show(i) {
       at = (i + five.length) % five.length;
       front.querySelectorAll(".rot-slide").forEach(function (el, k) { var on = k === at; el.classList.toggle("on", on); el.setAttribute("aria-hidden", String(!on)); el.tabIndex = on ? 0 : -1; });
-      front.querySelectorAll(".rot-item").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
+      front.querySelectorAll(".rot-dot").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
     }
     function arm() { clearInterval(timer); timer = setInterval(function () { if (front.getAttribute("data-paused") !== "true" && !document.hidden) show(at + 1); }, STEP); }
     function build(list) {
       five = list.filter(Boolean).slice(0, 5); at = 0;
       if (!five.length) { front.innerHTML = ""; return; }
-      front.className = "front rotator"; front.style.setProperty("--rot-ms", STEP + "ms");
-      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '</div><div class="rot-rail" role="tablist" aria-label="Top stories">' + five.map(item).join("") + "</div>";
-      var more = news.filter(function (st) { return five.indexOf(st) < 0 && !five.some(function (f) { return f.id === st.id; }); }).slice(0, 6);
-      var list2 = document.getElementById("frontMore"); if (!list2) { list2 = document.createElement("div"); list2.id = "frontMore"; list2.className = "dense front-more"; front.parentNode.insertBefore(list2, front.nextSibling); }
-      list2.innerHTML = more.map(WA.storyRow).join("");
+      front.classList.add("rotator"); front.style.setProperty("--rot-ms", STEP + "ms");
+      var rest = news.filter(function (st) { return !five.some(function (f) { return f === st || f.id === st.id; }); }).slice(0, 8);
+      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '<div class="rot-dots" role="tablist" aria-label="Top stories">' + five.map(dot).join("") + '</div></div><div class="dense front-list">' + rest.map(WA.storyRow).join("") + "</div>";
       show(0); arm();
     }
-    front.addEventListener("click", function (e) { var b = e.target.closest(".rot-item"); if (!b) return; show(+b.getAttribute("data-i")); arm(); });
+    front.addEventListener("click", function (e) { var b = e.target.closest(".rot-dot"); if (!b) return; show(+b.getAttribute("data-i")); arm(); });
     front.addEventListener("mouseenter", function () { front.setAttribute("data-paused", "true"); });
     front.addEventListener("mouseleave", function () { front.setAttribute("data-paused", "false"); });
     front.addEventListener("focusin", function () { front.setAttribute("data-paused", "true"); });

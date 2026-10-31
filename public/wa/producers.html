@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Producers</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="stories.html#guides">Guides</a><a href="cocktails.html">Cocktails</a><a href="producers.html" aria-current="page">Producers</a><a href="industry.html">Industry</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
+</header>
+
+<section class="band" style="padding-top: 28px">
+  <div class="band-head"><div><span class="mono">Producers</span><h1 class="d1" style="margin-top: 12px">Every house we have rated, <em class="hi">with the record to show for it.</em></h1></div><p id="lede"></p></div>
+  <div class="search-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg><input id="q" type="text" placeholder="Type a distillery or a brand" aria-label="Find a producer"></div>
+  <div class="country-row" id="countries"></div>
+  <div class="results-head" style="margin-bottom: 14px"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="count" aria-pressed="true">Most rated</button><button type="button" data-sort="best" aria-pressed="false">Highest score</button><button type="button" data-sort="avg" aria-pressed="false">Best average</button><button type="button" data-sort="name" aria-pressed="false">A to Z</button></div></div>
+  <div class="producers" id="list"></div>
+  <div class="more"><button type="button" class="pill" id="more">More producers</button></div>
+</section>
+
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
+  <div><h4>About this page</h4><p>Producers come from the ratings catalog. Country is read from the categories the house is rated in.</p></div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+WA.ready(function () { WA.archive(function (data) {
+  var P = WA.producers(data), list = Object.keys(P).map(function (k) { return P[k]; });
+  var state = { q: "", country: "", sort: "count", limit: 40 };
+  var COUNTRIES = ["Scotland", "United States", "Ireland", "Japan", "Canada", "Elsewhere"];
+  document.getElementById("lede").textContent = list.length.toLocaleString() + " producers across " + data.length.toLocaleString() + " ratings since 2013. Every one opens to its full portfolio, its score history, the stories we have written about it and its Top 20 appearances.";
+  document.getElementById("countries").innerHTML = '<button type="button" class="pill" data-country="" aria-pressed="true">Everywhere</button>' + COUNTRIES.map(function (c) { return '<button type="button" class="pill" data-country="' + c + '" aria-pressed="false">' + c + "</button>"; }).join("");
+  function rows() { var q = state.q.toLowerCase(), out = list.filter(function (p) { return (!state.country || p.country === state.country) && (!q || p.name.toLowerCase().indexOf(q) >= 0); }); out.sort(state.sort === "best" ? function (a, b) { return b.best - a.best || b.n - a.n; } : state.sort === "avg" ? function (a, b) { return (b.n >= 3) - (a.n >= 3) || b.avg - a.avg; } : state.sort === "name" ? function (a, b) { return a.name.localeCompare(b.name); } : function (a, b) { return b.n - a.n || b.best - a.best; }); return out; }
+  function render() { var rs = rows(); document.getElementById("count").textContent = rs.length.toLocaleString() + " producers"; document.getElementById("list").innerHTML = rs.slice(0, state.limit).map(function (p) { return '<a href="' + WA.producerHref(p.name) + '"><span class="sc score-type">' + p.best + '</span><span><span class="nm">' + p.name + '</span><span class="sub">' + p.n + (p.n === 1 ? " rating" : " ratings") + " · " + p.cat.replace("/Tennessee Whiskey", "") + " · average " + p.avg.toFixed(1) + '</span></span><span class="when">' + p.country + "</span></a>"; }).join(""); document.getElementById("more").style.display = rs.length > state.limit ? "" : "none"; document.querySelectorAll("#countries button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-country") === state.country)); }); document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); }); }
+  document.getElementById("q").addEventListener("input", function () { state.q = this.value; state.limit = 40; render(); });
+  document.getElementById("countries").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.country = b.getAttribute("data-country"); state.limit = 40; render(); });
+  document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); render(); });
+  document.getElementById("more").addEventListener("click", function () { state.limit += 40; render(); });
+  render();
+}); });
+</script>
+</body>
+</html>

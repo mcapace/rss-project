@@ -177,6 +177,30 @@
   }
   function hashSlug() { var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
   function find(data, slug) { if (!slug) return null; if (data.bySlug) return data.bySlug[slug.toLowerCase()] || null; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = parseInt(slug, 10); return isNaN(n) ? null : data[n] || null; }
+  var COCKTAILS = null, TOP20 = null;
+  function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); fetch("cocktails.json").then(function (r) { return r.json(); }).then(function (d) { COCKTAILS = d; cb(d); }); }
+  function top20(cb) { if (TOP20) return cb(TOP20); fetch("top20.json").then(function (r) { return r.json(); }).then(function (d) { TOP20 = d; cb(d); }); }
+  /* Producers, summarised from the archive: count, best, average, main category, country from the categories. */
+  var COUNTRY = { "Single Malt Scotch": "Scotland", "Blended Scotch Whisky": "Scotland", "Blended Malt Scotch Whisky": "Scotland", "Single Grain Scotch": "Scotland", "Blended Grain Scotch": "Scotland", "Bourbon/Tennessee Whiskey": "United States", "Rye Whiskey": "United States", "Single Malt American Whiskey": "United States", "American Whiskey": "United States", "Wheat Whiskey": "United States", "Irish Single Malt": "Ireland", "Blended Irish Whiskey": "Ireland", "Irish Single Pot Still": "Ireland", "Irish": "Ireland", "Irish Grain": "Ireland", "Japanese Whisky": "Japan", "Canadian": "Canada" };
+  function producers(data) {
+    var P = {};
+    data.forEach(function (r) { if (r.pr === "Unknown producer") return; var p = P[r.pr] || (P[r.pr] = { name: r.pr, n: 0, best: 0, sum: 0, cats: {}, rows: [] }); p.n++; p.sum += r.s; if (r.s > p.best) p.best = r.s; p.cats[r.c] = (p.cats[r.c] || 0) + 1; p.rows.push(r); });
+    Object.keys(P).forEach(function (k) { var p = P[k]; p.avg = p.sum / p.n; p.cat = Object.keys(p.cats).sort(function (a, b) { return p.cats[b] - p.cats[a]; })[0]; p.country = COUNTRY[p.cat] || "Elsewhere"; });
+    return P;
+  }
+  /* Read the amount off the front of a printed ingredient: "1 1/2 oz. rye" -> 1.5, "oz", "rye". */
+  var FRAC = { "½": 0.5, "¼": 0.25, "¾": 0.75, "⅓": 1 / 3, "⅔": 2 / 3, "⅛": 0.125 };
+  function amount(i) {
+    var s = i.replace(/\u00a0/g, " "), m, n = 0, any = false;
+    while ((m = s.match(/^\s*(?:(\d+)\s*[\/⁄]\s*(\d+)|([½¼¾⅓⅔⅛])|(\d+(?:\.\d+)?))(?=[\s\d½¼¾⅓⅔⅛\/⁄]|$)/))) { if (m[1]) n += +m[1] / +m[2]; else if (m[3]) n += FRAC[m[3]]; else n += +m[4]; s = s.slice(m[0].length); any = true; }
+    if (!any) return null;
+    var u = s.match(/^\s*(oz\.?|ounces?|dash(?:es)?|parts?|cups?|tsps?\.?|tbsps?\.?|teaspoons?|tablespoons?|barspoons?|drops?|splash(?:es)?|ml|sprigs?|slices?|leaves|cubes?|wedges?|pinch(?:es)?|bottles?|cans?)\b\.?/i);
+    return { n: n, unit: u ? u[1].replace(/\.$/, "") : "", rest: (u ? s.slice(u[0].length) : s).replace(/^[\s.]+/, "") };
+  }
+  function fmtAmount(x) { var w = Math.floor(x + 1e-6), f = x - w, F = f < 0.1 ? "" : f < 0.2 ? "⅛" : f < 0.3 ? "¼" : f < 0.4 ? "⅓" : f < 0.6 ? "½" : f < 0.7 ? "⅔" : f < 0.9 ? "¾" : ""; if (f >= 0.9) { w += 1; F = ""; } return (w || !F ? w : "") + F; }
+  window.WA.amount = amount; window.WA.fmtAmount = fmtAmount;
+  window.WA.producers = producers; window.WA.COUNTRY = COUNTRY;
+  window.WA.cocktails = cocktails; window.WA.top20 = top20;
   window.WA.archive = archive; window.WA.note = note; window.WA.fillNotes = fillNotes; window.WA.hashSlug = hashSlug; window.WA.find = find;
 
   /* Query understanding */

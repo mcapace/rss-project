@@ -1210,3 +1210,6 @@ footer.site .social svg { width: 18px; height: 18px; }
 .signup > div { min-width: 0; flex: 1; }
 .signup > .pill { flex: 0 0 auto; }
 @media (max-width: 600px) { .prose .signup, .signup { flex-wrap: wrap; } }
+/* The Whisky Advocate mark in the mast, a size up. */
+.wordmark img { height: 40px; }
+@media (max-width: 760px) { .wordmark img { height: 32px; } }

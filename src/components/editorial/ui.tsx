@@ -96,9 +96,8 @@ export function PageHeader({ icon, title, lede, actions, children }: { icon: Luc
   return <>
     <div className="ed-page-header">
       <div className="ed-page-identity">
-        <AppIcon icon={icon} />
         <div style={{ minWidth: 0 }}>
-          <h1>{title}</h1>
+          <h1><span className="ed-page-icon" aria-hidden>{createElement(icon, { size: 17, strokeWidth: 1.75 })}</span>{title}</h1>
           {lede && <p className="ed-lede">{lede}</p>}
         </div>
       </div>

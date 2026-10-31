@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, LogOut, Menu, Monitor, Moon, RefreshCw, Search, Sparkles, Sun } from "lucide-react";
 import { initials } from "@/lib/editorial/helpers";
 import { useEditorial } from "./EditorialProvider";
@@ -47,8 +47,9 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
   const { href, demo, refresh, setCommandOpen } = useEditorial();
   const { title } = useShell();
-  const section = sectionFor(pathname);
-  const atSection = section.href === pathname;
+  const search = useSearchParams();
+  const section = sectionFor(pathname, search);
+  const atSection = section.href.split("?")[0] === pathname;
   const [spinning, setSpinning] = useState(false);
   return <div className="ed-topbar">
     <button type="button" className="ed-icon-button ed-menu-button" aria-label="Open navigation" onClick={onOpenMenu}><Menu size={17} strokeWidth={1.75} aria-hidden /></button>

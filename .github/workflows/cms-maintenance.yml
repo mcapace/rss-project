@@ -1,0 +1,89 @@
+name: CMS maintenance
+
+# Runs the platform scripts (legacy image rehost, body normalization, redirect
+# build, embeddings backfill) against the content database with the same
+# secrets the print worker uses, so credentials never leave GitHub. Every
+# script is dry-run unless "apply" is ticked.
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Which script to run
+        required: true
+        type: choice
+        options: [rehost, normalize, redirects, embed]
+      brand:
+        description: Publication (wa, ws, ca, mw)
+        required: true
+        type: string
+        default: wa
+      hosts:
+        description: "rehost only: comma-separated legacy image hosts that may be fetched"
+        required: false
+        type: string
+        default: mscwordpresscontent.s3.amazonaws.com,www.maltadvocate.com,web.archive.org,66.148.42.205
+      limit:
+        description: Documents per pass
+        required: false
+        type: string
+        default: "500"
+      passes:
+        description: How many passes to run (stops early when a pass finds nothing)
+        required: false
+        type: string
+        default: "1"
+      apply:
+        description: Write changes (otherwise dry run)
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cms-maintenance-${{ inputs.task }}-${{ inputs.brand }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      CMS_IMPORT_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      CMS_IMPORT_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Run ${{ inputs.task }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(node -e 'console.log(new URL(process.env.CMS_IMPORT_SUPABASE_URL).hostname)')"
+          echo "Target database host: $target"
+          case "${{ inputs.task }}" in
+            rehost)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}") ;;
+            normalize)  script=scripts/normalize-bodies.ts; extra=(--only-missing) ;;
+            redirects)  script=scripts/build-redirects.ts;  extra=() ;;
+            embed)      script=scripts/embed-content.ts;    extra=() ;;
+            *) echo "Unknown task"; exit 1 ;;
+          esac
+          apply=()
+          if [ "${{ inputs.apply }}" = "true" ]; then apply=(--apply --development-target "$target"); fi
+          passes="${{ inputs.passes }}"
+          for pass in $(seq 1 "$passes"); do
+            echo "== pass $pass of $passes"
+            out="$(node --import tsx "$script" --brand "${{ inputs.brand }}" --limit "${{ inputs.limit }}" "${extra[@]}" "${apply[@]}" 2>&1)"
+            echo "$out"
+            if echo "$out" | grep -Eq '"(documents|scanned)": 0'; then echo "Nothing left to do."; break; fi
+            if [ "${{ inputs.apply }}" != "true" ]; then break; fi
+          done

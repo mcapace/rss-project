@@ -2,14 +2,14 @@
 
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LayoutGrid, Plus, Sparkles } from "lucide-react";
 import type { CmsDocumentKind } from "@/lib/cms/types";
 import { CONTENT_TYPE_LABELS } from "@/lib/cms/organization";
 import { BRAND_NAMES } from "@/lib/editorial/helpers";
 import { useEditorial } from "./EditorialProvider";
 import { useLayer, useStoredState } from "./hooks";
-import { PRIMARY_NAV } from "./nav";
+import { MOBILE_NAV } from "./nav";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CommandPalette } from "./CommandPalette";
@@ -83,9 +83,10 @@ function CreateDialog({ open, kind, onClose }: { open: boolean; kind: CmsDocumen
 
 function MobileTabBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
+  const search = useSearchParams();
   const { href } = useEditorial();
   return <nav className="ed-tabbar" aria-label="Workspace sections">
-    {PRIMARY_NAV.slice(0, 4).map(item => <Link key={item.href} href={href(item.href)} className="ed-tab" aria-current={item.match(pathname) ? "page" : undefined}>
+    {MOBILE_NAV.map(item => <Link key={item.href} href={href(item.href)} className="ed-tab" aria-current={item.match(pathname, search) ? "page" : undefined}>
       {createElement(item.icon, { size: 18, strokeWidth: 1.75, "aria-hidden": true })}{item.label.split(" ")[0]}
     </Link>)}
     <button type="button" className="ed-tab" onClick={onOpenMenu}><LayoutGrid size={18} strokeWidth={1.75} aria-hidden />More</button>

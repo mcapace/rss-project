@@ -570,11 +570,12 @@ document.body.appendChild(waAds);
 
 /* Recommendations: the page hands its candidates to /api/wa/recommend and an editor-grade model chooses what belongs beside it. */
 (function () {
-  var cache = {};
+  var cache = {}, inflight = {};
   window.WA.recommend = function (req, cb) {
     var key = req.kind + ":" + req.slug + ":" + (req.candidates || []).map(function (c) { return c.slug; }).join(",");
     if (cache[key]) return cb(cache[key]);
     if (!req.candidates || !req.candidates.length) return cb(null);
+    if (inflight[key]) { inflight[key].push(cb); return; } inflight[key] = [cb]; cb = function (j) { var cbs = inflight[key] || []; delete inflight[key]; cbs.forEach(function (f) { f(j); }); };
     fetch("/api/wa/recommend", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(req) })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { if (j && j.picks) cache[key] = j; cb(j && j.picks ? j : null); }, function () { cb(null); });

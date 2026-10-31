@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { connectedCmsEnabled } from "@/lib/cms/runtime-config";
 
 /** Paths the application itself serves; anything else is a candidate legacy URL for the redirect engine. */
-const APP_PREFIXES = ["/cms", "/admin", "/reader", "/login", "/api", "/_next", "/brands-cms", "/share"];
+const APP_PREFIXES = ["/cms", "/admin", "/reader", "/login", "/api", "/_next", "/brands-cms", "/share", "/wa"];
 const redirectCache = new Map<string, { target: string | null; status: number; until: number }>();
 
 /** Ask the redirect engine about a legacy path, remembering answers briefly per instance. */
@@ -62,5 +62,5 @@ export async function proxy(request: NextRequest) {
 export const config = { matcher: [
   "/cms/:path*", "/admin/:path*", "/reader/:path*", "/api/feed", "/api/cms/:path*", "/api/issues/:path*", "/api/process", "/api/upload-url", "/api/login", "/api/logout", "/login",
   // Legacy URLs: everything the application does not serve itself goes to the redirect engine.
-  "/((?!_next/|api/|cms|admin|reader|login|share|brands-cms/|favicon\\.ico|robots\\.txt|sitemap).*)",
+  "/((?!_next/|api/|cms|admin|reader|login|share|brands-cms/|wa/|favicon\\.ico|robots\\.txt|sitemap).*)",
 ] };

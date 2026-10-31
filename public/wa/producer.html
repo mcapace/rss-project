@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Producer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html" aria-current="page">Whisky Finder</a><a href="stories.html">Stories</a><a href="stories.html#guides">Guides</a><a href="stories.html#cocktails">Cocktails</a><a href="industry.html">Industry</a><a href="stories.html#top20">Top 20</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
+</header>
+
+<section class="band" style="padding-top: 28px">
+  <div class="crumbs" style="margin-bottom: 26px"><a href="finder.html">Whisky Finder</a><span>›</span><a href="industry.html">Producers</a><span>›</span><span id="crumb"></span></div>
+  <span class="mono">Producer</span>
+  <h1 class="d1" id="name" style="margin-top: 12px"></h1>
+  <p class="lede" id="lede" style="margin-top: 16px"></p>
+  <div class="stat-row" id="stats" style="margin-top: 28px"></div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">Score history</span><h2 class="d2" style="margin-top:10px">How the house has rated, bottle by bottle.</h2></div><p>Each dot is one rating, placed by the month it was reviewed. The line follows the running best.</p></div>
+  <div class="timeline"><canvas id="timeline" aria-label="Scores over time"></canvas></div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">Portfolio</span><h2 class="d2" style="margin-top:10px">Every bottle we have rated.</h2></div><a class="pill" href="industry.html">Export as sell sheet</a></div>
+  <div class="rail" id="bottles"></div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">Other houses</span><h2 class="d2" style="margin-top:10px">Producers with the most recent ratings.</h2></div></div>
+  <div class="dense" id="others"></div>
+</section>
+
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
+  <div><h4>About this page</h4><p>Producers come from the catalog tables; a bottle without a linked producer is grouped by the first words of its name.</p></div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+WA.ready(function (data) {
+  var byProducer = {}; data.forEach(function (r) { (byProducer[r.pr] = byProducer[r.pr] || []).push(r); });
+  var ranked = Object.keys(byProducer).sort(function (a, b) { return byProducer[b].length - byProducer[a].length || a.localeCompare(b); });
+  function show() {
+    var name = WA.hashName(); if (!name || !byProducer[name]) name = ranked[0];
+    var rows = byProducer[name].slice().sort(function (a, b) { return (a.d || "").localeCompare(b.d || ""); });
+    document.title = name + " · Whisky Advocate";
+    document.getElementById("crumb").textContent = name; document.getElementById("name").textContent = name;
+    var best = rows.reduce(function (a, r) { return r.s > a.s ? r : a; }, rows[0]), avg = rows.reduce(function (a, r) { return a + r.s; }, 0) / rows.length, cats = {};
+    rows.forEach(function (r) { cats[r.c] = (cats[r.c] || 0) + 1; });
+    var mainCat = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; })[0];
+    document.getElementById("lede").textContent = rows.length + " recent " + (rows.length === 1 ? "rating" : "ratings") + ", mostly " + mainCat.toLowerCase() + ". The panel's highest mark is " + best.s + " for " + best.n + ".";
+    var prices = rows.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; });
+    document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], [WA.fmt(prices[0]) + (prices.length > 1 ? " to " + WA.fmt(prices[prices.length - 1]) : ""), "price range"], [Object.keys(cats).length, Object.keys(cats).length === 1 ? "category" : "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
+    document.getElementById("bottles").innerHTML = rows.slice().sort(function (a, b) { return b.s - a.s; }).map(function (r) { return WA.bottleCard(r); }).join("");
+    drawTimeline(rows);
+    document.getElementById("others").innerHTML = ranked.filter(function (p) { return p !== name; }).slice(0, 8).map(function (p) { var rs = byProducer[p], top = rs.reduce(function (a, r) { return r.s > a.s ? r : a; }, rs[0]); return '<a href="' + WA.producerHref(p) + '"><span class="sc score-type">' + top.s + '</span><span><span class="nm">' + p + '</span><span class="sub">' + rs.length + " rated · best " + top.n + '</span></span><span class="when">' + rs[0].c.replace("/Tennessee Whiskey", "") + "</span></a>"; }).join("");
+    scrollTo(0, 0);
+  }
+  function drawTimeline(rows) {
+    var c = document.getElementById("timeline"), v = WA.setupCanvas(c), g = v.g, pad = { l: 34, r: 16, t: 12, b: 26 }, rule = "rgba(23,18,13,0.1)";
+    var dated = rows.filter(function (r) { return r.d; }); if (!dated.length) dated = rows;
+    var t0 = dated[0].d ? new Date(dated[0].d).getTime() : 0, t1 = dated[dated.length - 1].d ? new Date(dated[dated.length - 1].d).getTime() : 1; if (t1 <= t0) t1 = t0 + 1;
+    var xOf = function (r, i) { return pad.l + (r.d ? (new Date(r.d).getTime() - t0) / (t1 - t0) : i / Math.max(1, dated.length - 1)) * (v.w - pad.l - pad.r); };
+    var yOf = function (s) { return pad.t + (1 - (s - 80) / 16) * (v.h - pad.t - pad.b); };
+    g.clearRect(0, 0, v.w, v.h); g.strokeStyle = rule; g.font = "10.5px JetBrains Mono, monospace"; g.fillStyle = "#8b7b6a";
+    [80, 84, 88, 92, 96].forEach(function (s) { g.beginPath(); g.moveTo(pad.l, yOf(s)); g.lineTo(v.w - pad.r, yOf(s)); g.stroke(); g.fillText(s, 6, yOf(s) + 4); });
+    var years = {}; dated.forEach(function (r, i) { if (r.d) { var y = r.d.slice(0, 4); if (!years[y]) { years[y] = xOf(r, i); } } });
+    Object.keys(years).forEach(function (y) { g.fillText(y, years[y], v.h - 8); });
+    var best = -1; g.strokeStyle = "rgba(201,115,29,0.5)"; g.setLineDash([3, 4]); g.beginPath();
+    dated.forEach(function (r, i) { if (r.s > best) best = r.s; var x = xOf(r, i), y = yOf(best); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
+    dated.forEach(function (r, i) { g.beginPath(); g.arc(xOf(r, i), yOf(r.s), 5, 0, Math.PI * 2); g.fillStyle = r.s >= 92 ? "#c9731d" : "rgba(201,115,29,0.45)"; g.fill(); });
+  }
+  addEventListener("hashchange", show); addEventListener("resize", show); show();
+});
+</script>
+</body>
+</html>

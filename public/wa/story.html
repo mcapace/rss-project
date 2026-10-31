@@ -25,7 +25,7 @@
     <h1 class="d1" style="margin-top: 12px" id="title"></h1>
     <p class="lede" style="margin-top: 18px; max-width: 60ch" id="dek"></p>
     <p class="byline" style="margin-top: 22px" id="byline"></p>
-    <div class="actions" style="margin-top: 16px"><button type="button" class="pill" id="listen">Listen</button><button type="button" class="pill" id="saveStory">Save</button><button type="button" class="pill" id="share">Share</button><a class="pill" href="#askBand">Ask about this story</a></div>
+    <div class="actions" style="margin-top: 16px"><button type="button" class="pill" id="listen">Listen</button><button type="button" class="pill" id="saveStory">Save</button><button type="button" class="pill" id="share">Share</button><button type="button" class="pill" id="askJump">Ask about this story</button></div>
   </div>
   <figure class="figure story-hero" id="hero" hidden><img src="" alt=""><figcaption></figcaption></figure>
   </div>
@@ -168,8 +168,34 @@ WA.ready(function (recent) { WA.archive(function (data) {
         if (brand) data.filter(function (r) { return r.pr && r.pr.toLowerCase() === brand.toLowerCase() || r.n.toLowerCase().indexOf(brand.toLowerCase() + " ") === 0; }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 6).forEach(function (r) { add(r, "same house"); });
         picks.forEach(function (r) { if (r.pr) data.filter(function (x) { return x.pr === r.pr && x !== r; }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 2).forEach(function (x) { add(x, "same house as a bottle named"); }); });
         if (cat) { data.filter(function (r) { return r.c === cat && r.d >= "2024"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6).forEach(function (r) { add(r, "same style, top rated"); }); data.filter(function (r) { return r.c === cat && r.p > 0 && r.p <= 70 && r.s >= 88 && r.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 4).forEach(function (r) { add(r, "same style, value"); }); }
-        if (!pool.length) return;
         var rows = pool.map(function (x) { return x.r; });
+      // Ask about this story: the question goes to the assistant with the story and its bottles, not to the archive search.
+        (function () {
+          var form = document.getElementById("askForm"), input = document.getElementById("askInput"), suggest = document.getElementById("suggest"), answer = document.getElementById("answer");
+          if (!form || !input) return;
+          var jump = document.getElementById("askJump"); if (jump) jump.addEventListener("click", function () { var box = document.querySelector(".ask-inline"); if (box) { var y = box.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: "smooth" }); setTimeout(function () { input.focus(); }, 500); } });
+          var turns = [], context = "The story \"" + st.title + "\" (" + (st.by ? "by " + st.by + ", " : "") + WA.when(st.d) + "): " + ((st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ")).slice(0, 900);
+          function pickCard(r) { return '<a class="pick" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="pr">' + fmt(r.p) + " · " + r.c + "</span></span></a>"; }
+          function askStory(q) {
+            q = q.trim(); if (!q) return;
+            if (!turns.length) turns.push({ role: "user", text: "Question about a story I am reading: " + q + "\n\n" + context }); else turns.push({ role: "user", text: q });
+            answer.setAttribute("data-open", "true"); document.getElementById("answerFacets").innerHTML = '<span class="facet">about this story</span>'; document.getElementById("answerText").textContent = "Reading the story…"; document.getElementById("answerPicks").innerHTML = ""; suggest.innerHTML = "";
+            WA.withNotes(rows, function (notes) {
+              fetch("/api/wa/ask", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ turns: turns.slice(-8), bottles: rows.slice(0, 14).map(function (r) { return WA.candidate(r, "", notes[r.slug]); }), page: "story: " + st.title.slice(0, 150) }) })
+                .then(function (r) { return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (e) { j = null; } if (!r.ok || !j || !j.answer) throw new Error(j && j.error ? j.error : "Try again in a moment."); return j; }); })
+                .then(function (j) {
+                  turns.push({ role: "assistant", text: j.answer });
+                  document.getElementById("answerText").textContent = j.answer;
+                  document.getElementById("answerPicks").innerHTML = (j.picks || []).map(function (sl) { return byslug[sl]; }).filter(Boolean).map(pickCard).join("");
+                  suggest.innerHTML = (j.followups || []).map(function (f) { return '<button type="button" class="chip">' + f + "</button>"; }).join("");
+                }, function (e) { document.getElementById("answerText").textContent = "The assistant could not answer just now. " + (e && e.message ? e.message : ""); });
+            });
+          }
+          form.addEventListener("submit", function (e) { e.preventDefault(); e.stopImmediatePropagation(); askStory(input.value); }, true);
+          suggest.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; input.value = b.textContent; askStory(b.textContent); });
+          var clear = answer.querySelector(".answer-clear"); if (clear) clear.addEventListener("click", function () { turns = []; }, true);
+        })();
+      if (!pool.length) return;
         WA.withNotes(rows, function (notes) {
           var summary = (st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ").slice(0, 1800);
           WA.recommend({ kind: "story", slug: st.slug, title: st.title, summary: summary, candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {

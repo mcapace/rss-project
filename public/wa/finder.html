@@ -90,7 +90,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, charScore = WA.charScore, value = WA.value;
   var CATS = {}; data.forEach(function (r) { CATS[r.c] = (CATS[r.c] || 0) + 1; });
   var catList = Object.keys(CATS).sort(function (a, b) { return CATS[b] - CATS[a]; }).slice(0, 9);
-  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "2025", words: [], twin: null, terms: [] };
+  var Q0 = new URLSearchParams(location.search).get("q") || ""; if (Q0) { var ai = document.getElementById("askInput"); if (ai) ai.value = Q0; }
+  var state = { terms: WA.nameTerms(Q0), types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: Q0 ? "" : "2025", words: [], twin: null };
   var LENSES = { value: { sort: "value", score: 88 }, first: { price: 60, chars: ["light"], sort: "value" }, gift: { price: 100, score: 92 }, peat: { chars: ["smoky"], types: ["Single Malt Scotch"] }, winter: { chars: ["sweet", "rich"] }, cocktail: { types: ["Rye Whiskey"], price: 60 } };
   function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.words = []; state.twin = null; state.terms = []; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
   document.getElementById("lenses").addEventListener("click", function (e) { var b = e.target.closest(".lens"); if (!b) return; var id = b.getAttribute("data-lens"); setLens(state.lens === id ? "" : id); syncControls(); render(); });

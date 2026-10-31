@@ -710,6 +710,7 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 .ad-leader { min-height: 90px; margin-top: 8px; margin-bottom: 8px; }
 .ad-mrec { min-height: 250px; margin: 14px 0 0; }
 @media (max-width: 760px) { .ad-billboard, .ad-leader { min-height: 50px; } .ad-mrec { min-height: 250px; } }
+.ad:has(iframe) { border: 0; background: transparent; min-height: 0; border-radius: 0; }
 .mast nav { gap: 16px; }
 
 /* Video channel */

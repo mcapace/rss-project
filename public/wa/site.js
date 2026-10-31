@@ -363,3 +363,7 @@
 
   window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastState(); ambient(); parallax(); cb(d); }); };
 })();
+
+var waAds = document.createElement("script");
+waAds.src = "ads.js";
+document.body.appendChild(waAds);

@@ -3,69 +3,45 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The quiet return of the Kentucky rickhouse</title>
+<title>Story</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
 <div class="progress" id="progress" aria-hidden="true"></div>
 <header class="mast">
-  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="stories.html#guides">Guides</a><a href="stories.html#cocktails">Cocktails</a><a href="industry.html">Industry</a><a href="stories.html#top20">Top 20</a></nav>
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="stories.html#guides">Guides</a><a href="stories.html#cocktails">Cocktails</a><a href="industry.html">Industry</a><a href="stories.html#travel">Travel</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
   <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
 </header>
 
 <section class="band" style="padding-top: 28px; padding-bottom: 0">
-  <div class="crumbs" style="margin-bottom: 26px"><a href="stories.html">Stories</a><span>›</span><a href="stories.html">Features</a><span>›</span><span>Bourbon</span></div>
+  <div class="crumbs" style="margin-bottom: 26px" id="crumbs"></div>
   <div style="max-width: 980px">
-    <span class="tag">Feature · Bourbon</span>
-    <h1 class="d1" style="margin-top: 12px">The quiet return of the Kentucky rickhouse</h1>
-    <p class="lede" style="margin-top: 18px; max-width: 60ch">Why the best bourbon of the decade is coming out of warehouses built before the Depression, who is buying them, and what the whisky inside tastes like once it has spent twelve summers on the sixth floor.</p>
-    <p class="byline" style="margin-top: 22px"><span class="avatar sm" aria-hidden="true">SB</span><span>By <strong>Susannah Skiver Barton</strong></span><span>October 28, 2026</span><span>11 minute read</span><span id="bottleCount"></span></p>
-    <div class="actions" style="margin-top: 16px"><button type="button" class="pill" id="listen">Listen · 11 min</button><button type="button" class="pill" id="saveStory">Save</button><button type="button" class="pill" id="share">Share</button><a class="pill" href="#askBand">Ask about this story</a></div>
+    <span class="tag" id="kicker"></span>
+    <h1 class="d1" style="margin-top: 12px" id="title"></h1>
+    <p class="lede" style="margin-top: 18px; max-width: 60ch" id="dek"></p>
+    <p class="byline" style="margin-top: 22px" id="byline"></p>
+    <div class="actions" style="margin-top: 16px"><button type="button" class="pill" id="listen">Listen</button><button type="button" class="pill" id="saveStory">Save</button><button type="button" class="pill" id="share">Share</button><a class="pill" href="#askBand">Ask about this story</a></div>
   </div>
-  <figure class="figure" style="margin-top: 32px; max-width: 980px"><img src="img/rickhouse.jpg" alt="Inside a Kentucky rickhouse, barrels stacked on timber ricks with light through the walls"><figcaption>Floor six of a 1935 rickhouse outside Bardstown. The tin walls let the weather in on purpose. Photograph: concept frame generated for this prototype.</figcaption></figure>
+  <figure class="figure story-hero" id="hero" hidden><img src="" alt=""><figcaption></figcaption></figure>
 </section>
 
 <section class="band">
   <div class="article">
-    <div class="prose">
-      <p class="drop">The first thing you notice in an old rickhouse is the smell, and the second is the silence. Seven floors of oak and corn, the air thick enough to lean on, and nothing moving except the slow drip of condensation from the tin roof. The barrels here were filled in 2012. Nobody has touched them since, and that, it turns out, is the whole point.</p>
-      <p>For a decade the industry built new warehouses as fast as it could pour concrete. Climate controlled, palletized, efficient. The whisky they produce is clean and consistent and, by the tasters&rsquo; own admission, a little polite. The bottles that have been winning our panel over this year are coming from somewhere else: the ironclad, timber-framed rickhouses that the big houses kept for sentiment, and that a handful of smaller producers have been quietly buying.</p>
-      <h2 id="s1">Why the weather matters</h2>
-      <p>The reason is weather. A tin-roofed rickhouse on a Kentucky ridge swings forty degrees between a July afternoon and a January night, and the top floors swing hardest. Every cycle pushes spirit into the wood and pulls it back out, carrying the compounds that read on the palate as caramel, dried fruit and spice. Pallet warehouses are designed to flatten exactly that swing.</p>
-      <div id="embed1"></div>
-      <p>What the panel has been tasting is the difference. Three of the four bourbons in this story spent their whole lives on the fifth floor or higher. None of them is cheap, but none of them is a lottery bottle either, and the best value among them is well under a hundred dollars.</p>
-      <blockquote id="quote1"></blockquote>
-      <h2 id="s2">Who is buying</h2>
-      <p>The buyers are a mix. Two family-owned distilleries have bought back warehouses their grandparents sold. A craft producer in Bardstown leased a floor of a 1930s building from a larger neighbour and bottled its first release this spring. And at least one private equity group has put a line in its deck about &ldquo;heritage maturation assets,&rdquo; which is the kind of sentence that tends to arrive a year before prices do.</p>
-      <figure class="figure two-up"><img src="img/dusk.jpg" alt="An ironclad warehouse on a Kentucky ridge at dusk"><img src="img/rickhouse.jpg" alt="Barrels on timber ricks inside the warehouse"><figcaption>Outside and in. The black paint is not decoration: it soaks up the afternoon sun and pushes the top floors another ten degrees. Concept frames.</figcaption></figure>
-      <h2 id="s3">What the panel found</h2>
-      <p>We pulled every bourbon the panel has rated this year and plotted it by price and score. The bottles from heritage warehouses are marked. They are not the most expensive bottles on the chart, and they cluster at the top of it.</p>
-      <div class="chart-inline"><canvas id="chart" aria-label="Bourbons rated this year, price against score, with the bottles in this story marked"></canvas><p>Every bourbon rated this year. Dark dots are the four bottles in this story. Hover a dot for the bottle.</p></div>
-      <div id="embed2"></div>
-      <blockquote id="quote2"></blockquote>
-      <h2 id="s4">What to buy</h2>
-      <p>None of this means the new warehouses make bad whisky. It means they make a different whisky, and that for the first time in a generation the industry is being honest about the trade-off. For a reader with a budget, the practical advice is simple: look for the floor on the label, buy the barrel-proof version when there is one, and read the note before the score.</p>
-      <div id="embed3"></div>
-      <p>The bottles in this story are the ones the panel kept coming back to. Each score opens the full note, the taster, and where the bottle sits on the flavor compass against everything else we have rated this year.</p>
-      <div class="author" style="margin-top: 2.4em"><span class="avatar" aria-hidden="true">SB</span><div><h3>Susannah Skiver Barton</h3><p>Contributing editor. Writes about American whiskey, the business of distilling and the people who do the work. Based in Louisville.</p><div class="suggest" style="margin-top: 10px"><a href="stories.html">More by Susannah</a><a href="#">Follow</a></div></div></div>
-      <div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px"><a href="finder.html#value">Bourbon</a><a href="stories.html">Kentucky</a><a href="stories.html">Maturation</a><a href="industry.html">Business</a></div></div>
-      <div style="margin-top: 1.8em"><span class="mono">Sources and notes</span><ol class="sources" style="margin: 8px 0 0; padding-left: 18px"><li>Temperature readings from a warehouse owner&rsquo;s logs, July 2025 to January 2026, shared on background.</li><li>Scores and notes are the panel&rsquo;s own, from the issues named on each bottle page.</li><li>&ldquo;Heritage maturation assets&rdquo; appears in an investor presentation reviewed by Whisky Advocate.</li></ol></div>
-      <div class="signup" style="margin-top: 2em"><div><h3>The Saturday bottle</h3><p>One bottle, one note, one reason to buy it. Every Saturday.</p></div><form onsubmit="event.preventDefault(); this.querySelector('button').textContent = 'You are in';"><input type="email" placeholder="you@example.com" aria-label="Email"><button type="button" class="pill amber">Sign up</button></form></div>
-    </div>
+    <div class="prose" id="prose"></div>
     <aside class="margin" aria-label="In this story">
-      <span class="mono">In this story</span>
-      <nav class="toc" id="toc"><a href="#top">The rickhouse</a><a href="#s1">Why the weather matters</a><a href="#s2">Who is buying</a><a href="#s3">What the panel found</a><a href="#s4">What to buy</a></nav>
-      <span class="mono" style="margin-top: 10px">Bottles in this story</span>
+      <span class="mono" id="tocLabel">In this story</span>
+      <nav class="toc" id="toc"></nav>
+      <span class="mono" style="margin-top: 10px" id="marginLabel">Bottles in this story</span>
       <div id="marginBottles" style="display: grid; gap: 10px"></div>
-      <a class="pill" href="finder.html#value" style="justify-self: start">Open all in the Finder</a>
+      <a class="pill" href="finder.html" style="justify-self: start">Open the Finder</a>
     </aside>
   </div>
 </section>
 
-<section class="band">
-  <div class="band-head"><div><span class="mono">The bottles in this story</span><h2 class="d2" style="margin-top:10px">Your shopping list, with the notes.</h2></div><p>Every bottle a story mentions becomes a card here, so the reading and the buying never lose each other.</p></div>
+<section class="band" id="railBand">
+  <div class="band-head"><div><span class="mono" id="railKicker">The bottles in this story</span><h2 class="d2" style="margin-top:10px">Your shopping list, with the notes.</h2></div><p>Every bottle a story mentions becomes a card here, so the reading and the buying never lose each other.</p></div>
   <div class="rail" id="rail"></div>
 </section>
 
@@ -78,63 +54,78 @@
         <input id="askInput" type="text" placeholder="Which of these is the best value?" aria-label="Ask about this story">
         <button type="submit" class="go">Ask</button>
       </form>
-      <div class="suggest" id="suggest"><button type="button">Best bourbon under $60 rated 90 or higher</button><button type="button">Rich bourbon for a winter night</button><button type="button">What is a rickhouse?</button></div>
+      <div class="suggest" id="suggest"></div>
       <div class="answer" id="answer" aria-live="polite"><div class="answer-head" id="answerFacets"></div><div class="answer-body"><div class="answer-text" id="answerText"></div><div class="answer-picks" id="answerPicks"></div></div></div>
     </div>
   </div>
 </section>
 
 <section class="band">
-  <div class="band-head"><div><span class="mono">Read next</span><h2 class="d2" style="margin-top:10px">More from Features.</h2></div></div>
-  <div class="dense">
-    <a href="stories.html"><span class="tag">Feature</span><span><span class="nm">MGP Chapter One: out of the shadows</span><span class="sub">The distillery that made everyone else&rsquo;s whiskey steps forward.</span></span><span class="when">Oct 17</span></a>
-    <a href="stories.html#guides"><span class="tag">Guide</span><span><span class="nm">Twenty whiskies rated 90 or higher for $75 or less</span><span class="sub">Our tasters&rsquo; shortlist, refreshed every quarter.</span></span><span class="when">Oct 20</span></a>
-    <a href="stories.html#cocktails"><span class="tag">Cocktails</span><span><span class="nm">A Manhattan that respects the rye</span><span class="sub">Three ratios, one rule.</span></span><span class="when">Oct 27</span></a>
-  </div>
+  <div class="band-head"><div><span class="mono">Read next</span><h2 class="d2" style="margin-top:10px" id="nextTitle">More from this section.</h2></div></div>
+  <div class="dense" id="next"></div>
 </section>
 
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
-  <div><h4>About this page</h4><p>The story is prototype copy. The bottles, their scores, notes and tasters are real.</p></div>
+  <div><h4>About this page</h4><p>The story, its pictures and the bottles are real, from the Whisky Advocate archive. The layout is a concept.</p></div>
 </footer>
 
 <script src="site.js"></script>
 <script>
 WA.ready(function (data) {
-  var fmt = WA.fmt;
-  var bourbons = data.filter(function (r) { return r.c === "Bourbon/Tennessee Whiskey"; });
-  var picks = bourbons.filter(function (r) { return r.s >= 92; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4);
-  document.getElementById("bottleCount").textContent = picks.length + " bottles mentioned";
+  var fmt = WA.fmt, bySlug = {}; data.forEach(function (r, i) { if (r.slug) bySlug[r.slug.toLowerCase()] = i; });
   function embed(r) { return '<a class="embed" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="nt">' + r.t + "…</span></span><span class=\"pr\">" + fmt(r.p) + (r.by ? "<br><span style=\"font-family:var(--font); font-size:12px; color:var(--ink-3)\">" + r.by + "</span>" : "") + "</span></a>"; }
-  ["embed1", "embed2", "embed3"].forEach(function (id, k) { if (picks[k]) document.getElementById(id).innerHTML = embed(picks[k]); });
-  function quote(r) { var s = (r.f || r.t).match(/[^.!?]+[.!?]+/g) || [r.t]; return "&ldquo;" + s.slice(0, 2).join(" ").trim() + "&rdquo;<footer>" + (r.by || "The panel") + " on " + r.n.replace(/,\s*$/, "") + ", " + r.s + " points</footer>"; }
-  if (picks[0]) document.getElementById("quote1").innerHTML = quote(picks[0]);
-  if (picks[3]) document.getElementById("quote2").innerHTML = quote(picks[3]); else if (picks[1]) document.getElementById("quote2").innerHTML = quote(picks[1]);
-  document.getElementById("marginBottles").innerHTML = picks.map(function (r) { return '<a class="mini" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><br><span class="pr">' + fmt(r.p) + "</span></span></a>"; }).join("");
-  document.getElementById("rail").innerHTML = picks.map(function (r) { return WA.bottleCard(r); }).join("");
-  // Inline chart: every bourbon, the story's bottles marked.
-  var pts = [];
-  function chart() {
-    var c = document.getElementById("chart"), v = WA.setupCanvas(c), g = v.g, pad = { l: 34, r: 12, t: 10, b: 24 };
-    var xOf = function (p) { return pad.l + (Math.log(p) - Math.log(17)) / (Math.log(400) - Math.log(17)) * (v.w - pad.l - pad.r); }, yOf = function (s) { return pad.t + (1 - (s - 80) / 16) * (v.h - pad.t - pad.b); };
-    g.clearRect(0, 0, v.w, v.h); g.strokeStyle = "rgba(23,18,13,0.1)"; g.font = "10.5px JetBrains Mono, monospace"; g.fillStyle = "#8b7b6a";
-    [80, 84, 88, 92, 96].forEach(function (s) { g.beginPath(); g.moveTo(pad.l, yOf(s)); g.lineTo(v.w - pad.r, yOf(s)); g.stroke(); g.fillText(s, 6, yOf(s) + 4); });
-    [25, 50, 100, 200, 400].forEach(function (p) { g.beginPath(); g.moveTo(xOf(p), pad.t); g.lineTo(xOf(p), v.h - pad.b); g.stroke(); g.fillText("$" + p, xOf(p) - 10, v.h - 8); });
-    pts = bourbons.map(function (r) { var mine = picks.indexOf(r) >= 0, x = xOf(r.p), y = yOf(r.s) + Math.sin(r.n.length) * 3; g.beginPath(); g.arc(x, y, mine ? 6 : 3, 0, Math.PI * 2); g.fillStyle = mine ? "#17120d" : "rgba(201,115,29,0.4)"; g.fill(); if (mine) { g.beginPath(); g.arc(x, y, 10, 0, Math.PI * 2); g.strokeStyle = "#c9731d"; g.lineWidth = 1.5; g.stroke(); } return { x: x, y: y, r: r }; });
-  }
-  var c = document.getElementById("chart");
-  c.addEventListener("click", function (e) { var b = c.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, best = null, bd = 12; pts.forEach(function (p) { var d = Math.hypot(p.x - mx, p.y - my); if (d < bd) { bd = d; best = p; } }); if (best) location.href = WA.bottleHref(data.indexOf(best.r)); });
-  c.addEventListener("mousemove", function (e) { var b = c.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, best = null, bd = 12; pts.forEach(function (p) { var d = Math.hypot(p.x - mx, p.y - my); if (d < bd) { bd = d; best = p; } }); c.title = best ? best.r.n + " · " + best.r.s + " · " + fmt(best.r.p) : ""; c.style.cursor = best ? "pointer" : "default"; });
-  chart(); addEventListener("resize", chart);
-  // Reading progress and the live table of contents.
-  var heads = ["s1", "s2", "s3", "s4"].map(function (id) { return document.getElementById(id); }), links = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
-  function onScroll() {
-    var doc = document.documentElement, p = (scrollY) / (doc.scrollHeight - innerHeight); document.getElementById("progress").style.width = Math.min(100, Math.max(0, p * 100)) + "%";
-    var current = 0; heads.forEach(function (h, k) { if (h.getBoundingClientRect().top < 120) current = k + 1; });
-    links.forEach(function (a, k) { a.setAttribute("aria-current", String(k === current)); });
-  }
-  addEventListener("scroll", onScroll, { passive: true }); onScroll();
-  document.getElementById("listen").addEventListener("click", function () { this.textContent = this.textContent.indexOf("Pause") === 0 ? "Listen · 11 min" : "Pause · 10:48"; });
+  function catOf(st) { var t = (st.tags.join(" ") + " " + st.title).toLowerCase(); if (/bourbon|kentucky/.test(t)) return "Bourbon/Tennessee Whiskey"; if (/\brye\b/.test(t)) return "Rye Whiskey"; if (/japan/.test(t)) return "Japanese Whisky"; if (/irish/.test(t)) return "Irish Single Malt"; if (/scotch|single malt|islay|speyside|macallan|bowmore|laphroaig/.test(t)) return "Single Malt Scotch"; return null; }
+  WA.stories(function (all) {
+    var storyBySlug = {}; all.forEach(function (st) { storyBySlug[st.slug.toLowerCase()] = st; });
+    var slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
+    WA.articles(function (bodies) {
+      var st = storyBySlug[slug]; if (!st || !bodies[st.slug]) { st = all.filter(function (x) { return bodies[x.slug]; })[0]; history.replaceState(null, "", "#" + st.slug); }
+      document.title = st.title + " · Whisky Advocate";
+      var sec = WA.SECTION[st.sec];
+      document.getElementById("crumbs").innerHTML = '<a href="stories.html">Stories</a><span>›</span><a href="stories.html#' + st.sec + '">' + sec + "</a>" + (st.tags[0] ? "<span>›</span><span>" + st.tags[0] + "</span>" : "");
+      document.getElementById("kicker").textContent = sec + (st.tags[0] ? " · " + st.tags[0] : "");
+      document.getElementById("title").textContent = st.title;
+      var dek = document.getElementById("dek"); if (st.dek) dek.textContent = st.dek; else dek.remove();
+      if (st.hero) { var h = document.getElementById("hero"); h.hidden = false; h.querySelector("img").src = st.hero; h.querySelector("img").alt = st.title; h.querySelector("figcaption").textContent = "Photograph: Whisky Advocate"; }
+      // The body: links to other stories and to rated bottles stay inside the site.
+      var holder = document.createElement("div"); holder.innerHTML = bodies[st.slug];
+      holder.querySelectorAll("a[href]").forEach(function (a) { var m = a.getAttribute("href").match(/^https?:\/\/(?:www\.)?whiskyadvocate\.com\/([^?#]+)/); if (!m) return; var k = m[1].replace(/\/$/, "").toLowerCase(); if (storyBySlug[k]) a.setAttribute("href", "story.html#" + storyBySlug[k].slug); else if (bySlug[k] != null) a.setAttribute("href", WA.bottleHref(bySlug[k])); });
+      holder.querySelectorAll("img").forEach(function (im) { im.setAttribute("loading", "lazy"); });
+      var paras = holder.querySelectorAll("p"); if (paras[0] && paras[0].textContent.length > 120 && !paras[0].querySelector("img")) paras[0].classList.add("drop");
+      // Bottles the story mentions: linked by slug, or named in the text.
+      var text = holder.textContent.toLowerCase(), picks = st.refs.map(function (i) { return data[i]; });
+      data.forEach(function (r) { if (picks.length >= 6 || picks.indexOf(r) >= 0) return; var key = r.n.split(",")[0].replace(/\s*\(.*$/, "").trim().toLowerCase(); if (key.length >= 10 && text.indexOf(key) >= 0) picks.push(r); });
+      var mentioned = picks.length > 0, cat = catOf(st);
+      if (!mentioned && cat) picks = data.filter(function (r) { return r.c === cat; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
+      var ps = Array.prototype.filter.call(holder.querySelectorAll("p"), function (p) { return p.textContent.length > 200; });
+      if (mentioned) { [2, 6].forEach(function (at, k) { if (picks[k] && ps[at]) ps[at].insertAdjacentHTML("afterend", embed(picks[k])); }); }
+      var heads = holder.querySelectorAll("h2, h3"); heads.forEach(function (h, k) { h.id = "s" + (k + 1); });
+      var prose = document.getElementById("prose"); prose.innerHTML = holder.innerHTML;
+      // Author, tags, sign-up.
+      var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;
+      prose.insertAdjacentHTML("beforeend", '<div class="author" style="margin-top: 2.4em"><span class="avatar" aria-hidden="true">' + WA.initials(st.by) + '</span><div><h3>' + st.by + '</h3><p>' + (more ? more + " more stories in the archive." : "Whisky Advocate contributor.") + '</p></div></div>' + (st.tags.length ? '<div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px">' + st.tags.map(function (t) { return '<a href="stories.html#' + st.sec + '">' + t + "</a>"; }).join("") + "</div></div>" : "") + '<div class="signup" style="margin-top: 2em"><div><h3>The Saturday bottle</h3><p>One bottle, one note, one reason to buy it. Every Saturday.</p></div><form onsubmit="event.preventDefault(); this.querySelector(\'button\').textContent = \'You are in\';"><input type="email" placeholder="you@example.com" aria-label="Email"><button type="button" class="pill amber">Sign up</button></form></div>');
+      document.getElementById("byline").innerHTML = '<span class="avatar sm" aria-hidden="true">' + WA.initials(st.by) + '</span><span>By <strong>' + st.by + '</strong></span><span>' + new Date(st.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + "</span>" + (st.min ? "<span>" + st.min + " minute read</span>" : "") + (mentioned ? "<span>" + picks.length + " bottle" + (picks.length > 1 ? "s" : "") + " mentioned</span>" : "");
+      document.getElementById("listen").textContent = "Listen" + (st.min ? " · " + st.min + " min" : "");
+      // Table of contents from the story's own headings.
+      var toc = document.getElementById("toc"), hs = prose.querySelectorAll("h2[id], h3[id]");
+      if (hs.length >= 2) toc.innerHTML = '<a href="#top">' + sec + "</a>" + Array.prototype.map.call(hs, function (h) { return '<a href="#' + h.id + '">' + h.textContent + "</a>"; }).join(""); else { toc.remove(); document.getElementById("tocLabel").remove(); }
+      document.getElementById("marginLabel").textContent = mentioned ? "Bottles in this story" : "Related bottles";
+      document.getElementById("railKicker").textContent = mentioned ? "The bottles in this story" : "Related bottles, rated";
+      document.getElementById("marginBottles").innerHTML = picks.slice(0, 4).map(function (r) { return '<a class="mini" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><br><span class="pr">' + fmt(r.p) + "</span></span></a>"; }).join("");
+      if (picks.length) document.getElementById("rail").innerHTML = picks.map(function (r) { return WA.bottleCard(r); }).join(""); else document.getElementById("railBand").remove();
+      document.getElementById("suggest").innerHTML = [cat ? "Best " + cat.split("/")[0].toLowerCase() + " under $80" : "Best whisky under $80 rated 90 or higher", "Something like the bottles in this story", "What should I drink tonight?"].map(function (q) { return '<button type="button">' + q + "</button>"; }).join("");
+      var next = all.filter(function (x) { return x.sec === st.sec && x !== st; }).slice(0, 4);
+      document.getElementById("nextTitle").textContent = "More from " + (st.sec === "life" ? "Whisky Life" : sec + (sec.slice(-1) === "s" ? "" : "s")) + ".";
+      document.getElementById("next").innerHTML = next.map(WA.storyRow).join("");
+      // Reading progress and the live table of contents.
+      var links = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
+      function onScroll() { var doc = document.documentElement, p = scrollY / (doc.scrollHeight - innerHeight); document.getElementById("progress").style.width = Math.min(100, Math.max(0, p * 100)) + "%"; var current = 0; hs.forEach(function (h, k) { if (h.getBoundingClientRect().top < 120) current = k + 1; }); links.forEach(function (a, k) { a.setAttribute("aria-current", String(k === current)); }); }
+      addEventListener("scroll", onScroll, { passive: true }); onScroll(); scrollTo(0, 0);
+    });
+  });
+  addEventListener("hashchange", function () { location.reload(); });
+  document.getElementById("listen").addEventListener("click", function () { this.textContent = this.textContent.indexOf("Pause") === 0 ? "Listen" : "Pause"; });
   document.getElementById("saveStory").addEventListener("click", function () { this.textContent = "Saved"; });
   document.getElementById("share").addEventListener("click", function () { var b = this; try { navigator.clipboard.writeText(location.href).then(function () { b.textContent = "Link copied"; }, function () { b.textContent = "Copy the address bar"; }); } catch (e) { b.textContent = "Copy the address bar"; } });
 });

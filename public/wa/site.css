@@ -737,3 +737,34 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 .bottle.has-img > .top { grid-column: 1; grid-row: 1; padding-right: 0; }
 .bottle.has-img > .top + div { grid-column: 1; grid-row: 2; min-width: 0; }
 .bottle.has-img > .foot { grid-column: 1 / -1; grid-row: 3; margin-right: 0; }
+
+/* The card standard. Every card in a row reserves the same text block, whatever the copy:
+   tag 1 line, title 2 lines, dek 3 lines (2 on recipe cards), byline 1 line. Longer copy is clipped
+   at the reserved lines; shorter copy keeps the space. The photograph takes whatever height is left,
+   so in any row every picture starts and ends on the same lines. */
+.story.has-img .tag, .pick-card .tag, .recipe-card .tag, .video-card .tag { display: block; height: 16px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.story h3, .pick-card h3, .recipe-card h3, .video-card h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.story h3 { line-height: 1.12; min-height: 2.24em; }
+.story.lead h3 { min-height: 2.24em; }
+.story p, .pick-card .why { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 1.5; min-height: 4.5em; }
+.pick-card h3 { line-height: 1.12; min-height: 2.24em; }
+.pick-card .by, .recipe-card .who, .video-card .who { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recipe-card h3 { line-height: 1.15; min-height: 2.3em; }
+.recipe-card .ing { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.45; min-height: 2.9em; }
+.video-card h3 { line-height: 1.15; min-height: 2.3em; }
+.story.has-img, .pick-card { height: 100%; }
+.picks3, .stories, .front, .videos, .recipes { align-items: stretch; }
+.pick-card { display: grid; grid-template-rows: auto auto auto auto auto; }
+.pick-card img { aspect-ratio: 16 / 10; }
+.story.third.has-img img { min-height: 180px; }
+
+/* Bottle shots sit on the glass: no white box around a transparent photograph. */
+.bottle .thumb { background: transparent; border: 0; }
+.hero-art.photo { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; }
+.hero-art.photo img { padding: 0; filter: drop-shadow(0 24px 30px rgba(79,42,16,0.28)); }
+.top20-card img, #scanList img { background: transparent; }
+
+/* Lead and side cards in one row share one text budget, so their pictures end on the same line. */
+.story h3 { font-size: 24px; line-height: 1.12; min-height: 54px; }
+.story.lead h3 { font-size: 30px; line-height: 0.9; min-height: 54px; }
+.story p { font-size: 14px; line-height: 1.5; min-height: 63px; -webkit-line-clamp: 3; }

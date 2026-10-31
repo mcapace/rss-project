@@ -100,7 +100,7 @@ WA.ready(function (data) {
       if (!mentioned && cat) picks = data.filter(function (r) { return r.c === cat; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
       var ps = Array.prototype.filter.call(holder.querySelectorAll("p"), function (p) { return p.textContent.length > 200; });
       if (mentioned) { [2, 6].forEach(function (at, k) { if (picks[k] && ps[at]) ps[at].insertAdjacentHTML("afterend", embed(picks[k])); }); }
-      var heads = holder.querySelectorAll("h2, h3"); heads.forEach(function (h, k) { h.id = "s" + (k + 1); });
+      var heads = Array.prototype.filter.call(holder.querySelectorAll("h2, h3"), function (h) { if (h.textContent.trim()) return true; h.remove(); return false; }); heads.forEach(function (h, k) { h.id = "s" + (k + 1); });
       var prose = document.getElementById("prose"); prose.innerHTML = holder.innerHTML;
       // Author, tags, sign-up.
       var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;

@@ -730,3 +730,10 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 @media (max-width: 600px) { .videos { grid-template-columns: 1fr; } }
 .bottle.has-img { min-height: 250px; padding-right: 116px; }
 .bottle.has-img > .top { padding-right: 0; }
+
+/* Rating cards with a photograph: an explicit two-column grid, so nothing ever sits under the thumbnail. */
+.bottle.has-img { display: grid; grid-template-columns: minmax(0, 1fr) 84px; grid-template-rows: auto 1fr auto; column-gap: 12px; padding-right: 16px; min-height: 236px; }
+.bottle.has-img > .thumb { position: static; grid-column: 2; grid-row: 1 / span 2; align-self: start; }
+.bottle.has-img > .top { grid-column: 1; grid-row: 1; padding-right: 0; }
+.bottle.has-img > .top + div { grid-column: 1; grid-row: 2; min-width: 0; }
+.bottle.has-img > .foot { grid-column: 1 / -1; grid-row: 3; margin-right: 0; }

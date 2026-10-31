@@ -63,7 +63,7 @@
     document.body.classList.add("has-stage");
     var holder = document.getElementById("storyStage"), loader = document.getElementById("loader"), root = document.documentElement;
     var q = function (sel) { return stage.querySelector(sel); };
-    var L = { sheet: q(".layer.sheet"), mist: q(".layer.mist") };
+    var L = { sheet: q(".layer.sheet") };
     var video = q("video"), copies = [].slice.call(stage.querySelectorAll(".scene-copy")), compassScene = document.getElementById("compassScene"), compass = document.getElementById("stageCompass");
     var gl = MOTION ? initGL(document.getElementById("gl")) : null;
     var pointer = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 };
@@ -93,8 +93,6 @@
       var pourIn = easeOut(seg(P, 0, 0.2)), pourOut = easeOut(seg(P, 0.3, 0.55));
       L.sheet.style.transform = "translate3d(" + (px * -6) + "px," + (-100 * (1 - pourIn) + 110 * pourOut) + "%,0)";
       L.sheet.style.opacity = 1 - seg(P, 0.36, 0.55);
-      L.mist.style.opacity = 0.22 * seg(P, 0.08, 0.26) * (1 - seg(P, 0.4, 0.58));
-      L.mist.style.transform = "translate3d(" + (px * -16 + Math.sin(now / 6000) * 20) + "px," + (py * -8) + "px,0) scale(1.08)";
       var scene = P < 0.36 ? 0 : P < 0.76 ? 1 : 2;
       if (scene !== lastScene) { lastScene = scene; copies.forEach(function (c, i) { c.setAttribute("data-on", String(i === scene && intro > 0.15)); }); }
       else if (intro > 0.15 && copies[scene].getAttribute("data-on") !== "true") copies[scene].setAttribute("data-on", "true");
@@ -131,6 +129,27 @@
       e.preventDefault(); document.body.classList.add("leaving"); setTimeout(function () { location.href = href; }, 170);
     });
     addEventListener("pageshow", function () { document.body.classList.remove("leaving"); });
+  }
+
+  /* The ambient field: the same whisky shader, faint and slow, under every page, so the glass surfaces have something to blur. */
+  function ambient() {
+    var c = document.getElementById("field"); if (!c || !MOTION) return;
+    var gl = initGL(c); if (!gl) return;
+    var pointer = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 }, running = true;
+    addEventListener("pointermove", function (e) { target.x = e.clientX / innerWidth; target.y = e.clientY / innerHeight; }, { passive: true });
+    document.addEventListener("visibilitychange", function () { running = !document.hidden; if (running) requestAnimationFrame(frame); });
+    function frame(now) { if (!running) return; pointer.x += (target.x - pointer.x) * 0.04; pointer.y += (target.y - pointer.y) * 0.04; gl.render(now * 0.6, 1, pointer, 0.55); requestAnimationFrame(frame); }
+    requestAnimationFrame(frame);
+  }
+  /* Pictures drift a little against the scroll, so the page reads in layers. */
+  function parallax() {
+    if (!MOTION) return;
+    var items = [].slice.call(document.querySelectorAll(".story.has-img img, .pick-card img, .place img, .story-hero img, .recipe-card img, .recipe .art img"));
+    if (!items.length) return;
+    var ticking = false;
+    function run() { ticking = false; var h = innerHeight; items.forEach(function (im) { var r = im.getBoundingClientRect(); if (r.bottom < 0 || r.top > h) return; var t = (r.top + r.height / 2 - h / 2) / h; im.style.transform = "translate3d(0," + (t * -14).toFixed(1) + "px,0) scale(1.06)"; }); }
+    addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(run); } }, { passive: true }); run();
+    new MutationObserver(function () { items = [].slice.call(document.querySelectorAll(".story.has-img img, .pick-card img, .place img, .story-hero img, .recipe-card img, .recipe .art img")); run(); }).observe(document.body, { childList: true, subtree: true });
   }
 
   function mastState() {
@@ -304,5 +323,5 @@
   window.WA.hashIndex = function () { var h = (location.hash || "").replace("#", ""); var i = parseInt(h, 10); return isNaN(i) ? null : i; };
   window.WA.hashName = function () { var h = (location.hash || "").replace("#", ""); return h ? decodeURIComponent(h) : null; };
 
-  window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastState(); cb(d); }); };
+  window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastState(); ambient(); parallax(); cb(d); }); };
 })();

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
+<canvas class="field" id="field" aria-hidden="true"></canvas>
 <header class="mast">
   <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="guides.html" aria-current="page">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
@@ -15,7 +16,7 @@
 </header>
 
 <section class="band" style="padding-top: 28px">
-  <div class="band-head"><div><h1 class="d1">Guides</h1></div><p id="lede"></p></div>
+  <div class="chan-head"><h1 class="d1">Guides</h1><p class="lede" id="lede"></p></div>
   <div class="search-line" style="margin-bottom: 26px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg><input id="q" type="text" placeholder="What do you want to know? Proof, sherry casks, how to store a bottle" aria-label="Search the guides"></div>
   <div id="searchOut" class="dense" style="display: none; margin-bottom: 26px"></div>
   <div class="start" id="start"></div>
@@ -29,7 +30,7 @@
 </section>
 
 <section class="band" id="glossaryBand">
-  <div class="band-head"><div><span class="mono">Glossary</span><h2 class="d2" style="margin-top:10px">The words, <em class="hi">defined by the people who use them.</em></h2></div><p>One hundred and fifty-seven terms from the archive. Tap a term to open it; the links inside jump to other terms.</p></div>
+  <div class="band-head"><div><span class="mono">Glossary</span><h2 class="d2" style="margin-top:10px">The words, <em class="hi">defined by the people who use them.</em></h2></div><p>157 terms. Tap one to open it.</p></div>
   <div class="glossary">
     <div class="letters" id="letters"></div>
     <div>
@@ -41,7 +42,9 @@
 
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
-  <div><h4>About this page</h4><p>Every guide and every glossary term is real, from the Whisky Advocate archive since 2013. The shelves are sorted from the tags the editors gave each story.</p></div>
+  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a></div>
+  <div><h4>Ratings</h4><a href="finder.html">Whisky Finder</a><a href="producers.html">Producers</a><a href="finder.html#value">Best value</a><a href="guides.html#glossaryBand">Glossary</a></div>
+  <div><h4>Whisky Advocate</h4><a href="#">Subscribe</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a><a href="#">Magazine</a></div>
 </footer>
 
 <script src="site.js"></script>
@@ -51,7 +54,7 @@ WA.ready(function () {
     var G = all.filter(function (s) { return s.sec === "guides"; });
     var KINDS = [["101", "Whisky 101", "How it is made, what the words mean, how to taste it."], ["howto", "How to", "Serve it, store it, pair it, pour it."], ["buying", "Buying guides", "What to buy for the occasion and the budget."], ["list", "The lists", "The panel's picks, by category, price and mood."], ["collecting", "Collecting", "Auctions, allocations, what holds its value."], ["gear", "Gear", "Glasses, decanters, tools, and what to skip."]];
     var state = { kind: "101", limit: 20 };
-    document.getElementById("lede").textContent = G.length + " guides from the archive, from the first dram to the auction room, plus the glossary. Start with Whisky 101, or search for the thing you want to know.";
+    document.getElementById("lede").textContent = G.length + " guides and a " + 157 + "-term glossary.";
     document.getElementById("start").innerHTML = KINDS.map(function (k) { var n = G.filter(function (s) { return s.kind === k[0]; }).length; return '<a href="#shelf" data-kind="' + k[0] + '"><span class="n">' + n + " guides</span><strong>" + k[1] + "</strong><span>" + k[2] + "</span></a>"; }).join("");
     document.getElementById("kinds").innerHTML = KINDS.map(function (k) { return '<button type="button" data-kind="' + k[0] + '" aria-pressed="' + (k[0] === state.kind) + '">' + k[1] + "</button>"; }).join("");
     function shelf() {

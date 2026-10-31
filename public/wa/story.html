@@ -144,7 +144,14 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (window.__storyListenLabel) window.__storyListenLabel("Listen" + (st.min ? " · " + st.min + " min" : "")); else document.getElementById("listen").textContent = "Listen" + (st.min ? " · " + st.min + " min" : "");
       // Table of contents from the story's own headings.
       var toc = document.getElementById("toc"), hs = prose.querySelectorAll("h2[id], h3[id]");
-      if (hs.length >= 2) toc.innerHTML = '<a href="#top">' + sec + "</a>" + Array.prototype.map.call(hs, function (h) { return '<a href="#' + h.id + '">' + h.textContent + "</a>"; }).join(""); else { toc.remove(); document.getElementById("tocLabel").remove(); }
+      if (hs.length >= 2) {
+        toc.innerHTML = '<a href="#top" data-top>' + sec + "</a>" + Array.prototype.map.call(hs, function (h) { return '<a href="#' + h.id + '" data-to="' + h.id + '">' + h.textContent + "</a>"; }).join("");
+        // The hash carries the story, so a section link scrolls in place instead of changing it.
+        toc.addEventListener("click", function (e) { var a = e.target.closest("a"); if (!a) return; e.preventDefault(); var target = a.hasAttribute("data-top") ? document.querySelector(".article") : document.getElementById(a.getAttribute("data-to")); if (target) { var y = target.getBoundingClientRect().top + window.scrollY - 84; window.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); } });
+        var tocLinks = toc.querySelectorAll("a[data-to]");
+        function markToc() { var at = null; hs.forEach(function (h) { if (h.getBoundingClientRect().top <= 120) at = h.id; }); tocLinks.forEach(function (a) { a.setAttribute("aria-current", String(a.getAttribute("data-to") === at)); }); toc.querySelector("a[data-top]").setAttribute("aria-current", String(at === null)); }
+        addEventListener("scroll", markToc, { passive: true }); markToc();
+      } else { toc.remove(); document.getElementById("tocLabel").remove(); }
       document.getElementById("marginLabel").textContent = mentioned ? "Bottles in this story" : brand ? "From " + brand : "Top-rated " + (cat ? cat.replace("Bourbon/Tennessee Whiskey", "bourbon").replace(" Whiskey", "").replace(" Whisky", "").toLowerCase() : "bottles");
       document.getElementById("railKicker").textContent = mentioned ? "The bottles in this story" : brand ? "From " + brand + ", rated" : "Top-rated " + (cat ? cat.replace("Bourbon/Tennessee Whiskey", "bourbon").replace(" Whiskey", "").replace(" Whisky", "").toLowerCase() : "bottles") + " right now";
       var railTitle = document.querySelector("#railKicker + h2"); if (railTitle && !mentioned) railTitle.textContent = brand ? "The panel's notes on the house." : "The panel's current favorites, with the notes.";

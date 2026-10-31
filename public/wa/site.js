@@ -60,6 +60,16 @@
 
   function entrance() {
     var stage = document.getElementById("stage"); if (!stage) return;
+    // The opener plays once per device. After that the home opens on the news, with the ask bar at the top and a way to replay it.
+    var seen = false; try { seen = localStorage.getItem("wa-entered") === "1"; } catch (e) {}
+    if (seen && !/replay/.test(location.search)) {
+      document.body.classList.add("returning"); document.documentElement.setAttribute("data-boot", "ready");
+      var landing = stage.querySelector(".ask-landing"), home = document.getElementById("askHome");
+      if (landing && home) { home.appendChild(landing); home.insertAdjacentHTML("beforeend", '<p class="replay"><button type="button" id="replayOpener">Replay the opener</button></p>'); document.getElementById("replayOpener").addEventListener("click", function () { try { localStorage.removeItem("wa-entered"); } catch (e) {} location.href = "index.html?replay=1"; }); }
+      var holder0 = document.getElementById("storyStage"); if (holder0) holder0.remove();
+      return;
+    }
+    try { localStorage.setItem("wa-entered", "1"); } catch (e) {}
     document.body.classList.add("has-stage");
     var holder = document.getElementById("storyStage"), loader = document.getElementById("loader"), root = document.documentElement;
     var q = function (sel) { return stage.querySelector(sel); };

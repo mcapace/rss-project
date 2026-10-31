@@ -598,3 +598,31 @@ body { background: var(--paper); }
 .story.has-img img, .pick-card img, .place img, .story-hero img, .recipe-card img, .recipe .art img { will-change: transform; transform: scale(1.06); }
 .story.has-img, .pick-card, .place, .story-hero, .recipe-card, .recipe .art { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .field { display: none; } .reveal { filter: none; transform: none; } .story.has-img img, .pick-card img, .place img, .story-hero img, .recipe-card img, .recipe .art img { transform: none; } }
+
+/* Shelf scan: scores land over the bottles in the photo. */
+.phone .shelf img { width: 100%; height: auto; }
+.scan-tag { position: absolute; transform: translate(-50%, -50%); padding: 3px 9px; border-radius: 999px; background: var(--gold); color: var(--ink); font-family: var(--mono); font-size: 12px; font-weight: 500; box-shadow: 0 6px 18px -8px rgba(23,18,13,0.6); white-space: nowrap; }
+.scan-tag.none { background: var(--paper-3); color: var(--ink-3); }
+.scan-tag.best { background: var(--amber); color: #fff; outline: 2px solid #fff; }
+#scanList a { grid-template-columns: 48px minmax(0, 1fr) auto; }
+#scanList .sc { font-size: 22px; }
+
+/* Home: a news front and a tools row; the opener plays once. */
+.front { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 14px; align-items: start; }
+.front .story.lead { grid-column: auto; min-height: 0; }
+.front .front-list { align-self: stretch; }
+@media (max-width: 900px) { .front { grid-template-columns: 1fr; } }
+.tools-row { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .tools-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .tools-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+body.returning .loader, body.returning .story-stage { display: none; }
+body.returning .hero.after-stage { padding: clamp(28px, 5vh, 56px) var(--gutter) 8px; }
+body.returning .hero.after-stage .ask { width: min(100%, 880px); }
+#askHome .ask-landing { position: static; opacity: 1; transform: none; pointer-events: auto; padding: 0; display: block; }
+#askHome .ask { width: min(100%, 880px); max-width: 880px; }
+#askHome .suggest { justify-content: flex-start; }
+.replay { font-size: 12.5px; color: var(--ink-3); margin-top: 10px; }
+.replay button { background: none; border: 0; color: var(--amber); padding: 0; font-size: inherit; }
+.front { align-items: stretch; }
+.front .story.lead.has-img { grid-template-rows: minmax(0, 1fr) auto auto auto; height: 100%; }
+.front .story.lead.has-img img { height: 100%; aspect-ratio: auto; min-height: 320px; }

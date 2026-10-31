@@ -1,7 +1,7 @@
 name: CMS maintenance
 
-# Runs the platform scripts (legacy image rehost, body normalization, redirect
-# build, embeddings backfill) against the content database with the same
+# Runs the platform scripts (legacy image rehost, lead photographs, image
+# descriptions, body normalization, redirect build, embeddings backfill) against the content database with the same
 # secrets the print worker uses, so credentials never leave GitHub. Every
 # script is dry-run unless "apply" is ticked.
 on:
@@ -11,7 +11,7 @@ on:
         description: Which script to run
         required: true
         type: choice
-        options: [rehost, normalize, redirects, embed]
+        options: [rehost, heroes, describe, normalize, redirects, embed]
       brand:
         description: Publication (wa, ws, ca, mw)
         required: true
@@ -21,7 +21,7 @@ on:
         description: "rehost only: comma-separated legacy image hosts that may be fetched"
         required: false
         type: string
-        default: mscwordpresscontent.s3.amazonaws.com,www.maltadvocate.com,web.archive.org
+        default: whiskyadvocate.com,mscwordpresscontent.s3.amazonaws.com,www.maltadvocate.com,web.archive.org
       limit:
         description: Documents per pass
         required: false
@@ -57,6 +57,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       S3_BUCKET: ${{ secrets.S3_BUCKET }}
       VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -72,6 +73,8 @@ jobs:
           echo "Target database host: $target"
           case "${{ inputs.task }}" in
             rehost)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}") ;;
+            heroes)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}" --heroes) ;;
+            describe)   script=scripts/describe-media.ts;   extra=() ;;
             normalize)  script=scripts/normalize-bodies.ts; extra=(--only-missing) ;;
             redirects)  script=scripts/build-redirects.ts;  extra=() ;;
             embed)      script=scripts/embed-content.ts;    extra=() ;;

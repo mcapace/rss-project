@@ -1289,6 +1289,21 @@ body.search-open { overflow: hidden; }
 /* The chat panel is opaque enough to read over photographs, and sits above the mast on phones. */
 .chat-panel { background: rgba(251,245,236,0.97); }
 @media (max-width: 600px) { #waChat { z-index: 80; } .chat-panel { background: var(--paper); border-radius: 20px; } }
+/* The scan band on phones: one column, the phone under the copy, the chips in the flow (the later desktop rules had been winning). */
+@media (max-width: 980px) {
+  .scan { grid-template-columns: 1fr; gap: 22px; padding: 22px 18px 26px; max-width: none; }
+  .scan-copy .d2 { font-size: clamp(26px, 7.4vw, 34px); max-width: none; }
+  .timeline { width: 100%; }
+  .scan-stage { min-height: 0; padding: 6px 0 0; display: grid; justify-items: center; gap: 12px; }
+  .demo-phone { width: min(100%, 250px); transform: none; animation: none; }
+  .scan-chip { position: static; opacity: 1; transform: none; width: 100%; max-width: 330px; pointer-events: auto; }
+  .scan-chip.chip-b { order: 2; }
+  .scan-chip.chip-a { order: 3; }
+  .scan-chip:not(.on) { opacity: 0.45; }
+}
+/* The scan's status is readable on a phone, under the button. */
+#scanStatus { display: block; width: 100%; margin-top: 8px; font-size: 14px; color: var(--copper); }
+#scanStatus:empty { display: none; }
 
 /* Ratings is a glass runway over the whisky field. The field is the page; the bottles sit on it. */
 body.finder-page { background: transparent; isolation: isolate; }

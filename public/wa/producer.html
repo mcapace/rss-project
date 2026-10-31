@@ -33,7 +33,7 @@
 </section>
 
 <section class="band">
-  <div class="band-head"><div><span class="mono">Other houses</span><h2 class="d2" style="margin-top:10px">Producers with the most recent ratings.</h2></div></div>
+  <div class="band-head"><div><span class="mono">Other houses</span><h2 class="d2" style="margin-top:10px">Producers with the most ratings in the archive.</h2></div></div>
   <div class="dense" id="others"></div>
 </section>
 
@@ -44,7 +44,7 @@
 
 <script src="site.js"></script>
 <script>
-WA.ready(function (data) {
+WA.ready(function (recent) { WA.archive(function (data) {
   var byProducer = {}; data.forEach(function (r) { (byProducer[r.pr] = byProducer[r.pr] || []).push(r); });
   var ranked = Object.keys(byProducer).sort(function (a, b) { return byProducer[b].length - byProducer[a].length || a.localeCompare(b); });
   function show() {
@@ -55,10 +55,10 @@ WA.ready(function (data) {
     var best = rows.reduce(function (a, r) { return r.s > a.s ? r : a; }, rows[0]), avg = rows.reduce(function (a, r) { return a + r.s; }, 0) / rows.length, cats = {};
     rows.forEach(function (r) { cats[r.c] = (cats[r.c] || 0) + 1; });
     var mainCat = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; })[0];
-    document.getElementById("lede").textContent = rows.length + " recent " + (rows.length === 1 ? "rating" : "ratings") + ", mostly " + mainCat.toLowerCase() + ". The panel's highest mark is " + best.s + " for " + best.n + ".";
+    document.getElementById("lede").textContent = rows.length + (rows.length === 1 ? " rating" : " ratings") + (rows[0].d ? " since " + rows[0].d.slice(0, 4) : "") + ", mostly " + mainCat.toLowerCase() + ". The panel's highest mark is " + best.s + " for " + best.n + ".";
     var prices = rows.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; });
     document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], [WA.fmt(prices[0]) + (prices.length > 1 ? " to " + WA.fmt(prices[prices.length - 1]) : ""), "price range"], [Object.keys(cats).length, Object.keys(cats).length === 1 ? "category" : "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
-    document.getElementById("bottles").innerHTML = rows.slice().sort(function (a, b) { return b.s - a.s; }).map(function (r) { return WA.bottleCard(r); }).join("");
+    var shownRows = rows.slice().sort(function (a, b) { return b.s - a.s; }); document.getElementById("bottles").innerHTML = shownRows.slice(0, 24).map(function (r) { return WA.bottleCard(r); }).join("") + (shownRows.length > 24 ? '<div class="more" style="grid-column: 1 / -1"><button type="button" class="pill" id="moreBottles">All ' + shownRows.length + " bottles</button></div>" : ""); WA.fillNotes(document.getElementById("bottles")); var mb = document.getElementById("moreBottles"); if (mb) mb.addEventListener("click", function () { document.getElementById("bottles").innerHTML = shownRows.map(function (r) { return WA.bottleCard(r); }).join(""); WA.fillNotes(document.getElementById("bottles")); });
     drawTimeline(rows);
     document.getElementById("others").innerHTML = ranked.filter(function (p) { return p !== name; }).slice(0, 8).map(function (p) { var rs = byProducer[p], top = rs.reduce(function (a, r) { return r.s > a.s ? r : a; }, rs[0]); return '<a href="' + WA.producerHref(p) + '"><span class="sc score-type">' + top.s + '</span><span><span class="nm">' + p + '</span><span class="sub">' + rs.length + " rated · best " + top.n + '</span></span><span class="when">' + rs[0].c.replace("/Tennessee Whiskey", "") + "</span></a>"; }).join("");
     scrollTo(0, 0);
@@ -78,7 +78,7 @@ WA.ready(function (data) {
     dated.forEach(function (r, i) { g.beginPath(); g.arc(xOf(r, i), yOf(r.s), 5, 0, Math.PI * 2); g.fillStyle = r.s >= 92 ? "#c9731d" : "rgba(201,115,29,0.45)"; g.fill(); });
   }
   addEventListener("hashchange", show); addEventListener("resize", show); show();
-});
+}); });
 </script>
 </body>
 </html>

@@ -22,7 +22,7 @@
 <section class="band">
   <div class="trade-grid">
     <div class="panel"><h3>Release calendar</h3><p class="muted" style="margin-bottom: 14px; font-size: 13px">What the panel rated, month by month, newest first.</p><div class="calendar" id="calendar"></div></div>
-    <div class="panel"><h3>Category share</h3><p class="muted" style="margin-bottom: 14px; font-size: 13px">Recent ratings by category.</p><div class="bars" id="cats"></div></div>
+    <div class="panel"><h3>Category share</h3><p class="muted" style="margin-bottom: 14px; font-size: 13px">The whole archive by category.</p><div class="bars" id="cats"></div></div>
     <div class="panel"><h3>Producer leaderboard</h3><p class="muted" style="margin-bottom: 14px; font-size: 13px">Houses with the most bottles at 92 or above.</p><div class="dense" id="leaders" style="border: 0"></div></div>
   </div>
 </section>
@@ -56,7 +56,7 @@
 
 <script src="site.js"></script>
 <script>
-WA.ready(function (data) {
+WA.ready(function (recent) { WA.archive(function (data) {
   var byMonth = {}; data.forEach(function (r) { if (r.d) { var m = r.d.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); } });
   var months = Object.keys(byMonth).sort().reverse().slice(0, 8);
   document.getElementById("calendar").innerHTML = months.map(function (m) { var rs = byMonth[m].sort(function (a, b) { return b.s - a.s; }); var label = new Date(m + "-02").toLocaleDateString("en-US", { month: "short", year: "2-digit" }); return '<div class="cal-row"><span class="m">' + label + '</span><span><a href="' + WA.bottleHref(data.indexOf(rs[0])) + '">' + rs[0].n + '</a><br><span class="n">' + rs.length + " rated · top " + rs[0].s + '</span></span><span class="n">' + WA.fmt(rs[0].p) + "</span></div>"; }).join("");
@@ -67,13 +67,13 @@ WA.ready(function (data) {
   var leaders = Object.keys(byProducer).sort(function (a, b) { return byProducer[b].length - byProducer[a].length; }).slice(0, 6);
   document.getElementById("leaders").innerHTML = leaders.map(function (p) { var rs = byProducer[p]; return '<a href="' + WA.producerHref(p) + '"><span class="sc score-type">' + Math.max.apply(null, rs.map(function (r) { return r.s; })) + '</span><span><span class="nm">' + p + '</span><span class="sub">' + rs.length + " at 92 or above</span></span><span class=\"when\">Portfolio</span></a>"; }).join("");
   var all = data.length, avg = data.reduce(function (a, r) { return a + r.s; }, 0) / all, prices = data.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; }), ninety = data.filter(function (r) { return r.s >= 90; }).length;
-  document.getElementById("stats").innerHTML = [[all, "recent ratings"], [avg.toFixed(1), "average score"], [ninety, "at 90 or above"], [WA.fmt(prices[Math.floor(all / 2)]), "median price"], [Object.keys(cats).length, "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
-  var sheetRows = data.filter(function (r) { return r.s >= 92; }), k = 0;
-  function sheet() { var r = sheetRows[k % sheetRows.length]; document.getElementById("sheetScore").textContent = r.s; document.getElementById("sheetName").textContent = r.n; document.getElementById("sheetNote").textContent = r.t + "…"; document.getElementById("sheetMeta").textContent = r.c + " · " + WA.fmt(r.p) + (r.a ? " · " + r.a + "% ABV" : "") + " · Whisky Advocate"; }
+  document.getElementById("stats").innerHTML = [[all.toLocaleString(), "ratings since 2013"], [avg.toFixed(1), "average score"], [ninety, "at 90 or above"], [WA.fmt(prices[Math.floor(all / 2)]), "median price"], [Object.keys(cats).length, "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
+  var sheetRows = data.filter(function (r) { return r.s >= 92 && r.d >= "2025"; }), k = 0;
+  function sheet() { var r = sheetRows[k % sheetRows.length]; document.getElementById("sheetScore").textContent = r.s; document.getElementById("sheetName").textContent = r.n; document.getElementById("sheetNote").textContent = ""; WA.note(r.slug, function (f) { document.getElementById("sheetNote").textContent = f.slice(0, 160).replace(/\s\S*$/, "") + "…"; }); document.getElementById("sheetMeta").textContent = r.c + " · " + WA.fmt(r.p) + (r.a ? " · " + r.a + "% ABV" : "") + " · Whisky Advocate"; }
   document.getElementById("nextBtn").addEventListener("click", function () { k++; sheet(); });
   document.getElementById("exportBtn").addEventListener("click", function () { this.textContent = "Sent to your downloads"; });
   sheet();
-});
+}); });
 </script>
 </body>
 </html>

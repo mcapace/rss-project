@@ -40,6 +40,7 @@
     <aside class="facets" aria-label="Filters">
       <div class="facet-group"><h3 class="mono">Type</h3><div class="chips" id="typeChips"></div></div>
       <div class="facet-group"><h3 class="mono">Price up to</h3><div class="ladder" id="priceLadder"><button type="button" data-price="40">$40</button><button type="button" data-price="60">$60</button><button type="button" data-price="100">$100</button><button type="button" data-price="200">$200</button><button type="button" data-price="400" aria-pressed="true">Any</button></div></div>
+      <div class="facet-group"><h3 class="mono">Rated</h3><div class="ladder" id="sinceLadder"><button type="button" data-since="2025" aria-pressed="true">2025+</button><button type="button" data-since="2022">2022+</button><button type="button" data-since="2018">2018+</button><button type="button" data-since="">All</button></div></div>
       <div class="facet-group"><h3 class="mono">Score band</h3><div class="ladder" id="scoreLadder"><button type="button" data-score="80" aria-pressed="true">All</button><button type="button" data-score="88">88+</button><button type="button" data-score="90">90+</button><button type="button" data-score="92">92+</button><button type="button" data-score="94">94+</button></div></div>
       <div class="facet-group"><h3 class="mono">Character</h3><div class="chips" id="charChips"><button type="button" data-char="smoky" aria-pressed="false">Smoky</button><button type="button" data-char="sweet" aria-pressed="false">Sweet &amp; sherried</button><button type="button" data-char="rich" aria-pressed="false">Rich</button><button type="button" data-char="light" aria-pressed="false">Light</button></div></div>
       <button type="button" class="pill" id="clear">Clear everything</button>
@@ -58,26 +59,27 @@
 
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
-  <div><h4>About this prototype</h4><p>320 recent ratings from the archive. The character axes are read from the tasting notes.</p></div>
+  <div><h4>About this prototype</h4><p>Every published rating since 2013, 8,217 bottles. The character axes are read from the tasting notes.</p></div>
 </footer>
 
 <div class="tray" id="tray" data-open="false" aria-label="Compare"><div class="tray-head"><span id="trayCount">Compare</span><button type="button" id="trayClear">Clear</button></div><div class="tray-body" id="trayBody"></div></div>
 
 <script src="site.js"></script>
 <script>
-WA.ready(function (data) {
+WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, charScore = WA.charScore, value = WA.value;
   var CATS = {}; data.forEach(function (r) { CATS[r.c] = (CATS[r.c] || 0) + 1; });
   var catList = Object.keys(CATS).sort(function (a, b) { return CATS[b] - CATS[a]; }).slice(0, 9);
-  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null };
+  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "2025" };
   var LENSES = { value: { sort: "value", score: 88 }, first: { price: 60, chars: ["light"], sort: "value" }, gift: { price: 100, score: 92 }, peat: { chars: ["smoky"], types: ["Single Malt Scotch"] }, winter: { chars: ["sweet", "rich"] }, cocktail: { types: ["Rye Whiskey"], price: 60 } };
-  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
+  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
   document.getElementById("lenses").addEventListener("click", function (e) { var b = e.target.closest(".lens"); if (!b) return; var id = b.getAttribute("data-lens"); setLens(state.lens === id ? "" : id); syncControls(); render(); });
   var typeChips = document.getElementById("typeChips");
   typeChips.innerHTML = catList.map(function (c) { return '<button type="button" data-cat="' + c + '" aria-pressed="false">' + c.replace("/Tennessee Whiskey", "") + "</button>"; }).join("");
   typeChips.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var c = b.getAttribute("data-cat"); var i = state.types.indexOf(c); if (i >= 0) state.types.splice(i, 1); else state.types.push(c); state.limit = 12; state.lens = ""; syncControls(); render(); });
   document.getElementById("charChips").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var c = b.getAttribute("data-char"); var i = state.chars.indexOf(c); if (i >= 0) state.chars.splice(i, 1); else state.chars.push(c); state.lens = ""; syncControls(); render(); });
   document.getElementById("priceLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.price = +b.getAttribute("data-price"); state.region = null; state.lens = ""; syncControls(); render(); });
+  document.getElementById("sinceLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.since = b.getAttribute("data-since"); state.region = null; state.limit = 12; syncControls(); render(); });
   document.getElementById("scoreLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.score = +b.getAttribute("data-score"); state.region = null; state.lens = ""; syncControls(); render(); });
   document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); syncControls(); render(); });
   document.getElementById("more").addEventListener("click", function () { state.limit += 12; render(); });
@@ -92,12 +94,14 @@ WA.ready(function (data) {
     typeChips.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.types.indexOf(b.getAttribute("data-cat")) >= 0)); });
     document.querySelectorAll("#charChips button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.chars.indexOf(b.getAttribute("data-char")) >= 0)); });
     document.querySelectorAll("#priceLadder button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-price") === state.price)); });
+    document.querySelectorAll("#sinceLadder button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-since") === state.since)); });
     document.querySelectorAll("#scoreLadder button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-score") === state.score)); });
     document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); });
     document.querySelectorAll(".lens").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lens") === state.lens)); });
   }
   function current() {
     var rows = data.filter(function (r) {
+      if (state.since && !(r.d >= state.since)) return false;
       if (state.types.length && state.types.indexOf(r.c) < 0) return false;
       if (r.p > state.price || r.s < state.score) return false;
       if (!state.chars.every(function (c) { return charScore(r, c) > 0; })) return false;
@@ -106,16 +110,16 @@ WA.ready(function (data) {
     });
     if (state.sort === "score") rows.sort(function (a, b) { return b.s - a.s || a.p - b.p; });
     if (state.sort === "value") rows.sort(function (a, b) { return value(b) - value(a); });
-    if (state.sort === "price-asc") rows.sort(function (a, b) { return a.p - b.p; });
+    if (state.sort === "price-asc") rows.sort(function (a, b) { return (a.p || 1e9) - (b.p || 1e9); });
     if (state.sort === "new") rows.sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; });
     return rows;
   }
   var grid = document.getElementById("grid");
   function render() {
     var rows = current();
-    var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region;
-    document.getElementById("count").textContent = rows.length + " of " + data.length + " recent ratings" + (active ? " match" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
-    grid.innerHTML = rows.slice(0, state.limit).map(function (r) { return WA.bottleCard(r, { compare: state.compare }); }).join("");
+    var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since;
+    document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
+    grid.innerHTML = rows.slice(0, state.limit).map(function (r) { return WA.bottleCard(r, { compare: state.compare }); }).join(""); WA.fillNotes(grid);
     document.getElementById("more").style.display = rows.length > state.limit ? "" : "none";
     drawMaps(rows);
   }
@@ -131,6 +135,7 @@ WA.ready(function (data) {
 
   var points = { value: [], flavor: [] }, geom = {};
   function drawMaps(rows) {
+    if (rows.length > 1600) { var step = rows.length / 1600; var sampled = []; for (var k = 0; k < rows.length; k += step) sampled.push(rows[Math.floor(k)]); rows = sampled; }
     var vc = document.getElementById("valueMap"), v = WA.setupCanvas(vc), g = v.g, pad = { l: 34, r: 12, t: 10, b: 24 }, rule = "rgba(23,18,13,0.1)";
     var xOf = function (p) { return pad.l + (Math.log(p) - Math.log(17)) / (Math.log(400) - Math.log(17)) * (v.w - pad.l - pad.r); };
     var yOf = function (s) { return pad.t + (1 - (s - 80) / 16) * (v.h - pad.t - pad.b); };
@@ -177,7 +182,7 @@ WA.ready(function (data) {
   addEventListener("hashchange", function () { var h = (location.hash || "").slice(1); if (LENSES[h]) { setLens(h); syncControls(); render(); } });
   var h = (location.hash || "").slice(1); if (LENSES[h]) setLens(h);
   syncControls(); render();
-});
+}); });
 </script>
 </body>
 </html>

@@ -305,8 +305,10 @@
   function askBar() {
     var form = document.getElementById("askForm"); if (!form) return;
     var input = document.getElementById("askInput"), answer = document.getElementById("answer");
+    var askedAt = 0;
     function ask(q) {
       if (!q.trim() || !DATA) return;
+      askedAt = Date.now(); if (timer) clearTimeout(timer); document.querySelectorAll(".ask-menu").forEach(function (m) { m.setAttribute("data-open", "false"); });
       var f = understand(q);
       if (f.terms.length && !ARCHIVE) { archive(function () { ask(q); }); return; }
       var picks = apply(f, DATA);
@@ -326,6 +328,7 @@
     var menu = document.createElement("div"); menu.className = "ask-menu"; menu.setAttribute("data-open", "false"); form.insertAdjacentElement("afterend", menu);
     var timer = null;
     function suggestFor(q) {
+      if (Date.now() - askedAt < 1200) { menu.setAttribute("data-open", "false"); return; }
       var terms = nameTerms(q); if (!terms.length) { menu.setAttribute("data-open", "false"); return; }
       var rows = DATA || [], scored = [];
       for (var i = 0; i < rows.length; i++) { var ns = nameScore(terms, rows[i]); if (ns) scored.push({ r: rows[i], ns: ns }); }

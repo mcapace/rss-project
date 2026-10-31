@@ -51,15 +51,70 @@ export function liftBackground(data: Buffer, width: number, height: number, tole
   return removed / (width * height);
 }
 
-export async function standardShot(bytes: Buffer): Promise<{ webp: Buffer; lifted: number }> {
+/**
+ * A framed product shot often keeps a white or grey rectangle inside the
+ * transparent margin, because that rectangle was not the corner colour.
+ * Walk out from every clear pixel and remove the light, neutral mat it touches.
+ * A label stays when the bottle stands between it and the background.
+ */
+export function clearMat(data: Buffer, width: number, height: number): number {
+  const n = width * height;
+  const open = new Uint8Array(n);
+  const stack: number[] = [];
+  for (let p = 0; p < n; p++) {
+    if (data[p * 4 + 3] < 16) { open[p] = 1; stack.push(p); }
+  }
+  if (!stack.length) return 0;
+  const mat = (i: number) => {
+    const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+    if (a < 16) return false;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    return min >= 198 && max - min <= 22;
+  };
+  let removed = 0;
+  while (stack.length) {
+    const p = stack.pop() as number;
+    const x = p % width, y = (p - x) / width;
+    const next = [x > 0 ? p - 1 : -1, x < width - 1 ? p + 1 : -1, y > 0 ? p - width : -1, y < height - 1 ? p + width : -1];
+    for (const q of next) {
+      if (q < 0 || open[q]) continue;
+      if (!mat(q * 4)) continue;
+      open[q] = 1;
+      data[q * 4 + 3] = 0;
+      removed++;
+      stack.push(q);
+    }
+  }
+  return removed / n;
+}
+
+/** Share of the frame that is an opaque near-white or light-grey pixel. */
+export function matShare(data: Buffer, width: number, height: number): number {
+  const n = width * height;
+  let mat = 0;
+  for (let p = 0; p < n; p++) {
+    const i = p * 4, r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+    if (a < 16) continue;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    if (min >= 198 && max - min <= 22) mat++;
+  }
+  return mat / n;
+}
+
+export async function standardShot(bytes: Buffer): Promise<{ webp: Buffer; lifted: number; before: number; after: number }> {
   const base = sharp(bytes, { failOn: "none" }).rotate().ensureAlpha();
   const { data, info } = await base.raw().toBuffer({ resolveWithObject: true });
-  const lifted = liftBackground(data, info.width, info.height);
+  const before = matShare(data, info.width, info.height);
+  const corner = (x: number, y: number) => data[(y * info.width + x) * 4 + 3] > 16;
+  const cornersOpaque = [corner(0, 0), corner(info.width - 1, 0), corner(0, info.height - 1), corner(info.width - 1, info.height - 1)].filter(Boolean).length >= 3;
+  const lifted = cornersOpaque ? liftBackground(data, info.width, info.height) : 0;
+  clearMat(data, info.width, info.height);
+  const after = matShare(data, info.width, info.height);
   const cut = sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).trim({ threshold: 8 });
   const fitted = await cut.resize({ width: FRAME.w - FRAME.pad * 2, height: FRAME.h - FRAME.pad * 2, fit: "inside", withoutEnlargement: false }).png().toBuffer();
   const webp = await sharp({ create: { width: FRAME.w, height: FRAME.h, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite([{ input: fitted, gravity: "centre" }]).webp({ quality: 84, alphaQuality: 90 }).toBuffer();
-  return { webp, lifted };
+  return { webp, lifted, before, after };
 }
 
 /** The legacy site drops connections under load: three tries, a pause between them, a browser's user agent. */

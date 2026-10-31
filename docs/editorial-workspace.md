@@ -26,11 +26,14 @@ What makes it a CMS rather than a dashboard:
 - **Compact screen titles.** `PageHeader` is a 19px title with a small icon,
   a one-line lede and the actions on the right, closed by a hairline. The
   library title names the filtered type ("Articles", "Ratings").
-- **The desk is a work list.** `/cms` shows one strip of counts (all
-  content, needs review, drafts, scheduled, published this week, ratings), a
-  row of "Start" tiles per content type, and panels of dense rows: needs
-  review, in progress, scheduled, print intake, recently edited, published
-  this week.
+- **The desk reads like a newsroom.** `/cms` opens with a one-line brief
+  of the day (how many wait for review and for how long, drafts, scheduled,
+  print issues) with a "Plan my day" assistant button and Start tiles; then
+  the workflow as a pipeline of four stages (Drafts, In review, Scheduled,
+  Published this week) with counts, proportional bars and the top items;
+  "Up next" (the oldest item in review, the last draft, the next scheduled
+  story, the active print issue, each with its action); a seven-day runway
+  of scheduled stories; and the latest edits with print intake.
 - **The editor is a document.** A sticky document bar (back, title, state,
   presence, saved state, assistant, Save) sits under the top bar; Write /
   Preview / History / Sources / Media are underline tabs; the body is written
@@ -43,7 +46,7 @@ What makes it a CMS rather than a dashboard:
 
 | Route | What it does |
 | --- | --- |
-| `/cms` | Desk: a strip of live counts, "Start" tiles per content type, and panels for needs review, in progress, scheduled, print intake, recently edited and published this week. |
+| `/cms` | Desk: the day's brief with "Plan my day", a four-stage workflow pipeline, up-next actions, a seven-day runway, recent edits and print intake. |
 | `/cms/library` | Content library: search, status segments with counts, type filter, sortable dense table, saved views (per browser), multi-select with bulk state changes, CSV export, `j`/`k`/`x`/`↵` keyboard navigation, pagination, compact density. Supports `?issue=` to show one print issue's candidates. |
 | `/cms/doc/[id]` | Document workspace: headline and byline, TipTap body with a lossless HTML fallback, Write / Preview / History / Sources / Media views, revision timeline with word-level diff and restore-to-draft, source candidates with adopt-into-draft, media captions and lead image, publishing panel (state, planned publish time), properties (section, summary, slug, URL, tags), rating fields, search metadata, `⌘S` save with optimistic-revision conflict handling and local unsaved-edit recovery. |
 | `/cms/review` | Review queue grouped by print issue or source, oldest first, with a quick "back to draft" action. |

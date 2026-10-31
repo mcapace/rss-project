@@ -144,12 +144,16 @@
   var SECTION = { news: "News", features: "Feature", guides: "Guide", cocktails: "Cocktails", travel: "Travel", life: "Whisky Life" };
   function when(d) { if (!d) return ""; var t = new Date(d + "T12:00:00"); return t.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + (t.getFullYear() !== new Date().getFullYear() ? ", " + t.getFullYear() : ""); }
   function stories(cb) { if (STORIES) return cb(STORIES); fetch("stories.json").then(function (r) { return r.json(); }).then(function (d) { STORIES = d; cb(d); }); }
-  function articles(cb) { if (ARTICLES) return cb(ARTICLES); fetch("articles.json").then(function (r) { return r.json(); }).then(function (d) { ARTICLES = d; cb(d); }); }
+  var ARTS = {};
+  function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return cb(ARTS[k][slug] || null); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; cb(d[slug] || null); }, function () { cb(null); }); }
+  var GLOSSARY = null;
+  function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); fetch("glossary.json").then(function (r) { return r.json(); }).then(function (d) { GLOSSARY = d; cb(d); }); }
+  var SECTION_HREF = { news: "stories.html#news", features: "stories.html#features", guides: "guides.html", cocktails: "cocktails.html", travel: "travel.html", life: "stories.html#life" };
   function initials(name) { return (name || "WA").split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
   function storyHref(st) { return "story.html#" + st.slug; }
   function storyRow(st) { return '<a href="' + storyHref(st) + '">' + (st.hero ? '<img class="th" src="' + st.hero + '" alt="" loading="lazy">' : '<span class="tag">' + SECTION[st.sec] + '</span>') + '<span><span class="nm">' + st.title + '</span><span class="sub">' + (st.dek || SECTION[st.sec] + " · " + st.by) + '</span></span><span class="when">' + when(st.d) + "</span></a>"; }
   function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
-  window.WA.stories = stories; window.WA.articles = articles; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
+  window.WA.stories = stories; window.WA.article = article; window.WA.glossary = glossary; window.WA.SECTION_HREF = SECTION_HREF; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
 
 
   /* The whole ratings archive (every published rating, names and numbers) and the notes, sharded by slug, on demand. */

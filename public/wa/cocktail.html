@@ -9,7 +9,7 @@
 </head>
 <body>
 <header class="mast">
-  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="stories.html#guides">Guides</a><a href="cocktails.html" aria-current="page">Cocktails</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html" aria-current="page">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
   <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
 </header>
@@ -66,7 +66,7 @@ WA.ready(function () {
     renderIng();
     document.querySelector(".serves").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; n = +b.getAttribute("data-n"); document.querySelectorAll(".serves button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); renderIng(); });
     document.getElementById("steps").innerHTML = (r.method.match(/[^.!?]+[.!?]+/g) || [r.method]).map(function (s) { return "<p>" + s.trim() + "</p>"; }).join("");
-    document.getElementById("subs").innerHTML = r.subs.map(function (s) { return '<div class="sub"><h4>' + s.name + "</h4><ul>" + s.ingredients.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul><p>" + s.method + "</p></div>"; }).join("");
+    document.getElementById("subs").innerHTML = r.subs.map(function (s) { return '<div class="subrecipe"><h4>' + s.name + "</h4><ul>" + s.ingredients.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul><p>" + s.method + "</p></div>"; }).join("");
     var cats = CAT[r.spirit] || null, want = cats ? data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.p > 0 && x.p <= 60 && x.s >= 88 && x.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 3) : [];
     document.getElementById("wantNote").textContent = cats ? "A " + r.spirit + " under $60 that the panel rated 88 or higher, best value first. Mixing does not need the dear bottle." : "This one is built on something other than whisky. Use what the recipe names.";
     document.getElementById("bottles").innerHTML = want.map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(document.getElementById("bottles"));

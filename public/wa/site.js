@@ -323,7 +323,7 @@
       houseList.forEach(function (h) { html += '<a class="row" href="' + producerHref(h) + '"><span class="k">Producer</span><span class="nm">' + h + '</span><span class="meta">' + houses[h] + " ratings</span></a>"; });
       scored.slice(0, 5).forEach(function (x) { html += '<a class="row" href="' + bottleHref(x.r) + '"><b class="score-type">' + x.r.s + '</b><span class="nm">' + x.r.n + '</span><span class="meta">' + (x.r.d ? x.r.d.slice(0, 4) : "") + "</span></a>"; });
       words.forEach(function (w) { html += '<a class="row" href="finder.html#word=' + encodeURIComponent(w) + '"><span class="k">Taste</span><span class="nm">' + w + "</span></a>"; });
-      if (STORIES) { STORIES.filter(function (st) { return terms.every(function (t) { return norm(st.title).indexOf(t) >= 0; }); }).slice(0, 2).forEach(function (st) { html += '<a class="row" href="' + storyHref(st) + '"><span class="k">' + SECTION[st.sec] + '</span><span class="nm">' + st.title + "</span></a>"; }); }
+      if (STORIES) { STORIES.filter(function (st) { var hay = norm(st.title + " " + (st.tags || []).join(" ") + " " + (st.q || "")); return terms.every(function (t) { return hay.indexOf(t) >= 0; }); }).slice(0, 2).forEach(function (st) { html += '<a class="row" href="' + storyHref(st) + '"><span class="k">' + SECTION[st.sec] + '</span><span class="nm">' + st.title + "</span></a>"; }); }
       menu.innerHTML = html; menu.setAttribute("data-open", "true");
     }
     input.addEventListener("input", function () { var q = input.value; clearTimeout(timer); if (nameTerms(q).length === 0) { menu.setAttribute("data-open", "false"); return; } timer = setTimeout(function () { if (!ARCHIVE) { archive(function () { suggestFor(input.value); }); if (!STORIES) stories(function () {}); } else suggestFor(q); }, 90); });
@@ -521,7 +521,7 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
     }
     if (stories) {
       var words = low.split(/\s+/).filter(function (w) { return w.length >= 3; });
-      var st = stories.map(function (s) { var hay = (s.title + " " + (s.dek || "") + " " + (s.tags || []).join(" ")).toLowerCase(); var hit = words.filter(function (w) { return hay.indexOf(w) >= 0; }).length; return hit === words.length && words.length ? { s: s, hit: hit + (s.title.toLowerCase().indexOf(low) >= 0 ? 2 : 0) } : null; }).filter(Boolean).sort(function (a, b) { return b.hit - a.hit || (a.s.d < b.s.d ? 1 : -1); }).slice(0, 5);
+      var st = stories.map(function (s) { var hay = (s.title + " " + (s.dek || "") + " " + (s.tags || []).join(" ") + " " + (s.q || "")).toLowerCase(); var hit = words.filter(function (w) { return hay.indexOf(w) >= 0; }).length; return hit === words.length && words.length ? { s: s, hit: hit + (s.title.toLowerCase().indexOf(low) >= 0 ? 2 : 0) } : null; }).filter(Boolean).sort(function (a, b) { return b.hit - a.hit || (a.s.d < b.s.d ? 1 : -1); }).slice(0, 5);
       if (st.length) groups.push({ title: "Stories", more: "stories.html", items: st.map(function (x) { return '<a href="' + WA.storyHref(x.s) + '"><span class="ct-only">' + mark(x.s.title, words) + '</span><span class="ct">' + esc(WA.SECTION[x.s.sec] || "") + " · " + WA.when(x.s.d) + "</span></a>"; }) });
     }
     if (cocktails) {

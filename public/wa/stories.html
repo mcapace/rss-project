@@ -49,16 +49,16 @@ WA.ready(function (data) {
   WA.stories(function (all) {
     var shown = 0, rows = [];
     function render(sec, reset) {
-      var tag = /^tag=/.test(sec) ? decodeURIComponent(sec.slice(4)).toLowerCase() : "";
-      rows = all.filter(function (s) { return tag ? (s.tags || []).concat([s.title]).join(" ").toLowerCase().indexOf(tag) >= 0 : sec === "all" || s.sec === sec; });
-      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").textContent = tag ? decodeURIComponent(sec.slice(4)) : (TITLE[sec] || "Stories"); var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : ""; }
+      var tag = /^tag=/.test(sec) ? decodeURIComponent(sec.slice(4)).toLowerCase() : "", by = /^by=/.test(sec) ? decodeURIComponent(sec.slice(3)).toLowerCase() : "";
+      rows = all.filter(function (s) { return by ? (s.by || "").toLowerCase() === by : tag ? (s.tags || []).concat([s.title, s.q || ""]).join(" ").toLowerCase().indexOf(tag) >= 0 : sec === "all" || s.sec === sec; });
+      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").textContent = by ? "Stories by " + decodeURIComponent(sec.slice(3)) : tag ? decodeURIComponent(sec.slice(4)) : (TITLE[sec] || "Stories"); var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : ""; }
       var next = rows.slice(3 + shown, 3 + shown + 30); shown += next.length;
       document.getElementById("list").innerHTML += next.map(WA.storyRow).join("");
       document.getElementById("more").style.display = 3 + shown < rows.length ? "" : "none";
       document.querySelectorAll("#sections button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sec") === sec)); });
     }
     var current = "all";
-    function go(sec) { current = WA.SECTION[sec] || /^tag=/.test(sec) ? sec : "all"; document.getElementById("list").innerHTML = ""; render(current, true); }
+    function go(sec) { current = WA.SECTION[sec] || /^tag=|^by=/.test(sec) ? sec : "all"; document.getElementById("list").innerHTML = ""; render(current, true); }
     document.getElementById("sections").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var sec = b.getAttribute("data-sec"); history.replaceState(null, "", sec === "all" ? "stories.html" : "#" + sec); go(sec); });
     document.getElementById("more").addEventListener("click", function () { render(current, false); });
     go((location.hash || "").slice(1)); addEventListener("hashchange", function () { go((location.hash || "").slice(1)); });

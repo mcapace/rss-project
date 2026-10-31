@@ -1568,3 +1568,13 @@ body[data-menu="true"] { overflow: hidden; }
 /* A small picture from the old CMS (a 300px bottle thumbnail) is shown at its own size, never stretched, and its white card melts into the paper. */
 .prose img.small { width: auto; max-width: min(100%, 320px); max-height: 420px; margin: 1.4em auto; border-radius: 0; mix-blend-mode: multiply; }
 .prose img.bottle-shot { mix-blend-mode: normal; }
+/* Room under a picture in a story, and the author card is a link to their stories. */
+.prose p:has(> img:only-child) { margin: 1.8em 0 2em; }
+.prose p:has(> img:only-child) + * { margin-top: 1.8em; }
+.prose figure, .prose .figure { margin: 1.8em 0 2em; }
+.prose img.tall, .prose img.small, .prose img.bottle-shot { margin-bottom: 0; }
+a.author { color: inherit; text-decoration: none; transition: border-color 200ms ease, transform 200ms ease; }
+a.author:hover { border-color: var(--amber); transform: translateY(-2px); }
+a.author p::after { content: " →"; color: var(--copper); }
+.byline a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--rule); }
+.byline a:hover { border-bottom-color: var(--amber); }

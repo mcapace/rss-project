@@ -33,10 +33,10 @@ function PublicationSwitcher({ collapsed, onNavigate }: { collapsed: boolean; on
     return <Link href={href("/cms")} onClick={onNavigate} aria-label={`${BRAND_NAMES[brand]} home`} title={BRAND_NAMES[brand]} className="ed-switcher-mark" data-brand={brand} style={{ background: brandColor(brand) }}>{BRAND_SHORT[brand]}</Link>;
   }
   return <div ref={ref} className="ed-switcher">
-    <button type="button" className="ed-switcher-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(value => !value)} title="Switch publication">
+    <button type="button" className="ed-switcher-button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(value => !value)} title={`${BRAND_NAMES[brand]} · ${roleLabel}. Switch publication`}>
       <span className="ed-brand-dot" style={{ background: brandColor(brand) }} aria-hidden />
       <span className="ed-switcher-title">{BRAND_NAMES[brand]}</span>
-      <span className="ed-switcher-sub">{roleLabel}</span>
+      <span className="ed-switcher-sub">{roleLabel === "Administrator" ? "Admin" : roleLabel}</span>
       <ChevronsUpDown size={13} aria-hidden />
     </button>
     {open && <div role="menu" aria-label="Switch publication" className="ed-menu">

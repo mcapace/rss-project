@@ -592,7 +592,7 @@ a.ed-kpi:hover, button.ed-kpi:hover { background: var(--hover-bg); }
 .ed-title-input::placeholder { color: var(--muted-soft); }
 .ed-byline-input { width: 100%; border: 0; background: none; color: var(--muted); font-size: 14px; padding: 0; }
 .ed-byline-input:focus-visible { outline: 0; }
-.ed-body-toolbar { position: sticky; top: 64px; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 18px 0 0; padding: 4px; border: 1px solid var(--glass-border); border-radius: 10px; background: var(--glass-chrome); -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%); box-shadow: var(--glass-rim), 0 4px 16px -8px rgb(0 0 0 / 0.2); }
+.ed-body-toolbar { position: sticky; top: 100px; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 18px 0 0; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -16px rgb(0 0 0 / 0.2); }
 .ed-body-toolbar button { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 7px; color: var(--muted); }
 .ed-body-toolbar button:hover:not(:disabled) { background: var(--hover-bg); color: var(--foreground); }
 .ed-body-toolbar button[aria-pressed="true"] { background: var(--active-bg); color: var(--foreground); }
@@ -868,6 +868,9 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-rail-section-body { padding: 0 16px 16px; }
 .ed-rail-section-body .ed-field + .ed-field { margin-top: 12px; }
 .ed-body-toolbar .ed-menu { top: calc(100% + 6px); left: 0; right: auto; min-width: 220px; }
+/* Menu rows inside the toolbar are not toolbar buttons: full-width rows with a label. */
+.ed-body-toolbar .ed-menu .ed-menu-item { display: flex; width: 100%; height: auto; min-height: 36px; justify-content: flex-start; padding: 6px 8px; border-radius: 8px; color: var(--foreground); }
+.ed-body-toolbar .ed-menu .ed-menu-item[data-active="true"] { background: var(--hover-bg); }
 .ed-tool-popover { display: grid; gap: 10px; padding: 10px; }
 .ed-tool-popover label { display: grid; gap: 4px; font-size: 11.5px; color: var(--muted); }
 .ed-tool-popover .ed-select { min-height: 32px; font-size: 13px; }

@@ -67,8 +67,10 @@
     </div>
     <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button><button type="button" data-sort="twin" aria-pressed="false" id="sortTwin" style="display:none">Closest</button></div></div>
     <div class="lead-stage" id="lead"></div>
-    <div class="runway-ad"><div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div></div>
-    <div class="shelves" id="shelves"></div>
+    <div class="runway">
+      <div class="shelves" id="shelves"></div>
+      <div class="runway-ad"><div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div></div>
+    </div>
     <div class="more"><button type="button" class="pill" id="more">Show more</button></div>
   </div>
 </section>
@@ -177,7 +179,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;
     return '<article class="lead-pour" data-slug="' + esc(r.slug || "") + '">' +
       (r.img ? '<a class="lead-shot" href="' + WA.bottleHref(r) + '"><img src="' + esc(r.img) + '" alt=""></a>' : '<span class="lead-shot"></span>') +
-      '<div class="lead-copy"><span class="mono">On the runway</span><div class="lead-score score-type">' + r.s + '<small>points</small></div><h2><a href="' + WA.bottleHref(r) + '">' + esc(r.n) + '</a></h2><p class="lead-meta">' + esc(r.c) + (r.pr ? " · " + esc(r.pr) : "") + '</p><p data-note data-full></p><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div></div></article>';
+      '<div class="lead-copy"><span class="mono">On the runway</span><div class="lead-score score-type">' + r.s + '<small>points</small></div><h2><a href="' + WA.bottleHref(r) + '">' + esc(r.n) + '</a></h2><p class="lead-meta">' + esc(r.c) + (r.pr ? " · " + esc(r.pr) : "") + '</p><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div></div><p data-note data-full></p></article>';
   }
   function shelfCard(r) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;

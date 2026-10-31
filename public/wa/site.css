@@ -1317,10 +1317,10 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 .ratings-say em.hi { font-style: italic; font-weight: 400; background-position: 100% 0; }
 .ratings-say.is-in em.hi { background-position: 0 0; }
 .lead-stage { min-height: 180px; }
-.lead-pour { display: grid; grid-template-columns: minmax(140px, 240px) minmax(0, 1fr); gap: 12px 36px; align-items: center; padding: 28px 32px; border-radius: 28px; background: var(--glass); border: 1px solid var(--glass-edge); backdrop-filter: blur(22px) saturate(1.35); -webkit-backdrop-filter: blur(22px) saturate(1.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); opacity: 0; transform: translateY(22px); transition: opacity 520ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1); }
+.lead-pour { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 8px 40px; align-items: center; padding: 22px 32px 24px; border-radius: 28px; background: var(--glass); border: 1px solid var(--glass-edge); backdrop-filter: blur(22px) saturate(1.35); -webkit-backdrop-filter: blur(22px) saturate(1.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); opacity: 0; transform: translateY(22px); transition: opacity 520ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1); }
 .lead-stage.is-in .lead-pour { opacity: 1; transform: none; }
-.lead-shot { display: grid; place-items: end center; min-height: 240px; }
-.lead-shot img { width: min(100%, 210px); height: 280px; object-fit: contain; mix-blend-mode: multiply; filter: drop-shadow(0 28px 24px rgba(79,42,16,0.32)); }
+.lead-shot { display: grid; place-items: center; }
+.lead-shot img { width: 220px; height: 320px; object-fit: contain; mix-blend-mode: multiply; filter: drop-shadow(0 28px 24px rgba(79,42,16,0.32)); }
 .lead-copy .mono { color: var(--copper); }
 .lead-score { margin-top: 6px; font-size: clamp(64px, 8vw, 96px); }
 .lead-score small { display: block; margin-top: 4px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
@@ -1328,21 +1328,24 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 .lead-copy h2 a { color: inherit; text-decoration: none; }
 .lead-copy h2 a:hover { color: var(--amber); }
 .lead-meta { margin: 8px 0 0; color: var(--ink-3); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; }
-.lead-copy p[data-note] { margin: 14px 0 0; max-width: 62ch; color: var(--ink-2); font-size: 16px; line-height: 1.5; }
+.lead-pour > p[data-note] { grid-column: 1 / -1; margin: 6px 0 0; max-width: 78ch; color: var(--ink-2); font-size: 16px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .lead-pour .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
 .lead-pour .foot button, .shelf-bottle .foot button { padding: 4px 10px; border: 1px solid var(--rule); border-radius: 999px; background: rgba(255,255,255,0.45); font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--ink-2); }
 .lead-pour .foot button[aria-pressed="true"], .shelf-bottle .foot button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
 .lead-pour .buy-slot { display: flex; height: 32px; }
 .lead-pour .buy-slot:empty { display: none; }
 .lead-pour .buy-slot .buy-chip { height: 32px; }
-.runway-ad { display: flex; justify-content: center; margin: 22px 0 6px; }
-.runway-ad:has(.ad-empty) { display: none; }
+.runway { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 8px 28px; align-items: start; }
+.runway:has(.ad-empty) { grid-template-columns: minmax(0, 1fr); }
+.runway:has(.ad-empty) .runway-ad { display: none; }
+.runway-ad { position: sticky; top: 88px; }
 .runway-ad .ad-filled { margin: 0; }
+@media (max-width: 900px) { .runway { grid-template-columns: 1fr; } .runway-ad { position: static; order: -1; } .runway-ad .ad-filled { margin: 8px auto 4px; } }
 .ratings-empty { margin: 0; padding: 28px; border-radius: 28px; background: var(--glass); color: var(--ink-2); }
 .shelf { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 8px 22px; align-items: start; margin: 26px 0 4px; }
 .shelf-label b { display: block; font-weight: 500; font-size: clamp(28px, 3vw, 42px); line-height: 0.92; letter-spacing: -0.03em; color: var(--amber); }
 .shelf-label span { display: block; margin-top: 8px; color: var(--ink-3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
-.shelf-row { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 10px 4px 18px; scrollbar-width: thin; }
+.shelf-row { display: flex; align-items: flex-start; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 10px 4px 18px; scrollbar-width: thin; }
 .shelf-bottle { flex: 0 0 228px; width: 228px; display: flex; flex-direction: column; scroll-snap-align: start; padding: 14px 14px 12px; border-radius: 22px; background: var(--glass); border: 1px solid var(--glass-edge); backdrop-filter: blur(18px) saturate(1.25); -webkit-backdrop-filter: blur(18px) saturate(1.25); box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), var(--glass-shadow); cursor: pointer; animation: shelf-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both; transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 400ms ease; }
 .shelf-row .shelf-bottle:nth-child(2) { animation-delay: 45ms; }
 .shelf-row .shelf-bottle:nth-child(3) { animation-delay: 90ms; }
@@ -1372,11 +1375,10 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 @media (max-width: 760px) {
   .ratings-say { max-width: 14ch; }
   .lead-pour { grid-template-columns: 108px minmax(0, 1fr); gap: 12px; padding: 16px; }
-  .lead-shot { min-height: 0; }
   .lead-shot img { width: 100px; height: 150px; }
   .lead-score { font-size: 52px; }
   .lead-copy h2 { font-size: 22px; }
-  .lead-copy p[data-note] { font-size: 14px; }
+  .lead-pour > p[data-note] { font-size: 14px; }
   .shelf { grid-template-columns: 1fr; gap: 4px; }
   .shelf-bottle { flex-basis: 210px; width: 210px; }
 }

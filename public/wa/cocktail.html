@@ -97,6 +97,7 @@ WA.ready(function () {
       function add(x, how) { if (!x || seen[x.slug] || pool.length >= 22) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
       want.forEach(function (x) { add(x, named ? "named in the recipe" : "style, value"); });
       if (cats) { data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.p > 0 && x.p <= 60 && x.s >= 88 && x.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 8).forEach(function (x) { add(x, "style, value"); }); data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.d >= "2024"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6).forEach(function (x) { add(x, "style, top rated"); }); }
+      if (WA.setContext) WA.setContext({ kind: "cocktail", title: r.name, summary: "Ingredients: " + r.ingredients.join("; ") + ". " + (r.intro || "").slice(0, 300), slugs: pool.slice(0, 6).map(function (x) { return x.r.slug; }) });
       if (!pool.length) return;
       WA.withNotes(pool.map(function (x) { return x.r; }), function (notes) {
         WA.recommend({ kind: "cocktail", slug: r.slug, title: r.name, summary: ((r.intro || "") + " " + (r.method || "")).slice(0, 900), ingredients: r.ingredients, candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {

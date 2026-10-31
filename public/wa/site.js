@@ -119,7 +119,16 @@
   var STORIES = null, ARTICLES = null;
   var SECTION = { news: "News", features: "Feature", guides: "Guide", cocktails: "Cocktails", travel: "Travel", life: "Whisky Life" };
   function when(d) { if (!d) return ""; var t = new Date(d + "T12:00:00"); return t.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + (t.getFullYear() !== new Date().getFullYear() ? ", " + t.getFullYear() : ""); }
-  function stories(cb) { if (STORIES) return cb(STORIES); fetch("stories.json").then(function (r) { return r.json(); }).then(function (d) { STORIES = d; cb(d); }); }
+  // The index is the last twenty months; the archive back to 2016 loads only where a page needs it (opts.all), and is kept once loaded.
+  var STORY_ARCHIVE = null, STORY_ARCHIVE_WAIT = null, STORIES_WAIT = null;
+  function stories(cb, opts) {
+    var all = opts && opts.all;
+    function done() { if (!all) return cb(STORIES); if (STORY_ARCHIVE) return cb(STORIES.concat(STORY_ARCHIVE)); if (!STORY_ARCHIVE_WAIT) STORY_ARCHIVE_WAIT = fetch("stories-archive.json").then(function (r) { return r.ok ? r.json() : []; }, function () { return []; }).then(function (d) { STORY_ARCHIVE = d; return d; }); STORY_ARCHIVE_WAIT.then(function () { cb(STORIES.concat(STORY_ARCHIVE)); }); }
+    if (STORIES) return done();
+    if (!STORIES_WAIT) STORIES_WAIT = fetch("stories.json").then(function (r) { return r.json(); }).then(function (d) { STORIES = d; return d; });
+    STORIES_WAIT.then(done);
+  }
+  function storyBySlug(slug, cb) { stories(function (recent) { var k = String(slug).toLowerCase(), hit = recent.filter(function (s) { return s.slug.toLowerCase() === k; })[0]; if (hit) return cb(hit, recent); stories(function (all) { cb(all.filter(function (s) { return s.slug.toLowerCase() === k; })[0] || null, all); }, { all: true }); }); }
   var ARTS = {};
   function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return cb(ARTS[k][slug] || null); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; cb(d[slug] || null); }, function () { cb(null); }); }
   var GLOSSARY = null;
@@ -129,7 +138,7 @@
   function storyHref(st) { return "story.html#" + st.slug; }
   function storyRow(st) { return '<a href="' + storyHref(st) + '">' + (st.hero ? '<img class="th" src="' + st.hero + '" alt="" loading="lazy">' : '<span class="tag">' + SECTION[st.sec] + '</span>') + '<span><span class="nm">' + st.title + '</span><span class="sub">' + (st.dek || SECTION[st.sec] + " · " + st.by) + '</span></span><span class="when">' + when(st.d) + "</span></a>"; }
   function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
-  window.WA.stories = stories; window.WA.article = article; window.WA.glossary = glossary; window.WA.SECTION_HREF = SECTION_HREF; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
+  window.WA.stories = stories; window.WA.storyBySlug = storyBySlug; window.WA.storiesAll = function (cb) { stories(cb, { all: true }); }; window.WA.article = article; window.WA.glossary = glossary; window.WA.SECTION_HREF = SECTION_HREF; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
 
 
   /* The whole ratings archive (every published rating, names and numbers) and the notes, sharded by slug, on demand. */
@@ -468,8 +477,10 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
     var seed = document.getElementById("waChatSeed"); if (seed) seed.remove();
     add("<p>" + esc(q) + "</p>", "me"); turns.push({ role: "user", text: q });
     var wait = add('<p class="chat-wait"><i></i><i></i><i></i></p>', "bot"); busy = true; document.getElementById("waChatSend").disabled = true; input.value = "";
-    var bottles = candidates(q);
-    fetch(WA.ASK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turns: turns.slice(-8), bottles: bottles, page: document.title }) })
+    var bottles = candidates(q), ctx = WA.context || null;
+    if (ctx && ctx.slugs && ctx.slugs.length) { var rows = (WA.data() || []), onPage = ctx.slugs.map(function (sl) { return rows.filter(function (x) { return x.slug === sl; })[0]; }).filter(Boolean); var have = {}; bottles.forEach(function (b) { have[b.slug] = true; }); onPage.forEach(function (x) { if (!have[x.slug]) bottles.unshift(WA.candidate ? WA.candidate(x, "on the page the reader is viewing") : { slug: x.slug, name: x.n, score: x.s, price: x.p > 0 ? x.p : null, category: x.c, producer: x.pr || "" }); }); bottles = bottles.slice(0, 14); }
+    var sent = turns.slice(-8); if (ctx && ctx.title && sent.filter(function (t) { return t.role === "user"; }).length === 1) { sent = sent.slice(); sent[sent.length - 1] = { role: "user", text: q + "\n\n(The reader is on " + ctx.kind + " page \"" + ctx.title + "\". " + (ctx.summary || "") + ")" }; }
+    fetch(WA.ASK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turns: sent, bottles: bottles, page: document.title }) })
       .then(function (r) { return r.json().then(function (j) { j.ok = r.ok; return j; }); })
       .catch(function () { return { ok: false, error: "The assistant could not be reached." }; })
       .then(function (res) {
@@ -486,6 +497,7 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
   log.addEventListener("click", function (e) { var b = e.target.closest(".chat-follow button"); if (b) askIt(b.textContent); });
   document.getElementById("waChatForm").addEventListener("submit", function (e) { e.preventDefault(); askIt(input.value); });
   WA.askChat = function (q) { open(true); if (q) askIt(q); };
+  WA.setContext = function (ctx) { WA.context = ctx; var seed = document.getElementById("waChatSeed"); var strong = document.querySelector("#waChat .chat-panel header strong"); if (strong && ctx && ctx.title) strong.textContent = ctx.kind === "story" ? "Ask about this story, or anything else." : ctx.kind === "bottle" ? "Ask about this bottle, or anything else." : ctx.kind === "producer" ? "Ask about " + ctx.title + ", or anything else." : ctx.kind === "cocktail" ? "Ask about this drink, or anything else." : strong.textContent; };
 })();
 
 /* Site search: a magnifier in the mast on every page opens an overlay that searches bottles, stories, producers and cocktails as you type. Slash or Cmd+K opens it too. */
@@ -497,7 +509,7 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
   ov.innerHTML = '<div class="search-box glass"><form class="search-form" id="waSearchForm" autocomplete="off"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="waSearchInput" type="search" placeholder="Search bottles, stories, producers, cocktails" aria-label="Search"><button type="button" class="search-close" id="waSearchClose" aria-label="Close">&times;</button></form><div class="search-results" id="waSearchResults"><p class="muted">Type a bottle, a distillery, a cocktail or a subject. Enter opens Ratings with your words.</p></div></div>';
   document.body.appendChild(ov);
   var input = document.getElementById("waSearchInput"), results = document.getElementById("waSearchResults"), timer = null, stories = null, cocktails = null;
-  function open(on) { ov.setAttribute("data-open", String(on)); document.body.classList.toggle("search-open", on); if (on) { setTimeout(function () { input.focus(); input.select(); }, 40); if (WA.archive) WA.archive(function () { if (input.value) run(input.value); }); if (!stories && WA.stories) WA.stories(function (s) { stories = s; if (input.value) run(input.value); }); if (!cocktails && WA.cocktails) WA.cocktails(function (c) { cocktails = c; }); } }
+  function open(on) { ov.setAttribute("data-open", String(on)); document.body.classList.toggle("search-open", on); if (on) { setTimeout(function () { input.focus(); input.select(); }, 40); if (WA.archive) WA.archive(function () { if (input.value) run(input.value); }); if (!stories && WA.storiesAll) WA.storiesAll(function (s) { stories = s; if (input.value) run(input.value); }); if (!cocktails && WA.cocktails) WA.cocktails(function (c) { cocktails = c; }); } }
   btn.addEventListener("click", function () { open(true); });
   document.getElementById("waSearchClose").addEventListener("click", function () { open(false); });
   ov.addEventListener("click", function (e) { if (e.target === ov) open(false); });

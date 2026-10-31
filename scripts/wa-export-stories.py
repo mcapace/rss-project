@@ -2,7 +2,7 @@
 """Export every published Whisky Advocate article from the CMS into the static site's
 stories.json and articles/<shard>.json. Runs SQL through the Supabase management API
 (the session proxy adds the credential; nothing is stored here)."""
-import json, re, sys, os, html, urllib.request
+import json, re, sys, os, html, datetime, urllib.request
 from collections import Counter, defaultdict
 REF = "itludqxofwurjwtbgkcl"; WEB = sys.argv[1] if len(sys.argv) > 1 else "/tmp/ga/web"
 def q(sql):
@@ -42,6 +42,22 @@ def section(tags, cats, title, words):
     if bag & TAGSETS[4][1] and words >= 1100: return "features"
     if bag & TAGSETS[5][1]: return "life"
     return "news"
+
+# Fields the old index carried that the pages read (guide kinds, travel places and regions), kept per slug, and derived for new stories.
+LEGACY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "wa-story-fields.json")
+LEGACY = json.load(open(LEGACY_PATH)) if os.path.exists(LEGACY_PATH) else {}
+KIND_RULES = [("gear", {"Whisky Gear", "Gear", "Books", "Glassware"}), ("collecting", {"Collecting", "Auctions", "Auction"}), ("101", {"Whisky 101", "Basics", "Whisky Essentials", "Tasting Lesson", "Glossary"}), ("howto", {"How To", "DIY", "Pairings", "Food", "Food Pairing"}), ("buying", {"Buying Guide", "Reviews", "Ratings", "Gift Guide", "Gifts", "Value"}), ("list", {"Whisky List"})]
+def kind_of(tags):
+    bag = set(tags)
+    for k, names in KIND_RULES:
+        if bag & names: return k
+    return "list"
+REGIONS = ["Scotland", "Kentucky", "Ireland", "Japan", "Canada", "Tennessee", "England", "Wales", "India", "Australia", "Taiwan", "Texas", "New York", "Islay", "Speyside", "Highlands", "Lowlands", "Campbeltown", "Mexico", "France"]
+def region_of(tags, title):
+    for r in REGIONS:
+        if r in tags or re.search(r"\b" + re.escape(r) + r"\b", title): return r
+    return None
+
 def text(h): return html.unescape(re.sub(r"<[^>]+>", " ", h or "")).strip()
 stories = []; shards = defaultdict(dict); missing_date = 0
 for r in rows:
@@ -62,6 +78,12 @@ for r in rows:
     entry = {"id": r["id"], "title": r["title"], "slug": slug, "by": r["byline"] or o.get("by") or "", "d": d, "sec": sec, "tags": tags or o.get("tags") or [], "hero": hero, "dek": dek, "min": str(max(1, round(words / 230))) if words else o.get("min"), "refs": refs or o.get("refs") or []}
     q = " ".join(filter(None, [r.get("ai_summary") or "", " ".join(r.get("ai_search") or [])])).strip()
     if q: entry["q"] = q
+    extra = LEGACY.get(slug)
+    if extra: entry.update(extra)
+    if sec == "guides" and "kind" not in entry: entry["kind"] = kind_of(entry["tags"])
+    if sec == "travel" and "region" not in entry:
+        rg = region_of(entry["tags"], entry["title"])
+        if rg: entry["region"] = rg
     stories.append(entry)
     shards[shard(slug)][slug] = body
 stories = [s for s in stories if s["d"]]; stories.sort(key=lambda s: s["d"], reverse=True)
@@ -69,5 +91,8 @@ os.makedirs(f"{WEB}/articles", exist_ok=True)
 for k in {shard(s) for s in [str(i).zfill(2) for i in range(64)]} | set(shards): pass
 for i in range(64):
     k = str(i).zfill(2); json.dump(shards.get(k, {}), open(f"{WEB}/articles/{k}.json", "w"), ensure_ascii=False)
-json.dump(stories, open(f"{WEB}/stories.json", "w"), ensure_ascii=False)
-print(json.dumps({"stories": len(stories), "bodies": sum(len(v) for v in shards.values()), "no_date": missing_date, "sections": Counter(s["sec"] for s in stories), "oldest": stories[-1]["d"], "newest": stories[0]["d"]}, default=dict), file=sys.stderr)
+RECENT_FROM = (datetime.date.today() - datetime.timedelta(days=640)).isoformat()
+recent = [s for s in stories if s["d"] >= RECENT_FROM]; archive = [s for s in stories if s["d"] < RECENT_FROM]
+json.dump(recent, open(f"{WEB}/stories.json", "w"), ensure_ascii=False)
+json.dump(archive, open(f"{WEB}/stories-archive.json", "w"), ensure_ascii=False)
+print(json.dumps({"stories": len(stories), "recent": len(recent), "archive": len(archive), "bodies": sum(len(v) for v in shards.values()), "no_date": missing_date, "sections": Counter(s["sec"] for s in stories), "oldest": stories[-1]["d"], "newest": stories[0]["d"]}, default=dict), file=sys.stderr)

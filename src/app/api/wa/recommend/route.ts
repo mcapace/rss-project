@@ -16,7 +16,7 @@ export const maxDuration = 30;
  * its candidates change.
  */
 const MODEL = process.env.WA_RECOMMEND_MODEL || "claude-sonnet-5-5";
-const PROMPT_VERSION = "1";
+const PROMPT_VERSION = "2";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" };
 const bucket = new Map<string, { count: number; at: number }>();
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   if (limited(ip)) return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: CORS });
   let body: Body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Send JSON." }, { status: 400, headers: CORS }); }
-  const kind = body.kind === "cocktail" ? "cocktail" : body.kind === "story" ? "story" : null;
+  const kind = (["story", "cocktail", "bottle", "producer"] as const).find(k => k === body.kind) ?? null;
   const slug = String(body.slug || "").slice(0, 200);
   if (!kind || !slug) return NextResponse.json({ error: "Say what the page is." }, { status: 400, headers: CORS });
   const title = String(body.title || "").slice(0, 200);
@@ -72,7 +72,11 @@ export async function POST(request: Request) {
 
   const page = kind === "cocktail"
     ? `A cocktail recipe: "${title}"\nIngredients:\n${ingredients.map(i => "- " + i).join("\n")}\n${summary ? "About it: " + summary : ""}`
-    : `A story: "${title}"\n${summary}`;
+    : kind === "bottle"
+      ? `A bottle's rating page: "${title}"\n${summary}\nChoose what a reader of this page should try next: a value alternative that scores as high for less when one exists, a sibling from the same house, a step up in the same style. Never the bottle itself.`
+      : kind === "producer"
+        ? `A producer's page: "${title}"\n${summary}\nChoose the three or four bottles a newcomer to this house should start with, across price points, best first.`
+        : `A story: "${title}"\n${summary}`;
   const list = candidates.map(c => `${c.slug} | ${c.name} | ${c.score} pts | ${c.price == null ? "price n/a" : "$" + c.price} | ${c.category} | ${c.producer}${c.how ? " | found: " + c.how : ""}${c.note ? " | " + c.note : ""}`).join("\n");
   try {
     const anthropic = new Anthropic();

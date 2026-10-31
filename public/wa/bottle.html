@@ -169,6 +169,23 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("ladderNote").textContent = "At " + fmt(r.p) + " it sits in the " + ["under $40", "$40 to $60", "$60 to $100", "$100 to $200", "over $200"][mine] + " band with " + (counts[mine] - 1) + " other " + (counts[mine] === 2 ? "bottle" : "bottles") + " in its category.";
     var sim = data.filter(function (x) { return x !== r && x.d >= "2021"; }).map(function (x) { var d = Math.abs(x.s - r.s) * 1.2 + (x.c === r.c ? 0 : 3) + Math.abs(Math.log(x.p / r.p)) * 2 + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))) * 0.6; }, 0); return { x: x, d: d }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; });
     document.getElementById("similar").innerHTML = sim.map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(document.getElementById("similar"));
+    (function () {
+      var pool = [], seen = {}, byslug = {};
+      function add(x, how) { if (!x || x === r || seen[x.slug] || pool.length >= 22) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
+      sim.slice(0, 10).forEach(function (x) { add(x, "closest by score, price and character"); });
+      data.filter(function (x) { return x.pr === r.pr && x !== r; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4).forEach(function (x) { add(x, "same house"); });
+      peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 4).forEach(function (x) { add(x, "scores as high for less"); });
+      peers.filter(function (x) { return x.s > r.s && x.p > r.p; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3).forEach(function (x) { add(x, "a step up in the same style"); });
+      if (!pool.length || !WA.recommend) return;
+      WA.withNotes(pool.map(function (x) { return x.r; }).concat([r]), function (notes) {
+        WA.recommend({ kind: "bottle", slug: r.slug, title: r.n, summary: r.s + " points, " + fmt(r.p) + ", " + r.c + (r.pr ? ", by " + r.pr : "") + ". " + (notes[r.slug] || ""), candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {
+          if (!rec || !rec.picks.length) return;
+          var el = document.getElementById("similar"); el.innerHTML = WA.recCards(rec.picks, byslug); WA.fillNotes(el);
+          var head = el.previousElementSibling && el.previousElementSibling.querySelector(".band-head > div, div"); if (head && rec.line) { var l = document.createElement("p"); l.className = "rec-line"; l.textContent = rec.line; head.appendChild(l); }
+        });
+      });
+    })();
+    if (WA.setContext) WA.setContext({ kind: "bottle", title: r.n, summary: r.s + " points, " + fmt(r.p) + ", " + r.c + (r.pr ? ", by " + r.pr : ""), slugs: [r.slug].concat(sim.slice(0, 6).map(function (x) { return x.slug; })) });
     var fromP = data.filter(function (x) { return x.pr === r.pr && x !== r; });
     document.getElementById("producerBand").style.display = fromP.length ? "" : "none";
     document.getElementById("producerTitle").textContent = fromP.length + " more from " + r.pr + "."; document.getElementById("producerAll").href = WA.producerHref(r.pr);

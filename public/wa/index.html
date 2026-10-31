@@ -199,29 +199,42 @@ WA.ready(function (data) {
   // Shelf scan: the photo goes to the site's own vision route; scores land over the bottles.
   (function () {
     var file = document.getElementById("scanFile"), status = document.getElementById("scanStatus"), shelf = document.getElementById("scanShelf"), cap = document.getElementById("scanCap"), list = document.getElementById("scanList");
+    function say(text) { status.textContent = text; document.getElementById("demoCapText").textContent = text; }
+    function upload(dataUrl) {
+      var phone = document.getElementById("demoPhone"); phone.setAttribute("data-live", "true"); document.getElementById("demoShelf").src = dataUrl; document.getElementById("demoShelf").style.objectPosition = "center center"; document.getElementById("demoMarks").innerHTML = ""; phone.setAttribute("data-phase", "1");
+      say("Reading the labels…"); phone.scrollIntoView({ behavior: "smooth", block: "center" });
+      var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null, timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 55000) : null;
+      fetch("/api/wa/shelf-scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: dataUrl }), signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ("Scan failed (" + r.status + ")")); return j; }, function () { throw new Error("Scan failed (" + r.status + ")"); }); })
+        .then(function (res) {
+          if (timer) clearTimeout(timer);
+          var found = res.bottles || [], rated = found.filter(function (b) { return b.rating; });
+          var marks = document.getElementById("demoMarks"); marks.innerHTML = found.map(function (b) { return '<span class="mark on" style="left:' + (b.box.x * 100) + '%;top:' + (b.box.y * 100) + '%;width:' + (b.box.w * 100) + '%;height:' + (b.box.h * 100) + '%"><em class="' + (b.rating ? "" : "none") + (res.best_value === b.label ? " best" : "") + '">' + (b.rating ? b.rating.score : "—") + "</em></span>"; }).join("");
+          document.getElementById("demoPhone").setAttribute("data-phase", "3");
+          say(found.length ? found.length + (found.length === 1 ? " bottle" : " bottles") + " found" + (rated.length < found.length ? ", " + rated.length + " rated" : "") + (res.best_value ? " · best value: " + res.best_value : "") : "No legible labels. Try closer, with the labels facing the camera.");
+          list.style.display = found.length ? "" : "none";
+          list.innerHTML = found.map(function (b) { var r = b.rating; return r ? '<a href="bottle.html#' + encodeURIComponent(r.slug || "") + '"><span class="sc score-type">' + r.score + '</span><span><span class="nm">' + r.name + '</span><span class="sub">' + r.category + (b.label !== r.name ? " · read as " + b.label : "") + '</span></span><span class="when">' + WA.fmt(r.price || 0) + "</span></a>" : '<a><span class="sc score-type">—</span><span><span class="nm">' + b.label + '</span><span class="sub">Not in the ratings yet</span></span></a>'; }).join("");
+          if (found.length) list.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        })
+        .catch(function (e) { if (timer) clearTimeout(timer); var m = String(e && e.message || e); say(/abort/i.test(m) ? "That took too long. Try again with a closer photo." : /Failed to fetch|NetworkError|Load failed/.test(m) ? (location.hostname === "localhost" || /claude/.test(location.hostname) ? "Shelf scan runs on the live site, not in this preview." : "The scan could not reach the server. Check the connection and try again.") : m); document.getElementById("demoPhone").setAttribute("data-phase", "0"); });
+    }
+    function shrink(source, w, h) { var scale = Math.min(1, 1600 / Math.max(w, h)), c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w * scale)); c.height = Math.max(1, Math.round(h * scale)); c.getContext("2d").drawImage(source, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.85); }
     file.addEventListener("change", function () {
       var f = file.files && file.files[0]; if (!f) return;
-      status.textContent = "Reading the labels…";
-      var img = new Image(), url = URL.createObjectURL(f);
-      img.onload = function () {
-        var scale = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas"); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-        var dataUrl = c.toDataURL("image/jpeg", 0.85);
-        var phone = document.getElementById("demoPhone"); phone.setAttribute("data-live", "true"); document.getElementById("demoShelf").src = dataUrl; document.getElementById("demoShelf").style.objectPosition = "center center"; document.getElementById("demoMarks").innerHTML = ""; document.getElementById("demoCapText").textContent = "Reading labels…"; phone.setAttribute("data-phase", "1");
-        fetch("/api/wa/shelf-scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: dataUrl }) })
-          .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Scan failed"); return j; }); })
-          .then(function (res) {
-            status.textContent = "";
-            var found = res.bottles || [], rated = found.filter(function (b) { return b.rating; });
-            var marks = document.getElementById("demoMarks"); marks.innerHTML = found.map(function (b) { return '<span class="mark on" style="left:' + (b.box.x * 100) + '%;top:' + (b.box.y * 100) + '%;width:' + (b.box.w * 100) + '%;height:' + (b.box.h * 100) + '%"><em class="' + (b.rating ? "" : "none") + (res.best_value === b.label ? " best" : "") + '">' + (b.rating ? b.rating.score : "—") + "</em></span>"; }).join("");
-            document.getElementById("demoPhone").setAttribute("data-phase", "3"); document.getElementById("demoCapText").textContent = found.length + (found.length === 1 ? " bottle" : " bottles") + " found" + (res.best_value ? " · best value: " + res.best_value : "");
-            list.style.display = found.length ? "" : "none";
-            list.innerHTML = found.map(function (b) { var r = b.rating; return r ? '<a href="bottle.html#' + encodeURIComponent(r.slug || "") + '"><span class="sc score-type">' + r.score + '</span><span><span class="nm">' + r.name + '</span><span class="sub">' + r.category + (b.label !== r.name ? " · read as " + b.label : "") + '</span></span><span class="when">' + WA.fmt(r.price || 0) + "</span></a>" : '<a><span class="tag">Unrated</span><span><span class="nm">' + b.label + '</span><span class="sub">No rating in the archive yet.</span></span><span class="when"></span></a>'; }).join("");
-            if (!found.length) status.textContent = "No legible labels. Try closer, with the labels facing the camera.";
-          })
-          .catch(function (e) { status.textContent = /Failed to fetch|NetworkError/.test(String(e.message)) ? "Shelf scan runs on the live site, not in this preview." : e.message; document.getElementById("demoCapText").textContent = "Shelf scan"; });
-      };
-      img.src = url;
+      say("Reading the photo…");
+      // Decode with createImageBitmap first (it handles the phone's own formats and orientation), then fall back to an Image, then to the file itself.
+      var done = false;
+      function viaImage() {
+        var img = new Image(), url = URL.createObjectURL(f);
+        img.onload = function () { if (done) return; done = true; try { upload(shrink(img, img.naturalWidth || img.width, img.naturalHeight || img.height)); } catch (e) { say("Could not read that photo. Try again, or pick one from the library."); } URL.revokeObjectURL(url); };
+        img.onerror = function () { if (done) return; done = true; URL.revokeObjectURL(url);
+          if (/^image\/(jpeg|png|webp)$/.test(f.type) && f.size < 3500000) { var fr = new FileReader(); fr.onload = function () { upload(String(fr.result)); }; fr.onerror = function () { say("Could not read that photo."); }; fr.readAsDataURL(f); }
+          else say("Could not read that photo. In Settings, Camera, Formats, choose Most Compatible, or pick a JPEG from the library."); };
+        img.src = url;
+      }
+      if (window.createImageBitmap) { createImageBitmap(f, { imageOrientation: "from-image" }).then(function (bm) { if (done) return; done = true; try { upload(shrink(bm, bm.width, bm.height)); } finally { if (bm.close) bm.close(); } }, function () { viaImage(); }); }
+      else viaImage();
+      file.value = "";
     });
   })();
   WA.stories(function (all) {

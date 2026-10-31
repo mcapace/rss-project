@@ -1299,3 +1299,6 @@ body.search-open { overflow: hidden; }
   .scan-chip.chip-a { order: 3; }
   .scan-chip:not(.on) { opacity: 0.45; }
 }
+/* The scan's status is readable on a phone, under the button. */
+#scanStatus { display: block; width: 100%; margin-top: 8px; font-size: 14px; color: var(--copper); }
+#scanStatus:empty { display: none; }

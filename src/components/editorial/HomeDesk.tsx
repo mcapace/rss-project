@@ -95,33 +95,39 @@ export function HomeDesk() {
     </div>
 
     <div className="ed-desk-grid">
-      <Panel title="Needs review" count={review.data?.total} action={<LinkButton href={href("/cms/review")} size="sm" variant="subtle" icon={ArrowRight}>Open queue</LinkButton>}>
-        <WorkTable rows={review.data?.documents.slice(0, 7)} loading={review.loading} empty="Nothing is waiting for review." href={href} showState={false} when={row => `waiting ${relativeTime(row.updated_at).replace(" ago", "")}`} />
-      </Panel>
-      <Panel title="In progress" count={drafts.data?.total} action={<LinkButton href={href("/cms/library", { state: "draft" })} size="sm" variant="subtle" icon={ArrowRight}>All drafts</LinkButton>}>
-        <WorkTable rows={drafts.data?.documents.slice(0, 7)} loading={drafts.loading} empty="No drafts. Start one above." href={href} showState={false} when={row => relativeTime(row.updated_at)} />
-      </Panel>
-      <Panel title="Scheduled" count={scheduled.data ? upcoming.length : undefined} action={<LinkButton href={href("/cms/schedule")} size="sm" variant="subtle" icon={CalendarDays}>Calendar</LinkButton>}>
-        <WorkTable rows={upcoming.slice(0, 6).map(entry => entry.document)} loading={scheduled.loading && !scheduled.data} empty="Nothing scheduled. Set a publish time in a document's Publishing panel." href={href} showState={false}
-          when={row => { const at = publishAt.get(row.id); return at ? `${formatDate(at, { weekday: "short", month: "short", day: "numeric" })} · ${new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""; }} />
-      </Panel>
-      <Panel title="Print intake" count={issues.data ? activeIssues.length : undefined} action={<LinkButton href={href("/cms/print")} size="sm" variant="subtle" icon={ArrowRight}>All issues</LinkButton>}>
-        {issues.loading && !issues.data ? <div style={{ padding: "8px 16px" }}><SkeletonRows rows={3} /></div> : activeIssues.length ? <table className="ed-table ed-work-table"><tbody>
-          {activeIssues.map(issue => <tr key={issue.id}>
-            <td><div className="title-cell">
-              <Link href={issue.status === "review" ? href("/cms/library", { issue: issue.id }) : href(`/admin/${issue.id}`)}>{issue.issue_label}</Link>
-              <small>{issue.status === "review" ? `${issue.articleCount ?? 0} candidates in the library · ${relativeTime(issue.created_at)}` : issue.status === "failed" ? issue.error || "The worker failed." : <IssueSteps issue={issue} />}</small>
-            </div></td>
-            <td style={{ width: 1 }}><Pill tone={issue.status}>{issue.status === "review" ? "Ready to review" : issue.status === "processing" ? "Processing" : issue.status === "failed" ? "Failed" : "Queued"}</Pill></td>
-          </tr>)}
-        </tbody></table> : <p className="ed-desk-empty">{demo ? "Sample issues appear here when the demo has print content." : "Upload a production PDF and the worker turns it into review candidates."}</p>}
-      </Panel>
-      <Panel title="Recently edited" action={<LinkButton href={href("/cms/library")} size="sm" variant="subtle" icon={ArrowRight}>Library</LinkButton>}>
-        <WorkTable rows={recent.data?.documents.slice(0, 7)} loading={recent.loading} empty="No documents yet. Create one or upload a print issue." href={href} when={row => relativeTime(row.updated_at)} />
-      </Panel>
-      <Panel title="Published this week" count={published.data ? publishedThisWeek.length : undefined} action={<LinkButton href={href("/cms/library", { state: "published" })} size="sm" variant="subtle" icon={ArrowRight}>All published</LinkButton>}>
-        <WorkTable rows={publishedThisWeek.slice(0, 7)} loading={published.loading && !published.data} empty="Nothing published in the last seven days. Imported records keep their original dates." href={href} showState={false} when={row => formatDate(row.published_at, { weekday: "short", month: "short", day: "numeric" })} />
-      </Panel>
+      <div className="ed-desk-col">
+        <Panel title="Needs review" count={review.data?.total} action={<LinkButton href={href("/cms/review")} size="sm" variant="subtle" icon={ArrowRight}>Open queue</LinkButton>}>
+          <WorkTable rows={review.data?.documents.slice(0, 7)} loading={review.loading} empty="Nothing is waiting for review." href={href} showState={false} when={row => `waiting ${relativeTime(row.updated_at).replace(" ago", "")}`} />
+        </Panel>
+        <Panel title="Print intake" count={issues.data ? activeIssues.length : undefined} action={<LinkButton href={href("/cms/print")} size="sm" variant="subtle" icon={ArrowRight}>All issues</LinkButton>}>
+          {issues.loading && !issues.data ? <div style={{ padding: "8px 16px" }}><SkeletonRows rows={3} /></div> : activeIssues.length ? <table className="ed-table ed-work-table"><tbody>
+            {activeIssues.map(issue => <tr key={issue.id}>
+              <td><div className="title-cell">
+                <Link href={issue.status === "review" ? href("/cms/library", { issue: issue.id }) : href(`/admin/${issue.id}`)}>{issue.issue_label}</Link>
+                <small>{issue.status === "review" ? `${issue.articleCount ?? 0} candidates in the library · ${relativeTime(issue.created_at)}` : issue.status === "failed" ? issue.error || "The worker failed." : <IssueSteps issue={issue} />}</small>
+              </div></td>
+              <td style={{ width: 1 }}><Pill tone={issue.status}>{issue.status === "review" ? "Ready to review" : issue.status === "processing" ? "Processing" : issue.status === "failed" ? "Failed" : "Queued"}</Pill></td>
+            </tr>)}
+          </tbody></table> : <p className="ed-desk-empty">{demo ? "Sample issues appear here when the demo has print content." : "Upload a production PDF and the worker turns it into review candidates."}</p>}
+        </Panel>
+      </div>
+      <div className="ed-desk-col">
+        <Panel title="In progress" count={drafts.data?.total} action={<LinkButton href={href("/cms/library", { state: "draft" })} size="sm" variant="subtle" icon={ArrowRight}>All drafts</LinkButton>}>
+          <WorkTable rows={drafts.data?.documents.slice(0, 7)} loading={drafts.loading} empty="No drafts. Start one above." href={href} showState={false} when={row => relativeTime(row.updated_at)} />
+        </Panel>
+        <Panel title="Recently edited" action={<LinkButton href={href("/cms/library")} size="sm" variant="subtle" icon={ArrowRight}>Library</LinkButton>}>
+          <WorkTable rows={recent.data?.documents.slice(0, 7)} loading={recent.loading} empty="No documents yet. Create one or upload a print issue." href={href} when={row => relativeTime(row.updated_at)} />
+        </Panel>
+      </div>
+      <div className="ed-desk-col">
+        <Panel title="Scheduled" count={scheduled.data ? upcoming.length : undefined} action={<LinkButton href={href("/cms/schedule")} size="sm" variant="subtle" icon={CalendarDays}>Calendar</LinkButton>}>
+          <WorkTable rows={upcoming.slice(0, 6).map(entry => entry.document)} loading={scheduled.loading && !scheduled.data} empty="Nothing scheduled. Set a publish time in a document's Publishing panel." href={href} showState={false}
+            when={row => { const at = publishAt.get(row.id); return at ? `${formatDate(at, { weekday: "short", month: "short", day: "numeric" })} · ${new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""; }} />
+        </Panel>
+        <Panel title="Published this week" count={published.data ? publishedThisWeek.length : undefined} action={<LinkButton href={href("/cms/library", { state: "published" })} size="sm" variant="subtle" icon={ArrowRight}>All published</LinkButton>}>
+          <WorkTable rows={publishedThisWeek.slice(0, 7)} loading={published.loading && !published.data} empty="Nothing published in the last seven days. Imported records keep their original dates." href={href} showState={false} when={row => formatDate(row.published_at, { weekday: "short", month: "short", day: "numeric" })} />
+        </Panel>
+      </div>
     </div>
   </div>;
 }

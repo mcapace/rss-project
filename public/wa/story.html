@@ -115,6 +115,19 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var heads = Array.prototype.filter.call(holder.querySelectorAll("h2, h3"), function (h) { if (h.textContent.trim()) return true; h.remove(); return false; }); heads.forEach(function (h, k) { h.id = "s" + (k + 1); });
       if (mentioned) WA.linkMentions(holder, picks);
       var prose = document.getElementById("prose"); prose.innerHTML = holder.innerHTML;
+      // Body pictures: a tall one stands at its own height, and a bottle the story mentions gets the standard shot on clear ground.
+      (function () {
+        function nameKey(r) { return r.n.split(",")[0].replace(/\s*\(.*$/, "").trim().toLowerCase(); }
+        prose.querySelectorAll("img").forEach(function (im) {
+          var orig = im.getAttribute("src") || "", file = orig.split("/").pop().replace(/\.[a-z0-9]+$/i, "").replace(/[-_+%20]+/g, " ").toLowerCase();
+          var block = im.closest("figure, p, div") || im, prev = block.previousElementSibling, next = block.nextElementSibling;
+          var near = ((im.alt || "") + " " + (block.textContent || "") + " " + (prev ? prev.textContent : "") + " " + (next ? next.textContent : "")).toLowerCase();
+          var hit = null; if (mentioned) picks.forEach(function (r) { var k = nameKey(r); if (k.length >= 8 && (r.img || r.slug) && (file.indexOf(k) >= 0 || near.indexOf(k) >= 0) && (!hit || k.length > nameKey(hit).length)) hit = r; });
+          function swap() { if (!hit || im.classList.contains("bottle-shot")) return; im.classList.add("bottle-shot"); im.onerror = function () { im.onerror = null; im.classList.remove("bottle-shot"); im.src = orig; }; im.src = hit.img || ("/api/wa/bottle/" + encodeURIComponent(hit.slug)); }
+          function mark() { if (im.naturalWidth && im.naturalHeight > im.naturalWidth * 1.15) { im.classList.add("tall"); swap(); } }
+          if (hit && file.indexOf(nameKey(hit)) >= 0) swap(); else { if (im.complete && im.naturalWidth) mark(); im.addEventListener("load", mark); }
+        });
+      })();
       WA.shop(function () { prose.querySelectorAll(".embed[data-slug]").forEach(function (em) { var p = WA.productFor(em.getAttribute("data-slug")); if (p) em.querySelector(".pr").insertAdjacentHTML("afterend", WA.buyChip(p)); }); });
       // Author, tags, sign-up.
       var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;

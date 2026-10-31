@@ -54,20 +54,19 @@
 <section class="band">
   <div class="fest glass" id="whiskyfest">
     <div class="fest-copy">
-      <div class="fest-mark"><img src="img/whiskyfest-logo.png" alt="Whisky Advocate's WhiskyFest New York: whisky, tequila and beyond" width="718" height="232"></div>
+      <div class="fest-top"><div class="fest-mark"><img src="img/whiskyfest-logo.png" alt="Whisky Advocate's WhiskyFest New York: whisky, tequila and beyond" width="718" height="232"></div><div class="fest-count" aria-label="Time until WhiskyFest" id="festCount"><div><b data-k="d">20</b><span>days</span></div><div><b data-k="h">00</b><span>hours</span></div><div><b data-k="m">00</b><span>minutes</span></div></div></div>
       <span class="mono">Friday, November 20 · New York Marriott Marquis</span>
       <h2 class="d2">Over 100 pours, one night, and the Whisky of the Year announced live.</h2>
       <p>Seminars 2 to 4pm, the Grand Tasting 6:30 to 9:30pm. Rare and ultra-aged whiskies, the distillers and blenders who made them, and dinner through the night.</p>
-      <div class="fest-count" aria-label="Time until WhiskyFest" id="festCount"><div><b data-k="d">20</b><span>days</span></div><div><b data-k="h">00</b><span>hours</span></div><div><b data-k="m">00</b><span>minutes</span></div></div>
-      <div class="fest-tiers">
+      <div class="actions"><a class="pill solid" href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967">Buy tickets</a><a class="pill" href="https://www.whiskyfest.com/">Seminars and FAQ</a><a class="pill" href="stories.html#tag=WhiskyFest">WhiskyFest news</a></div>
+    </div>
+    <div class="fest-art" id="festArt"><div class="fest-slides"><img src="img/whiskyfest-1.jpg" alt="Guests at WhiskyFest New York" class="on"><img src="img/whiskyfest-2.jpg" alt="The Grand Tasting hall" loading="lazy"><img src="img/whiskyfest-3.jpg" alt="Friends at WhiskyFest" loading="lazy"><img src="img/whiskyfest-4.jpg" alt="A table of guests at WhiskyFest" loading="lazy"><img src="img/whiskyfest-5.jpg" alt="Bottles on a distillery table" loading="lazy"><img src="img/whiskyfest-6.jpg" alt="Nosing a glass at WhiskyFest" loading="lazy"></div><div class="fest-dots" id="festDots"></div></div>
+    <div class="fest-row">
         <a href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967"><strong>Premium</strong><em>$295</em><span>Grand Tasting, Glencairn glass, tote, buffet</span></a>
         <a href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967"><strong>Seminar package</strong><em>$550</em><span>Afternoon seminars plus VIP entry at 6pm</span></a>
         <a href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967"><strong>All-Access</strong><em>$725</em><span>The lounge and pours only All-Access guests get</span></a>
-      </div>
-      <div class="actions"><a class="pill solid" href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967">Buy tickets</a><a class="pill" href="https://www.whiskyfest.com/">Seminars and FAQ</a><a class="pill" href="stories.html#tag=WhiskyFest">WhiskyFest news</a></div>
-      <a class="app-cta" href="app.html" data-app-link><img src="img/whiskyfest-app.png" alt="" width="56" height="56"><span><strong>Get the WhiskyFest app</strong><em>Your tickets, the pour list, the floor map and the seminar schedule, in your pocket on the night.</em></span><span class="app-cta-go">Download</span></a>
+      <a class="app-cta fest-app" href="app.html" data-app-link><img src="img/whiskyfest-app.png" alt="" width="56" height="56"><span><strong>Get the WhiskyFest app</strong><em>Your tickets, the pour list, the floor map and the seminar schedule, in your pocket on the night.</em></span><span class="app-cta-go">Download</span></a>
     </div>
-    <div class="fest-art" id="festArt"><div class="fest-slides"><img src="img/whiskyfest-1.jpg" alt="Guests at WhiskyFest New York" class="on"><img src="img/whiskyfest-2.jpg" alt="The Grand Tasting hall" loading="lazy"><img src="img/whiskyfest-3.jpg" alt="Friends at WhiskyFest" loading="lazy"><img src="img/whiskyfest-4.jpg" alt="A table of guests at WhiskyFest" loading="lazy"><img src="img/whiskyfest-5.jpg" alt="Bottles on a distillery table" loading="lazy"><img src="img/whiskyfest-6.jpg" alt="Nosing a glass at WhiskyFest" loading="lazy"></div><div class="fest-dots" id="festDots"></div></div>
     <div class="fest-news" id="festNews"></div>
   </div>
 </section>
@@ -238,8 +237,8 @@ WA.ready(function (data) {
         .catch(function (e) { if (timer) clearTimeout(timer); var m = String(e && e.message || e); show("error", /abort/i.test(m) ? "That took too long" : /Failed to fetch|NetworkError|Load failed/.test(m) ? "Could not reach the server" : m); document.getElementById("soNote").textContent = /abort/i.test(m) ? "Try again with a closer photo." : /Failed to fetch|NetworkError|Load failed/.test(m) ? (location.hostname === "localhost" || /claude/.test(location.hostname) ? "Shelf scan runs on the live site, not in this preview." : "Check the connection and try again.") : "Try again in a moment."; });
     }
     function shrink(source, w, h) { var scale = Math.min(1, 1600 / Math.max(w, h)), c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w * scale)); c.height = Math.max(1, Math.round(h * scale)); c.getContext("2d").drawImage(source, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.85); }
-    file.addEventListener("change", function () {
-      var f = file.files && file.files[0]; if (!f) return;
+    function handle(f) {
+      if (!f) return;
       show("reading", "Reading the photo…");
       var done = false;
       function fail(msg) { show("error", "Could not read that photo"); document.getElementById("soNote").textContent = msg; }
@@ -254,11 +253,53 @@ WA.ready(function (data) {
       if (window.createImageBitmap) { createImageBitmap(f, { imageOrientation: "from-image" }).then(function (bm) { if (done) return; done = true; try { upload(shrink(bm, bm.width, bm.height)); } finally { if (bm.close) bm.close(); } }, function () { viaImage(); }); }
       else viaImage();
       file.value = "";
-    });
+    }
+    file.addEventListener("change", function () { handle(file.files && file.files[0]); });
+    // A phone opens the camera; a desktop picks a photo from disk or takes one dropped on the phone.
+    var coarse = (window.matchMedia && matchMedia("(pointer: coarse)").matches) || /iPhone|iPad|Android/i.test(navigator.userAgent), lbl = document.querySelector('label[for="scanFile"]'), stage = document.querySelector(".scan-stage");
+    if (!coarse) {
+      file.removeAttribute("capture"); if (lbl) lbl.textContent = "Upload a shelf photo";
+      if (status && !status.textContent) status.textContent = "Or drop a photo on the phone.";
+      if (stage) {
+        stage.addEventListener("dragover", function (e) { e.preventDefault(); stage.setAttribute("data-drop", "true"); });
+        stage.addEventListener("dragleave", function () { stage.removeAttribute("data-drop"); });
+        stage.addEventListener("drop", function (e) { e.preventDefault(); stage.removeAttribute("data-drop"); handle(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+      }
+    }
   })();
   WA.stories(function (all) {
-    var news = all.filter(function (st) { return st.sec === "news" || st.sec === "features"; }).slice(0, 9), lead = news[0];
-    document.getElementById("front").innerHTML = (lead ? '<a class="story lead has-img" href="' + WA.storyHref(lead) + '">' + (lead.hero ? '<img src="' + lead.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[lead.sec] + " · " + WA.when(lead.d) + '</span><h3>' + lead.title + "</h3><p>" + (lead.dek || "") + "</p></a>" : "") + '<div class="dense front-list">' + news.slice(1).map(WA.storyRow).join("") + "</div>";
+    var news = all.filter(function (st) { return st.sec === "news" || st.sec === "features"; }), lead = news[0];
+    var byId = {}, bySlug = {}; all.forEach(function (st) { byId[st.id] = st; bySlug[st.slug] = st; });
+    var front = document.getElementById("front"), timer = null, at = 0, five = [], STEP = 6500;
+    function slide(st, i) { return '<a class="story lead has-img rot-slide" data-i="' + i + '" href="' + WA.storyHref(st) + '"' + (i ? ' aria-hidden="true" tabindex="-1"' : "") + '>' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="' + (i ? "lazy" : "eager") + '">' : "") + '<span class="tag">' + (st.label === "sponsored" ? "Sponsored" : st.label === "archive" ? "From the archive" : st.label === "editors" ? "Editors' pick" : WA.SECTION[st.sec] || "News") + " · " + WA.when(st.d) + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
+    function item(st, i) { return '<button type="button" class="rot-item" data-i="' + i + '" aria-current="' + (i === 0) + '"><span class="rot-n">0' + (i + 1) + '</span><span><span class="rot-t">' + st.title + '</span><span class="rot-s">' + (st.label === "sponsored" ? "Sponsored" : (WA.SECTION[st.sec] || "News")) + " · " + WA.when(st.d) + '</span></span><i class="rot-bar" aria-hidden="true"></i></button>'; }
+    function show(i) {
+      at = (i + five.length) % five.length;
+      front.querySelectorAll(".rot-slide").forEach(function (el, k) { var on = k === at; el.classList.toggle("on", on); el.setAttribute("aria-hidden", String(!on)); el.tabIndex = on ? 0 : -1; });
+      front.querySelectorAll(".rot-item").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
+    }
+    function arm() { clearInterval(timer); timer = setInterval(function () { if (front.getAttribute("data-paused") !== "true" && !document.hidden) show(at + 1); }, STEP); }
+    function build(list) {
+      five = list.filter(Boolean).slice(0, 5); at = 0;
+      if (!five.length) { front.innerHTML = ""; return; }
+      front.className = "front rotator"; front.style.setProperty("--rot-ms", STEP + "ms");
+      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '</div><div class="rot-rail" role="tablist" aria-label="Top stories">' + five.map(item).join("") + "</div>";
+      var more = news.filter(function (st) { return five.indexOf(st) < 0 && !five.some(function (f) { return f.id === st.id; }); }).slice(0, 6);
+      var list2 = document.getElementById("frontMore"); if (!list2) { list2 = document.createElement("div"); list2.id = "frontMore"; list2.className = "dense front-more"; front.parentNode.insertBefore(list2, front.nextSibling); }
+      list2.innerHTML = more.map(WA.storyRow).join("");
+      show(0); arm();
+    }
+    front.addEventListener("click", function (e) { var b = e.target.closest(".rot-item"); if (!b) return; show(+b.getAttribute("data-i")); arm(); });
+    front.addEventListener("mouseenter", function () { front.setAttribute("data-paused", "true"); });
+    front.addEventListener("mouseleave", function () { front.setAttribute("data-paused", "false"); });
+    front.addEventListener("focusin", function () { front.setAttribute("data-paused", "true"); });
+    front.addEventListener("focusout", function () { front.setAttribute("data-paused", "false"); });
+    (function () { var x0 = null; front.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true }); front.addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 48) { show(at + (dx < 0 ? 1 : -1)); arm(); } }, { passive: true }); })();
+    build(news.slice(0, 5));
+    fetch("/api/wa/front", { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.stories || !j.stories.length) return;
+      build(j.stories.map(function (s) { var st = byId[s.id] || bySlug[s.slug] || { id: s.id, slug: s.slug, title: s.title, dek: s.dek, by: s.by, d: s.d, sec: "news", hero: "" }; return Object.assign({}, st, { label: s.label || "", pinned: !!s.pinned }); }));
+    }).catch(function () {});
     var used = [lead], pick = function (sec) { var st = all.filter(function (s) { return (sec === "any" || s.sec === sec) && s.hero && used.indexOf(s) < 0; })[0]; if (st) used.push(st); return st; };
     var lead = pick("features") || pick("any"), side = pick("guides") || pick("any"), thirds = [pick("cocktails"), pick("travel"), pick("news")].filter(Boolean);
     document.getElementById("homeStories").innerHTML = WA.storyCard(lead, "lead") + WA.storyCard(side, "side") + thirds.map(function (st) { return WA.storyCard(st, "third"); }).join("");

@@ -16,14 +16,11 @@
   <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="band top20-page" style="padding-top: 28px">
-  <div class="top20-cover">
-    <div class="chan-head"><span class="mono">The annual list</span><h1 class="d1">Top 20</h1></div>
-    <p class="top20-year" id="yearHead"></p>
-  </div>
-  <div class="suggest" id="years"></div>
-  <div class="top20-grid" id="list"></div>
+<section class="band" style="padding-top: 28px">
+  <div class="chan-head"><h1 class="d1">Top 20</h1></div>
+  <div class="suggest" id="years" style="margin-bottom: 22px"></div>
   <div class="ad ad-leader" data-slot="wa_top20_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
+  <div class="top20-grid" id="list"></div>
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
@@ -45,22 +42,14 @@ WA.ready(function () { WA.top20(function (T) { WA.archive(function (data) {
   document.getElementById("years").innerHTML = years.map(function (y) { return '<button type="button" data-year="' + y + '" aria-pressed="' + (y === state.year) + '">' + y + "</button>"; }).join("");
   function tokens(t) { return t.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(function (x) { return x.length > 2; }); }
   function match(e) { var want = tokens(e.title), best = null, bs = 0; for (var i = 0; i < data.length; i++) { var r = data[i]; if (r.d && Math.abs(+r.d.slice(0, 4) - e.year) > 1) continue; var have = tokens(r.n), shared = have.filter(function (t) { return want.indexOf(t) >= 0; }).length; var sc = shared * 2 - Math.max(0, have.length - shared) * 0.3; if (shared >= Math.min(2, want.length) && sc > bs) { bs = sc; best = r; } } return best; }
-  function blurb(text, n) { if (!text) return ""; if (text.length <= n) return text; return text.slice(0, n).replace(/\s\S*$/, "") + "…"; }
   function card(e, r) {
     var href = r ? WA.bottleHref(r) : "", meta = [];
     if (e.score) meta.push('<b class="score-type">' + e.score + "</b>"); if (e.price) meta.push("$" + e.price); if (e.abv) meta.push(e.abv); if (e.region) meta.push(e.region);
-    var note = blurb(e.body, e.rank === 1 ? 520 : 220);
-    return '<article class="top20-card' + (e.rank === 1 ? " woty" : "") + '"><div class="rank">' + (e.rank < 10 ? "0" : "") + e.rank + "</div>" + ((e.img || e.hero) ? '<img src="' + (e.img || e.hero) + '" alt="" loading="lazy">' : "") + '<div class="body">' + (e.rank === 1 ? '<span class="mono">Whisky of the Year</span>' : "") + "<h3>" + (href ? '<a href="' + href + '">' + e.title + "</a>" : e.title) + "</h3>" + (meta.length ? '<p class="meta">' + meta.join(" · ") + (e.owner ? '<span class="owner">' + e.owner + "</span>" : "") + "</p>" : "") + (note ? "<p>" + note + "</p>" : "") + '<div class="acts">' + (e.store ? '<a class="buy-chip" href="' + e.store + '" target="_blank" rel="noopener">Buy at the store</a>' : "") + (href ? '<a class="pill" href="' + href + '">The rating</a>' : "") + "</div></div></article>";
+    return '<article class="top20-card' + (e.rank === 1 ? " woty" : "") + '"><div class="rank">' + (e.rank < 10 ? "0" : "") + e.rank + "</div>" + ((e.img || e.hero) ? '<img src="' + (e.img || e.hero) + '" alt="" loading="lazy">' : "") + '<div class="body">' + (e.rank === 1 ? '<span class="mono">Whisky of the Year ' + e.year + "</span>" : "") + "<h3>" + (href ? '<a href="' + href + '">' + e.title + "</a>" : e.title) + "</h3>" + (meta.length ? '<p class="meta">' + meta.join(" · ") + (e.owner ? '<span class="owner">' + e.owner + "</span>" : "") + "</p>" : "") + (e.body ? "<p>" + e.body.slice(0, e.rank === 1 ? 520 : 300).replace(/\s\S*$/, "") + "…</p>" : "") + '<div class="acts">' + (e.store ? '<a class="buy-chip" href="' + e.store + '" target="_blank" rel="noopener">Buy at the store</a>' : "") + (href ? '<a class="pill" href="' + href + '">The rating</a>' : "") + "</div></div></article>";
   }
   function render() {
     var rows = T.filter(function (e) { return e.year === state.year; }).sort(function (a, b) { return a.rank - b.rank; });
-    var list = document.getElementById("list");
-    var ad = document.querySelector('[data-slot="wa_top20_leader_1"]');
-    if (ad && ad.parentNode === list) list.parentNode.insertBefore(ad, list.nextSibling);
-    list.innerHTML = rows.map(function (e) { return card(e, match(e)); }).join("");
-    var cards = list.querySelectorAll(".top20-card");
-    if (ad && cards.length > 1) list.insertBefore(ad, cards[1]);
-    document.getElementById("yearHead").textContent = state.year;
+    document.getElementById("list").innerHTML = rows.map(function (e) { return card(e, match(e)); }).join("");
     document.querySelectorAll("#years button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-year") === state.year)); });
     document.title = "Top 20 Whiskies of " + state.year + " · Whisky Advocate";
   }

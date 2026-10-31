@@ -17,7 +17,7 @@
 </header>
 
 <section class="hero ratings-hero">
-  <div class="ratings-kicker"><span class="mono">Ratings</span><h1 class="ratings-say is-in" id="say">The highest scores, <em class="hi">since 2025</em>.</h1></div>
+  <div class="chan-head"><h1 class="d1">Ratings</h1></div>
   <div class="ask">
     <form id="askForm" autocomplete="off">
       <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
@@ -41,7 +41,7 @@
   <div class="rail-wrap"><div class="rail glass" id="rail" aria-label="Filters">
     <button type="button" class="rail-pill" data-pop="type"><span class="k">Type</span><span class="v" data-v="type">Any</span></button>
     <button type="button" class="rail-pill" data-pop="price"><span class="k">Price</span><span class="v" data-v="price">Any</span></button>
-    <button type="button" class="rail-pill" data-pop="since"><span class="k">Rated</span><span class="v" data-v="since">2025+</span></button>
+    <button type="button" class="rail-pill" data-pop="since"><span class="k">Rated</span><span class="v" data-v="since">All</span></button>
     <button type="button" class="rail-pill" data-pop="score"><span class="k">Score</span><span class="v" data-v="score">All</span></button>
     <button type="button" class="rail-pill" data-pop="taste"><span class="k">Taste</span><span class="v" data-v="taste">Any</span></button>
     <button type="button" class="rail-pill" data-pop="char"><span class="k">Character</span><span class="v" data-v="char">Any</span></button>
@@ -50,7 +50,7 @@
     <button type="button" class="rail-pill rail-explore" id="exploreToggle" aria-pressed="false"><span class="k">Explore</span><span class="v">maps</span></button>
     <div class="pop" data-for="type"><h3 class="mono">Type</h3><div class="chips" id="typeChips"></div></div>
     <div class="pop" data-for="price"><h3 class="mono">Price up to</h3><div class="ladder" id="priceLadder"><button type="button" data-price="40">$40</button><button type="button" data-price="60">$60</button><button type="button" data-price="100">$100</button><button type="button" data-price="200">$200</button><button type="button" data-price="400" aria-pressed="true">Any</button></div></div>
-    <div class="pop" data-for="since"><h3 class="mono">Rated</h3><div class="ladder" id="sinceLadder"><button type="button" data-since="2025" aria-pressed="true">2025+</button><button type="button" data-since="2022">2022+</button><button type="button" data-since="2018">2018+</button><button type="button" data-since="">All</button></div></div>
+    <div class="pop" data-for="since"><h3 class="mono">Rated</h3><div class="ladder" id="sinceLadder"><button type="button" data-since="2025">2025+</button><button type="button" data-since="2022">2022+</button><button type="button" data-since="2018">2018+</button><button type="button" data-since="" aria-pressed="true">All</button></div></div>
     <div class="pop" data-for="score"><h3 class="mono">Score band</h3><div class="ladder" id="scoreLadder"><button type="button" data-score="80" aria-pressed="true">All</button><button type="button" data-score="88">88+</button><button type="button" data-score="90">90+</button><button type="button" data-score="92">92+</button><button type="button" data-score="94">94+</button></div></div>
     <div class="pop wide" data-for="taste"><h3 class="mono">Taste words</h3><div class="words" id="wordChips"></div></div>
     <div class="pop" data-for="char"><h3 class="mono">Character</h3><div class="chips" id="charChips"><button type="button" data-char="smoky" aria-pressed="false">Smoky</button><button type="button" data-char="sweet" aria-pressed="false">Sweet &amp; sherried</button><button type="button" data-char="rich" aria-pressed="false">Rich</button><button type="button" data-char="light" aria-pressed="false">Light</button></div></div>
@@ -95,9 +95,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var CATS = {}; data.forEach(function (r) { CATS[r.c] = (CATS[r.c] || 0) + 1; });
   var catList = Object.keys(CATS).sort(function (a, b) { return CATS[b] - CATS[a]; }).slice(0, 9);
   var Q0 = new URLSearchParams(location.search).get("q") || ""; if (Q0) { var ai = document.getElementById("askInput"); if (ai) ai.value = Q0; }
-  var state = { terms: WA.nameTerms(Q0), types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: Q0 ? "" : "2025", words: [], twin: null };
+  var state = { terms: WA.nameTerms(Q0), types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "", words: [], twin: null };
   var LENSES = { value: { sort: "value", score: 88 }, first: { price: 60, chars: ["light"], sort: "value" }, gift: { price: 100, score: 92 }, peat: { chars: ["smoky"], types: ["Single Malt Scotch"] }, winter: { chars: ["sweet", "rich"] }, cocktail: { types: ["Rye Whiskey"], price: 60 } };
-  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.words = []; state.twin = null; state.terms = []; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
+  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = ""; state.words = []; state.twin = null; state.terms = []; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
   document.getElementById("lenses").addEventListener("click", function (e) { var b = e.target.closest(".lens"); if (!b) return; var id = b.getAttribute("data-lens"); setLens(state.lens === id ? "" : id); syncControls(); render(); });
   var typeChips = document.getElementById("typeChips");
   typeChips.innerHTML = catList.map(function (c) { return '<button type="button" data-cat="' + c + '" aria-pressed="false">' + c.replace("/Tennessee Whiskey", "") + "</button>"; }).join("");
@@ -113,7 +113,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   twinQ.addEventListener("input", function () { var q = twinQ.value.trim().toLowerCase(); if (q.length < 2) { twinMenu.setAttribute("data-open", "false"); return; } var hits = data.filter(function (r) { return r.n.toLowerCase().indexOf(q) >= 0; }).slice(0, 8); twinMenu.innerHTML = hits.map(function (r) { return '<button type="button" data-slug="' + r.slug + '"><b>' + r.s + "</b><span>" + r.n + '</span><span style="margin-left:auto;color:var(--ink-3);font-family:var(--mono);font-size:11px">' + (r.d || "").slice(0, 4) + "</span></button>"; }).join("") || '<button type="button" disabled>No bottle by that name.</button>'; twinMenu.setAttribute("data-open", "true"); });
   twinMenu.addEventListener("click", function (e) { var b = e.target.closest("button[data-slug]"); if (!b) return; state.twin = WA.find(data, b.getAttribute("data-slug")); twinMenu.setAttribute("data-open", "false"); twinQ.value = ""; state.sort = "twin"; state.since = ""; state.limit = 12; syncControls(); render(); });
   document.addEventListener("click", function (e) { if (!e.target.closest(".twin")) twinMenu.setAttribute("data-open", "false"); });
-  twinOn.addEventListener("click", function (e) { if (!e.target.closest("button")) return; state.twin = null; state.sort = "score"; state.since = "2025"; syncControls(); render(); });
+  twinOn.addEventListener("click", function (e) { if (!e.target.closest("button")) return; state.twin = null; state.sort = "score"; state.since = ""; syncControls(); render(); });
   document.getElementById("sinceLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.since = b.getAttribute("data-since"); state.region = null; state.limit = 12; syncControls(); render(); });
   document.getElementById("scoreLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.score = +b.getAttribute("data-score"); state.region = null; state.lens = ""; syncControls(); render(); });
   document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); syncControls(); render(); });
@@ -160,21 +160,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var shelves = document.getElementById("shelves");
   var rail = document.getElementById("rail");
   var SHELVES = [{ name: "Classic", range: "95 and above" }, { name: "Outstanding", range: "90 to 94" }, { name: "Very good", range: "85 to 89" }, { name: "Good", range: "80 to 84" }];
-  var LENS_SAY = { value: "Best value", first: "A first bottle", gift: "A gift under $100", peat: "Peat monsters", winter: "A winter night", cocktail: "A cocktail rye" };
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]; }); }
   function shelfOf(score) { return score >= 95 ? 0 : score >= 90 ? 1 : score >= 85 ? 2 : 3; }
-  function say() {
-    var el = document.getElementById("say");
-    var head = state.twin ? "Bottles like " + state.twin.n : (LENS_SAY[state.lens] || (state.terms.length ? "“" + state.terms.join(" ") + "”" : state.sort === "value" ? "The best value" : state.sort === "price-asc" ? "The lowest prices" : state.sort === "new" ? "The newest ratings" : "The highest scores"));
-    var tail = state.since ? "since " + state.since : "across the archive";
-    var next = esc(head) + ", <em class=\"hi\">" + esc(tail) + "</em>.";
-    var key = head + "|" + tail;
-    if (el.getAttribute("data-line") === key) return;
-    el.setAttribute("data-line", key);
-    el.classList.remove("is-in");
-    el.innerHTML = next;
-    requestAnimationFrame(function () { el.classList.add("is-in"); });
-  }
   function leadMarkup(r) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;
     return '<article class="lead-pour" data-slug="' + esc(r.slug || "") + '">' +
@@ -209,7 +196,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
   }
   function render() {
     railSync();
-    say();
     var rows = current();
     var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since || state.words.length || state.twin;
     document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.terms.length ? " · “" + state.terms.join(" ") + "”" : "") + (state.region && state.region.label ? " · " + state.region.label : "");

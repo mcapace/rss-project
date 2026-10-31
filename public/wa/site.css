@@ -881,10 +881,10 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 
 /* Ratings, redesigned: a sticky glass filter rail with popovers, full-width results, the maps as an Explore panel. */
 .finder { display: block; }
-.rail-wrap { position: sticky; top: 64px; z-index: 30; margin: 0 0 18px; }
-.rail-wrap .rail { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; }
-.rail-pill { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: rgba(255,255,255,0.55); font-size: 13.5px; color: var(--ink); transition: background-color 200ms, border-color 200ms, transform 300ms cubic-bezier(0.22,1,0.36,1); }
-.rail-pill:hover { background: rgba(255,255,255,0.85); }
+.rail-wrap { position: sticky; top: 64px; z-index: 30; margin: 0 calc(-1 * var(--gutter)) 18px; padding: 8px var(--gutter) 14px; background: var(--paper); }
+.rail-wrap .rail { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; background: var(--paper); }
+.rail-pill { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: #fff; font-size: 13.5px; color: var(--ink); transition: background-color 200ms, border-color 200ms, transform 300ms cubic-bezier(0.22,1,0.36,1); }
+.rail-pill:hover { background: #fff; }
 .rail-pill .k { color: var(--ink-3); }
 .rail-pill .v { font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-pill::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: translateY(-2px) rotate(45deg); margin-left: 2px; transition: transform 200ms; }
@@ -920,8 +920,8 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 #lenses .lens[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .finder .results .bottle .score { font-size: 54px; }
 @media (max-width: 960px) {
-  .rail-wrap { top: 56px; margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--gutter)); }
-  .rail-wrap .rail { flex-wrap: nowrap; overflow-x: auto; border-radius: 0; padding: 10px var(--gutter); scrollbar-width: none; }
+  .rail-wrap { top: 56px; padding-bottom: 12px; }
+  .rail-wrap .rail { flex-wrap: nowrap; overflow-x: auto; border-radius: 0; padding: 10px var(--gutter); scrollbar-width: none; background: var(--paper); }
   .rail-wrap .rail::-webkit-scrollbar { display: none; }
   .rail-pill { flex: 0 0 auto; }
   .rail-explore { margin-left: 0; }
@@ -1311,11 +1311,7 @@ body.finder-page .field { z-index: 0; opacity: 1; }
 body.finder-page > :not(.field):not(.mast):not(.tray):not(#waChat):not(#waSearch) { position: relative; z-index: 1; }
 body.finder-page .nl-band,
 body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, transparent); }
-.ratings-hero { gap: 18px; padding-top: clamp(28px, 5vh, 64px); padding-bottom: 6px; }
-.ratings-kicker .mono { color: var(--copper); }
-.ratings-say { margin: 8px 0 0; max-width: 16ch; font-weight: 500; font-size: clamp(34px, 4.6vw, 64px); line-height: 0.96; letter-spacing: -0.035em; }
-.ratings-say em.hi { font-style: italic; font-weight: 400; background-position: 100% 0; }
-.ratings-say.is-in em.hi { background-position: 0 0; }
+.ratings-hero { gap: 22px; padding: 28px var(--gutter) 8px; }
 .lead-stage { min-height: 180px; }
 .lead-pour { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 8px 40px; align-items: center; padding: 22px 32px 24px; border-radius: 28px; background: var(--glass); border: 1px solid var(--glass-edge); backdrop-filter: blur(22px) saturate(1.35); -webkit-backdrop-filter: blur(22px) saturate(1.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); opacity: 0; transform: translateY(22px); transition: opacity 520ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1); }
 .lead-stage.is-in .lead-pour { opacity: 1; transform: none; }
@@ -1335,10 +1331,10 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 .lead-pour .buy-slot { display: flex; height: 32px; }
 .lead-pour .buy-slot:empty { display: none; }
 .lead-pour .buy-slot .buy-chip { height: 32px; }
-.runway { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 8px 28px; align-items: start; }
+.runway { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 8px 36px; align-items: start; margin-top: 20px; }
 .runway:has(.ad-empty) { grid-template-columns: minmax(0, 1fr); }
 .runway:has(.ad-empty) .runway-ad { display: none; }
-.runway-ad { position: sticky; top: 88px; }
+.runway-ad { position: sticky; top: 96px; padding-top: 26px; }
 .runway-ad .ad-filled { margin: 0; }
 @media (max-width: 900px) { .runway { grid-template-columns: 1fr; } .runway-ad { position: static; order: -1; } .runway-ad .ad-filled { margin: 8px auto 4px; } }
 .ratings-empty { margin: 0; padding: 28px; border-radius: 28px; background: var(--glass); color: var(--ink-2); }
@@ -1373,7 +1369,6 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 .shelf-bottle p[data-note] { max-height: 0; margin: 0; opacity: 0; overflow: hidden; color: var(--ink-2); font-size: 13.5px; line-height: 1.45; transition: max-height 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease, margin 420ms ease; }
 .shelf-bottle.is-open p[data-note] { max-height: 7.5em; margin-top: 10px; opacity: 1; }
 @media (max-width: 760px) {
-  .ratings-say { max-width: 14ch; }
   .lead-pour { grid-template-columns: 108px minmax(0, 1fr); gap: 12px; padding: 16px; }
   .lead-shot img { width: 100px; height: 150px; }
   .lead-score { font-size: 52px; }
@@ -1384,7 +1379,7 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 }
 @media (prefers-reduced-motion: reduce) {
   .lead-pour, .shelf-bottle { animation: none; transition: none; opacity: 1; transform: none; }
-  .ratings-say em.hi, .shelf-bottle p[data-note] { transition: none; }
+  .shelf-bottle p[data-note] { transition: none; }
   .shelf-bottle.is-open p[data-note] { max-height: none; }
 }
 /* After a real scan the demo chips step aside; the result speaks for itself. */

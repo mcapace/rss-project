@@ -20,25 +20,38 @@ import type { CmsJsonObject } from "../src/lib/cms/types";
 import { brandFlag, connectReader, connectTarget } from "./lib/target";
 
 const IMG = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
+const ALT = /\balt=["']([^"']*)["']/i;
+/** Where each publication's legacy site served its own images, so relative paths in migrated bodies can be fetched. */
+export const LEGACY_BASE: Record<string, string> = { wa: "https://whiskyadvocate.com", ws: "https://www.winespectator.com", ca: "https://www.cigaraficionado.com", mw: "https://www.marketwatch.com" };
+export type LegacyImage = { raw: string; url: string; alt: string };
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif" };
 
-export function legacyImageUrls(html: string, hosts: string[]): string[] {
-  const out = new Set<string>();
+export function legacyImageUrls(html: string, hosts: string[], base?: string): string[] {
+  return legacyImages(html, hosts, base).map(image => image.url);
+}
+
+/** Every legacy image in a body: absolute URLs on an allowed host, and relative paths resolved against the publication's own legacy base when that host is allowed. */
+export function legacyImages(html: string, hosts: string[], base?: string): LegacyImage[] {
+  const out = new Map<string, LegacyImage>();
+  const baseHost = base ? new URL(base).hostname.toLowerCase() : "";
   for (const match of html.matchAll(IMG)) {
+    const raw = match[1];
+    const alt = (ALT.exec(match[0])?.[1] ?? "").trim();
     try {
-      const url = new URL(match[1]);
-      if ((url.protocol === "https:" || url.protocol === "http:") && hosts.includes(url.hostname.toLowerCase())) out.add(url.toString());
-    } catch { /* relative or invalid: not a legacy host */ }
+      const url = raw.startsWith("/") && !raw.startsWith("//") && base && hosts.includes(baseHost) ? new URL(raw, base) : new URL(raw);
+      if ((url.protocol === "https:" || url.protocol === "http:") && hosts.includes(url.hostname.toLowerCase()) && !out.has(raw)) out.set(raw, { raw, url: url.toString(), alt });
+    } catch { /* invalid: not a legacy image */ }
   }
-  return [...out];
+  return [...out.values()];
 }
 
 export async function runRehost(args: string[], log: (line: string) => void = console.log) {
   const { values } = parseArgs({ args, options: {
     brand: { type: "string", default: "wa" }, hosts: { type: "string", default: "" }, limit: { type: "string", default: "200" },
     apply: { type: "boolean", default: false }, "development-target": { type: "string" }, help: { type: "boolean", default: false },
+    heroes: { type: "boolean", default: false },
   }, strict: true });
-  if (values.help) { log("Usage: rehost-media --brand ws --hosts host1,host2 [--limit N] [--apply --development-target HOST]"); return; }
+  if (values.help) { log("Usage: rehost-media --brand ws --hosts host1,host2 [--limit N] [--heroes] [--apply --development-target HOST]"); return; }
   const brand = brandFlag(values.brand);
   const hosts = values.hosts.split(",").map(host => host.trim().toLowerCase()).filter(Boolean);
   if (!hosts.length) throw new Error("--hosts lists the legacy image hosts that may be fetched; nothing else is downloaded.");
@@ -49,20 +62,35 @@ export async function runRehost(args: string[], log: (line: string) => void = co
   if (writer && !bucket) throw new Error("Apply needs S3_BUCKET and AWS credentials.");
   const s3 = writer ? new S3Client({ region: process.env.AWS_REGION || "us-east-1" }) : null;
 
+  const base = LEGACY_BASE[brand];
+  const baseAllowed = Boolean(base && hosts.includes(new URL(base).hostname.toLowerCase()));
   // Only documents that still point at one of the legacy hosts, so repeated passes make progress.
-  const { data, error } = await reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand)
-    .or(hosts.map(host => `body_html.ilike.%${host.replace(/[%_,()]/g, "")}%`).join(",")).order("updated_at", { ascending: true }).limit(limit);
+  // --heroes instead takes documents whose legacy lead photograph has not been attached yet.
+  const patterns = hosts.map(host => `body_html.ilike.%${host.replace(/[%_,()]/g, "")}%`);
+  if (baseAllowed) patterns.push("body_html.ilike.%/get/files/%", "body_html.ilike.%/files/galleries/%");
+  const query = reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand);
+  const { data, error } = await (values.heroes
+    ? query.not("metadata->legacy_media->>thumb_file", "is", null).neq("metadata->legacy_media->>thumb_file", "").is("metadata->media", null)
+    : query.or(patterns.join(","))).order("updated_at", { ascending: true }).limit(limit);
   if (error) throw new Error(`Could not read documents: ${error.message}`);
-  const summary = { mode: writer ? "development-apply" : "dry-run", brand, documents: 0, images_found: 0, images_rehosted: 0, renditions: 0, bodies_rewritten: 0, failures: [] as string[] };
+  const summary = { mode: writer ? "development-apply" : "dry-run", brand, heroes: values.heroes, documents: 0, images_found: 0, images_rehosted: 0, renditions: 0, bodies_rewritten: 0, failures: [] as string[] };
 
   for (const row of (data ?? []) as { id: string; title: string; body_html: string; metadata: CmsJsonObject; revision: number }[]) {
-    const urls = legacyImageUrls(row.body_html, hosts);
-    if (!urls.length) continue;
-    summary.documents += 1; summary.images_found += urls.length;
+    const images = values.heroes ? [] : legacyImages(row.body_html, hosts, baseAllowed ? base : undefined);
+    const legacy = row.metadata.legacy_media && typeof row.metadata.legacy_media === "object" && !Array.isArray(row.metadata.legacy_media) ? row.metadata.legacy_media as CmsJsonObject : null;
+    const heroRaw = typeof legacy?.thumb_file === "string" ? legacy.thumb_file : "";
+    let hero: LegacyImage | null = null;
+    if (heroRaw && baseAllowed && base) { try { const url = new URL(heroRaw, base); if (hosts.includes(url.hostname.toLowerCase())) hero = { raw: heroRaw, url: url.toString(), alt: row.title }; } catch { /* not a usable path */ } }
+    if (hero && !images.some(image => image.url === hero!.url)) images.push(hero);
+    if (!images.length) continue;
+    summary.documents += 1; summary.images_found += images.length;
     if (!writer || !s3 || !bucket) continue;
     const media = Array.isArray(row.metadata.media) ? [...(row.metadata.media as CmsJsonObject[])] : [];
+    const before = media.length;
     let html = row.body_html;
-    for (const url of urls) {
+    for (const image of images) {
+      const url = image.url;
+      if (media.some(item => item.source_url === url)) continue;
       try {
         const response = await fetch(url, { headers: { "User-Agent": "mshanken-cms-migration/1.0" } });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -84,13 +112,15 @@ export async function runRehost(args: string[], log: (line: string) => void = co
           }
         }
         const focal = await detectFocalPoint(bytes);
-        const index = media.push({ s3_key: key, sha256: sha, file: new URL(url).pathname.split("/").pop() ?? sha, source_url: url, focal, renditions, caption: "", credit: "", alt: "" }) - 1;
-        html = html.split(url).join(`/api/media/${row.id}/${index}?w=1600`);
+        const isLead = hero !== null && image.url === hero.url;
+        const index = media.push({ s3_key: key, sha256: sha, file: new URL(url).pathname.split("/").pop() ?? sha, source_url: url, focal, renditions, caption: "", credit: "", alt: image.alt, ...(isLead ? { is_lead: true } : {}) }) - 1;
+        if (html.includes(image.raw)) html = html.split(image.raw).join(`/api/media/${row.id}/${index}?w=1600`);
         summary.images_rehosted += 1;
       } catch (failure) { summary.failures.push(`${row.id} ${url}: ${failure instanceof Error ? failure.message : "failed"}`); }
     }
-    if (html !== row.body_html) {
-      const { error: saveError } = await writer.rpc("cms_save_document", { p_document_id: row.id, p_expected_revision: row.revision, p_patch: { body_html: html, metadata: { media } }, p_actor: "media-rehost" });
+    if (html !== row.body_html || media.length !== before) {
+      const patch: CmsJsonObject = html !== row.body_html ? { body_html: html, metadata: { media } } : { metadata: { media } };
+      const { error: saveError } = await writer.rpc("cms_save_document", { p_document_id: row.id, p_expected_revision: row.revision, p_patch: patch, p_actor: "media-rehost" });
       if (saveError) summary.failures.push(`${row.id}: ${saveError.message}`); else summary.bodies_rewritten += 1;
     }
   }

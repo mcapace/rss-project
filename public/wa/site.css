@@ -1385,3 +1385,5 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
   .ratings-say em.hi, .shelf-bottle p[data-note] { transition: none; }
   .shelf-bottle.is-open p[data-note] { max-height: none; }
 }
+/* After a real scan the demo chips step aside; the result speaks for itself. */
+.demo-phone[data-live="true"] ~ .scan-chip { display: none; }

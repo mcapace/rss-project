@@ -774,3 +774,19 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 .bottle p[data-note] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 1.45; min-height: 4.35em; }
 #fresh.grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1000px) { #fresh.grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Predictive ask: what you type finds bottles, producers, stories and taste words as you go. */
+.ask { position: relative; }
+.ask-menu { position: absolute; left: 0; right: 0; top: calc(100% - 36px); z-index: 30; display: none; max-height: 380px; overflow: auto; border: 1px solid var(--glass-edge); border-radius: 18px; background: var(--glass-2); backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); box-shadow: var(--glass-shadow); padding: 6px; }
+.ask form { position: relative; z-index: 31; }
+.ask .suggest { position: relative; z-index: 29; }
+.ask-menu[data-open="true"] { display: block; }
+.ask-menu .row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 9px 12px; border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; font-size: 14px; color: var(--ink); }
+.ask-menu .row:hover { background: rgba(255,255,255,0.55); }
+.ask-menu .row b { font-size: 18px; font-weight: 700; color: var(--amber); }
+.ask-menu .row .k { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.ask-menu .row .nm { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ask-menu .row .meta { font-family: var(--mono); font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+.ask-menu .ask-row .nm { font-weight: 500; }
+footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
+@media (max-width: 760px) { footer.site { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

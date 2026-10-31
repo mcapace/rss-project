@@ -63,10 +63,10 @@
 </section>
 
 <footer class="site">
-  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="video.html">Video</a><a href="industry.html">Industry</a></div>
-  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a></div>
-  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings</a><a href="index.html#scan">Shelf scan</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a></div>
-  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a></div>
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
+  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyadvocate.com/WhiskyFest-Exhibitors">WhiskyFest</a><a href="https://www.whiskyadvocate.com/Whisky-Retailers">Whisky retailers</a><a href="https://www.whiskyadvocate.com/retailer/club">Retailer club</a></div>
+  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="https://www.whiskyadvocate.com/Contact">Contact</a><a href="https://www.whiskyadvocate.com/Contact">Advertise</a><a href="https://www.whiskyadvocate.com/Contact">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="https://www.whiskyadvocate.com/Privacy-Policy">Privacy policy</a></div>
 </footer>
 
 <div class="tray" id="tray" data-open="false" aria-label="Compare"><div class="tray-head"><span id="trayCount">Compare</span><button type="button" id="trayClear">Clear</button></div><div class="tray-body" id="trayBody"></div></div>
@@ -77,9 +77,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, charScore = WA.charScore, value = WA.value;
   var CATS = {}; data.forEach(function (r) { CATS[r.c] = (CATS[r.c] || 0) + 1; });
   var catList = Object.keys(CATS).sort(function (a, b) { return CATS[b] - CATS[a]; }).slice(0, 9);
-  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "2025", words: [], twin: null };
+  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "2025", words: [], twin: null, terms: [] };
   var LENSES = { value: { sort: "value", score: 88 }, first: { price: 60, chars: ["light"], sort: "value" }, gift: { price: 100, score: 92 }, peat: { chars: ["smoky"], types: ["Single Malt Scotch"] }, winter: { chars: ["sweet", "rich"] }, cocktail: { types: ["Rye Whiskey"], price: 60 } };
-  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.words = []; state.twin = null; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
+  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.words = []; state.twin = null; state.terms = []; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
   document.getElementById("lenses").addEventListener("click", function (e) { var b = e.target.closest(".lens"); if (!b) return; var id = b.getAttribute("data-lens"); setLens(state.lens === id ? "" : id); syncControls(); render(); });
   var typeChips = document.getElementById("typeChips");
   typeChips.innerHTML = catList.map(function (c) { return '<button type="button" data-cat="' + c + '" aria-pressed="false">' + c.replace("/Tennessee Whiskey", "") + "</button>"; }).join("");
@@ -105,7 +105,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     state.types = f.types.length ? f.types.reduce(function (a, t) { return a.concat(t.cats); }, []) : [];
     state.price = f.price ? [40, 60, 100, 200, 400].filter(function (p) { return p >= f.price; })[0] || 400 : 400;
     state.score = f.score ? [94, 92, 90, 88, 80].filter(function (s) { return s <= f.score; })[0] || 80 : 80;
-    state.chars = f.chars.slice(); state.lens = ""; state.region = null; state.limit = 12; syncControls(); render();
+    state.chars = f.chars.slice(); state.lens = ""; state.region = null; state.limit = 12; state.terms = f.terms || []; if (state.terms.length) state.since = ""; syncControls(); render();
   };
   function syncControls() {
     typeChips.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.types.indexOf(b.getAttribute("data-cat")) >= 0)); });
@@ -121,6 +121,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   }
   function current() {
     var rows = data.filter(function (r) {
+      if (state.terms.length && !WA.nameScore(state.terms, r)) return false;
       if (state.since && !(r.d >= state.since)) return false;
       if (state.words.length && !state.words.every(function (i) { return WA.hasWord(r, i); })) return false;
       if (state.twin && r === state.twin) return false;
@@ -141,7 +142,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   function render() {
     var rows = current();
     var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since || state.words.length || state.twin;
-    document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
+    document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.terms.length ? " · “" + state.terms.join(" ") + "”" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
     grid.innerHTML = rows.slice(0, state.limit).map(function (r) { return WA.bottleCard(r, { compare: state.compare }); }).join(""); WA.fillNotes(grid);
     document.getElementById("more").style.display = rows.length > state.limit ? "" : "none";
     drawMaps(rows);
@@ -204,6 +205,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   addEventListener("resize", function () { drawMaps(current()); });
   addEventListener("hashchange", function () { var h = (location.hash || "").slice(1); if (LENSES[h]) { setLens(h); syncControls(); render(); } });
   var h = (location.hash || "").slice(1); if (LENSES[h]) setLens(h);
+  if (h.indexOf("word=") === 0) { var wi = WORDS.indexOf(decodeURIComponent(h.slice(5))); if (wi >= 0) { state.words = [wi]; state.since = ""; } }
   syncControls(); render();
 }); });
 </script>

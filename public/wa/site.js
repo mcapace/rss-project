@@ -214,8 +214,27 @@
     { key: "Canadian", match: /canad/i, cats: ["Canadian"] },
     { key: "American single malt", match: /american single malt/i, cats: ["Single Malt American Whiskey"] },
   ];
+  /* Names: typo-tolerant matching of what was typed against bottle and producer names. */
+  function norm(s) { return String(s || "").toLowerCase().replace(/[\u2019']/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim(); }
+  var INTENT = /^(best|top|great|good|under|below|over|for|a|an|the|with|and|or|of|in|to|me|my|whisky|whiskey|whiskies|bottle|bottles|something|like|rated|points?|pts|dollars?|night|gift|cheap|value|smoky|smoke|peat|peated|peaty|sweet|sherry|sherried|rich|light|bourbon|rye|scotch|irish|japanese|japan|canadian|single|malt|blended|blend|highland|speyside|islay|winter|summer|first|friend|year|years|old|cask|strength|proof|from|that|this|what|which|should|use|worth|price)$/;
+  function nameTerms(q) { return norm(q).split(" ").filter(function (t) { return t.length >= 3 && !INTENT.test(t) && !/^\d+$/.test(t); }); }
+  function edit(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    var prev = [], cur = [], i, j; for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) { cur[0] = i; var rowMin = i; for (j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (cur[j] < rowMin) rowMin = cur[j]; } if (rowMin > max) return max + 1; prev = cur.slice(); }
+    return prev[b.length];
+  }
+  function tokensOf(r) { if (!r._tk) r._tk = norm(r.n + " " + r.pr).split(" "); return r._tk; }
+  function termHit(term, r) {
+    var best = 0, toks = tokensOf(r);
+    for (var i = 0; i < toks.length; i++) { var t = toks[i]; if (t === term) return 3; if (t.indexOf(term) === 0 || (term.length >= 4 && term.indexOf(t) === 0 && t.length >= 4)) { best = Math.max(best, 2); continue; } if (best < 1 && t.length >= 4 && edit(term, t, term.length > 6 ? 2 : 1) <= (term.length > 6 ? 2 : 1)) best = 1; }
+    return best;
+  }
+  function nameScore(terms, r) { var total = 0; for (var i = 0; i < terms.length; i++) { var h = termHit(terms[i], r); if (!h) return 0; total += h; } return total; }
+  window.WA.nameTerms = nameTerms; window.WA.nameScore = nameScore; window.WA.norm = norm;
+
   function understand(q) {
-    var f = { types: [], price: null, score: null, chars: [], text: q };
+    var f = { types: [], price: null, score: null, chars: [], text: q, terms: nameTerms(q) };
     TYPES.forEach(function (t) { if (t.match.test(q)) f.types.push(t); });
     var m = q.match(/(?:under|below|less than|up to|max(?:imum)?)\s*\$?\s*(\d{2,4})/i) || q.match(/\$\s*(\d{2,4})/); if (m) f.price = +m[1];
     var s = q.match(/(\d{2})\s*(?:points?|pts|\+|or higher|or better|and up)/i); if (s) f.score = +s[1];
@@ -228,22 +247,39 @@
     return f;
   }
   function apply(f, rows) {
-    return rows.filter(function (r) {
-      if (f.types.length && !f.types.some(function (t) { return t.cats.indexOf(r.c) >= 0; })) return false;
-      if (f.price && r.p > f.price) return false;
-      if (f.score && r.s < f.score) return false;
-      return true;
-    }).map(function (r) { var fit = f.chars.reduce(function (acc, c) { return acc + Math.min(3, charScore(r, c)); }, 0); return { r: r, rank: r.s + fit * 1.5 }; })
-      .sort(function (a, b) { return b.rank - a.rank || a.r.p - b.r.p; }).map(function (x) { return x.r; });
+    var named = f.terms && f.terms.length ? f.terms : null;
+    var out = rows.map(function (r) {
+      var ns = named ? nameScore(named, r) : 0; if (named && !ns) return null;
+      if (!named || ns < 2) { if (f.types.length && !f.types.some(function (t) { return t.cats.indexOf(r.c) >= 0; })) return null; }
+      if (f.price && r.p > f.price) return null;
+      if (f.score && r.s < f.score) return null;
+      var fit = f.chars.reduce(function (acc, c) { return acc + Math.min(3, charScore(r, c)); }, 0);
+      return { r: r, rank: r.s + fit * 1.5 + ns * 6 + (r.d ? (+r.d.slice(0, 4) - 2013) * 0.15 : 0) };
+    }).filter(Boolean);
+    // A typed name that matches nothing exactly still finds its nearest spellings.
+    if (named && !out.length) { out = rows.map(function (r) { var best = 0; named.forEach(function (t) { best += termHit(t, r); }); return best ? { r: r, rank: r.s + best * 6 } : null; }).filter(Boolean); }
+    return out.sort(function (a, b) { return b.rank - a.rank || a.r.p - b.r.p; }).map(function (x) { return x.r; });
   }
   function facetLabels(f) {
-    var out = []; f.types.forEach(function (t) { out.push(t.key); });
+    var out = []; (f.terms || []).forEach(function (t) { out.push("“" + t + "”"); }); f.types.forEach(function (t) { out.push(t.key); });
     if (f.price) out.push("under " + fmt(f.price)); if (f.score) out.push(f.score + "+ points"); f.chars.forEach(function (c) { out.push(c); });
     return out;
   }
   function answerFor(f, picks) {
     if (!picks.length) return "<p>Nothing in the archive matches all of that at once. Loosen the budget or the score and the picks come back.</p>";
     var top = picks[0], avg = Math.round(picks.slice(0, 8).reduce(function (a, r) { return a + r.p; }, 0) / Math.min(8, picks.length));
+    if (f.terms && f.terms.length) {
+      var byPr = {}; picks.forEach(function (r) { byPr[r.pr] = (byPr[r.pr] || 0) + 1; });
+      var house = Object.keys(byPr).sort(function (a, b) { return byPr[b] - byPr[a]; })[0], share = byPr[house] / picks.length;
+      var best = picks.slice().sort(function (a, b) { return b.s - a.s || (b.d || "").localeCompare(a.d || ""); })[0], newest = picks.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || ""); })[0];
+      var priced = picks.filter(function (r) { return r.p > 0; }), cheapest = priced.slice().sort(function (a, b) { return a.p - b.p; })[0];
+      var t = "";
+      if (share >= 0.5 && byPr[house] > 1) t += "<p><strong>" + house + "</strong>: " + byPr[house] + " ratings in the archive" + (newest && newest.d ? ", the latest " + newest.n + " in " + newest.d.slice(0, 4) : "") + ". The panel's highest mark is " + best.s + " for " + best.n + (best.p > 0 ? " at " + fmt(best.p) : "") + "." + (cheapest ? " The most affordable is " + cheapest.n + " at " + fmt(cheapest.p) + "." : "") + "</p>";
+      else t += "<p>" + picks.length + (picks.length === 1 ? " bottle" : " bottles") + " named like that. Highest: <strong>" + best.n + "</strong>, " + best.s + " points" + (best.p > 0 ? " at " + fmt(best.p) : "") + ".</p>";
+      t += "<p>" + (top.t || "") + "</p>";
+      t += '<div class="src">' + (share >= 0.5 && byPr[house] > 1 ? '<a href="' + producerHref(house) + '">' + house + " portfolio</a>" : "") + '<a href="' + bottleHref(DATA.indexOf(best)) + '">' + best.n + '</a><a href="finder.html">All ratings</a></div>';
+      return t;
+    }
     var what = f.types.length ? f.types.map(function (t) { return t.key.toLowerCase(); }).join(" or ") : "whisky";
     var tone = f.chars.length ? " leaning " + f.chars.join(" and ") : "";
     var text = "<p>For " + what + tone + (f.price ? " under " + fmt(f.price) : "") + ", start with <strong>" + top.n + "</strong>: " + top.s + " points at " + fmt(top.p) + ". " + (top.t ? top.t.replace(/\s+$/, "") + "." : "") + "</p>";
@@ -256,7 +292,9 @@
     var input = document.getElementById("askInput"), answer = document.getElementById("answer");
     function ask(q) {
       if (!q.trim() || !DATA) return;
-      var f = understand(q), picks = apply(f, DATA);
+      var f = understand(q);
+      if (f.terms.length && !ARCHIVE) { archive(function () { ask(q); }); return; }
+      var picks = apply(f, DATA);
       document.getElementById("answerFacets").innerHTML = facetLabels(f).map(function (l) { return '<span class="facet">' + l + "</span>"; }).join("") || '<span class="facet">everything</span>';
       document.getElementById("answerText").innerHTML = answerFor(f, picks);
       document.getElementById("answerPicks").innerHTML = picks.slice(0, 4).map(function (r) { return '<a class="pick" href="' + bottleHref(DATA.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="ct">' + r.c + "</span></span><span class=\"pr\">" + fmt(r.p) + "</span></a>"; }).join("");
@@ -264,7 +302,30 @@
       setTimeout(function () { if (window.WA.scrollAnswer) window.WA.scrollAnswer(); else answer.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 50);
       if (window.WA.onAsk) window.WA.onAsk(f);
     }
-    form.addEventListener("submit", function (e) { e.preventDefault(); ask(input.value); });
+    form.addEventListener("submit", function (e) { e.preventDefault(); menu.setAttribute("data-open", "false"); ask(input.value); });
+    // Predictive: bottles, producers, stories and taste words appear as you type; a tap opens them, Enter asks.
+    var menu = document.createElement("div"); menu.className = "ask-menu"; menu.setAttribute("data-open", "false"); form.insertAdjacentElement("afterend", menu);
+    var timer = null;
+    function suggestFor(q) {
+      var terms = nameTerms(q); if (!terms.length) { menu.setAttribute("data-open", "false"); return; }
+      var rows = DATA || [], scored = [];
+      for (var i = 0; i < rows.length; i++) { var ns = nameScore(terms, rows[i]); if (ns) scored.push({ r: rows[i], ns: ns }); }
+      scored.sort(function (a, b) { return b.ns - a.ns || b.r.s - a.r.s || (b.r.d || "").localeCompare(a.r.d || ""); });
+      var houses = {}; scored.forEach(function (x) { if (terms.every(function (t) { return norm(x.r.pr).split(" ").some(function (tok) { return tok.indexOf(t) === 0 || edit(t, tok, 1) <= 1; }); })) houses[x.r.pr] = (houses[x.r.pr] || 0) + 1; });
+      var houseList = Object.keys(houses).sort(function (a, b) { return houses[b] - houses[a]; }).slice(0, 2);
+      var words = (window.WA.WORDS || []).filter(function (w) { return terms.some(function (t) { return w.indexOf(t) === 0; }); }).slice(0, 2);
+      var html = '<button type="button" class="row ask-row" data-ask="' + q.replace(/"/g, "&quot;") + '"><span class="k">Ask</span><span class="nm">' + q.replace(/</g, "&lt;") + "</span></button>";
+      houseList.forEach(function (h) { html += '<a class="row" href="' + producerHref(h) + '"><span class="k">Producer</span><span class="nm">' + h + '</span><span class="meta">' + houses[h] + " ratings</span></a>"; });
+      scored.slice(0, 5).forEach(function (x) { html += '<a class="row" href="' + bottleHref(x.r) + '"><b class="score-type">' + x.r.s + '</b><span class="nm">' + x.r.n + '</span><span class="meta">' + (x.r.d ? x.r.d.slice(0, 4) : "") + "</span></a>"; });
+      words.forEach(function (w) { html += '<a class="row" href="finder.html#word=' + encodeURIComponent(w) + '"><span class="k">Taste</span><span class="nm">' + w + "</span></a>"; });
+      if (STORIES) { STORIES.filter(function (st) { return terms.every(function (t) { return norm(st.title).indexOf(t) >= 0; }); }).slice(0, 2).forEach(function (st) { html += '<a class="row" href="' + storyHref(st) + '"><span class="k">' + SECTION[st.sec] + '</span><span class="nm">' + st.title + "</span></a>"; }); }
+      menu.innerHTML = html; menu.setAttribute("data-open", "true");
+    }
+    input.addEventListener("input", function () { var q = input.value; clearTimeout(timer); if (nameTerms(q).length === 0) { menu.setAttribute("data-open", "false"); return; } timer = setTimeout(function () { if (!ARCHIVE) { archive(function () { suggestFor(input.value); }); if (!STORIES) stories(function () {}); } else suggestFor(q); }, 90); });
+    input.addEventListener("focus", function () { if (nameTerms(input.value).length) suggestFor(input.value); });
+    input.addEventListener("keydown", function (e) { if (e.key === "Escape") menu.setAttribute("data-open", "false"); });
+    menu.addEventListener("click", function (e) { var b = e.target.closest(".ask-row"); if (b) { e.preventDefault(); menu.setAttribute("data-open", "false"); ask(b.getAttribute("data-ask")); } });
+    document.addEventListener("click", function (e) { if (!e.target.closest(".ask")) menu.setAttribute("data-open", "false"); });
     var sug = document.getElementById("suggest"); if (sug) sug.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; input.value = b.textContent; ask(b.textContent); });
     var mic = form.querySelector(".mic"); if (mic) mic.addEventListener("click", function () { input.placeholder = "Listening… say what you're in the mood for"; input.focus(); setTimeout(function () { input.placeholder = "A sherried Speyside under $90 for a winter night"; }, 2500); });
     window.WA.ask = ask;

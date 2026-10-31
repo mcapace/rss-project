@@ -538,3 +538,32 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
 var waAds = document.createElement("script");
 waAds.src = "ads.js";
 document.body.appendChild(waAds);
+
+/* The menu: five channels stay in the bar, the rest open from the button at the left. */
+(function () {
+  var mast = document.querySelector(".mast"), nav = document.querySelector(".mast nav");
+  if (!mast || !nav || document.getElementById("waMenu")) return;
+  var KEEP = ["Ratings", "Stories", "Guides", "Cocktails", "Top 20"];
+  nav.querySelectorAll("a").forEach(function (a) { if (KEEP.indexOf(a.textContent.trim()) < 0) a.setAttribute("data-more", ""); });
+  var left = document.createElement("div"); left.className = "mast-left";
+  var btn = document.createElement("button"); btn.type = "button"; btn.className = "burger"; btn.setAttribute("aria-label", "Menu"); btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "waMenu");
+  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  mast.insertBefore(left, nav); left.appendChild(btn); left.appendChild(nav);
+  var here = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  function link(href, text) { return '<a href="' + href + '"' + (href.toLowerCase() === here ? ' aria-current="page"' : "") + '>' + text + "</a>"; }
+  var ov = document.createElement("div"); ov.id = "waMenu"; ov.setAttribute("data-open", "false"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Site menu");
+  ov.innerHTML = '<div class="menu-sheet"><div class="menu-head"><a href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><button type="button" class="menu-close" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>'
+    + '<div class="menu-group" data-cols><span class="mono">Read</span>' + [["finder.html", "Ratings"], ["stories.html", "Stories"], ["stories.html#news", "News"], ["stories.html#features", "Features"], ["guides.html", "Guides"], ["cocktails.html", "Cocktails"], ["travel.html", "Travel"], ["top20.html", "Top 20"], ["video.html", "Video"], ["producers.html", "Producers"], ["industry.html", "Industry"]].map(function (l) { return link(l[0], l[1]); }).join("") + "</div>"
+    + '<div class="menu-cols"><div class="menu-group"><span class="mono">Tools</span>' + [["tools.html", "All tools"], ["finder.html", "Ratings search"], ["index.html#scan", "Shelf scan"], ["cocktails.html", "Cocktail cabinet"], ["guides.html#glossaryBand", "Glossary"], ["retailers.html", "Retailers"]].map(function (l) { return link(l[0], l[1]); }).join("") + "</div>"
+    + '<div class="menu-group"><span class="mono">Whisky Advocate</span>' + [["index.html#whiskyfest", "WhiskyFest"], ["app.html", "WhiskyFest app"], ["newsletter.html", "Newsletters"], ["https://store.whiskyadvocate.com/", "Store"], ["about.html", "About"], ["contact.html", "Contact"], ["contact.html#advertise", "Advertise"], ["privacy.html", "Privacy"]].map(function (l) { return link(l[0], l[1]); }).join("") + "</div></div>"
+    + '<div class="menu-cta"><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe to the magazine</a><a class="pill" href="newsletter.html">Newsletters</a></div>'
+    + '<div class="menu-social" aria-label="Whisky Advocate on social media"><a href="https://www.instagram.com/whiskyadvocate/" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a><a href="https://www.facebook.com/WhiskyAdvocate/" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.9.3-1.5 1.5-1.5h1.5V5c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7z"/></svg></a><a href="https://x.com/WhiskyAdvocate" aria-label="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3h3l-7 8 8.2 10h-6.4l-5-6.5L4.6 21h-3l7.5-8.6L1.3 3h6.6l4.5 6z"/></svg></a><a href="https://www.youtube.com/user/WhiskyAdvocate" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 8.2c-.2-1.4-.9-2.2-2.3-2.4C17.5 5.5 12 5.5 12 5.5s-5.5 0-7.7.3C2.9 6 2.2 6.8 2 8.2 1.7 10 1.7 12 1.7 12s0 2 .3 3.8c.2 1.4.9 2.2 2.3 2.4 2.2.3 7.7.3 7.7.3s5.5 0 7.7-.3c1.4-.2 2.1-1 2.3-2.4.3-1.8.3-3.8.3-3.8s0-2-.3-3.8zM9.9 15.1V8.9l5.5 3.1z"/></svg></a></div></div>';
+  document.body.appendChild(ov);
+  var last = null;
+  function open(on) { ov.setAttribute("data-open", String(on)); btn.setAttribute("aria-expanded", String(on)); document.body.setAttribute("data-menu", String(on)); if (on) { last = document.activeElement; var f = ov.querySelector(".menu-group a"); if (f) f.focus(); } else if (last && last.focus) { last.focus(); } }
+  btn.addEventListener("click", function () { open(ov.getAttribute("data-open") !== "true"); });
+  ov.querySelector(".menu-close").addEventListener("click", function () { open(false); });
+  ov.addEventListener("click", function (e) { if (e.target === ov) open(false); });
+  ov.addEventListener("click", function (e) { if (e.target.closest("a")) open(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ov.getAttribute("data-open") === "true") open(false); });
+})();

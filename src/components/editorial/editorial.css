@@ -949,3 +949,26 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-facet button em { color: var(--muted); font-size: 11.5px; font-style: normal; font-variant-numeric: tabular-nums; }
 .ed-facet button[aria-pressed="true"] em { color: inherit; opacity: 0.7; }
 .ed-rating-table td strong { font-variant-numeric: tabular-nums; }
+
+/* Front page: the five rotator positions. */
+.ed-front { display: grid; gap: 10px; }
+.ed-front-row { display: flex; gap: 14px; align-items: flex-start; }
+.ed-front-pos { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 14px; background: var(--ed-surface-2, rgba(127,127,127,0.12)); }
+.ed-front-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; margin-bottom: 4px; }
+.ed-front-title { font-size: 16px; font-weight: 600; line-height: 1.3; margin: 0; }
+.ed-front-note { font-size: 12px; margin-top: 4px; }
+.ed-front-actions { display: flex; gap: 6px; flex: none; }
+.ed-front-editor { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--ed-border, rgba(127,127,127,0.25)); display: grid; gap: 12px; }
+.ed-front-search { display: flex; align-items: center; gap: 8px; }
+.ed-front-search .ed-input { flex: 1; }
+.ed-front-chosen { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--ed-surface-2, rgba(127,127,127,0.12)); font-size: 13px; }
+.ed-front-chosen span { flex: 1; min-width: 0; }
+.ed-front-chosen button { border: 0; background: none; color: inherit; cursor: pointer; display: grid; place-items: center; }
+.ed-front-results { list-style: none; margin: 6px 0 0; padding: 0; border: 1px solid var(--ed-border, rgba(127,127,127,0.25)); border-radius: 8px; overflow: hidden; }
+.ed-front-results li + li { border-top: 1px solid var(--ed-border, rgba(127,127,127,0.25)); }
+.ed-front-results li.ed-muted { padding: 8px 10px; font-size: 13px; }
+.ed-front-results button { width: 100%; text-align: left; border: 0; background: none; color: inherit; cursor: pointer; padding: 8px 10px; display: grid; gap: 2px; font: inherit; font-size: 13px; }
+.ed-front-results button:hover, .ed-front-results button[aria-selected="true"] { background: var(--ed-surface-2, rgba(127,127,127,0.12)); }
+.ed-front-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.ed-front-editor-actions { display: flex; gap: 8px; }
+@media (max-width: 640px) { .ed-front-row { flex-wrap: wrap; } .ed-front-actions { width: 100%; } }

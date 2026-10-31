@@ -1,4 +1,4 @@
-import { Activity, Archive, BookOpen, CalendarDays, ClipboardCheck, FileInput, FileText, House, LibraryBig, Newspaper, PenLine, Plus, Rss, Search, Star, type LucideIcon } from "lucide-react";
+import { Activity, Archive, BookOpen, CalendarDays, ClipboardCheck, FileInput, FileText, House, LayoutTemplate, LibraryBig, Newspaper, PenLine, Plus, Rss, Search, Star, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -32,6 +32,7 @@ export const WORKFLOW_NAV: NavItem[] = [
   { href: "/cms/review", label: "Review queue", icon: ClipboardCheck, match: p => p === "/cms/review", badge: "review", keywords: "needs review approve candidates" },
   { href: "/cms/library?state=draft", label: "Drafts", icon: PenLine, match: libraryWith("state", "draft"), keywords: "in progress unpublished work" },
   { href: "/cms/schedule", label: "Schedule", icon: CalendarDays, match: p => p === "/cms/schedule", keywords: "calendar publish dates planned" },
+  { href: "/cms/front", label: "Front page", icon: LayoutTemplate, match: p => p === "/cms/front", keywords: "home rotator featured sponsored pinned top five news" },
 ];
 
 export const PRINT_NAV: NavItem[] = [

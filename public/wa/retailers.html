@@ -31,16 +31,16 @@ WA.ready(function () {
     function tel(p) { return p && p.length === 10 ? "(" + p.slice(0, 3) + ") " + p.slice(3, 6) + "-" + p.slice(6) : p; }
     function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
     function render() {
-      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [];
+      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [], openAll = !!(term || st) || window.innerWidth > 900;
       data.forEach(function (s) {
         if (st && s.state !== st) return;
         var stores = s.stores.filter(function (x) { return !term || (x.name + " " + x.city).toLowerCase().indexOf(term) >= 0; });
         if (!stores.length) return; n += stores.length;
-        out.push('<section class="ret-state"><h2 class="d3">' + esc(s.state.replace(/, US$/, "")) + ' <span class="muted">' + stores.length + "</span></h2><div class=\"ret-list\">" + stores.map(function (x) {
+        out.push('<details class="ret-state"' + (openAll ? " open" : "") + '><summary><span class="d3">' + esc(s.state.replace(/, US$/, "")) + ' <span class="muted">' + stores.length + "</span></span></summary><div class=\"ret-list\">" + stores.map(function (x) {
           var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website</a>' : "";
           var ph = x.phone ? '<a href="tel:' + esc(x.phone) + '">' + esc(tel(x.phone)) + "</a>" : "";
           return '<div class="ret-card glass"><strong>' + esc(x.name) + "</strong><span>" + esc(x.city) + "</span><span class=\"ret-links\">" + ph + web + "</span></div>";
-        }).join("") + "</div></section>");
+        }).join("") + "</div></details>");
       });
       grid.innerHTML = out.join("") || '<p class="muted">No stores match.</p>';
       count.textContent = n + (n === 1 ? " store" : " stores");
@@ -62,7 +62,7 @@ WA.ready(function () {
   <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
-<script src="site.js"></script>
+
 <script>WA.ready(function () {});</script>
 </body>
 </html>

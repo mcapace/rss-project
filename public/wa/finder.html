@@ -186,13 +186,19 @@ WA.ready(function (recent) { WA.archive(function (data) {
   function seatAd() {
     var ad = document.querySelector('[data-slot="wa_ratings_mrec_1"]');
     if (!ad) return;
-    if (ad.parentNode) ad.parentNode.removeChild(ad);
+    if (ad.parentNode === grid) grid.parentNode.insertBefore(ad, grid.nextSibling);
     var cards = grid.querySelectorAll(".bottle");
-    if (!cards.length) { grid.parentNode.insertBefore(ad, grid.nextSibling); return; }
+    if (!cards.length) return;
     var rowTop = cards[0].offsetTop, cols = 1;
     for (var i = 1; i < cards.length; i++) { if (Math.abs(cards[i].offsetTop - rowTop) > 4) break; cols++; }
-    if (cards.length > cols) grid.insertBefore(ad, cards[cols]);
-    else grid.parentNode.insertBefore(ad, grid.nextSibling);
+    var at = Math.min(cards.length, cols < 2 ? 2 : cols);
+    if (at < cards.length) grid.insertBefore(ad, cards[at]);
+    else grid.appendChild(ad);
+    ad.style.gridRow = (cols > 1 && ad.offsetHeight > 420) ? "span 2" : "";
+    if (!ad._spanWatch && window.ResizeObserver) {
+      ad._spanWatch = true;
+      new ResizeObserver(function () { ad.style.gridRow = (ad.parentNode === grid && grid.querySelectorAll(".bottle").length > 2 && ad.offsetHeight > 420) ? "span 2" : ""; }).observe(ad);
+    }
   }
   grid.addEventListener("click", function (e) { var b = e.target.closest("button[data-i]"); if (!b) return; var i = +b.getAttribute("data-i"); var at = state.compare.indexOf(i); if (at >= 0) state.compare.splice(at, 1); else { if (state.compare.length >= 3) state.compare.shift(); state.compare.push(i); } render(); renderTray(); });
   function renderTray() {

@@ -413,6 +413,11 @@ document.querySelectorAll("form.nl-strip").forEach(function (f) {
   });
 });
 
+/* The WhiskyFest app: one link that knows where to go. iPhone and iPad go to the App Store, Android to Google Play, everyone else to the app page. */
+WA.APP = { ios: "https://apps.apple.com/app/id6796849673", android: "https://play.google.com/store/apps/details?id=com.mshanken.whiskyfest2026", page: "app.html" };
+WA.appStore = function () { var ua = navigator.userAgent || ""; if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return WA.APP.ios; if (/Android/.test(ua)) return WA.APP.android; return WA.APP.page; };
+document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA.appStore(); if (a.href !== location.href && /apple|google/.test(a.href)) { a.target = "_blank"; a.rel = "noopener"; } });
+
 var waAds = document.createElement("script");
 waAds.src = "ads.js";
 document.body.appendChild(waAds);

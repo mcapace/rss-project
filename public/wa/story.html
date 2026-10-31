@@ -75,9 +75,9 @@
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
 </section>
 <footer class="site">
-  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><div class="social" aria-label="Whisky Advocate on social media"><a href="https://www.instagram.com/whiskyadvocate/" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg></a><a href="https://www.facebook.com/whiskyadvocate" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.2c0-.9.3-1.5 1.5-1.5h1.5V5.1c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7h2.9z" fill="currentColor"/></svg></a><a href="https://twitter.com/whiskyadvocate" aria-label="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l6.3 8.4L4.3 20h2.2l4.8-5.9L15.8 20H20l-6.6-8.8L19 4h-2.2l-4.4 5.4L8.2 4H4z" fill="currentColor"/></svg></a><a href="https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.3 5 12 5 12 5s-6.3 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.7 19 12 19 12 19s6.3 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3L10 15z" fill="currentColor"/></svg></a></div><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
-  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="newsletter.html">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="newsletter.html">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="app.html" data-app-link>WhiskyFest app</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
   <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
@@ -120,7 +120,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;
       prose.insertAdjacentHTML("beforeend", '<div class="author" style="margin-top: 2.4em"><span class="avatar" aria-hidden="true">' + WA.initials(st.by) + '</span><div><h3>' + st.by + '</h3><p>' + (more ? more + " more stories in the archive." : "Whisky Advocate contributor.") + '</p></div></div>' + (st.tags.length ? '<div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px">' + st.tags.map(function (t) { return '<a href="' + WA.SECTION_HREF[st.sec] + '">' + t + "</a>"; }).join("") + "</div></div>" : "") + '<div class="signup" style="margin-top: 2em"><div><h3>Get stories like this on Fridays</h3><p>Whisky Weekend: the week\'s releases and reads from the editors.</p></div><a class="pill solid" href="newsletter.html#weekend">Sign up</a></div>');
       document.getElementById("byline").innerHTML = '<span class="avatar sm" aria-hidden="true">' + WA.initials(st.by) + '</span><span>By <strong>' + st.by + '</strong></span><span>' + new Date(st.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + "</span>" + (st.min ? "<span>" + st.min + " minute read</span>" : "") + (mentioned ? "<span>" + picks.length + " bottle" + (picks.length > 1 ? "s" : "") + " mentioned</span>" : "");
-      document.getElementById("listen").textContent = "Listen" + (st.min ? " · " + st.min + " min" : "");
+      if (window.__storyListenLabel) window.__storyListenLabel("Listen" + (st.min ? " · " + st.min + " min" : "")); else document.getElementById("listen").textContent = "Listen" + (st.min ? " · " + st.min + " min" : "");
       // Table of contents from the story's own headings.
       var toc = document.getElementById("toc"), hs = prose.querySelectorAll("h2[id], h3[id]");
       if (hs.length >= 2) toc.innerHTML = '<a href="#top">' + sec + "</a>" + Array.prototype.map.call(hs, function (h) { return '<a href="#' + h.id + '">' + h.textContent + "</a>"; }).join(""); else { toc.remove(); document.getElementById("tocLabel").remove(); }
@@ -130,9 +130,35 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (picks.length) { document.getElementById("rail").innerHTML = picks.map(function (r) { return WA.bottleCard(r); }).join(""); WA.fillNotes(document.getElementById("rail")); } else document.getElementById("railBand").remove();
       prose.querySelectorAll(".embed[data-embed]").forEach(function (e) { WA.note(e.getAttribute("data-embed"), function (f) { e.querySelector(".nt").textContent = f.slice(0, 150).replace(/\s\S*$/, "") + "…"; }); });
       document.getElementById("suggest").innerHTML = [cat ? "Best " + cat.split("/")[0].toLowerCase() + " under $80" : "Best whisky under $80 rated 90 or higher", "Something like the bottles in this story", "What should I drink tonight?"].map(function (q) { return '<button type="button">' + q + "</button>"; }).join("");
-      var next = all.filter(function (x) { return x.sec === st.sec && x !== st; }).slice(0, 4);
-      document.getElementById("nextTitle").textContent = "More from " + (st.sec === "life" ? "Whisky Life" : sec + (sec.slice(-1) === "s" ? "" : "s")) + ".";
+      // Read next: the stories closest to this one (shared tags, the same producers, the same words in the title), newest first among ties.
+      var STOPW = /^(the|and|for|with|from|that|this|new|whisky|whiskies|whiskey|year|old|best|how|what|why|your|our|are|its|into|about|of|in|on|to|a|an|is)$/i;
+      function words(t) { return (t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(function (w) { return w.length > 3 && !STOPW.test(w); }); }
+      var myTags = (st.tags || []).map(function (t) { return t.toLowerCase(); }), myProducers = {}, myWords = words(st.title);
+      picks.forEach(function (r) { myProducers[r.pr] = true; });
+      function related(x) {
+        if (x === st) return -1; var sc = 0;
+        (x.tags || []).forEach(function (t) { if (myTags.indexOf(t.toLowerCase()) >= 0) sc += 3; });
+        (x.refs || []).forEach(function (sl) { var r = bySlug[sl.toLowerCase()]; if (r && myProducers[r.pr]) sc += 2; if (st.refs.indexOf(sl) >= 0) sc += 2; });
+        words(x.title).forEach(function (w) { if (myWords.indexOf(w) >= 0) sc += 1; });
+        if (x.sec === st.sec) sc += 0.5;
+        return sc;
+      }
+      var scored = all.map(function (x) { return { x: x, sc: related(x) }; }).filter(function (o) { return o.sc > 0; }).sort(function (a, b) { return b.sc - a.sc || (a.x.d < b.x.d ? 1 : -1); });
+      var next = scored.slice(0, 4).map(function (o) { return o.x; });
+      if (next.length < 4) all.filter(function (x) { return x.sec === st.sec && x !== st && next.indexOf(x) < 0; }).slice(0, 4 - next.length).forEach(function (x) { next.push(x); });
+      document.getElementById("nextTitle").textContent = scored.length && scored[0].sc >= 3 ? "If you liked this one." : "More from " + (st.sec === "life" ? "Whisky Life" : sec + (sec.slice(-1) === "s" ? "" : "s")) + ".";
       document.getElementById("next").innerHTML = next.map(WA.storyRow).join("");
+      // One related story inside the body, after the fourth long paragraph, when it is a close match.
+      if (scored.length && scored[0].sc >= 3) { var rel = scored[0].x, ps2 = Array.prototype.filter.call(prose.querySelectorAll("p"), function (p) { return p.textContent.length > 200 && !p.closest(".embed"); }); var anchorP = ps2[Math.min(3, ps2.length - 1)]; if (anchorP && !rel.hero) rel.hero = ""; if (anchorP) anchorP.insertAdjacentHTML("afterend", '<a class="related-inline" href="' + WA.storyHref(rel) + '">' + (rel.hero ? '<img src="' + rel.hero + '" alt="" loading="lazy">' : "") + '<span><span class="mono">Related · ' + WA.SECTION[rel.sec] + "</span><strong>" + rel.title + "</strong>" + (rel.dek ? "<em>" + rel.dek.slice(0, 120).replace(/\s\S*$/, "") + (rel.dek.length > 120 ? "…" : "") + "</em>" : "") + "</span></a>"); }
+      // Anchor text for producers: the first mention of a distillery or house the archive knows links to its page.
+      (function () {
+        var P = WA.producers(data), names = Object.keys(P).filter(function (n) { return n.length >= 6 && P[n].n >= 3; }).sort(function (a, b) { return b.length - a.length; }), done = 0, lower = prose.textContent.toLowerCase();
+        names.forEach(function (n) {
+          if (done >= 6 || lower.indexOf(n.toLowerCase()) < 0) return;
+          var walker = document.createTreeWalker(prose, NodeFilter.SHOW_TEXT, { acceptNode: function (t) { return t.parentNode.closest("a, h1, h2, h3, .embed, figure, .related-inline") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } }), node;
+          while ((node = walker.nextNode())) { var at = node.data.toLowerCase().indexOf(n.toLowerCase()); if (at < 0) continue; var before = at === 0 ? " " : node.data[at - 1], after = node.data[at + n.length] || " "; if (/[a-z0-9]/i.test(before) || /[a-z0-9]/i.test(after)) continue; var a = document.createElement("a"); a.href = WA.producerHref(n); a.className = "mention producer"; a.textContent = node.data.substr(at, n.length); var rest = node.splitText(at); rest.data = rest.data.substr(n.length); node.parentNode.insertBefore(a, rest); done += 1; break; }
+        });
+      })();
       // Reading progress and the live table of contents.
       var links = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
       function onScroll() { var doc = document.documentElement, p = scrollY / (doc.scrollHeight - innerHeight); document.getElementById("progress").style.width = Math.min(100, Math.max(0, p * 100)) + "%"; var current = 0; hs.forEach(function (h, k) { if (h.getBoundingClientRect().top < 120) current = k + 1; }); links.forEach(function (a, k) { a.setAttribute("aria-current", String(k === current)); }); }
@@ -140,7 +166,23 @@ WA.ready(function (recent) { WA.archive(function (data) {
     });
   });
   addEventListener("hashchange", function () { location.reload(); });
-  document.getElementById("listen").addEventListener("click", function () { this.textContent = this.textContent.indexOf("Pause") === 0 ? "Listen" : "Pause"; });
+  // Listen: the story read aloud by the browser's own voice, a paragraph at a time, with pause and resume.
+  (function () {
+    var btn = document.getElementById("listen"), synth = window.speechSynthesis, label = "Listen", queue = [], at = 0, playing = false, paused = false, current = null;
+    if (!synth || !window.SpeechSynthesisUtterance) { btn.hidden = true; return; }
+    function voice() { var vs = synth.getVoices(), pick = null; vs.forEach(function (v) { if (!/^en/i.test(v.lang)) return; if (!pick || (/Google|Samantha|Daniel|Natural|Premium/i.test(v.name) && !/Google|Samantha|Daniel|Natural|Premium/i.test(pick.name))) pick = v; }); return pick; }
+    function parts() { var out = [document.getElementById("title").textContent]; var dek = document.getElementById("dek"); if (dek && dek.textContent.trim()) out.push(dek.textContent.trim()); document.querySelectorAll("#prose p, #prose h2, #prose h3, #prose li").forEach(function (p) { var t = p.textContent.replace(/\s+/g, " ").trim(); if (t.length > 2) out.push(t); }); return out; }
+    function speakNext() { if (!playing || at >= queue.length) { stop(); return; } var u = new SpeechSynthesisUtterance(queue[at]); var v = voice(); if (v) u.voice = v; u.rate = 1.0; u.pitch = 1; u.onend = function () { at += 1; if (playing && !paused) speakNext(); }; u.onerror = function () { if (at === 0) { playing = false; btn.textContent = "No voice in this browser"; setTimeout(function () { btn.textContent = label; }, 2500); return; } at += 1; if (playing && !paused) speakNext(); }; current = u; synth.speak(u); }
+    function stop() { playing = false; paused = false; at = 0; synth.cancel(); btn.textContent = label; btn.setAttribute("aria-pressed", "false"); }
+    btn.addEventListener("click", function () {
+      if (!playing) { queue = parts(); at = 0; playing = true; paused = false; btn.textContent = "Pause"; btn.setAttribute("aria-pressed", "true"); synth.cancel(); speakNext(); return; }
+      if (!paused) { paused = true; synth.pause(); btn.textContent = "Resume"; return; }
+      paused = false; btn.textContent = "Pause"; synth.resume();
+    });
+    document.addEventListener("visibilitychange", function () { if (document.hidden && playing && !paused) { paused = true; synth.pause(); btn.textContent = "Resume"; } });
+    addEventListener("beforeunload", function () { synth.cancel(); });
+    window.__storyListenLabel = function (t) { label = t; if (!playing) btn.textContent = t; };
+  })();
   document.getElementById("saveStory").addEventListener("click", function () { this.textContent = "Saved"; });
   document.getElementById("share").addEventListener("click", function () { var b = this; try { navigator.clipboard.writeText(location.href).then(function () { b.textContent = "Link copied"; }, function () { b.textContent = "Copy the address bar"; }); } catch (e) { b.textContent = "Copy the address bar"; } });
 }); });

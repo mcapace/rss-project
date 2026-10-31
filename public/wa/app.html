@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The WhiskyFest app</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<canvas class="field" id="field" aria-hidden="true"></canvas>
+<div class="ad ad-billboard ad-above" data-slot="wa_above_nav" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
+</header>
+
+
+<section class="band" style="padding-top: 28px">
+  <div class="app-hero glass">
+    <img class="app-icon" src="img/whiskyfest-app.png" alt="WhiskyFest app icon" width="120" height="120">
+    <div>
+      <span class="mono">WhiskyFest New York · Friday, November 20</span>
+      <h1 class="d1" style="font-size: clamp(34px, 5vw, 56px)">The WhiskyFest app.</h1>
+      <p class="muted" style="max-width: 54ch; margin-top: 10px">Your tickets at the door, the full pour list with the ratings, a floor map that knows where you are, the seminar schedule, and a place to keep notes on every dram. Free for iPhone and Android.</p>
+      <div class="app-badges" id="appBadges">
+        <a class="badge-store ios" href="https://apps.apple.com/app/id6796849673" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.7 12.6c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.3.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.8-1.1-2.8-4.1zM14.3 5.2c.7-.8 1.2-2 1-3.2-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1.1 3 1.1.1 2.3-.6 3-1.3z" fill="currentColor"/></svg><span><small>Download on the</small>App Store</span></a>
+        <a class="badge-store android" href="https://play.google.com/store/apps/details?id=com.mshanken.whiskyfest2026" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3.5v17l9.3-8.5L4 3.5zm10.6 7.4L6.9 3.3l9.6 5.5-1.9 2.1zm0 2.2l1.9 2.1-9.6 5.5 7.7-7.6zm1.4-1.3l2.6-1.5c.8-.4.8-1.1 0-1.5l-2.6-1.5-2.2 2.2 2.2 2.3z" fill="currentColor"/></svg><span><small>Get it on</small>Google Play</span></a>
+      </div>
+      <p class="muted" id="appNote" style="font-size: 13px; margin-top: 12px"></p>
+    </div>
+  </div>
+  <div class="app-points">
+    <div class="glass card-pad"><span class="mono">Tickets</span><strong>Your pass is the app</strong><p>Buy on Tixr, sign in once, and your ticket is on the screen at the door. Upgrades land in it too.</p></div>
+    <div class="glass card-pad"><span class="mono">The pour list</span><strong>Every bottle on the floor, rated</strong><p>The whole lineup with Whisky Advocate scores, searchable by producer, style and table number.</p></div>
+    <div class="glass card-pad"><span class="mono">The floor</span><strong>A map that finds the table</strong><p>Tap a bottle and the map shows the way across the Marriott Marquis ballroom.</p></div>
+    <div class="glass card-pad"><span class="mono">Seminars</span><strong>The afternoon schedule</strong><p>Session times, rooms and the rare pours in each, with reminders before they start.</p></div>
+    <div class="glass card-pad"><span class="mono">Notes</span><strong>Remember what you loved</strong><p>Favorite a dram, write a note, and take the list home with the ratings attached.</p></div>
+    <div class="glass card-pad"><span class="mono">Cigars</span><strong>The cigar lounge</strong><p>Your lounge privileges and redemptions, scanned at the door.</p></div>
+  </div>
+</section>
+<script src="site.js"></script>
+<script>
+(function () {
+  var to = WA.appStore(), note = document.getElementById("appNote"), badges = document.getElementById("appBadges");
+  if (to === WA.APP.ios) { badges.classList.add("ios-first"); note.textContent = "You are on an iPhone or iPad: the App Store badge opens the listing."; }
+  else if (to === WA.APP.android) { badges.classList.add("android-first"); note.textContent = "You are on Android: the Google Play badge opens the listing."; }
+  else note.textContent = "Open this page on your phone, or scan the badges from the event signage, to install.";
+})();
+</script>
+<section class="nl-band" aria-label="Newsletters">
+  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
+  <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
+</section>
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><div class="social" aria-label="Whisky Advocate on social media"><a href="https://www.instagram.com/whiskyadvocate/" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg></a><a href="https://www.facebook.com/whiskyadvocate" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.2c0-.9.3-1.5 1.5-1.5h1.5V5.1c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7h2.9z" fill="currentColor"/></svg></a><a href="https://twitter.com/whiskyadvocate" aria-label="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l6.3 8.4L4.3 20h2.2l4.8-5.9L15.8 20H20l-6.6-8.8L19 4h-2.2l-4.4 5.4L8.2 4H4z" fill="currentColor"/></svg></a><a href="https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.3 5 12 5 12 5s-6.3 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.7 19 12 19 12 19s6.3 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3L10 15z" fill="currentColor"/></svg></a></div><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
+  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="newsletter.html">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="app.html" data-app-link>WhiskyFest app</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
+</footer>
+
+<script src="site.js"></script>
+<script>WA.ready(function () {});</script>
+</body>
+</html>

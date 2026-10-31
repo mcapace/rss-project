@@ -1588,3 +1588,11 @@ a.author p::after { content: " →"; color: var(--copper); }
 @media (max-width: 640px) { .prose p.pic, .prose p:has(> img:only-child) { margin: 1.6em 0; } .prose img.mid { max-width: 100%; max-height: 420px; } }
 .prose img.mid { mix-blend-mode: normal; }
 .prose img.mid.png, .prose img.small.png { mix-blend-mode: multiply; }
+
+/* Four ticket types across, the app on its own strip under them. */
+.fest-row.fest-tiers4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fest-row.fest-app-row { grid-template-columns: 1fr; }
+.fest-row.fest-app-row .app-cta { height: auto; }
+.fest-row.fest-app-row .app-cta em { -webkit-line-clamp: 2; }
+@media (max-width: 980px) { .fest-row.fest-tiers4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .fest-row.fest-tiers4 { grid-template-columns: 1fr; } }

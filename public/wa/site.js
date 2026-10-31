@@ -81,19 +81,8 @@
     requestAnimationFrame(frame);
   }
 
-  /* Motion everywhere: rows and cards rise into place as they enter; headline accents sweep amber. */
-  function reveal() {
-    if (!MOTION) return; document.body.classList.add("motion");
-    var items = [];
-    document.querySelectorAll(".band").forEach(function (band) {
-      var kids = [].slice.call(band.children); kids.forEach(function (k) { items.push(k); });
-      band.querySelectorAll(".grid > *, .stories > *, .lenses > *, .trade-grid > *, .picks3 > *, .scan > *, .stat-row > *").forEach(function (el, i) { el.style.setProperty("--stagger", (i % 8) * 70 + "ms"); items.push(el); });
-    });
-    items.forEach(function (el) { if (!el.classList.contains("reveal")) el.classList.add("reveal"); });
-    if (!("IntersectionObserver" in window)) { items.forEach(function (el) { el.setAttribute("data-in", "true"); }); return; }
-    var io = new IntersectionObserver(function (entries) { entries.forEach(function (e) { if (e.isIntersecting) { e.target.setAttribute("data-in", "true"); io.unobserve(e.target); } }); }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
-    items.forEach(function (el) { io.observe(el); });
-  }
+  /* The channel is on screen as soon as it loads. Hiding it and blurring it in showed a second design first. */
+  function reveal() {}
 
   /* Page to page is a direct load. A crossfade kept the previous channel on screen. */
   function transitions() {}

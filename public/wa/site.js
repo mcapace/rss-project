@@ -596,3 +596,35 @@ document.body.appendChild(waAds);
   window.WA.withNotes = function (rows, cb) { var left = rows.length, notes = {}; if (!left) return cb(notes); rows.forEach(function (r) { WA.note(r.slug, function (t) { notes[r.slug] = (t || "").replace(/\s+/g, " ").slice(0, 220); if (--left === 0) cb(notes); }); }); };
   window.WA.recCards = function (picks, byslug) { return picks.map(function (p) { var r = byslug[p.slug]; return r ? '<div class="rec">' + WA.bottleCard(r) + (p.why ? '<p class="rec-why">' + p.why + "</p>" : "") + "</div>" : ""; }).join(""); };
 })();
+
+/* Measurement: one hook for everything a reader does that the editors will want to count. GA4 loads when a page carries <meta name="ga4" content="G-..."> (or window.WA_GA4); without it events stay in memory for the console. */
+(function () {
+  var id = (document.querySelector('meta[name="ga4"]') || {}).content || window.WA_GA4 || "";
+  WA.events = [];
+  WA.track = function (name, data) {
+    var payload = Object.assign({ page: location.pathname.split("/").pop() || "index.html", hash: (location.hash || "").slice(1, 120) }, data || {});
+    WA.events.push({ name: name, data: payload, at: Date.now() });
+    if (window.gtag) window.gtag("event", name, payload);
+  };
+  if (id && !window.gtag) {
+    var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(id); document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || []; window.gtag = function () { window.dataLayer.push(arguments); }; window.gtag("js", new Date()); window.gtag("config", id, { send_page_view: true });
+  }
+  // What the pages already do, counted: site search, the ask bar, the chat, the shelf scan, sign-ups, and the picks readers tap.
+  document.addEventListener("submit", function (e) {
+    var f = e.target; if (!(f instanceof HTMLFormElement)) return;
+    if (f.id === "waSearchForm") WA.track("site_search", { q: (document.getElementById("waSearchInput") || {}).value });
+    else if (f.id === "askForm") WA.track("ask", { q: (document.getElementById("askInput") || {}).value, context: (WA.context || {}).kind || "" });
+    else if (f.id === "waChatForm") WA.track("chat_ask", { q: (document.getElementById("waChatInput") || {}).value, context: (WA.context || {}).kind || "" });
+    else if (f.classList.contains("nl-strip") || f.id === "nlForm") WA.track("newsletter_signup", { source: f.getAttribute("data-source") || f.id || "" });
+  }, true);
+  document.addEventListener("change", function (e) { if (e.target && e.target.id === "scanFile") WA.track("shelf_scan"); }, true);
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("a"); if (!a) return;
+    if (a.closest(".rec")) WA.track("recommendation_click", { to: a.getAttribute("href"), context: (WA.context || {}).kind || "" });
+    else if (a.classList.contains("buy-chip") || /store\.whiskyadvocate\.com/.test(a.href)) WA.track("store_click", { to: a.href.slice(0, 160) });
+    else if (/tixr\.com/.test(a.href)) WA.track("tickets_click");
+    else if (a.hasAttribute("data-app-link") || /apps\.apple\.com|play\.google\.com/.test(a.href)) WA.track("app_click");
+    else if (a.classList.contains("mention")) WA.track("mention_click", { to: a.getAttribute("href") });
+  }, true);
+})();

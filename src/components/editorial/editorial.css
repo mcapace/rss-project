@@ -972,3 +972,15 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-front-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .ed-front-editor-actions { display: flex; gap: 8px; }
 @media (max-width: 640px) { .ed-front-row { flex-wrap: wrap; } .ed-front-actions { width: 100%; } }
+
+/* On the site: the document's AI tags and its place on the home page. */
+.ed-site-block { padding: 10px 14px 12px; border-top: 1px solid var(--ed-border, rgba(127,127,127,0.25)); }
+.ed-site-block:first-of-type { border-top: 0; }
+.ed-site-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.ed-site-head span:first-of-type { flex: 1; }
+.ed-site-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.ed-site-tag { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; background: var(--ed-surface-2, rgba(127,127,127,0.12)); }
+.ed-site-summary { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+.ed-site-search { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
+.ed-site-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.ed-site-pin { display: grid; gap: 8px; }

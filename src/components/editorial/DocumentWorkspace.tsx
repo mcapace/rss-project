@@ -20,6 +20,7 @@ import { usePageTitle, useShell } from "./Shell";
 import { BodyEditor, type InsertableImage } from "./BodyEditor";
 import { CatalogField } from "./CatalogField";
 import { NewsletterCard } from "./NewsletterCard";
+import { SiteCard } from "./SiteCard";
 import { useCollaboration } from "./collab/useCollaboration";
 import { ACCESS_TIERS, requiredTier, type AccessTier } from "@/lib/delivery/paywall";
 import { PreviewMatrix } from "./PreviewMatrix";
@@ -438,6 +439,8 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         <Field label="Search description" htmlFor="ed-seo-description" hint={`${String(seo.description ?? "").length}/160`}><textarea id="ed-seo-description" className="ed-textarea" rows={3} maxLength={320} value={typeof seo.description === "string" ? seo.description : ""} onChange={event => updateMeta({ seo: { ...seo, description: event.target.value } })} placeholder={draft.excerpt} /></Field>
         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 12, fontSize: 13 }}>Hide from search engines <Switch checked={seo.no_index === true} onChange={next => updateMeta({ seo: { ...seo, no_index: next } })} label="Hide from search engines" /></label>
       </RailSection>
+
+      <SiteCard document={document} />
 
       {performancePath && <Card pad={false} className="ed-rail-card still">
         <h3>Performance <Activity size={14} aria-hidden /></h3>

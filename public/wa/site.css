@@ -895,4 +895,11 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 @media (max-width: 720px) { .fest-pill { display: none; } }
 
 /* Bottle photographs that still carry a white studio background: multiply them onto the paper so the white disappears until the standard shot lands. */
-.bottle .thumb img, .hero-art.photo img { mix-blend-mode: multiply; }
+.bottle .thumb img, .hero-art.photo img { mix-blend-mode: multiply; filter: brightness(1.04) contrast(1.03); }
+
+/* Ratings facets stay inside their column: the ladders share the width evenly and nothing bleeds under the results. */
+.facets, .facet-group { min-width: 0; }
+.ladder { grid-auto-columns: minmax(0, 1fr); }
+.ladder button { min-width: 0; padding-left: 2px; padding-right: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.facets .search-line { max-width: 100%; }
+.finder { grid-template-columns: 264px minmax(0, 1fr); }

@@ -145,7 +145,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("score").textContent = r.s; document.getElementById("badgeScore").textContent = r.s;
     document.getElementById("band").textContent = B[0] + " · " + r.s + " to " + (r.s >= 95 ? 100 : r.s >= 90 ? 94 : r.s >= 85 ? 89 : 84);
     var sents = sentences(r.f || r.t || "The panel's note is being fetched."); document.getElementById("note").textContent = sents.slice(0, 2).join(" ");
-    var art = document.getElementById("art"); art.src = r.img || "img/bottle-" + (ART[r.c] || "other") + ".jpg"; art.alt = r.n; document.querySelector(".hero-art").classList.toggle("photo", !!r.img);
+    var art = document.getElementById("art"); art.alt = r.n; art.onerror = function () { art.onerror = null; art.src = WA.shot(r.c); }; art.src = WA.bottleSrc(r); document.querySelector(".hero-art").classList.add("photo");
     document.getElementById("facts").innerHTML = [["Price", fmt(r.p)], ["ABV", r.a ? r.a + "%" : "—"], ["Category", r.c], ["Producer", r.pr], ["Taster", r.by || "Tasting panel"], ["Issue", r.issue || "—"]].map(function (x) { return "<div><dt>" + x[0] + "</dt><dd>" + x[1] + "</dd></div>"; }).join("");
     var P = profile(r.f || r.t);
     document.getElementById("profile").innerHTML = ["Nose", "Palate", "Finish"].map(function (k) { return '<div class="part"><h3>' + k + "</h3><p>" + (P[k].join(" ") || "The panel's note does not separate this out.") + "</p></div>"; }).join("");

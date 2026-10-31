@@ -27,10 +27,7 @@
     </form>
     <div class="answer" id="answer" aria-live="polite"><div class="answer-head" id="answerFacets"></div><div class="answer-body"><div class="answer-text" id="answerText"></div><div class="answer-picks" id="answerPicks"></div></div></div>
   </div>
-</section>
-
-<section class="band" style="padding-top: 20px">
-  <div class="lenses" id="lenses" role="group" aria-label="Lenses">
+  <div class="lenses" id="lenses" role="group" aria-label="Shortcuts">
     <button type="button" class="lens" data-lens="value" aria-pressed="false"><strong>Best value</strong><span>Beats the price curve</span></button>
     <button type="button" class="lens" data-lens="first" aria-pressed="false"><strong>A first bottle</strong><span>Approachable, under $60</span></button>
     <button type="button" class="lens" data-lens="gift" aria-pressed="false"><strong>A gift under $100</strong><span>92 points or better</span></button>
@@ -38,6 +35,9 @@
     <button type="button" class="lens" data-lens="winter" aria-pressed="false"><strong>Winter night</strong><span>Sherried, rich, warming</span></button>
     <button type="button" class="lens" data-lens="cocktail" aria-pressed="false"><strong>Cocktail rye</strong><span>Spice that stands up to vermouth</span></button>
   </div>
+</section>
+
+<section class="band" style="padding-top: 8px">
   <div class="rail-wrap"><div class="rail glass" id="rail" aria-label="Filters">
     <button type="button" class="rail-pill" data-pop="type"><span class="k">Type</span><span class="v" data-v="type">Any</span></button>
     <button type="button" class="rail-pill" data-pop="price"><span class="k">Price</span><span class="v" data-v="price">Any</span></button>
@@ -47,7 +47,7 @@
     <button type="button" class="rail-pill" data-pop="char"><span class="k">Character</span><span class="v" data-v="char">Any</span></button>
     <button type="button" class="rail-pill" data-pop="twin"><span class="k">Like</span><span class="v" data-v="twin">a bottle you love</span></button>
     <button type="button" class="rail-clear" id="clear">Clear</button>
-    <button type="button" class="rail-pill rail-explore" id="exploreToggle" aria-pressed="true"><span class="k">Explore</span><span class="v">maps</span></button>
+    <button type="button" class="rail-pill rail-explore" id="exploreToggle" aria-pressed="false"><span class="k">Explore</span><span class="v">maps</span></button>
     <div class="pop" data-for="type"><h3 class="mono">Type</h3><div class="chips" id="typeChips"></div></div>
     <div class="pop" data-for="price"><h3 class="mono">Price up to</h3><div class="ladder" id="priceLadder"><button type="button" data-price="40">$40</button><button type="button" data-price="60">$60</button><button type="button" data-price="100">$100</button><button type="button" data-price="200">$200</button><button type="button" data-price="400" aria-pressed="true">Any</button></div></div>
     <div class="pop" data-for="since"><h3 class="mono">Rated</h3><div class="ladder" id="sinceLadder"><button type="button" data-since="2025" aria-pressed="true">2025+</button><button type="button" data-since="2022">2022+</button><button type="button" data-since="2018">2018+</button><button type="button" data-since="">All</button></div></div>
@@ -57,18 +57,18 @@
     <div class="pop" data-for="twin"><h3 class="mono">Like this one</h3><div class="twin"><div class="search-line" style="min-height: 44px; padding-left: 14px"><input id="twinQ" type="text" placeholder="A bottle you love" aria-label="Find bottles like one you name" autocomplete="off"></div><div class="menu" id="twinMenu"></div></div><div id="twinOn"></div></div>
   </div></div>
   <div class="finder">
-    <div class="maps" id="maps">
-      <div class="map"><h3>Value map <span>price against score</span></h3><canvas id="valueMap" aria-label="Price against score"></canvas><div class="tip" id="valueTip"></div><p class="hint">Tap a region to keep only the bottles in it. Ringed dots sit on the value curve.</p><div class="legend" id="mapLegend"></div></div>
-      <div class="map"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character. Strong dots scored 92 or more.</p></div>
+    <div class="maps" id="maps" data-open="false" data-which="value">
+      <div class="sortrow map-switch" role="group" aria-label="Which map">
+        <button type="button" data-map-pick="value" aria-pressed="true">Value map</button>
+        <button type="button" data-map-pick="flavor" aria-pressed="false">Flavor compass</button>
+      </div>
+      <div class="map" data-map="value"><h3>Value map <span>price against score</span></h3><canvas id="valueMap" aria-label="Price against score"></canvas><div class="tip" id="valueTip"></div><p class="hint">Tap a region to keep only the bottles in it. Ringed dots sit on the value curve.</p><div class="legend" id="mapLegend"></div></div>
+      <div class="map" data-map="flavor"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character. Strong dots scored 92 or more.</p></div>
     </div>
-    <div class="results-split">
-    <div class="results-main">
     <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button><button type="button" data-sort="twin" aria-pressed="false" id="sortTwin" style="display:none">Closest</button></div></div>
     <div class="grid results" id="grid"></div>
+    <div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div>
     <div class="more"><button type="button" class="pill" id="more">Show more</button></div>
-    </div>
-    <aside class="results-rail"><div class="ad-rail"><div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div></div></aside>
-    </div>
   </div>
 </section>
 
@@ -159,6 +159,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   document.addEventListener("click", function (e) { if (!e.target.closest("#rail")) openPop(""); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") openPop(""); });
   document.getElementById("exploreToggle").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") !== "true"; this.setAttribute("aria-pressed", String(on)); document.getElementById("maps").setAttribute("data-open", String(on)); if (on) render(); });
+  document.getElementById("maps").addEventListener("click", function (e) { var b = e.target.closest("[data-map-pick]"); if (!b) return; this.setAttribute("data-which", b.getAttribute("data-map-pick")); this.querySelectorAll("[data-map-pick]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); drawMaps(current()); });
   function pressed(id) { return [].slice.call(document.getElementById(id).querySelectorAll('[aria-pressed="true"]')).map(function (b) { return b.textContent.trim(); }); }
   function railSync() {
     var set = function (k, v) { rail.querySelector('[data-v="' + k + '"]').textContent = v; rail.querySelector('[data-pop="' + k + '"]').setAttribute("data-on", String(v !== "Any" && v !== "All" && v !== "a bottle you love" && !(k === "since" && v === "2025+"))); };
@@ -176,9 +177,23 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since || state.words.length || state.twin;
     document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.terms.length ? " · “" + state.terms.join(" ") + "”" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
     var cards = rows.slice(0, state.limit).map(function (r) { return WA.bottleCard(r, { compare: state.compare }); });
+    var parked = document.querySelector('[data-slot="wa_ratings_mrec_1"]');
+    if (parked && parked.parentNode === grid) grid.parentNode.insertBefore(parked, grid.nextSibling);
     grid.innerHTML = cards.join(""); WA.fillNotes(grid);
     document.getElementById("more").style.display = rows.length > state.limit ? "" : "none";
+    seatAd();
     if (document.getElementById("maps").getAttribute("data-open") !== "false") drawMaps(rows);
+  }
+  function seatAd() {
+    var ad = document.querySelector('[data-slot="wa_ratings_mrec_1"]');
+    if (!ad) return;
+    if (ad.parentNode) ad.parentNode.removeChild(ad);
+    var cards = grid.querySelectorAll(".bottle");
+    if (!cards.length) { grid.parentNode.insertBefore(ad, grid.nextSibling); return; }
+    var rowTop = cards[0].offsetTop, cols = 1;
+    for (var i = 1; i < cards.length; i++) { if (Math.abs(cards[i].offsetTop - rowTop) > 4) break; cols++; }
+    if (cards.length > cols) grid.insertBefore(ad, cards[cols]);
+    else grid.parentNode.insertBefore(ad, grid.nextSibling);
   }
   grid.addEventListener("click", function (e) { var b = e.target.closest("button[data-i]"); if (!b) return; var i = +b.getAttribute("data-i"); var at = state.compare.indexOf(i); if (at >= 0) state.compare.splice(at, 1); else { if (state.compare.length >= 3) state.compare.shift(); state.compare.push(i); } render(); renderTray(); });
   function renderTray() {
@@ -192,7 +207,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
 
   var points = { value: [], flavor: [] }, geom = {};
   function drawMaps(rows) {
+    var which = document.getElementById("maps").getAttribute("data-which") || "value";
     if (rows.length > 1600) { var step = rows.length / 1600; var sampled = []; for (var k = 0; k < rows.length; k += step) sampled.push(rows[Math.floor(k)]); rows = sampled; }
+    if (which !== "value") { var res = WA.drawCompass(document.getElementById("flavorMap"), rows, null); points.flavor = res.points; geom.flavor = res; return; }
     var vc = document.getElementById("valueMap"), v = WA.setupCanvas(vc), g = v.g, pad = { l: 34, r: 12, t: 10, b: 24 }, rule = "rgba(23,18,13,0.1)";
     var xOf = function (p) { return pad.l + (Math.log(p) - Math.log(17)) / (Math.log(400) - Math.log(17)) * (v.w - pad.l - pad.r); };
     var yOf = function (s) { return pad.t + (1 - (s - 80) / 16) * (v.h - pad.t - pad.b); };
@@ -205,7 +222,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
     g.strokeStyle = "rgba(23,18,13,0.35)"; g.setLineDash([3, 4]); g.beginPath(); frontier.forEach(function (r, i) { var x = xOf(r.p), y = yOf(r.s); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
     points.value = rows.map(function (r) { var onF = frontier.indexOf(r) >= 0; var x = xOf(r.p), y = yOf(r.s) + (Math.sin(r.n.length) * 3); g.beginPath(); g.arc(x, y, onF ? 4.5 : 2.4, 0, Math.PI * 2); g.fillStyle = WA.dot(r, onF ? 0.95 : 0.28); g.fill(); if (onF) { g.lineWidth = 1.5; g.strokeStyle = "#17120d"; g.stroke(); } return { x: x, y: y, r: r }; });
     WA.legend(document.getElementById("mapLegend"), rows);
-    var res = WA.drawCompass(document.getElementById("flavorMap"), rows, null); points.flavor = res.points; geom.flavor = res;
   }
   function hover(canvasId, tipId, key) {
     var c = document.getElementById(canvasId), tip = document.getElementById(tipId);
@@ -236,7 +252,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var chars = []; if (mx < G.cx - 10) chars.push("smoky"); if (mx > G.cx + 10) chars.push("sweet"); if (my < G.cy - 10) chars.push("light"); if (my > G.cy + 10) chars.push("rich");
     state.chars = chars; state.lens = ""; state.limit = 12; syncControls(); render();
   });
-  addEventListener("resize", function () { drawMaps(current()); });
+  addEventListener("resize", function () { if (document.getElementById("maps").getAttribute("data-open") !== "false") drawMaps(current()); seatAd(); });
   addEventListener("hashchange", function () { var h = (location.hash || "").slice(1); if (LENSES[h]) { setLens(h); syncControls(); render(); } });
   var h = (location.hash || "").slice(1); if (LENSES[h]) setLens(h);
   if (h.indexOf("word=") === 0) { var wi = WORDS.indexOf(decodeURIComponent(h.slice(5))); if (wi >= 0) { state.words = [wi]; state.since = ""; } }

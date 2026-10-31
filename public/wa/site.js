@@ -167,7 +167,7 @@
     fetch("notes/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { NOTES[k] = d; cb(d[slug] || ""); }, function () { cb(""); });
   }
   /* Cards rendered from the archive carry no note; fill them in once their shard arrives. */
-  function fillNotes(root) {
+  function fillNotes(root) { decorateBuy(root);
     root.querySelectorAll(".bottle[data-slug]").forEach(function (card) {
       var p = card.querySelector("p[data-note]"); if (!p || p.textContent) return;
       var slug = card.getAttribute("data-slug");
@@ -338,6 +338,26 @@
     return '<article class="bottle' + (r.img ? " has-img" : "") + '" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '">' + (r.img ? '<a class="thumb" href="' + bottleHref(idx) + '"><img src="' + r.img + '" alt="" loading="lazy"></a>' : "") + '<div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + "</div></article>";
   }
   window.WA.bottleCard = bottleCard;
+/* The store: ratings matched to products at store.whiskyadvocate.com (shop.json), the catalog itself (store.json). */
+var SHOP = null, STORE = null, SHOP_WAIT = [];
+function shop(cb) { if (SHOP) return cb(SHOP, STORE); SHOP_WAIT.push(cb); if (SHOP_WAIT.length > 1) return; Promise.all([fetch("shop.json").then(function (r) { return r.json(); }), fetch("store.json").then(function (r) { return r.json(); })]).then(function (a) { SHOP = a[0]; STORE = {}; a[1].forEach(function (p) { STORE[p.h] = p; }); SHOP_WAIT.forEach(function (f) { f(SHOP, STORE); }); SHOP_WAIT = []; }).catch(function () { SHOP = {}; STORE = {}; SHOP_WAIT.forEach(function (f) { f(SHOP, STORE); }); }); }
+function productFor(slug) { if (!SHOP || !slug) return null; var h = SHOP[slug]; return h && STORE[h] ? STORE[h] : null; }
+function buyHref(p) { return "https://store.whiskyadvocate.com/products/" + p.h + "?utm_source=whiskyadvocate&utm_medium=site&utm_campaign=shop"; }
+function buyChip(p, label) { return '<a class="buy-chip" href="' + buyHref(p) + '" target="_blank" rel="noopener">' + (label || (p.p ? "Buy · $" + Math.round(p.p) : "Buy")) + "</a>"; }
+/* Every rendered card with a data-slug gets its Buy chip once the catalog is in. */
+function decorateBuy(root) { shop(function () { (root || document).querySelectorAll("[data-slug]:not([data-shop])").forEach(function (card) { card.setAttribute("data-shop", "1"); var p = productFor(card.getAttribute("data-slug")); if (!p) return; var foot = card.querySelector(".foot"); if (foot) foot.insertAdjacentHTML("afterbegin", buyChip(p)); }); }); }
+/* Anchor text: the first plain mention of each bottle in a story body becomes a link to its rating. */
+function linkMentions(holder, picks) {
+  var done = 0;
+  picks.forEach(function (r) {
+    var key = r.n.split(",")[0].replace(/\s*\(.*$/, "").trim(); if (key.length < 8) return;
+    var walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT, { acceptNode: function (n) { return n.parentNode.closest("a, h1, h2, h3, .embed, figure") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var node; while ((node = walker.nextNode())) { var at = node.data.toLowerCase().indexOf(key.toLowerCase()); if (at < 0) continue; var a = document.createElement("a"); a.href = bottleHref(r); a.className = "mention"; a.textContent = node.data.substr(at, key.length); var after = node.splitText(at); after.data = after.data.substr(key.length); node.parentNode.insertBefore(a, after); done += 1; break; }
+  });
+  return done;
+}
+window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = buyHref; window.WA.buyChip = buyChip; window.WA.decorateBuy = decorateBuy; window.WA.linkMentions = linkMentions;
+
 
   /* Flavor compass drawing, reused on the finder and the bottle page */
   function setupCanvas(c) { var d = Math.min(devicePixelRatio || 1, 2); var w = c.clientWidth, h = c.clientHeight; c.width = w * d; c.height = h * d; var g = c.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); return { g: g, w: w, h: h }; }
@@ -368,6 +388,28 @@
 
   window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastState(); ambient(); parallax(); cb(d); }); };
 })();
+
+/* Newsletter sign-up: every form on the site posts to the site's own route, which writes to Braze. */
+window.WA = window.WA || {};
+WA.SIGNUP_URL = (location.hostname === "localhost" || /claude\.ai|claudeusercontent/.test(location.hostname) || location.protocol === "file:") ? "https://rss-project-ten.vercel.app/api/wa/newsletter" : "/api/wa/newsletter";
+WA.signup = function (payload, done) {
+  fetch(WA.SIGNUP_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+    .then(function (r) { return r.json().then(function (j) { j.ok = r.ok && j.ok; return j; }); })
+    .catch(function () { return { ok: false, error: "The sign-up could not reach the server.", fallback: "https://www.winespectator.com/newsletter/whiskyadvocate" }; })
+    .then(done);
+};
+document.querySelectorAll("form.nl-strip").forEach(function (f) {
+  f.addEventListener("submit", function (e) {
+    e.preventDefault(); var email = f.querySelector("input[type=email]"), note = f.querySelector(".nl-note"), btn = f.querySelector("button");
+    if (!email.validity.valid || !email.value) { note.textContent = "Add your email first."; email.focus(); return; }
+    btn.disabled = true; note.textContent = "Signing you up…";
+    WA.signup({ email: email.value, lists: (f.getAttribute("data-lists") || "notes,weekend").split(","), source: f.getAttribute("data-source") || location.pathname }, function (res) {
+      btn.disabled = false;
+      if (res.ok) { note.textContent = "You are in. Welcome."; btn.textContent = "Signed up"; f.setAttribute("data-done", "true"); }
+      else note.innerHTML = res.error + (res.fallback ? ' <a href="' + res.fallback + '">Open the sign-up page</a>.' : "");
+    });
+  });
+});
 
 var waAds = document.createElement("script");
 waAds.src = "ads.js";

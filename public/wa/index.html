@@ -10,7 +10,6 @@
 <body>
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <div class="shell">
-<div class="ad ad-billboard ad-above" data-slot="wa_above_nav" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <header class="mast">
   <nav aria-label="Sections"><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
@@ -60,7 +59,7 @@
       </div>
       <div class="actions"><a class="pill solid" href="https://www.tixr.com/groups/whiskyfest/events/whiskyfest-new-york-175967">Buy tickets</a><a class="pill" href="https://www.whiskyfest.com/">Seminars and FAQ</a><a class="pill" href="stories.html#tag=WhiskyFest">WhiskyFest news</a></div>
     </div>
-    <div class="fest-art"><img src="img/whiskyfest.jpg" alt="Guests at WhiskyFest New York" loading="lazy"><img class="fest-art-2" src="img/whiskyfest-2.jpg" alt="Bottles on the stage at WhiskyFest" loading="lazy"></div>
+    <div class="fest-art" id="festArt"><div class="fest-slides"><img src="img/whiskyfest-1.jpg" alt="Guests at WhiskyFest New York" class="on"><img src="img/whiskyfest-2.jpg" alt="The Grand Tasting hall" loading="lazy"><img src="img/whiskyfest-3.jpg" alt="Friends at WhiskyFest" loading="lazy"><img src="img/whiskyfest-4.jpg" alt="A table of guests at WhiskyFest" loading="lazy"><img src="img/whiskyfest-5.jpg" alt="Bottles on a distillery table" loading="lazy"><img src="img/whiskyfest-6.jpg" alt="Nosing a glass at WhiskyFest" loading="lazy"></div><img class="fest-logo" src="img/whiskyfest-logo.png" alt="Whisky Advocate's WhiskyFest New York: whisky, tequila and beyond" width="718" height="232"><div class="fest-dots" id="festDots"></div></div>
     <div class="fest-news" id="festNews"></div>
   </div>
 </section>
@@ -105,27 +104,33 @@
   </div>
 </section>
 
-<section class="band">
+<section class="band scan-band">
   <div class="scan" id="scan">
-    <div>
-      <span class="mono">In the store</span><h2 class="d2" style="margin-top:10px">Point your phone at a shelf.</h2>
-      <ol class="steps-how" id="scanSteps">
-        <li data-step="1"><b>1</b><span><strong>Photograph the shelf.</strong> Any shelf, any light, labels facing you.</span></li>
-        <li data-step="2"><b>2</b><span><strong>The labels are read.</strong> Every legible bottle is matched to its rating.</span></li>
-        <li data-step="3"><b>3</b><span><strong>Scores land on the bottles.</strong> The best value on the shelf lights up.</span></li>
+    <div class="scan-copy">
+      <span class="mono">In the store</span>
+      <h2 class="d2">Point your phone at a shelf.<br><em>The scores land on the bottles.</em></h2>
+      <ol class="timeline" id="scanSteps">
+        <li data-step="1"><i></i><div><strong>Photograph the shelf</strong><span>Any shelf, any light, labels facing you.</span></div></li>
+        <li data-step="2"><i></i><div><strong>Every label is read</strong><span>The bottles are matched to the 8,217 ratings.</span></div></li>
+        <li data-step="3"><i></i><div><strong>Scores land, best value lights up</strong><span>Tap a score for the full note.</span></div></li>
       </ol>
-      <div class="actions" style="margin-top: 22px"><label class="pill solid" for="scanFile" style="cursor: pointer">Scan a shelf</label><input id="scanFile" type="file" accept="image/*" capture="environment" hidden><span class="muted" id="scanStatus" style="font-size: 13px"></span></div>
-      <div class="dense" id="scanList" style="margin-top: 18px; display: none"></div>
+      <div class="actions"><label class="pill solid" for="scanFile" style="cursor: pointer">Scan a shelf</label><input id="scanFile" type="file" accept="image/*" capture="environment" hidden><span class="muted" id="scanStatus" style="font-size: 13px"></span></div>
+      <div class="dense" id="scanList" style="margin-top: 16px; display: none"></div>
     </div>
-    <div class="demo-phone" id="demoPhone" data-phase="0" aria-hidden="true">
-      <div class="screen">
-        <img src="img/shelf.jpg" alt="" id="demoShelf">
-        <div class="shelf" id="scanShelf" style="display:none"></div>
-        <div class="finder"><i></i><i></i><i></i><i></i></div>
-        <div class="scanline"></div>
-        <div class="marks" id="demoMarks"></div>
-        <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Reading labels…</strong></div>
+    <div class="scan-stage">
+      <div class="demo-phone" id="demoPhone" data-phase="0" aria-hidden="true">
+        <div class="screen">
+          <img src="img/shelf.jpg" alt="" id="demoShelf">
+          <div class="shelf" id="scanShelf" style="display:none"></div>
+          <div class="finder"><i></i><i></i><i></i><i></i></div>
+          <div class="scanline"></div>
+          <div class="reading" id="demoReading"><span style="--i:0;left:9%;top:66%">Reading…</span><span style="--i:1;left:40%;top:66%">Reading…</span><span style="--i:2;left:70%;top:66%">Reading…</span></div>
+          <div class="marks" id="demoMarks"></div>
+          <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Reading labels…</strong></div>
+        </div>
       </div>
+      <div class="scan-chip chip-a" data-phase="3"><b>94</b><span>Best value on the shelf<br><em>$45 · 94 points</em></span></div>
+      <div class="scan-chip chip-b" data-phase="2"><b>6</b><span>bottles read<br><em>in 1.8 seconds</em></span></div>
     </div>
   </div>
 </section>
@@ -139,10 +144,14 @@
   </div>
 </section>
 
+<section class="nl-band" aria-label="Newsletters">
+  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
+  <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
+</section>
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
-  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="newsletter.html">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
   <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
@@ -158,6 +167,11 @@ WA.ready(function (data) {
     var when = new Date("2026-11-20T18:30:00-05:00"), el = document.getElementById("festCount");
     function tick() { var ms = Math.max(0, when - Date.now()), d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60; el.querySelector("[data-k=d]").textContent = d; el.querySelector("[data-k=h]").textContent = String(h).padStart(2, "0"); el.querySelector("[data-k=m]").textContent = String(m).padStart(2, "0"); }
     tick(); setInterval(tick, 30000);
+    var slides = [].slice.call(document.querySelectorAll("#festArt .fest-slides img")), dots = document.getElementById("festDots"), at = 0;
+    dots.innerHTML = slides.map(function (_, i) { return '<button type="button" aria-label="Photo ' + (i + 1) + '"' + (i ? "" : ' aria-current="true"') + "></button>"; }).join("");
+    function show(i) { at = (i + slides.length) % slides.length; slides.forEach(function (im, k) { im.classList.toggle("on", k === at); }); dots.querySelectorAll("button").forEach(function (d, k) { if (k === at) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current"); }); }
+    var timer = matchMedia("(prefers-reduced-motion: reduce)").matches ? null : setInterval(function () { show(at + 1); }, 4200);
+    dots.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (timer) clearInterval(timer); show([].indexOf.call(dots.children, b)); timer = setInterval(function () { show(at + 1); }, 6000); });
     WA.stories(function (all) {
       var fest = all.filter(function (st) { return /whiskyfest/i.test(st.title + " " + (st.tags || []).join(" ")); }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 3);
       document.getElementById("festNews").innerHTML = fest.map(function (st) { return '<a class="fest-story" href="' + WA.storyHref(st) + '"><span class="mono">' + WA.when(st.d) + "</span><strong>" + st.title + "</strong></a>"; }).join("");
@@ -166,12 +180,12 @@ WA.ready(function (data) {
   // The demo: a shelf is scanned on a loop until a real photo arrives.
   (function () {
     var phone = document.getElementById("demoPhone"), marks = document.getElementById("demoMarks"), capText = document.getElementById("demoCapText");
-    var DEMO = [{ x: 0.07, y: 0.30, w: 0.16, h: 0.37, s: 92 }, { x: 0.23, y: 0.30, w: 0.15, h: 0.37, s: 88 }, { x: 0.39, y: 0.30, w: 0.14, h: 0.37, s: 94, best: true }, { x: 0.54, y: 0.30, w: 0.14, h: 0.37, s: 90 }, { x: 0.68, y: 0.30, w: 0.13, h: 0.37, s: 86 }, { x: 0.81, y: 0.30, w: 0.13, h: 0.37, s: 91 }];
+    var DEMO = [{ x: 0.05, y: 0.28, w: 0.17, h: 0.42, s: 92 }, { x: 0.22, y: 0.28, w: 0.15, h: 0.42, s: 88 }, { x: 0.37, y: 0.28, w: 0.16, h: 0.42, s: 94, best: true }, { x: 0.53, y: 0.28, w: 0.15, h: 0.42, s: 90 }, { x: 0.68, y: 0.28, w: 0.14, h: 0.42, s: 86 }, { x: 0.82, y: 0.28, w: 0.14, h: 0.42, s: 91 }];
     function build() { marks.innerHTML = DEMO.map(function (b, i) { return '<span class="mark" style="left:' + (b.x * 100) + '%;top:' + (b.y * 100) + '%;width:' + (b.w * 100) + '%;height:' + (b.h * 100) + '%;--i:' + i + '"><em' + (b.best ? ' class="best"' : "") + ">" + b.s + "</em></span>"; }).join(""); }
-    var PHASES = [[0, "Shelf scan", 900], [1, "Reading labels…", 2200], [2, "Six bottles found", 2000], [3, "Best value: 94 points · $45", 3600]];
+    var PHASES = [[0, "Shelf scan", 700], [1, "Reading labels…", 2400], [2, "Six bottles found", 1500], [3, "Best value: 94 points · $45", 3800]];
     var k = 0;
     var stepsEl = document.getElementById("scanSteps");
-    new MutationObserver(function () { var ph = +phone.getAttribute("data-phase"); stepsEl.querySelectorAll("li").forEach(function (li) { li.setAttribute("data-on", String(+li.getAttribute("data-step") === ph)); }); }).observe(phone, { attributes: true, attributeFilter: ["data-phase"] });
+    new MutationObserver(function () { var ph = +phone.getAttribute("data-phase"); stepsEl.querySelectorAll("li").forEach(function (li) { var n = +li.getAttribute("data-step"); li.setAttribute("data-on", String(n === ph)); li.setAttribute("data-done", String(n < ph)); }); stepsEl.style.setProperty("--fill", [0, 0, 50, 100][ph] + "%"); document.querySelectorAll(".scan-chip").forEach(function (c) { c.classList.toggle("on", ph >= +c.getAttribute("data-phase")); }); }).observe(phone, { attributes: true, attributeFilter: ["data-phase"] });
     function step() { if (phone.getAttribute("data-live") === "true") return; var p = PHASES[k]; if (p[0] === 0) build(); phone.setAttribute("data-phase", String(p[0])); capText.textContent = p[1]; if (p[0] === 2) marks.querySelectorAll(".mark").forEach(function (m) { m.classList.add("on"); }); k = (k + 1) % PHASES.length; setTimeout(step, p[2]); }
     if (!matchMedia("(prefers-reduced-motion: reduce)").matches) step(); else { build(); phone.setAttribute("data-phase", "3"); marks.querySelectorAll(".mark").forEach(function (m) { m.classList.add("on"); }); capText.textContent = "Best value: 94 points · $45"; }
   })();

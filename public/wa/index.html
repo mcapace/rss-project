@@ -87,11 +87,26 @@
 
 <section class="band">
   <div class="scan" id="scan">
-    <div><span class="mono">In the store</span><h2 class="d2" style="margin-top:10px">Point your phone at a shelf.</h2><p class="lede" style="margin-top:14px">Photograph a shelf. The scores land over the bottles.</p>
-      <div class="actions" style="margin-top: 18px"><label class="pill solid" for="scanFile" style="cursor: pointer">Scan a shelf</label><input id="scanFile" type="file" accept="image/*" capture="environment" hidden><span class="muted" id="scanStatus" style="font-size: 13px"></span></div>
+    <div>
+      <span class="mono">In the store</span><h2 class="d2" style="margin-top:10px">Point your phone at a shelf.</h2>
+      <ol class="steps-how" id="scanSteps">
+        <li data-step="1"><b>1</b><span><strong>Photograph the shelf.</strong> Any shelf, any light, labels facing you.</span></li>
+        <li data-step="2"><b>2</b><span><strong>The labels are read.</strong> Every legible bottle is matched to its rating.</span></li>
+        <li data-step="3"><b>3</b><span><strong>Scores land on the bottles.</strong> The best value on the shelf lights up.</span></li>
+      </ol>
+      <div class="actions" style="margin-top: 22px"><label class="pill solid" for="scanFile" style="cursor: pointer">Scan a shelf</label><input id="scanFile" type="file" accept="image/*" capture="environment" hidden><span class="muted" id="scanStatus" style="font-size: 13px"></span></div>
       <div class="dense" id="scanList" style="margin-top: 18px; display: none"></div>
     </div>
-    <div class="phone" id="scanPhone"><div class="shelf" id="scanShelf"><div class="b" data-score="92"></div><div class="b" data-score="88"></div><div class="b" data-score="94"></div><div class="b" data-score="—"></div><div class="b" data-score="90"></div><div class="b" data-score="86"></div><div class="b" data-score="91"></div><div class="b" data-score="89"></div></div></div>
+    <div class="demo-phone" id="demoPhone" data-phase="0" aria-hidden="true">
+      <div class="screen">
+        <img src="img/shelf.jpg" alt="" id="demoShelf">
+        <div class="shelf" id="scanShelf" style="display:none"></div>
+        <div class="finder"><i></i><i></i><i></i><i></i></div>
+        <div class="scanline"></div>
+        <div class="marks" id="demoMarks"></div>
+        <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Reading labels…</strong></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -107,8 +122,8 @@
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
-  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyadvocate.com/WhiskyFest-Exhibitors">WhiskyFest</a><a href="https://www.whiskyadvocate.com/Whisky-Retailers">Whisky retailers</a><a href="https://www.whiskyadvocate.com/retailer/club">Retailer club</a></div>
-  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="https://www.whiskyadvocate.com/Contact">Contact</a><a href="https://www.whiskyadvocate.com/Contact">Advertise</a><a href="https://www.whiskyadvocate.com/Contact">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="https://www.whiskyadvocate.com/Privacy-Policy">Privacy policy</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
 </div>
@@ -118,6 +133,18 @@ WA.ready(function (data) {
   WA.scrollAnswer = function () { var st = document.getElementById("storyStage"); window.scrollTo({ top: st.offsetTop + st.offsetHeight - 150, behavior: "smooth" }); };
   var fresh = data.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 4);
   document.getElementById("fresh").innerHTML = fresh.map(function (r) { return WA.bottleCard(r); }).join("");
+  // The demo: a shelf is scanned on a loop until a real photo arrives.
+  (function () {
+    var phone = document.getElementById("demoPhone"), marks = document.getElementById("demoMarks"), capText = document.getElementById("demoCapText");
+    var DEMO = [{ x: 0.07, y: 0.30, w: 0.16, h: 0.37, s: 92 }, { x: 0.23, y: 0.30, w: 0.15, h: 0.37, s: 88 }, { x: 0.39, y: 0.30, w: 0.14, h: 0.37, s: 94, best: true }, { x: 0.54, y: 0.30, w: 0.14, h: 0.37, s: 90 }, { x: 0.68, y: 0.30, w: 0.13, h: 0.37, s: 86 }, { x: 0.81, y: 0.30, w: 0.13, h: 0.37, s: 91 }];
+    function build() { marks.innerHTML = DEMO.map(function (b, i) { return '<span class="mark" style="left:' + (b.x * 100) + '%;top:' + (b.y * 100) + '%;width:' + (b.w * 100) + '%;height:' + (b.h * 100) + '%;--i:' + i + '"><em' + (b.best ? ' class="best"' : "") + ">" + b.s + "</em></span>"; }).join(""); }
+    var PHASES = [[0, "Shelf scan", 900], [1, "Reading labels…", 2200], [2, "Six bottles found", 2000], [3, "Best value: 94 points · $45", 3600]];
+    var k = 0;
+    var stepsEl = document.getElementById("scanSteps");
+    new MutationObserver(function () { var ph = +phone.getAttribute("data-phase"); stepsEl.querySelectorAll("li").forEach(function (li) { li.setAttribute("data-on", String(+li.getAttribute("data-step") === ph)); }); }).observe(phone, { attributes: true, attributeFilter: ["data-phase"] });
+    function step() { if (phone.getAttribute("data-live") === "true") return; var p = PHASES[k]; if (p[0] === 0) build(); phone.setAttribute("data-phase", String(p[0])); capText.textContent = p[1]; if (p[0] === 2) marks.querySelectorAll(".mark").forEach(function (m) { m.classList.add("on"); }); k = (k + 1) % PHASES.length; setTimeout(step, p[2]); }
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) step(); else { build(); phone.setAttribute("data-phase", "3"); marks.querySelectorAll(".mark").forEach(function (m) { m.classList.add("on"); }); capText.textContent = "Best value: 94 points · $45"; }
+  })();
   // Shelf scan: the photo goes to the site's own vision route; scores land over the bottles.
   (function () {
     var file = document.getElementById("scanFile"), status = document.getElementById("scanStatus"), shelf = document.getElementById("scanShelf"), cap = document.getElementById("scanCap"), list = document.getElementById("scanList");
@@ -129,19 +156,19 @@ WA.ready(function (data) {
         var scale = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas"); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
         var dataUrl = c.toDataURL("image/jpeg", 0.85);
-        shelf.innerHTML = '<img src="' + dataUrl + '" alt="Your shelf" style="width:100%;height:auto;border-radius:12px;display:block">'; shelf.style.display = "block"; shelf.style.position = "relative"; cap.textContent = "Looking…";
+        var phone = document.getElementById("demoPhone"); phone.setAttribute("data-live", "true"); document.getElementById("demoShelf").src = dataUrl; document.getElementById("demoMarks").innerHTML = ""; document.getElementById("demoCapText").textContent = "Reading labels…"; phone.setAttribute("data-phase", "1");
         fetch("/api/wa/shelf-scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: dataUrl }) })
           .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Scan failed"); return j; }); })
           .then(function (res) {
             status.textContent = "";
             var found = res.bottles || [], rated = found.filter(function (b) { return b.rating; });
-            found.forEach(function (b) { var tag = document.createElement("span"); tag.className = "scan-tag" + (b.rating ? "" : " none") + (res.best_value === b.label ? " best" : ""); tag.textContent = b.rating ? b.rating.score : "—"; tag.title = b.label; tag.style.left = ((b.box.x + b.box.w / 2) * 100) + "%"; tag.style.top = (b.box.y * 100) + "%"; shelf.appendChild(tag); });
-            cap.textContent = found.length + (found.length === 1 ? " bottle" : " bottles") + " found" + (res.best_value ? " · best value: " + res.best_value : "");
+            var marks = document.getElementById("demoMarks"); marks.innerHTML = found.map(function (b) { return '<span class="mark on" style="left:' + (b.box.x * 100) + '%;top:' + (b.box.y * 100) + '%;width:' + (b.box.w * 100) + '%;height:' + (b.box.h * 100) + '%"><em class="' + (b.rating ? "" : "none") + (res.best_value === b.label ? " best" : "") + '">' + (b.rating ? b.rating.score : "—") + "</em></span>"; }).join("");
+            document.getElementById("demoPhone").setAttribute("data-phase", "3"); document.getElementById("demoCapText").textContent = found.length + (found.length === 1 ? " bottle" : " bottles") + " found" + (res.best_value ? " · best value: " + res.best_value : "");
             list.style.display = found.length ? "" : "none";
             list.innerHTML = found.map(function (b) { var r = b.rating; return r ? '<a href="bottle.html#' + encodeURIComponent(r.slug || "") + '"><span class="sc score-type">' + r.score + '</span><span><span class="nm">' + r.name + '</span><span class="sub">' + r.category + (b.label !== r.name ? " · read as " + b.label : "") + '</span></span><span class="when">' + WA.fmt(r.price || 0) + "</span></a>" : '<a><span class="tag">Unrated</span><span><span class="nm">' + b.label + '</span><span class="sub">No rating in the archive yet.</span></span><span class="when"></span></a>'; }).join("");
             if (!found.length) status.textContent = "No legible labels. Try closer, with the labels facing the camera.";
           })
-          .catch(function (e) { status.textContent = /Failed to fetch|NetworkError/.test(String(e.message)) ? "Shelf scan runs on the live site, not in this preview." : e.message; cap.textContent = "Shelf scan"; });
+          .catch(function (e) { status.textContent = /Failed to fetch|NetworkError/.test(String(e.message)) ? "Shelf scan runs on the live site, not in this preview." : e.message; document.getElementById("demoCapText").textContent = "Shelf scan"; });
       };
       img.src = url;
     });

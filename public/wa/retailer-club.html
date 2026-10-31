@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retailer club</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<canvas class="field" id="field" aria-hidden="true"></canvas>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
+</header>
+<div class="ad ad-billboard" data-slot="wa_club_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
+
+<section class="band" style="padding-top: 28px">
+  <div class="read-frame">
+  <div class="chan-head"><h1 class="d1">Retailer club</h1><p class="muted" style="margin-top:8px">For stores that sell whisky and want to carry the magazine.</p></div>
+  <div class="contact-grid">
+    <div class="prose">
+      <p class="drop">Stores in the Whisky Advocate retailer club receive copies of each issue for their shelves, a listing on the <a href="retailers.html">Where to buy</a> page, and the Buying Guide ratings for the bottles they carry. Membership is free for licensed retailers in the United States.</p>
+      <h2>What you get</h2>
+      <ul>
+        <li><strong>Copies of every issue</strong> for the counter, with a display card.</li>
+        <li><strong>A listing</strong> with your address, phone and website on Where to buy.</li>
+        <li><strong>Shelf talkers</strong> for the whiskies the panel rated, with the score and the note.</li>
+        <li><strong>The Top 20</strong> each December, ready to display.</li>
+      </ul>
+      <h2 id="join">Join</h2>
+      <form class="club-form" id="clubForm">
+        <label><span>Store name</span><input name="store" required></label>
+        <label><span>Contact name</span><input name="contact" required></label>
+        <label><span>Email</span><input name="email" type="email" required></label>
+        <label><span>Phone</span><input name="phone" type="tel"></label>
+        <label class="wide"><span>Street address</span><input name="address" required></label>
+        <label><span>City</span><input name="city" required></label>
+        <label><span>State</span><input name="state" required></label>
+        <label><span>ZIP</span><input name="zip" required></label>
+        <label><span>Website</span><input name="web" type="url" placeholder="https://"></label>
+        <label class="wide"><span>Anything else</span><textarea name="notes" rows="3"></textarea></label>
+        <div class="actions wide"><button class="pill solid" type="submit">Send the request</button><span class="muted" id="clubStatus" style="font-size:13px">Opens an email to the retailer desk with your details.</span></div>
+      </form>
+    </div>
+    <aside class="contact-aside">
+      <div class="glass card-pad"><span class="mono">Questions</span><p class="muted" style="margin:8px 0 0;font-size:14px"><a href="mailto:whiskyadvocate@mshanken.com">whiskyadvocate@mshanken.com</a><br>800-610-6258</p></div>
+      <div class="glass card-pad"><span class="mono">Already a member</span><p class="muted" style="margin:8px 0 12px;font-size:14px">Check your listing and tell us what changed.</p><a class="pill" href="retailers.html">Where to buy</a></div>
+    </aside>
+  </div>
+  </div>
+</section>
+<script src="site.js"></script>
+<script>
+document.getElementById("clubForm").addEventListener("submit", function (e) {
+  e.preventDefault(); var f = new FormData(e.target), lines = [];
+  f.forEach(function (v, k) { if (v) lines.push(k + ": " + v); });
+  location.href = "mailto:whiskyadvocate@mshanken.com?subject=" + encodeURIComponent("Retailer club: " + f.get("store")) + "&body=" + encodeURIComponent(lines.join("\n"));
+  document.getElementById("clubStatus").textContent = "Your email app should open with the request. If it did not, write to whiskyadvocate@mshanken.com.";
+});
+</script>
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
+  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
+</footer>
+
+<script src="site.js"></script>
+<script>WA.ready(function () {});</script>
+</body>
+</html>

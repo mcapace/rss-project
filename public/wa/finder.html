@@ -52,8 +52,8 @@
     </aside>
     <div>
       <div class="maps">
-        <div class="map"><h3>Value map <span>price against score</span></h3><canvas id="valueMap" aria-label="Price against score"></canvas><div class="tip" id="valueTip"></div><p class="hint">Tap a region to keep only the bottles in it. Bright dots beat the value curve.</p></div>
-        <div class="map"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character.</p></div>
+        <div class="map"><h3>Value map <span>price against score</span></h3><canvas id="valueMap" aria-label="Price against score"></canvas><div class="tip" id="valueTip"></div><p class="hint">Tap a region to keep only the bottles in it. Ringed dots sit on the value curve.</p><div class="legend" id="mapLegend"></div></div>
+        <div class="map"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character. Strong dots scored 92 or more.</p></div>
       </div>
       <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button><button type="button" data-sort="twin" aria-pressed="false" id="sortTwin" style="display:none">Closest</button></div></div>
       <div class="grid" id="grid"></div>
@@ -65,8 +65,8 @@
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
-  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyadvocate.com/WhiskyFest-Exhibitors">WhiskyFest</a><a href="https://www.whiskyadvocate.com/Whisky-Retailers">Whisky retailers</a><a href="https://www.whiskyadvocate.com/retailer/club">Retailer club</a></div>
-  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="https://www.whiskyadvocate.com/Contact">Contact</a><a href="https://www.whiskyadvocate.com/Contact">Advertise</a><a href="https://www.whiskyadvocate.com/Contact">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="https://www.whiskyadvocate.com/Privacy-Policy">Privacy policy</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
 <div class="tray" id="tray" data-open="false" aria-label="Compare"><div class="tray-head"><span id="trayCount">Compare</span><button type="button" id="trayClear">Clear</button></div><div class="tray-body" id="trayBody"></div></div>
@@ -169,8 +169,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
     [25, 50, 100, 200, 400].forEach(function (p) { g.beginPath(); g.moveTo(xOf(p), pad.t); g.lineTo(xOf(p), v.h - pad.b); g.stroke(); g.fillText("$" + p, xOf(p) - 10, v.h - 8); });
     var sorted = rows.slice().sort(function (a, b) { return a.p - b.p; }), best = -1, frontier = [];
     sorted.forEach(function (r) { if (r.s > best) { best = r.s; frontier.push(r); } });
-    g.strokeStyle = "rgba(201,115,29,0.5)"; g.setLineDash([3, 4]); g.beginPath(); frontier.forEach(function (r, i) { var x = xOf(r.p), y = yOf(r.s); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
-    points.value = rows.map(function (r) { var onF = frontier.indexOf(r) >= 0; var x = xOf(r.p), y = yOf(r.s) + (Math.sin(r.n.length) * 3); g.beginPath(); g.arc(x, y, onF ? 4.5 : 3, 0, Math.PI * 2); g.fillStyle = onF ? "#c9731d" : "rgba(201,115,29,0.32)"; g.fill(); return { x: x, y: y, r: r }; });
+    g.strokeStyle = "rgba(23,18,13,0.35)"; g.setLineDash([3, 4]); g.beginPath(); frontier.forEach(function (r, i) { var x = xOf(r.p), y = yOf(r.s); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
+    points.value = rows.map(function (r) { var onF = frontier.indexOf(r) >= 0; var x = xOf(r.p), y = yOf(r.s) + (Math.sin(r.n.length) * 3); g.beginPath(); g.arc(x, y, onF ? 4.5 : 2.4, 0, Math.PI * 2); g.fillStyle = WA.dot(r, onF ? 0.95 : 0.28); g.fill(); if (onF) { g.lineWidth = 1.5; g.strokeStyle = "#17120d"; g.stroke(); } return { x: x, y: y, r: r }; });
+    WA.legend(document.getElementById("mapLegend"), rows);
     var res = WA.drawCompass(document.getElementById("flavorMap"), rows, null); points.flavor = res.points; geom.flavor = res;
   }
   function hover(canvasId, tipId, key) {

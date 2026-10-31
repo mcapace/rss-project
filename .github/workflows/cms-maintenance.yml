@@ -21,7 +21,7 @@ on:
         description: "rehost only: comma-separated legacy image hosts that may be fetched"
         required: false
         type: string
-        default: mscwordpresscontent.s3.amazonaws.com,www.maltadvocate.com,web.archive.org,66.148.42.205
+        default: mscwordpresscontent.s3.amazonaws.com,www.maltadvocate.com,web.archive.org
       limit:
         description: Documents per pass
         required: false

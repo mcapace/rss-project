@@ -339,13 +339,13 @@
   /* Bottle card markup, shared */
   function shot(cat) {
     var c = String(cat || "");
-    if (/rye/i.test(c)) return "img/bottle-rye.jpg";
-    if (/japan/i.test(c)) return "img/bottle-japanese.jpg";
-    if (/irish|poit/i.test(c)) return "img/bottle-irish.jpg";
-    if (/blend/i.test(c)) return "img/bottle-blended.jpg";
-    if (/scotch|single malt/i.test(c)) return "img/bottle-scotch.jpg";
-    if (/bourbon|tennessee|corn|wheat|white whiskey|canadian|american/i.test(c)) return "img/bottle-bourbon.jpg";
-    return "img/bottle-other.jpg";
+    if (/rye/i.test(c)) return "img/bottle-rye.png";
+    if (/japan/i.test(c)) return "img/bottle-japanese.png";
+    if (/irish|poit/i.test(c)) return "img/bottle-irish.png";
+    if (/blend/i.test(c)) return "img/bottle-blended.png";
+    if (/scotch|single malt/i.test(c)) return "img/bottle-scotch.png";
+    if (/bourbon|tennessee|corn|wheat|white whiskey|canadian|american/i.test(c)) return "img/bottle-bourbon.png";
+    return "img/bottle-other.png";
   }
   function bottleSrc(r) { return (r && r.img) ? r.img : shot(r && r.c); }
   function bottleImg(r) {

@@ -681,15 +681,21 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 @media (max-width: 960px) { .profile-grid { grid-template-columns: 1fr; } .profile-grid .profile { grid-template-columns: 1fr; } .profile-grid .compass-card { grid-row: auto; } }
 
 /* Top 20 */
+.top20-cover { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.top20-cover .chan-head { margin-bottom: 0; }
+.top20-year { margin: 0; font-weight: 500; font-size: clamp(72px, 10vw, 128px); line-height: 0.8; letter-spacing: -0.045em; color: var(--amber); }
+.top20-page #years { margin: 22px 0 28px; }
+.top20-page #years button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .top20-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.top20-grid > .ad { grid-column: 1 / -1; }
 .top20-card { display: grid; grid-template-columns: 54px 110px minmax(0, 1fr); gap: 16px; align-items: start; padding: 18px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass); backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); }
-.top20-card .rank { font-family: var(--mono); font-size: 22px; color: var(--amber); font-weight: 500; }
+.top20-card .rank { font-family: var(--mono); font-size: 28px; color: var(--amber); font-weight: 500; line-height: 1; }
 .top20-card img { width: 110px; height: 140px; object-fit: contain; }
 .top20-card h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.15; }
 .top20-card .meta { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
-.top20-card .meta b { font-size: 18px; }
+.top20-card .meta b { font-size: 26px; }
 .top20-card p { margin-top: 8px; font-size: 14px; color: var(--ink-2); line-height: 1.5; }
-@media (max-width: 900px) { .top20-grid { grid-template-columns: 1fr; } .top20-card { grid-template-columns: 40px 80px minmax(0, 1fr); } }
+@media (max-width: 900px) { .top20-grid { grid-template-columns: 1fr; } .top20-card { grid-template-columns: 40px 80px minmax(0, 1fr); } .top20-cover { flex-direction: column; align-items: flex-start; } }
 
 /* Fixes: author block alignment, the sign-up on glass, thumbnails that never cover the card's words. */
 .author { align-items: center; }
@@ -1053,11 +1059,13 @@ a.mention:hover { text-decoration-color: var(--copper); }
 .top20-card .acts { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
 .top20-card .acts .pill { height: 28px; padding: 0 11px; font-size: 12.5px; }
 .top20-card .meta .owner { display: block; color: var(--ink-3); font-size: 12px; margin-top: 2px; }
-.top20-card.woty { grid-column: 1 / -1; grid-template-columns: 54px 180px minmax(0, 1fr); background: linear-gradient(135deg, rgba(255,251,245,0.9), rgba(227,164,67,0.18)); }
-.top20-card.woty img { width: 180px; height: 220px; }
-.top20-card.woty h3 { font-size: 26px; }
+.top20-card.woty { grid-column: 1 / -1; grid-template-columns: auto minmax(160px, 240px) minmax(0, 1fr); align-items: center; gap: 28px; padding: 28px 32px; background: linear-gradient(135deg, rgba(255,251,245,0.9), rgba(227,164,67,0.18)); }
+.top20-card.woty .rank { font-size: 72px; }
+.top20-card.woty img { width: 200px; height: 260px; }
+.top20-card.woty h3 { font-size: clamp(26px, 3vw, 36px); }
+.top20-card.woty .meta b { font-size: 42px; }
 .top20-card .body .mono { display: block; margin-bottom: 6px; color: var(--copper); }
-@media (max-width: 760px) { .top20-card.woty { grid-template-columns: 44px 110px minmax(0, 1fr); } .top20-card.woty img { width: 110px; height: 140px; } }
+@media (max-width: 760px) { .top20-card.woty { grid-template-columns: 44px 110px minmax(0, 1fr); gap: 14px; padding: 18px; align-items: start; } .top20-card.woty .rank { font-size: 32px; } .top20-card.woty img { width: 110px; height: 150px; } .top20-card.woty .meta b { font-size: 28px; } }
 .bottle .foot { flex-wrap: wrap; row-gap: 8px; }
 .bottle .foot .buy-chip { flex-basis: 100%; order: 3; justify-content: center; height: 32px; margin: 0; }
 /* The WhiskyFest mark sits in the copy on a dark plate (the mark is white and gold), not over the photographs. */

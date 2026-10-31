@@ -11,7 +11,9 @@
     var hint = el.querySelector("i");
     var mobileRect = hint && /300/.test(hint.textContent);
     var spec;
-    if (el.classList.contains("ad-mrec")) {
+    if (el.classList.contains("ad-above")) {
+      spec = { id: "div-id-for-above", pos: "top", map: "top", sizes: [[970, 250], [970, 90], [728, 90], [468, 60], [320, 50]] };
+    } else if (el.classList.contains("ad-mrec")) {
       spec = { id: "div-id-for-midrectangle1", pos: "mid1", map: "rail", sizes: [[300, 600], [300, 250]] };
     } else if (el.classList.contains("ad-leader")) {
       spec = mobileRect

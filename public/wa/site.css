@@ -707,6 +707,8 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 .ad { display: grid; place-items: center; gap: 4px; margin: 0 var(--gutter); border: 1px dashed rgba(23,18,13,0.18); border-radius: 12px; background: rgba(255,251,245,0.4); color: var(--ink-3); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; }
 .ad i { font-style: normal; text-transform: none; letter-spacing: 0; font-size: 11px; opacity: 0.8; }
 .ad-billboard { min-height: 250px; margin-top: 14px; }
+.ad-above { margin: 10px var(--gutter) 0; }
+.ad-above.ad-billboard { margin-top: 10px; }
 .ad-leader { min-height: 90px; margin-top: 8px; margin-bottom: 8px; }
 .ad-mrec { min-height: 250px; margin: 14px 0 0; }
 @media (max-width: 760px) { .ad-billboard, .ad-leader { min-height: 50px; } .ad-mrec { min-height: 250px; } }

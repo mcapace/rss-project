@@ -102,6 +102,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (st.hero) { var h = document.getElementById("hero"); h.hidden = false; h.querySelector("img").src = st.hero; h.querySelector("img").alt = st.title; h.querySelector("figcaption").textContent = "Photograph: Whisky Advocate"; }
       // The body: links to other stories and to rated bottles stay inside the site.
       var holder = document.createElement("div"); holder.innerHTML = bodies[st.slug];
+      // Pictures and links written as site-relative paths on the old site still live there.
+      holder.querySelectorAll("img[src^=\"/\"], source[srcset^=\"/\"]").forEach(function (im) { var at = im.hasAttribute("src") ? "src" : "srcset"; var v = im.getAttribute(at); if (v.indexOf("//") !== 0) im.setAttribute(at, "https://whiskyadvocate.com" + v); });
+      holder.querySelectorAll("a[href^=\"/\"]").forEach(function (a) { var v = a.getAttribute("href"); if (v.indexOf("//") !== 0) a.setAttribute("href", "https://whiskyadvocate.com" + v); });
       holder.querySelectorAll("a[href]").forEach(function (a) { var m = a.getAttribute("href").match(/^https?:\/\/(?:www\.)?whiskyadvocate\.com\/([^?#]+)/); if (!m) return; var k = m[1].replace(/\/$/, "").toLowerCase(); if (storyBySlug[k]) a.setAttribute("href", "story.html#" + storyBySlug[k].slug); else if (bySlug[k]) a.setAttribute("href", WA.bottleHref(bySlug[k])); });
       holder.querySelectorAll("img").forEach(function (im) { im.setAttribute("loading", "lazy"); im.addEventListener("load", function () { if (im.naturalHeight > im.naturalWidth * 1.15) im.classList.add("tall"); }); });
       var paras = holder.querySelectorAll("p"); if (paras[0] && paras[0].textContent.length > 120 && !paras[0].querySelector("img")) paras[0].classList.add("drop");

@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Whisky Finder</title>
+<title>Ratings</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <header class="mast">
-  <nav aria-label="Sections"><a href="finder.html" aria-current="page">Whisky Finder</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a><a href="tools.html">Tools</a></nav>
+  <nav aria-label="Sections"><a href="finder.html" aria-current="page">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
-  <div class="tools"><a class="pill solid" href="#">Subscribe</a></div>
+  <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
+<div class="ad ad-billboard" data-slot="wa_finder_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 
 <section class="hero" style="padding-bottom: 24px">
-  <div><h1 class="d1">Whisky Finder</h1></div>
+  <div><h1 class="d1">Ratings</h1></div>
   <div class="ask">
     <form id="askForm" autocomplete="off">
       <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
@@ -43,15 +44,18 @@
       <div class="facet-group"><h3 class="mono">Price up to</h3><div class="ladder" id="priceLadder"><button type="button" data-price="40">$40</button><button type="button" data-price="60">$60</button><button type="button" data-price="100">$100</button><button type="button" data-price="200">$200</button><button type="button" data-price="400" aria-pressed="true">Any</button></div></div>
       <div class="facet-group"><h3 class="mono">Rated</h3><div class="ladder" id="sinceLadder"><button type="button" data-since="2025" aria-pressed="true">2025+</button><button type="button" data-since="2022">2022+</button><button type="button" data-since="2018">2018+</button><button type="button" data-since="">All</button></div></div>
       <div class="facet-group"><h3 class="mono">Score band</h3><div class="ladder" id="scoreLadder"><button type="button" data-score="80" aria-pressed="true">All</button><button type="button" data-score="88">88+</button><button type="button" data-score="90">90+</button><button type="button" data-score="92">92+</button><button type="button" data-score="94">94+</button></div></div>
+      <div class="facet-group"><h3 class="mono">Like this one</h3><div class="twin"><div class="search-line" style="min-height: 44px; padding-left: 14px"><input id="twinQ" type="text" placeholder="A bottle you love" aria-label="Find bottles like one you name" autocomplete="off"></div><div class="menu" id="twinMenu"></div></div><div id="twinOn"></div></div>
+      <div class="facet-group"><h3 class="mono">Taste words</h3><div class="words" id="wordChips"></div></div>
       <div class="facet-group"><h3 class="mono">Character</h3><div class="chips" id="charChips"><button type="button" data-char="smoky" aria-pressed="false">Smoky</button><button type="button" data-char="sweet" aria-pressed="false">Sweet &amp; sherried</button><button type="button" data-char="rich" aria-pressed="false">Rich</button><button type="button" data-char="light" aria-pressed="false">Light</button></div></div>
       <button type="button" class="pill" id="clear">Clear everything</button>
+      <div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div>
     </aside>
     <div>
       <div class="maps">
         <div class="map"><h3>Value map <span>price against score</span></h3><canvas id="valueMap" aria-label="Price against score"></canvas><div class="tip" id="valueTip"></div><p class="hint">Tap a region to keep only the bottles in it. Bright dots beat the value curve.</p></div>
         <div class="map"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character.</p></div>
       </div>
-      <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button></div></div>
+      <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button><button type="button" data-sort="twin" aria-pressed="false" id="sortTwin" style="display:none">Closest</button></div></div>
       <div class="grid" id="grid"></div>
       <div class="more"><button type="button" class="pill" id="more">Show more</button></div>
     </div>
@@ -59,10 +63,10 @@
 </section>
 
 <footer class="site">
-  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
-  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a></div>
-  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Whisky Finder</a><a href="index.html#scan">Shelf scan</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a></div>
-  <div><h4>Whisky Advocate</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="#">Subscribe</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a></div>
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="video.html">Video</a><a href="industry.html">Industry</a></div>
+  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a></div>
+  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings</a><a href="index.html#scan">Shelf scan</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a></div>
 </footer>
 
 <div class="tray" id="tray" data-open="false" aria-label="Compare"><div class="tray-head"><span id="trayCount">Compare</span><button type="button" id="trayClear">Clear</button></div><div class="tray-body" id="trayBody"></div></div>
@@ -73,15 +77,25 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, charScore = WA.charScore, value = WA.value;
   var CATS = {}; data.forEach(function (r) { CATS[r.c] = (CATS[r.c] || 0) + 1; });
   var catList = Object.keys(CATS).sort(function (a, b) { return CATS[b] - CATS[a]; }).slice(0, 9);
-  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "2025" };
+  var state = { types: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "2025", words: [], twin: null };
   var LENSES = { value: { sort: "value", score: 88 }, first: { price: 60, chars: ["light"], sort: "value" }, gift: { price: 100, score: 92 }, peat: { chars: ["smoky"], types: ["Single Malt Scotch"] }, winter: { chars: ["sweet", "rich"] }, cocktail: { types: ["Rye Whiskey"], price: 60 } };
-  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
+  function setLens(id) { state.types = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = "2025"; state.words = []; state.twin = null; state.lens = id || ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
   document.getElementById("lenses").addEventListener("click", function (e) { var b = e.target.closest(".lens"); if (!b) return; var id = b.getAttribute("data-lens"); setLens(state.lens === id ? "" : id); syncControls(); render(); });
   var typeChips = document.getElementById("typeChips");
   typeChips.innerHTML = catList.map(function (c) { return '<button type="button" data-cat="' + c + '" aria-pressed="false">' + c.replace("/Tennessee Whiskey", "") + "</button>"; }).join("");
   typeChips.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var c = b.getAttribute("data-cat"); var i = state.types.indexOf(c); if (i >= 0) state.types.splice(i, 1); else state.types.push(c); state.limit = 12; state.lens = ""; syncControls(); render(); });
   document.getElementById("charChips").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var c = b.getAttribute("data-char"); var i = state.chars.indexOf(c); if (i >= 0) state.chars.splice(i, 1); else state.chars.push(c); state.lens = ""; syncControls(); render(); });
   document.getElementById("priceLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.price = +b.getAttribute("data-price"); state.region = null; state.lens = ""; syncControls(); render(); });
+  var WORDS = WA.WORDS || [], wordChips = document.getElementById("wordChips");
+  wordChips.innerHTML = WORDS.map(function (w, i) { return '<button type="button" data-w="' + i + '" aria-pressed="false">' + w + "</button>"; }).join("");
+  wordChips.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var i = +b.getAttribute("data-w"), at = state.words.indexOf(i); if (at >= 0) state.words.splice(at, 1); else state.words.push(i); state.lens = ""; state.limit = 12; syncControls(); render(); });
+  // Like this one: name a bottle, and the results are ordered by how close every other bottle is to it in score, price, category and character.
+  var twinQ = document.getElementById("twinQ"), twinMenu = document.getElementById("twinMenu"), twinOn = document.getElementById("twinOn");
+  function closeness(a, b) { return Math.abs(a.s - b.s) * 1.2 + (a.c === b.c ? 0 : 3) + (a.p > 0 && b.p > 0 ? Math.abs(Math.log(a.p / b.p)) * 2 : 1) + ["smoky", "sweet", "rich", "light"].reduce(function (acc, c) { return acc + Math.abs(Math.min(3, charScore(a, c)) - Math.min(3, charScore(b, c))) * 0.6; }, 0) + (WORDS.length ? (function () { var shared = 0, mine = 0; for (var i = 0; i < WORDS.length; i++) { var x = WA.hasWord(a, i), y = WA.hasWord(b, i); if (x) mine++; if (x && y) shared++; } return mine ? (1 - shared / mine) * 2 : 0; })() : 0); }
+  twinQ.addEventListener("input", function () { var q = twinQ.value.trim().toLowerCase(); if (q.length < 2) { twinMenu.setAttribute("data-open", "false"); return; } var hits = data.filter(function (r) { return r.n.toLowerCase().indexOf(q) >= 0; }).slice(0, 8); twinMenu.innerHTML = hits.map(function (r) { return '<button type="button" data-slug="' + r.slug + '"><b>' + r.s + "</b><span>" + r.n + '</span><span style="margin-left:auto;color:var(--ink-3);font-family:var(--mono);font-size:11px">' + (r.d || "").slice(0, 4) + "</span></button>"; }).join("") || '<button type="button" disabled>No bottle by that name.</button>'; twinMenu.setAttribute("data-open", "true"); });
+  twinMenu.addEventListener("click", function (e) { var b = e.target.closest("button[data-slug]"); if (!b) return; state.twin = WA.find(data, b.getAttribute("data-slug")); twinMenu.setAttribute("data-open", "false"); twinQ.value = ""; state.sort = "twin"; state.since = ""; state.limit = 12; syncControls(); render(); });
+  document.addEventListener("click", function (e) { if (!e.target.closest(".twin")) twinMenu.setAttribute("data-open", "false"); });
+  twinOn.addEventListener("click", function (e) { if (!e.target.closest("button")) return; state.twin = null; state.sort = "score"; state.since = "2025"; syncControls(); render(); });
   document.getElementById("sinceLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.since = b.getAttribute("data-since"); state.region = null; state.limit = 12; syncControls(); render(); });
   document.getElementById("scoreLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.score = +b.getAttribute("data-score"); state.region = null; state.lens = ""; syncControls(); render(); });
   document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); syncControls(); render(); });
@@ -97,21 +111,27 @@ WA.ready(function (recent) { WA.archive(function (data) {
     typeChips.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.types.indexOf(b.getAttribute("data-cat")) >= 0)); });
     document.querySelectorAll("#charChips button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.chars.indexOf(b.getAttribute("data-char")) >= 0)); });
     document.querySelectorAll("#priceLadder button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-price") === state.price)); });
+    document.querySelectorAll("#wordChips button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.words.indexOf(+b.getAttribute("data-w")) >= 0)); });
+    twinOn.innerHTML = state.twin ? '<div class="twin-on"><b class="score-type">' + state.twin.s + "</b><span>Closest to <strong>" + state.twin.n + '</strong></span><button type="button">Clear</button></div>' : "";
     document.querySelectorAll("#sinceLadder button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-since") === state.since)); });
     document.querySelectorAll("#scoreLadder button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-score") === state.score)); });
     document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); });
+    document.getElementById("sortTwin").style.display = state.twin ? "" : "none";
     document.querySelectorAll(".lens").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lens") === state.lens)); });
   }
   function current() {
     var rows = data.filter(function (r) {
       if (state.since && !(r.d >= state.since)) return false;
+      if (state.words.length && !state.words.every(function (i) { return WA.hasWord(r, i); })) return false;
+      if (state.twin && r === state.twin) return false;
       if (state.types.length && state.types.indexOf(r.c) < 0) return false;
       if (r.p > state.price || r.s < state.score) return false;
       if (!state.chars.every(function (c) { return charScore(r, c) > 0; })) return false;
       if (state.region && !state.region(r)) return false;
       return true;
     });
-    if (state.sort === "score") rows.sort(function (a, b) { return b.s - a.s || a.p - b.p; });
+    if (state.sort === "twin" && state.twin) { var T = state.twin; rows.sort(function (a, b) { return closeness(a, T) - closeness(b, T); }); }
+    else if (state.sort === "score") rows.sort(function (a, b) { return b.s - a.s || a.p - b.p; });
     if (state.sort === "value") rows.sort(function (a, b) { return value(b) - value(a); });
     if (state.sort === "price-asc") rows.sort(function (a, b) { return (a.p || 1e9) - (b.p || 1e9); });
     if (state.sort === "new") rows.sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; });
@@ -120,7 +140,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var grid = document.getElementById("grid");
   function render() {
     var rows = current();
-    var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since;
+    var active = state.types.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since || state.words.length || state.twin;
     document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
     grid.innerHTML = rows.slice(0, state.limit).map(function (r) { return WA.bottleCard(r, { compare: state.compare }); }).join(""); WA.fillNotes(grid);
     document.getElementById("more").style.display = rows.length > state.limit ? "" : "none";

@@ -626,3 +626,107 @@ body.returning .hero.after-stage .ask { width: min(100%, 880px); }
 .front { align-items: stretch; }
 .front .story.lead.has-img { grid-template-rows: minmax(0, 1fr) auto auto auto; height: 100%; }
 .front .story.lead.has-img img { height: 100%; aspect-ratio: auto; min-height: 320px; }
+
+/* Story rows line up: every picture card in a row stretches, and its photograph takes the spare height. */
+.stories { align-items: stretch; }
+.story.has-img { grid-template-rows: minmax(0, 1fr) auto auto auto; height: 100%; }
+.story.has-img img { height: 100%; aspect-ratio: auto; min-height: 200px; }
+.story.lead.has-img img { min-height: 320px; }
+
+/* Rating cards with the bottle's photograph. */
+.bottle.has-img { grid-template-columns: 1fr 84px; grid-template-areas: "top thumb" "body thumb" "foot foot"; }
+.bottle.has-img > .top { grid-area: top; } .bottle.has-img > .top + div { grid-area: body; } .bottle.has-img > .foot { grid-area: foot; }
+.bottle .thumb { grid-area: thumb; align-self: start; width: 84px; height: 110px; border-radius: 12px; overflow: hidden; background: #fff; border: 1px solid var(--rule-2); }
+.bottle .thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+/* The finder: taste words and "like this one". */
+.words { display: flex; flex-wrap: wrap; gap: 6px; }
+.words button { min-height: 30px; padding: 0 11px; border: 1px solid var(--rule); border-radius: 999px; background: var(--glass-2); font-size: 12.5px; }
+.words button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #fff; }
+.twin { position: relative; }
+.twin .menu { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 20; display: none; max-height: 280px; overflow: auto; border: 1px solid var(--glass-edge); border-radius: 14px; background: var(--glass-2); backdrop-filter: blur(18px); box-shadow: var(--glass-shadow); }
+.twin .menu[data-open="true"] { display: block; }
+.twin .menu button { display: flex; width: 100%; gap: 10px; align-items: center; padding: 9px 12px; border: 0; background: none; text-align: left; font-size: 13.5px; }
+.twin .menu button:hover { background: rgba(255,255,255,0.5); }
+.twin .menu button b { color: var(--amber); font-weight: 700; min-width: 28px; }
+.twin-on { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 14px; border-radius: 14px; background: rgba(201,115,29,0.1); font-size: 13.5px; }
+.twin-on button { margin-left: auto; border: 0; background: none; color: var(--amber); font-size: 13px; }
+
+/* The opener is one screen: the pour, the headline, the ask bar, then the news. */
+.story-stage { height: auto; }
+.stage { position: relative; height: min(100svh, 860px); min-height: 560px; }
+.stage .scene-copy { align-items: start; padding-top: clamp(70px, 12vh, 150px); }
+.stage[data-landing="true"] .ask-landing { pointer-events: auto; }
+.hero.after-stage { padding: 0 var(--gutter); }
+body.has-stage[data-top="true"] .mast { background: transparent; }
+@media (max-width: 760px) { .stage { height: min(100svh, 760px); } .stage .scene-copy { padding-top: 12vh; } .stage .ask-landing .suggest { display: none; } }
+
+/* Bottle page: photograph beside the name, the facts under the actions, the compass beside the profile. */
+.bottle-hero { grid-template-columns: 360px minmax(0, 1fr); align-items: start; }
+.hero-art { aspect-ratio: 4 / 5; }
+.hero-art.photo { background: #fff; }
+.hero-art.photo img { object-fit: contain; padding: 18px; }
+.hero-art .cap { display: none; }
+.score-row { display: flex; align-items: center; gap: 18px; margin-top: 20px; }
+.score-row .band-label { margin: 0; }
+.bottle-hero .note { margin-top: 18px; max-width: 60ch; }
+.bottle-hero .facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+.bottle-hero .facts div { flex-direction: column; align-items: flex-start; gap: 2px; border-top: 1px solid rgba(23,18,13,0.06); }
+.bottle-hero .facts dd { text-align: left; }
+@media (max-width: 960px) { .bottle-hero { grid-template-columns: 1fr; } .hero-art { max-width: 320px; } .bottle-hero .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.profile-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.profile-grid .profile { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.profile-grid .compass-card { grid-row: span 2; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.profile-grid .compass-card canvas { width: 100%; aspect-ratio: 1; height: auto; max-height: 360px; margin: 0 auto; }
+@media (max-width: 960px) { .profile-grid { grid-template-columns: 1fr; } .profile-grid .profile { grid-template-columns: 1fr; } .profile-grid .compass-card { grid-row: auto; } }
+
+/* Top 20 */
+.top20-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.top20-card { display: grid; grid-template-columns: 54px 110px minmax(0, 1fr); gap: 16px; align-items: start; padding: 18px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass); backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); }
+.top20-card .rank { font-family: var(--mono); font-size: 22px; color: var(--amber); font-weight: 500; }
+.top20-card img { width: 110px; height: 140px; object-fit: contain; }
+.top20-card h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.15; }
+.top20-card .meta { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.top20-card .meta b { font-size: 18px; }
+.top20-card p { margin-top: 8px; font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+@media (max-width: 900px) { .top20-grid { grid-template-columns: 1fr; } .top20-card { grid-template-columns: 40px 80px minmax(0, 1fr); } }
+
+/* Fixes: author block alignment, the sign-up on glass, thumbnails that never cover the card's words. */
+.author { align-items: center; }
+.author h3, .prose .author h3 { margin: 0; font-size: 16px; }
+.author p, .prose .author p { margin: 4px 0 0; }
+.signup { color: var(--ink); }
+.signup p { color: var(--ink-2); }
+.signup input { border-color: var(--rule); color: var(--ink); background: rgba(255,255,255,0.5); }
+.bottle.has-img { grid-template-columns: 1fr; grid-template-areas: none; padding-right: 110px; }
+.bottle.has-img > .top, .bottle.has-img > .top + div, .bottle.has-img > .foot { grid-area: auto; }
+.bottle.has-img > .foot { margin-right: -94px; }
+.bottle .thumb { position: absolute; right: 14px; top: 14px; }
+
+/* Ad slots: mapped, measured, quiet. The label and sizes show in the prototype; the ad server fills them. */
+.ad { display: grid; place-items: center; gap: 4px; margin: 0 var(--gutter); border: 1px dashed rgba(23,18,13,0.18); border-radius: 12px; background: rgba(255,251,245,0.4); color: var(--ink-3); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; }
+.ad i { font-style: normal; text-transform: none; letter-spacing: 0; font-size: 11px; opacity: 0.8; }
+.ad-billboard { min-height: 250px; margin-top: 14px; }
+.ad-leader { min-height: 90px; margin-top: 8px; margin-bottom: 8px; }
+.ad-mrec { min-height: 250px; margin: 14px 0 0; }
+@media (max-width: 760px) { .ad-billboard, .ad-leader { min-height: 50px; } .ad-mrec { min-height: 250px; } }
+.mast nav { gap: 16px; }
+
+/* Video channel */
+.videos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.video-card { display: grid; align-content: start; border: 1px solid var(--glass-edge); border-radius: 18px; overflow: hidden; background: var(--glass); backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); text-align: left; padding: 0; }
+.video-card .frame { position: relative; aspect-ratio: 16 / 9; background: #111; }
+.video-card .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.video-card .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-card .play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 56px; height: 56px; border-radius: 50%; background: rgba(255,251,245,0.9); display: grid; place-items: center; color: var(--ink); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6); }
+.video-card .body { padding: 14px 16px 16px; display: grid; gap: 6px; }
+.video-card h3 { font-size: 17px; font-weight: 500; line-height: 1.15; letter-spacing: -0.015em; }
+.video-card .who { font-size: 12.5px; color: var(--ink-3); }
+.video-card.playing .play { display: none; }
+.video-featured { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 18px; align-items: stretch; margin-bottom: 24px; }
+.video-featured .video-card .frame { aspect-ratio: 16 / 9; }
+.video-featured .side { display: grid; gap: 1px; align-content: start; }
+@media (max-width: 960px) { .videos { grid-template-columns: repeat(2, minmax(0, 1fr)); } .video-featured { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .videos { grid-template-columns: 1fr; } }
+.bottle.has-img { min-height: 250px; padding-right: 116px; }
+.bottle.has-img > .top { padding-right: 0; }

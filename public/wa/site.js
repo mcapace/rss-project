@@ -60,58 +60,23 @@
 
   function entrance() {
     var stage = document.getElementById("stage"); if (!stage) return;
-    // The opener plays once per device. After that the home opens on the news, with the ask bar at the top and a way to replay it.
-    var seen = false; try { seen = localStorage.getItem("wa-entered") === "1"; } catch (e) {}
-    if (seen && !/replay/.test(location.search)) {
-      document.body.classList.add("returning"); document.documentElement.setAttribute("data-boot", "ready");
-      var landing = stage.querySelector(".ask-landing"), home = document.getElementById("askHome");
-      if (landing && home) { home.appendChild(landing); home.insertAdjacentHTML("beforeend", '<p class="replay"><button type="button" id="replayOpener">Replay the opener</button></p>'); document.getElementById("replayOpener").addEventListener("click", function () { try { localStorage.removeItem("wa-entered"); } catch (e) {} location.href = "index.html?replay=1"; }); }
-      var holder0 = document.getElementById("storyStage"); if (holder0) holder0.remove();
-      return;
-    }
-    try { localStorage.setItem("wa-entered", "1"); } catch (e) {}
     document.body.classList.add("has-stage");
-    var holder = document.getElementById("storyStage"), loader = document.getElementById("loader"), root = document.documentElement;
     var q = function (sel) { return stage.querySelector(sel); };
-    var L = { sheet: q(".layer.sheet") };
-    var video = q("video"), copies = [].slice.call(stage.querySelectorAll(".scene-copy")), compassScene = document.getElementById("compassScene"), compass = document.getElementById("stageCompass");
+    var sheet = q(".layer.sheet"), video = q("video"), copy = q(".scene-copy");
     var gl = MOTION ? initGL(document.getElementById("gl")) : null;
     var pointer = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 };
     addEventListener("pointermove", function (e) { target.x = e.clientX / innerWidth; target.y = e.clientY / innerHeight; }, { passive: true });
     if (video && innerHeight > innerWidth) { var src = video.querySelector("source"); src.src = "pour-portrait.mp4"; video.load(); }
-
-    /* Boot: fonts and the first layers, at least 700 ms of the mark, never more than 2.6 s. */
-    var t0 = performance.now(), booted = false, introStart = 0;
-    function boot() {
-      if (booted) return; booted = true; introStart = performance.now();
-      root.setAttribute("data-boot", "ready"); if (loader) loader.setAttribute("data-done", "true");
-      if (video && MOTION) { var pl = video.play(); if (pl && pl.catch) pl.catch(function () {}); }
-    }
-    var waits = [new Promise(function (res) { setTimeout(res, MOTION ? 700 : 0); })];
-    if (document.fonts && document.fonts.ready) waits.push(document.fonts.ready);
-    [L.sheet].forEach(function (l) { var im = l.querySelector("img"); if (im && !im.complete) waits.push(new Promise(function (res) { im.onload = im.onerror = res; })); });
-    if (video) waits.push(new Promise(function (res) { if (video.readyState >= 3) res(); else { video.addEventListener("canplay", res, { once: true }); video.addEventListener("error", res, { once: true }); } }));
-    Promise.all(waits).then(boot); setTimeout(boot, 2600);
-
-    function progress() { var top = holder.getBoundingClientRect().top, span = holder.offsetHeight - innerHeight; return span > 0 ? clamp01(-top / span) : 1; }
-    var lastScene = -1, lastCompass = -1, lastLanding = null, lastHint = null;
+    if (video && MOTION) { var pl = video.play(); if (pl && pl.catch) pl.catch(function () {}); }
+    var t0 = performance.now();
     function frame(now) {
       pointer.x += (target.x - pointer.x) * 0.06; pointer.y += (target.y - pointer.y) * 0.06;
-      var intro = booted ? (MOTION ? easeOut(clamp01((now - introStart) / 1800)) : 1) : 0;
-      var P = Math.max(progress(), intro * 0.2); if (!MOTION) P = Math.max(progress(), 0.2);
-      var px = (pointer.x - 0.5), py = (pointer.y - 0.5);
-      var pourIn = easeOut(seg(P, 0, 0.2)), pourOut = easeOut(seg(P, 0.3, 0.55));
-      L.sheet.style.transform = "translate3d(" + (px * -6) + "px," + (-100 * (1 - pourIn) + 110 * pourOut) + "%,0)";
-      L.sheet.style.opacity = 1 - seg(P, 0.36, 0.55);
-      var scene = P < 0.36 ? 0 : P < 0.76 ? 1 : 2;
-      if (scene !== lastScene) { lastScene = scene; copies.forEach(function (c, i) { c.setAttribute("data-on", String(i === scene && intro > 0.15)); }); }
-      else if (intro > 0.15 && copies[scene].getAttribute("data-on") !== "true") copies[scene].setAttribute("data-on", "true");
-      var cf = Math.round(seg(P, 0.42, 0.68) * 40) / 40 + (P >= 0.8 ? 1 : 0);
-      if (cf !== lastCompass) { lastCompass = cf; compassScene.setAttribute("data-on", String(cf > 0 && P < 0.8)); if (cf > 0 && DATA && window.WA.drawCompass) window.WA.drawCompass(compass, DATA.slice(0, Math.round(DATA.length * Math.min(1, cf)))); }
-      var landing = P > 0.8; if (landing !== lastLanding) { lastLanding = landing; stage.setAttribute("data-landing", String(landing)); }
-      var hint = P < 0.03; if (hint !== lastHint) { lastHint = hint; stage.setAttribute("data-hint", hint ? "on" : "off"); }
-      if (gl) gl.render(now, P, pointer, intro);
-      requestAnimationFrame(frame);
+      var intro = MOTION ? easeOut(clamp01((now - t0) / 1600)) : 1, px = pointer.x - 0.5;
+      sheet.style.transform = "translate3d(" + (px * -6) + "px," + (-100 * (1 - intro)) + "%,0)";
+      if (intro > 0.3 && copy.getAttribute("data-on") !== "true") copy.setAttribute("data-on", "true");
+      if (intro > 0.5 && stage.getAttribute("data-landing") !== "true") stage.setAttribute("data-landing", "true");
+      if (gl) gl.render(now, 0.4, pointer, intro);
+      if (stage.getBoundingClientRect().bottom > 0) requestAnimationFrame(frame); else setTimeout(function () { requestAnimationFrame(frame); }, 400);
     }
     requestAnimationFrame(frame);
   }
@@ -191,6 +156,7 @@
     if (ARCHIVE) return cb(ARCHIVE);
     fetch("ratings.json").then(function (r) { return r.json(); }).then(function (d) {
       ARCHIVE = d.rows.map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = row[i]; }); o.t = ""; return o; });
+      ARCHIVE.words = d.words || []; window.WA.WORDS = ARCHIVE.words;
       var bySlug = {}; ARCHIVE.forEach(function (r) { bySlug[r.slug.toLowerCase()] = r; });
       ARCHIVE.bySlug = bySlug; DATA = ARCHIVE; cb(ARCHIVE);
     });
@@ -231,6 +197,7 @@
     return { n: n, unit: u ? u[1].replace(/\.$/, "") : "", rest: (u ? s.slice(u[0].length) : s).replace(/^[\s.]+/, "") };
   }
   function fmtAmount(x) { var w = Math.floor(x + 1e-6), f = x - w, F = f < 0.1 ? "" : f < 0.2 ? "⅛" : f < 0.3 ? "¼" : f < 0.4 ? "⅓" : f < 0.6 ? "½" : f < 0.7 ? "⅔" : f < 0.9 ? "¾" : ""; if (f >= 0.9) { w += 1; F = ""; } return (w || !F ? w : "") + F; }
+  window.WA.hasWord = function (r, i) { return ((r.w || 0) & (1 << i)) !== 0; };
   window.WA.amount = amount; window.WA.fmtAmount = fmtAmount;
   window.WA.producers = producers; window.WA.COUNTRY = COUNTRY;
   window.WA.cocktails = cocktails; window.WA.top20 = top20;
@@ -307,7 +274,7 @@
   function bottleCard(r, opts) {
     opts = opts || {};
     var idx = DATA.indexOf(r), on = opts.compare && opts.compare.indexOf(idx) >= 0;
-    return '<article class="bottle" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '"><div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + "</div></article>";
+    return '<article class="bottle' + (r.img ? " has-img" : "") + '" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '">' + (r.img ? '<a class="thumb" href="' + bottleHref(idx) + '"><img src="' + r.img + '" alt="" loading="lazy"></a>' : "") + '<div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + "</div></article>";
   }
   window.WA.bottleCard = bottleCard;
 

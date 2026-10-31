@@ -10,38 +10,36 @@
 <body>
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <header class="mast">
-  <nav aria-label="Sections"><a href="finder.html" aria-current="page">Whisky Finder</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a><a href="tools.html">Tools</a></nav>
+  <nav aria-label="Sections"><a href="finder.html" aria-current="page">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
-  <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
+  <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
+<div class="ad ad-billboard" data-slot="wa_bottle_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 
 <section class="band" style="padding-top: 28px">
-  <div class="crumbs" style="margin-bottom: 26px"><a href="finder.html">Whisky Finder</a><span>›</span><a id="crumbCat" href="finder.html">Category</a><span>›</span><a id="crumbProd" href="producer.html">Producer</a><span>›</span><span id="crumbName">Bottle</span></div>
+  <div class="crumbs" style="margin-bottom: 26px"><a href="finder.html">Ratings</a><span>›</span><a id="crumbCat" href="finder.html">Category</a><span>›</span><a id="crumbProd" href="producer.html">Producer</a><span>›</span><span id="crumbName">Bottle</span></div>
   <div class="bottle-hero">
+    <div class="hero-art"><img id="art" src="img/bottle-other.jpg" alt=""><div class="badge"><b id="badgeScore"></b><span>points</span></div></div>
     <div>
       <span class="mono" id="kicker">Rating</span>
       <h1 class="d2" id="name" style="margin-top:10px; max-width: 20ch"></h1>
       <p class="byline" style="margin-top: 12px"><span id="tasterLine"></span><span id="when"></span><span id="issue"></span></p>
-      <div class="score-block" style="margin-top: 26px"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div>
-      <p style="margin-top: 14px"><span class="band-label" id="band"></span></p>
-      <p class="note" id="note" style="margin-top: 22px"></p>
-      <div class="actions" style="margin-top: 26px"><button type="button" class="pill amber" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button><a class="pill" href="industry.html">Sell sheet (trade)</a></div>
+      <div class="score-row"><div class="score-block"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div><span class="band-label" id="band"></span></div>
+      <p class="note" id="note"></p>
+      <div class="actions" style="margin-top: 22px"><button type="button" class="pill amber" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button><a class="pill" href="industry.html">Sell sheet (trade)</a></div>
       <div class="buy" id="buy" style="margin-top: 18px; display: none"></div>
+      <dl class="facts" id="facts" style="margin-top: 22px"></dl>
     </div>
-    <aside style="display: grid; gap: 14px">
-      <div class="hero-art"><img id="art" src="img/bottle-other.jpg" alt=""><div class="badge"><b id="badgeScore"></b><span>points</span></div><span class="cap">Category still. The real page shows the bottle photographed by the panel.</span></div>
-      <dl class="facts" id="facts"></dl>
-    </aside>
   </div>
 </section>
 
 <section class="band">
-  <div class="band-head"><div><span class="mono">Tasting profile</span><h2 class="d2" style="margin-top:10px">Nose, palate, finish.</h2></div><p id="profileNote">The note split the way the panel writes it, with the descriptors it uses most pulled out.</p></div>
-  <div class="profile" id="profile"></div>
-  <div class="two" style="margin-top: 14px">
+  <div class="band-head"><div><span class="mono">Tasting profile</span><h2 class="d2" style="margin-top:10px">Nose, palate, finish</h2></div></div>
+  <div class="profile-grid">
+    <div class="profile" id="profile"></div>
+    <div class="verdict compass-card"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other rating since 2022.</p></div>
     <div class="verdict"><h3>Descriptors in the note</h3><div class="descriptors" id="descriptors" style="margin-top: 6px"></div></div>
     <div class="verdict"><h3>How to drink it</h3><p class="big" id="serveBig"></p><p id="serveNote"></p></div>
-    <div class="verdict"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other rating since 2022.</p></div>
   </div>
 </section>
 
@@ -54,6 +52,7 @@
   </div>
 </section>
 
+<div class="ad ad-leader" data-slot="wa_bottle_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 300 × 250 mobile</i></div>
 <section class="band">
   <div class="band-head"><div><span class="mono">If you like this</span><h2 class="d2" style="margin-top:10px">Try these next.</h2></div><p>Picked by score, price, category and where they sit on the compass.</p></div>
   <div class="rail" id="similar"></div>
@@ -90,10 +89,10 @@
 </section>
 
 <footer class="site">
-  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
-  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a></div>
-  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Whisky Finder</a><a href="index.html#scan">Shelf scan</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a></div>
-  <div><h4>Whisky Advocate</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="#">Subscribe</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a></div>
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="video.html">Video</a><a href="industry.html">Industry</a></div>
+  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a></div>
+  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings</a><a href="index.html#scan">Shelf scan</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a></div>
 </footer>
 
 <script src="site.js"></script>
@@ -142,7 +141,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("score").textContent = r.s; document.getElementById("badgeScore").textContent = r.s;
     document.getElementById("band").textContent = B[0] + " · " + r.s + " to " + (r.s >= 95 ? 100 : r.s >= 90 ? 94 : r.s >= 85 ? 89 : 84);
     var sents = sentences(r.f || r.t || "The panel's note is being fetched."); document.getElementById("note").textContent = sents.slice(0, 2).join(" ");
-    document.getElementById("art").src = "img/bottle-" + (ART[r.c] || "other") + ".jpg";
+    var art = document.getElementById("art"); art.src = r.img || "img/bottle-" + (ART[r.c] || "other") + ".jpg"; art.alt = r.n; document.querySelector(".hero-art").classList.toggle("photo", !!r.img);
     document.getElementById("facts").innerHTML = [["Price", fmt(r.p)], ["ABV", r.a ? r.a + "%" : "—"], ["Category", r.c], ["Producer", r.pr], ["Taster", r.by || "Tasting panel"], ["Issue", r.issue || "—"]].map(function (x) { return "<div><dt>" + x[0] + "</dt><dd>" + x[1] + "</dd></div>"; }).join("");
     var P = profile(r.f || r.t);
     document.getElementById("profile").innerHTML = ["Nose", "Palate", "Finish"].map(function (k) { return '<div class="part"><h3>' + k + "</h3><p>" + (P[k].join(" ") || "The panel's note does not separate this out.") + "</p></div>"; }).join("");
@@ -190,7 +189,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     else if (/drink|serve|water|ice|neat|glass/.test(l)) { var S = serve(r); text = "<p>" + S[0] + " " + S[1] + "</p>"; picks = []; }
     else { var f = (r.f || r.t); text = "<p>" + (r.by || "The panel") + " wrote: &ldquo;" + f.slice(0, 260) + (f.length > 260 ? "…" : "") + "&rdquo;</p><p>In plain terms: " + (WA.charScore(r, "smoky") ? "there is smoke in it, " : "") + (WA.charScore(r, "sweet") ? "it leans sweet and fruited, " : "") + (WA.charScore(r, "rich") ? "it is full in the mouth, " : "") + (WA.charScore(r, "light") ? "it is on the lighter side, " : "") + "and the score says " + band(r.s)[0].toLowerCase() + ".</p>"; picks = []; }
     document.getElementById("answerFacets").innerHTML = '<span class="facet">' + r.n + "</span>";
-    document.getElementById("answerText").innerHTML = text + '<div class="src"><a href="' + WA.producerHref(r.pr) + '">' + r.pr + '</a><a href="finder.html">Whisky Finder</a></div>';
+    document.getElementById("answerText").innerHTML = text + '<div class="src"><a href="' + WA.producerHref(r.pr) + '">' + r.pr + '</a><a href="finder.html">Ratings</a></div>';
     document.getElementById("answerPicks").innerHTML = picks.map(function (x) { return '<a class="pick" href="' + WA.bottleHref(data.indexOf(x)) + '"><span class="sc score-type">' + x.s + '</span><span><span class="nm">' + x.n + '</span><span class="ct">' + x.c + "</span></span><span class=\"pr\">" + fmt(x.p) + "</span></a>"; }).join("");
     answer.setAttribute("data-show", "true");
   }

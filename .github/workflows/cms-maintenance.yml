@@ -11,7 +11,7 @@ on:
         description: Which script to run
         required: true
         type: choice
-        options: [rehost, heroes, describe, normalize, redirects, embed]
+        options: [rehost, heroes, describe, bottles, normalize, redirects, embed]
       brand:
         description: Publication (wa, ws, ca, mw)
         required: true
@@ -75,6 +75,7 @@ jobs:
             rehost)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}") ;;
             heroes)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}" --heroes) ;;
             describe)   script=scripts/describe-media.ts;   extra=() ;;
+            bottles)    script=scripts/bottle-images.ts;    extra=() ;;
             normalize)  script=scripts/normalize-bodies.ts; extra=(--only-missing) ;;
             redirects)  script=scripts/build-redirects.ts;  extra=() ;;
             embed)      script=scripts/embed-content.ts;    extra=() ;;
@@ -82,6 +83,7 @@ jobs:
           esac
           apply=()
           if [ "${{ inputs.apply }}" = "true" ]; then apply=(--apply --development-target "$target"); fi
+          if [ "${{ inputs.task }}" = "bottles" ] && [ "${{ inputs.apply }}" = "true" ]; then apply=(--apply); fi
           passes="${{ inputs.passes }}"
           for pass in $(seq 1 "$passes"); do
             echo "== pass $pass of $passes"

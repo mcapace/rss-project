@@ -116,7 +116,8 @@ export async function loadGa4Audience(brand: CmsBrand, days: number, signal?: Ab
   const dateRanges = [{ startDate: current.start, endDate: current.end }];
   const [totalRows, dailyRows, pageRows, channelRows, deviceRows] = await Promise.all([
     runReport(token, property, { dateRanges: [{ ...dateRanges[0], name: "current" }, { startDate: previous.start, endDate: previous.end, name: "previous" }], metrics: TOTAL_METRICS.map(name => ({ name })) }, signal),
-    runReport(token, property, { dateRanges: [{ ...dateRanges[0], name: "current" }, { startDate: previous.start, endDate: previous.end, name: "previous" }], dimensions: [{ name: "date" }, { name: "dateRange" }], metrics: [{ name: "sessions" }, { name: "totalUsers" }, { name: "screenPageViews" }], limit: 400 }, signal),
+    // With two date ranges GA4 appends a dateRange value after the listed dimensions; it must not be requested as one.
+    runReport(token, property, { dateRanges: [{ ...dateRanges[0], name: "current" }, { startDate: previous.start, endDate: previous.end, name: "previous" }], dimensions: [{ name: "date" }], metrics: [{ name: "sessions" }, { name: "totalUsers" }, { name: "screenPageViews" }], limit: 400 }, signal),
     runReport(token, property, { dateRanges, dimensions: [{ name: "pagePath" }, { name: "pageTitle" }], metrics: [{ name: "screenPageViews" }, { name: "sessions" }, { name: "engagementRate" }], orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }], limit: 12 }, signal),
     runReport(token, property, { dateRanges, dimensions: [{ name: "sessionDefaultChannelGroup" }], metrics: [{ name: "sessions" }], limit: 8 }, signal),
     runReport(token, property, { dateRanges, dimensions: [{ name: "deviceCategory" }], metrics: [{ name: "sessions" }], limit: 4 }, signal),

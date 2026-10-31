@@ -302,6 +302,7 @@
     text += '<div class="src"><a href="finder.html">Whisky Finder</a><a href="' + bottleHref(DATA.indexOf(top)) + '">' + top.n + '</a><a href="stories.html">Related stories</a></div>';
     return text;
   }
+  window.WA.understand = understand; window.WA.apply = apply;
   function askBar() {
     var form = document.getElementById("askForm"); if (!form) return;
     var input = document.getElementById("askInput"), answer = document.getElementById("answer");
@@ -439,6 +440,55 @@ document.querySelectorAll("form.nl-strip").forEach(function (f) {
 WA.APP = { ios: "https://apps.apple.com/app/id6796849673", android: "https://play.google.com/store/apps/details?id=com.mshanken.whiskyfest2026", page: "app.html" };
 WA.appStore = function () { var ua = navigator.userAgent || ""; if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return WA.APP.ios; if (/Android/.test(ua)) return WA.APP.android; return WA.APP.page; };
 document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA.appStore(); if (a.href !== location.href && /apple|google/.test(a.href)) { a.target = "_blank"; a.rel = "noopener"; } });
+
+/* Ask Whisky Advocate: a chat on every page. The browser finds candidate bottles with its own search, the site's route asks Claude, the answer comes back with the bottles it recommends. */
+(function () {
+  if (document.getElementById("waChat")) return;
+  WA.ASK_URL = (location.hostname === "localhost" || /claude\.ai|claudeusercontent/.test(location.hostname) || location.protocol === "file:") ? "https://rss-project-ten.vercel.app/api/wa/ask" : "/api/wa/ask";
+  var turns = [], busy = false;
+  var root = document.createElement("div"); root.id = "waChat"; root.setAttribute("data-open", "false");
+  root.innerHTML = '<button type="button" class="chat-fab" id="waChatFab" aria-label="Ask Whisky Advocate" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" fill="currentColor"/></svg><span>Ask Whisky Advocate</span></button>'
+    + '<section class="chat-panel glass" role="dialog" aria-label="Ask Whisky Advocate"><header><div><span class="mono">Ask Whisky Advocate</span><strong>What are you drinking tonight?</strong></div><button type="button" class="chat-close" id="waChatClose" aria-label="Close">&times;</button></header>'
+    + '<div class="chat-log" id="waChatLog"><div class="chat-msg bot"><p>Ask me for a bottle, a style, a price, or what to pour for someone. I answer from Whisky Advocate\u2019s own ratings, 8,000 and counting.</p></div><div class="chat-follow" id="waChatSeed"><button type="button">A smoky Islay under $80</button><button type="button">A first bourbon for a friend</button><button type="button">What should I bring to a dinner?</button></div></div>'
+    + '<form class="chat-form" id="waChatForm" autocomplete="off"><input id="waChatInput" type="text" placeholder="Ask anything about whisky" aria-label="Your question" maxlength="400"><button type="submit" class="pill solid" id="waChatSend">Ask</button></form></section>';
+  document.body.appendChild(root);
+  var log = document.getElementById("waChatLog"), input = document.getElementById("waChatInput"), fab = document.getElementById("waChatFab");
+  function open(on) { root.setAttribute("data-open", String(on)); fab.setAttribute("aria-expanded", String(on)); if (on) setTimeout(function () { input.focus(); }, 60); }
+  fab.addEventListener("click", function () { open(root.getAttribute("data-open") !== "true"); });
+  document.getElementById("waChatClose").addEventListener("click", function () { open(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && root.getAttribute("data-open") === "true") open(false); });
+  document.querySelectorAll("[data-open-chat]").forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); open(true); }); });
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function add(html, cls) { var d = document.createElement("div"); d.className = "chat-msg " + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+  function candidates(q) {
+    var f = WA.understand ? WA.understand(q) : null; if (!f || !WA.apply) return [];
+    var rows = WA.apply(f, WA.data() || []).slice(0, 12);
+    return rows.map(function (r) { return { slug: r.slug || "", name: r.n, score: r.s, price: r.p || null, category: r.c, producer: r.pr, note: (r.t || "").slice(0, 240) }; });
+  }
+  function askIt(q) {
+    q = (q || "").trim(); if (!q || busy) return;
+    var seed = document.getElementById("waChatSeed"); if (seed) seed.remove();
+    add("<p>" + esc(q) + "</p>", "me"); turns.push({ role: "user", text: q });
+    var wait = add('<p class="chat-wait"><i></i><i></i><i></i></p>', "bot"); busy = true; document.getElementById("waChatSend").disabled = true; input.value = "";
+    var bottles = candidates(q);
+    fetch(WA.ASK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turns: turns.slice(-8), bottles: bottles, page: document.title }) })
+      .then(function (r) { return r.json().then(function (j) { j.ok = r.ok; return j; }); })
+      .catch(function () { return { ok: false, error: "The assistant could not be reached." }; })
+      .then(function (res) {
+        busy = false; document.getElementById("waChatSend").disabled = false; wait.remove();
+        if (!res.ok || !res.answer) { add("<p>" + esc(res.error || "Something went wrong. Try again.") + "</p>", "bot"); return; }
+        turns.push({ role: "assistant", text: res.answer });
+        var bySlug = {}; bottles.forEach(function (b) { bySlug[b.slug] = b; });
+        var cards = (res.picks || []).map(function (s) { var b = bySlug[s]; if (!b) return ""; var r = (WA.data() || []).filter(function (x) { return x.slug === s; })[0]; var href = r ? WA.bottleHref(r) : "finder.html"; return '<a class="chat-pick" href="' + href + '"><span class="sc score-type">' + b.score + '</span><span><span class="nm">' + esc(b.name) + '</span><span class="ct">' + esc(b.category) + "</span></span><span class=\"pr\">" + (b.price ? "$" + b.price : "") + "</span></a>"; }).join("");
+        var follow = (res.followups || []).map(function (f) { return '<button type="button">' + esc(f) + "</button>"; }).join("");
+        add("<p>" + esc(res.answer) + "</p>" + (cards ? '<div class="chat-picks">' + cards + "</div>" : "") + (follow ? '<div class="chat-follow">' + follow + "</div>" : ""), "bot");
+        WA.decorateBuy && WA.decorateBuy(log);
+      });
+  }
+  log.addEventListener("click", function (e) { var b = e.target.closest(".chat-follow button"); if (b) askIt(b.textContent); });
+  document.getElementById("waChatForm").addEventListener("submit", function (e) { e.preventDefault(); askIt(input.value); });
+  WA.askChat = function (q) { open(true); if (q) askIt(q); };
+})();
 
 var waAds = document.createElement("script");
 waAds.src = "ads.js";

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
+<canvas class="field" id="field" aria-hidden="true"></canvas>
 <div class="loader" id="loader" aria-hidden="true"><div class="mark"><img src="logo.svg" alt=""><div class="line"><i></i></div></div></div>
 <div class="shell">
 <header class="mast">
@@ -20,7 +21,6 @@
   <div class="stage" id="stage" data-hint="on">
     <canvas class="layer gl" id="gl" aria-hidden="true"></canvas>
     <div class="layer sheet" aria-hidden="true"><video muted playsinline preload="auto" poster="img/sheet.jpg"><source src="pour-land.mp4" type="video/mp4"></video></div>
-    <div class="layer mist" aria-hidden="true"><img src="img/mist.jpg" alt=""></div>
     <div class="compass-scene" id="compassScene" data-on="false" aria-hidden="true"><canvas id="stageCompass"></canvas></div>
     <div class="scene-copy" data-scene="0" data-on="false"><div><span class="mono">Est. 1992 · The whisky authority</span><h2 style="margin-top:14px">Poured, nosed, <span class="sweep">rated blind.</span></h2><p>Every score on this site was earned in a glass like this one, by a panel that never sees the label.</p></div></div>
     <div class="scene-copy" data-scene="1" data-on="false"><div><h2>Find yours by <span class="sweep">flavor,</span> not by label.</h2><p>Smoky to sweet, light to rich. Every rated bottle sits somewhere on this map.</p></div></div>
@@ -89,9 +89,9 @@
 
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
-  <div><h4>Sections</h4><a href="stories.html">News</a><a href="stories.html">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="stories.html">Travel</a></div>
-  <div><h4>Editions</h4><a href="travel.html">Travel</a><a href="#">WhiskyFest</a><a href="#">Magazine</a><a href="#">Newsletters</a></div>
-  <div><h4>About this prototype</h4><p>Scores, notes, producers and stories are real, pulled from the archive today. Layout and the opener are a concept. Type: Aeonik.</p></div>
+  <div><h4>Sections</h4><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a></div>
+  <div><h4>Ratings</h4><a href="finder.html">Whisky Finder</a><a href="producers.html">Producers</a><a href="finder.html#value">Best value</a><a href="guides.html#glossaryBand">Glossary</a></div>
+  <div><h4>Whisky Advocate</h4><a href="#">Subscribe</a><a href="#">Newsletters</a><a href="#">WhiskyFest</a><a href="#">Magazine</a></div>
 </footer>
 
 </div>

@@ -61,6 +61,20 @@
     googletag.pubads().setTargeting("test", "");
     googletag.pubads().enableSingleRequest();
     googletag.pubads().collapseEmptyDivs();
+    googletag.pubads().addEventListener("slotRenderEnded", function (event) {
+      var box = document.getElementById(event.slot.getSlotElementId());
+      var holder = box && box.parentElement;
+      if (!holder || !holder.classList.contains("ad")) return;
+      var size = event.size;
+      if (event.isEmpty || !size || size[0] === 0 || size[1] === 0) {
+        holder.classList.add("ad-empty");
+        return;
+      }
+      holder.classList.add("ad-filled");
+      box.style.width = size[0] + "px";
+      box.style.height = size[1] + "px";
+      box.style.overflow = "hidden";
+    });
     googletag.enableServices();
     slots.forEach(function (slot) { googletag.display(slot.id); });
   });

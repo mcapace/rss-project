@@ -81,30 +81,11 @@
     requestAnimationFrame(frame);
   }
 
-  /* Motion everywhere: rows and cards rise into place as they enter; headline accents sweep amber. */
-  function reveal() {
-    if (!MOTION) return; document.body.classList.add("motion");
-    var items = [];
-    document.querySelectorAll(".band").forEach(function (band) {
-      var kids = [].slice.call(band.children); kids.forEach(function (k) { items.push(k); });
-      band.querySelectorAll(".grid > *, .stories > *, .lenses > *, .trade-grid > *, .picks3 > *, .scan > *, .stat-row > *").forEach(function (el, i) { el.style.setProperty("--stagger", (i % 8) * 70 + "ms"); items.push(el); });
-    });
-    items.forEach(function (el) { if (!el.classList.contains("reveal")) el.classList.add("reveal"); });
-    if (!("IntersectionObserver" in window)) { items.forEach(function (el) { el.setAttribute("data-in", "true"); }); return; }
-    var io = new IntersectionObserver(function (entries) { entries.forEach(function (e) { if (e.isIntersecting) { e.target.setAttribute("data-in", "true"); io.unobserve(e.target); } }); }, { rootMargin: "0px 0px -8% 0px", threshold: 0 });
-    items.forEach(function (el) { io.observe(el); });
-  }
+  /* The channel is on screen as soon as it loads. Hiding it and blurring it in showed a second design first. */
+  function reveal() {}
 
-  /* Page to page: cross-document view transitions where the browser has them, a short fade elsewhere. */
-  function transitions() {
-    if (!MOTION || ("startViewTransition" in document)) return;
-    document.addEventListener("click", function (e) {
-      var a = e.target.closest("a[href]"); if (!a || a.target || e.metaKey || e.ctrlKey || e.button) return;
-      var href = a.getAttribute("href"); if (!/^[a-z-]+\.html/.test(href) || href.split("#")[0] === location.pathname.split("/").pop()) return;
-      e.preventDefault(); document.body.classList.add("leaving"); setTimeout(function () { location.href = href; }, 170);
-    });
-    addEventListener("pageshow", function () { document.body.classList.remove("leaving"); });
-  }
+  /* Page to page is a direct load. A crossfade kept the previous channel on screen. */
+  function transitions() {}
 
   /* The ambient field: the same whisky shader, faint and slow, under every page, so the glass surfaces have something to blur. */
   function ambient() {
@@ -358,13 +339,13 @@
   /* Bottle card markup, shared */
   function shot(cat) {
     var c = String(cat || "");
-    if (/rye/i.test(c)) return "img/bottle-rye.jpg";
-    if (/japan/i.test(c)) return "img/bottle-japanese.jpg";
-    if (/irish|poit/i.test(c)) return "img/bottle-irish.jpg";
-    if (/blend/i.test(c)) return "img/bottle-blended.jpg";
-    if (/scotch|single malt/i.test(c)) return "img/bottle-scotch.jpg";
-    if (/bourbon|tennessee|corn|wheat|white whiskey|canadian|american/i.test(c)) return "img/bottle-bourbon.jpg";
-    return "img/bottle-other.jpg";
+    if (/rye/i.test(c)) return "img/bottle-rye.png";
+    if (/japan/i.test(c)) return "img/bottle-japanese.png";
+    if (/irish|poit/i.test(c)) return "img/bottle-irish.png";
+    if (/blend/i.test(c)) return "img/bottle-blended.png";
+    if (/scotch|single malt/i.test(c)) return "img/bottle-scotch.png";
+    if (/bourbon|tennessee|corn|wheat|white whiskey|canadian|american/i.test(c)) return "img/bottle-bourbon.png";
+    return "img/bottle-other.png";
   }
   function bottleSrc(r) { return (r && r.img) ? r.img : shot(r && r.c); }
   function bottleImg(r) {

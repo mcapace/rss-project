@@ -60,10 +60,14 @@
       <div class="map"><h3>Value map <span>price against score</span></h3><canvas id="valueMap" aria-label="Price against score"></canvas><div class="tip" id="valueTip"></div><p class="hint">Tap a region to keep only the bottles in it. Ringed dots sit on the value curve.</p><div class="legend" id="mapLegend"></div></div>
       <div class="map"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character. Strong dots scored 92 or more.</p></div>
     </div>
-    <div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div>
+    <div class="results-split">
+    <div class="results-main">
     <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button><button type="button" data-sort="twin" aria-pressed="false" id="sortTwin" style="display:none">Closest</button></div></div>
     <div class="grid results" id="grid"></div>
     <div class="more"><button type="button" class="pill" id="more">Show more</button></div>
+    </div>
+    <aside class="results-rail"><div class="ad-rail-card"><span class="mono">Sponsored</span><div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div></div></aside>
+    </div>
   </div>
 </section>
 

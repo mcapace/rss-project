@@ -1068,3 +1068,68 @@ a.mention:hover { text-decoration-color: var(--copper); }
 .ad-rail-card .ad > div { border-radius: 12px; overflow: hidden; }
 .results-split .results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 228px), 1fr)); }
 @media (max-width: 1100px) { .results-split { grid-template-columns: 1fr; } .results-rail { position: static; order: 2; } .ad-rail-card { max-width: 340px; margin: 8px auto 0; } }
+
+/* The scan phone is an iPhone: titanium frame, black bezel, dynamic island, status bar, side keys. The outlines trace each bottle. */
+.scan { max-width: 1180px; margin-inline: auto; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 28px 40px; }
+.scan-stage { min-height: 0; padding: 12px 0; }
+.scan-copy .d2 { max-width: 16ch; }
+.timeline { width: max-content; max-width: 100%; }
+.timeline::before { top: 14px; bottom: 23px; }
+.timeline::after { height: min(var(--fill, 0%), calc(100% - 37px)); }
+.demo-phone { width: min(100%, 268px); aspect-ratio: 9 / 19.4; padding: 10px; border-radius: 46px; background: linear-gradient(160deg, #d9d6d0, #9a958d 45%, #c9c5bf); border: 0; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.55), inset 0 0 0 4px #1a1a1c, 0 50px 90px -40px rgba(27,21,18,0.7), 0 0 0 1px rgba(23,18,13,0.25); }
+.demo-phone .btn { position: absolute; width: 3px; border-radius: 2px; background: linear-gradient(90deg, #8d897f, #cfcbc3); }
+.demo-phone .btn-mute { left: -3px; top: 96px; height: 24px; }
+.demo-phone .btn-vol1 { left: -3px; top: 136px; height: 46px; }
+.demo-phone .btn-vol2 { left: -3px; top: 190px; height: 46px; }
+.demo-phone .btn-power { right: -3px; top: 160px; height: 72px; }
+.demo-phone .screen { border-radius: 38px; background: #000; }
+.demo-phone .screen img { object-position: center center; }
+.demo-phone .island { position: absolute; left: 50%; top: 11px; width: 92px; height: 28px; transform: translateX(-50%); border-radius: 999px; background: #000; z-index: 4; }
+.demo-phone .status { position: absolute; left: 0; right: 0; top: 14px; display: flex; justify-content: space-between; padding: 0 26px; color: #fff; font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em; z-index: 4; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.demo-phone .status-right { display: inline-flex; gap: 5px; align-items: center; }
+.demo-phone .status i { display: inline-block; background: #fff; border-radius: 2px; }
+.demo-phone .status .sig { width: 14px; height: 9px; -webkit-mask: linear-gradient(90deg, #000 0 3px, transparent 3px 4px, #000 4px 7px, transparent 7px 8px, #000 8px 11px, transparent 11px 12px, #000 12px); mask: linear-gradient(90deg, #000 0 3px, transparent 3px 4px, #000 4px 7px, transparent 7px 8px, #000 8px 11px, transparent 11px 12px, #000 12px); clip-path: polygon(0 60%, 100% 0, 100% 100%, 0 100%); }
+.demo-phone .status .wifi { width: 12px; height: 9px; border-radius: 50% 50% 2px 2px; }
+.demo-phone .status .bat { width: 22px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px #fff; background: linear-gradient(90deg, #fff 0 70%, transparent 70%); }
+.demo-phone .finder i:nth-child(1), .demo-phone .finder i:nth-child(2) { top: 50px; }
+.demo-phone .trace { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.demo-phone .trace path { fill: rgba(255,251,245,0); stroke: rgba(255,251,245,0.95); stroke-width: 2.5; stroke-linejoin: round; stroke-dasharray: 1400; stroke-dashoffset: 1400; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); transition: fill 500ms, stroke 500ms; }
+.demo-phone[data-phase="2"] .trace path, .demo-phone[data-phase="3"] .trace path { animation: trace-on 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards; animation-delay: calc(var(--i) * 110ms); }
+@keyframes trace-on { to { stroke-dashoffset: 0; } }
+.demo-phone[data-phase="3"] .trace path { fill: rgba(255,251,245,0.08); }
+.demo-phone[data-phase="3"] .trace .bottle:not(.best) path { stroke: rgba(255,251,245,0.55); }
+.demo-phone[data-phase="3"] .trace .best path { stroke: #e3a443; stroke-width: 3.5; fill: rgba(227,164,67,0.14); filter: drop-shadow(0 0 8px rgba(227,164,67,0.9)); }
+.demo-phone .trace .tag { opacity: 0; transform-box: fill-box; transform-origin: center; transition: opacity 320ms, transform 480ms cubic-bezier(0.22,1,0.36,1); transition-delay: calc(var(--i) * 120ms); }
+.demo-phone .trace .tag rect { fill: #fbf5ec; stroke: rgba(23,18,13,0.15); }
+.demo-phone .trace .tag text { font-family: var(--mono); font-size: 22px; font-weight: 500; fill: #17120d; text-anchor: middle; }
+.demo-phone[data-phase="3"] .trace .tag { opacity: 1; }
+.demo-phone .trace .tag { scale: 0.6; }
+.demo-phone[data-phase="3"] .trace .tag { scale: 1; }
+.demo-phone[data-phase="3"] .trace .best .tag rect { fill: #c9731d; stroke: #fbf5ec; stroke-width: 3; filter: drop-shadow(0 0 10px rgba(201,115,29,0.8)); }
+.demo-phone[data-phase="3"] .trace .best .tag text { fill: #fff; }
+.demo-phone[data-phase="3"] .trace .best .tag { animation: tag-pulse 1.6s ease-in-out infinite; }
+@keyframes tag-pulse { 0%, 100% { scale: 1; } 50% { scale: 1.1; } }
+.demo-phone[data-live="true"] .trace { display: none; }
+.chip-a { right: 0; top: 18%; }
+.chip-b { left: 0; bottom: 14%; }
+@media (prefers-reduced-motion: reduce) { .demo-phone .trace path { animation: none; stroke-dashoffset: 0; } }
+/* Ads sit plainly inside their containers: no frame, no label. */
+.ad-rail-card, .ad-rail { padding: 0; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.ad-rail-card > .mono { display: none; }
+.ad-rail .ad, .ad-rail-card .ad { display: grid; justify-items: center; }
+.ad-rail .ad > div, .ad-rail-card .ad > div { border-radius: 0; }
+/* The camera viewfinder: the photograph at full width, the outlines in the same box, black above and below. */
+.demo-phone .viewfinder { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-54%); aspect-ratio: 720 / 787; }
+.demo-phone .viewfinder img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.demo-phone .viewfinder .trace { inset: 0; }
+.demo-phone .viewfinder .reading span { top: 64%; }
+.demo-phone .finder i:nth-child(1), .demo-phone .finder i:nth-child(2) { top: 12px; }
+.demo-phone .finder i:nth-child(3), .demo-phone .finder i:nth-child(4) { bottom: 12px; }
+.demo-phone .finder { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.demo-phone .viewfinder .scanline { z-index: 3; }
+.demo-phone .viewfinder .trace path { stroke-width: 3; }
+.demo-phone .viewfinder .trace .tag text { font-size: 24px; }
+.scan-copy .d2 { max-width: 20ch; }
+.demo-phone[data-live="true"] .viewfinder { top: 0; transform: none; aspect-ratio: auto; bottom: 0; }
+.demo-phone .viewfinder { left: -8%; right: -8%; transform: translateY(-52%); }
+.demo-phone .viewfinder .reading span { top: 70%; }

@@ -26,7 +26,7 @@
       <p class="byline" style="margin-top: 12px"><span id="tasterLine"></span><span id="when"></span><span id="issue"></span></p>
       <div class="score-row"><div class="score-block"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div><span class="band-label" id="band"></span></div>
       <p class="note" id="note"></p>
-      <div class="actions" style="margin-top: 22px"><button type="button" class="pill amber" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button><a class="pill" href="industry.html">Sell sheet (trade)</a></div>
+      <div class="actions" style="margin-top: 22px"><a class="pill amber" id="storeBtn" hidden target="_blank" rel="noopener">Buy at the store</a><button type="button" class="pill" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button><a class="pill" href="industry.html">Sell sheet (trade)</a></div>
       <div class="buy" id="buy" style="margin-top: 18px; display: none"></div>
       <dl class="facts" id="facts" style="margin-top: 22px"></dl>
     </div>
@@ -88,10 +88,14 @@
   </div>
 </section>
 
+<section class="nl-band" aria-label="Newsletters">
+  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
+  <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
+</section>
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
-  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="newsletter.html">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
   <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
@@ -151,7 +155,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     WA.drawCompass(document.getElementById("compass"), data.filter(function (x) { return x.d >= "2022" || x === r; }), r);
     var peers = data.filter(function (x) { return x.c === r.c; }), below = peers.filter(function (x) { return x.s < r.s; }).length, pct = Math.round(below / Math.max(1, peers.length - 1) * 100);
     document.getElementById("ctxTitle").textContent = r.s + " puts it ahead of " + pct + "% of every " + r.c.replace("/Tennessee Whiskey", "").toLowerCase() + " rating in the archive.";
-    document.getElementById("ctxNote").textContent = peers.length + " " + r.c.toLowerCase() + " bottles rated since 2013, from " + Math.min.apply(null, peers.map(function (x) { return x.s; })) + " to " + Math.max.apply(null, peers.map(function (x) { return x.s; })) + " points.";
+    var ctxNote = document.getElementById("ctxNote"); if (ctxNote) ctxNote.textContent = peers.length + " " + r.c.toLowerCase() + " bottles rated since 2013, from " + Math.min.apply(null, peers.map(function (x) { return x.s; })) + " to " + Math.max.apply(null, peers.map(function (x) { return x.s; })) + " points.";
     document.getElementById("scaleDot").style.left = ((r.s - 80) / 20 * 100) + "%"; document.getElementById("scaleNote").textContent = B[1];
     var cheaperBetter = peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }), v = WA.value(r), frontier = r.p > 0 && data.filter(function (x) { return x.p > 0 && x.p <= r.p; }).every(function (x) { return x.s <= r.s; });
     document.getElementById("valueBig").textContent = frontier ? "Nothing scores higher for less." : v > 4 ? "Strong value." : v > 1 ? "Fair at the price." : "You are paying for the name.";
@@ -178,6 +182,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     scrollTo(0, 0);
   }
   document.getElementById("save").addEventListener("click", function () { this.textContent = "Saved to my shelf"; this.setAttribute("aria-pressed", "true"); });
+  WA.shop(function () { var p = WA.productFor(cur && cur.slug); var sb = document.getElementById("storeBtn"); if (p) { sb.href = WA.buyHref(p); sb.textContent = p.p ? "Buy at the store · $" + Math.round(p.p) : "Buy at the store"; sb.hidden = false; } });
   document.getElementById("buyBtn").addEventListener("click", function () { var b = document.getElementById("buy"); b.style.display = b.style.display === "none" ? "" : "none"; });
   document.getElementById("askBtn").addEventListener("click", function () { document.getElementById("askBand").scrollIntoView({ behavior: "smooth" }); document.getElementById("askInput").focus(); });
   // Bottle-specific answers override the generic ask.

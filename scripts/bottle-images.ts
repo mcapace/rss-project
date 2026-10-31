@@ -62,6 +62,19 @@ export async function standardShot(bytes: Buffer): Promise<{ webp: Buffer; lifte
   return { webp, lifted };
 }
 
+/** The legacy site drops connections under load: three tries, a pause between them, a browser's user agent. */
+async function fetchWithRetries(url: string, tries = 3): Promise<Buffer> {
+  let last: unknown = null;
+  for (let attempt = 1; attempt <= tries; attempt += 1) {
+    try {
+      const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; WhiskyAdvocateBottleShots/1.0)", Accept: "image/*,*/*;q=0.8" }, signal: AbortSignal.timeout(20000) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) { last = error; if (attempt < tries) await new Promise(resolve => setTimeout(resolve, 1500 * attempt)); }
+  }
+  throw last instanceof Error ? last : new Error("fetch failed");
+}
+
 export async function runBottleImages(args: string[], log: (line: string) => void = console.log) {
   const { values } = parseArgs({ args, options: { brand: { type: "string", default: "wa" }, limit: { type: "string", default: "3000" }, apply: { type: "boolean", default: false }, help: { type: "boolean", default: false }, "development-target": { type: "string" } }, strict: true });
   if (values.help) { log("Usage: bottle-images --brand wa [--limit N] [--apply]"); return; }
@@ -71,13 +84,19 @@ export async function runBottleImages(args: string[], log: (line: string) => voi
   const bucket = process.env.S3_BUCKET;
   if (values.apply && !bucket) throw new Error("Apply needs S3_BUCKET and AWS credentials.");
   const s3 = values.apply ? new S3Client({ region: process.env.AWS_REGION || "us-east-1" }) : null;
-  const { data, error } = await reader.from("cms_ratings").select("document_id,cms_documents!inner(slug,metadata,publication_state)").eq("brand", brand).eq("cms_documents.publication_state", "published").limit(limit * 4);
-  if (error) throw new Error(`Could not read ratings: ${error.message}`);
+  // Every published rating, a page of 1000 at a time (the API caps a single read at 1000 rows).
+  const data: { document_id: string; cms_documents: unknown }[] = [];
+  for (let from = 0; from < limit * 4; from += 1000) {
+    const page = await reader.from("cms_ratings").select("document_id,cms_documents!inner(slug,metadata,publication_state)").eq("brand", brand).eq("cms_documents.publication_state", "published").order("document_id").range(from, from + 999);
+    if (page.error) throw new Error(`Could not read ratings: ${page.error.message}`);
+    data.push(...((page.data ?? []) as { document_id: string; cms_documents: unknown }[]));
+    if ((page.data ?? []).length < 1000) break;
+  }
   const manifestKey = `public/bottles/${brand}/manifest.json`;
   let manifest: Record<string, { key: string; lifted: number; source: string }> = {};
   if (s3 && bucket) { try { const got = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: manifestKey })); manifest = JSON.parse(await got.Body!.transformToString()) as typeof manifest; } catch { manifest = {}; } }
   const summary = { mode: values.apply ? "apply" : "dry-run", brand, documents: 0, processed: 0, lifted: 0, skipped: 0, failures: [] as string[] };
-  for (const row of (data ?? []) as { document_id: string; cms_documents: { slug: string | null; metadata: Record<string, unknown> } | { slug: string | null; metadata: Record<string, unknown> }[] }[]) {
+  for (const row of data as { document_id: string; cms_documents: { slug: string | null; metadata: Record<string, unknown> } | { slug: string | null; metadata: Record<string, unknown> }[] }[]) {
     if (summary.documents >= limit) break;
     const doc = Array.isArray(row.cms_documents) ? row.cms_documents[0] : row.cms_documents;
     const legacy = (doc?.metadata?.legacy_media ?? {}) as { thumb_file?: string };
@@ -88,9 +107,7 @@ export async function runBottleImages(args: string[], log: (line: string) => voi
     if (!s3 || !bucket) continue;
     try {
       const url = raw.startsWith("http") ? raw : new URL(raw, LEGACY_BASE[brand]).toString();
-      const response = await fetch(url, { headers: { "User-Agent": "mshanken-cms-migration/1.0" } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const bytes = Buffer.from(await response.arrayBuffer());
+      const bytes = await fetchWithRetries(url);
       const { webp, lifted } = await standardShot(bytes);
       const key = `public/bottles/${brand}/${doc.slug}.webp`;
       await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: webp, ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable" }));

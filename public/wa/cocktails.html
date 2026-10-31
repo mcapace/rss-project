@@ -25,10 +25,9 @@
   </div>
   <div class="results-head" style="margin-bottom: 14px"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="new" aria-pressed="true">Newest</button><button type="button" data-sort="simple" aria-pressed="false">Fewest ingredients</button><button type="button" data-sort="name" aria-pressed="false">A to Z</button></div></div>
   <div class="recipes" id="grid"></div>
+  <div class="ad ad-leader" data-slot="wa_cocktails_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
   <div class="more"><button type="button" class="pill" id="more">More drinks</button></div>
 </section>
-
-<div class="ad ad-leader" data-slot="wa_cocktails_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <section class="nl-band" aria-label="Newsletters">
   <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
@@ -55,7 +54,19 @@ WA.ready(function () {
       return out;
     }
     function card(r) { return '<a class="recipe-card" href="cocktail.html#' + encodeURIComponent(r.slug) + '"><img src="' + r.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + (r.spirit === "other" ? "cocktail" : r.spirit) + " · " + r.ingredients.length + ' ingredients</span><h3>' + r.name + '</h3><p class="ing">' + r.ingredients.slice(0, 3).map(function (i) { var a = WA.amount(i); return (a ? a.rest : i).replace(/,?\s*for garnish.*$/i, ""); }).join(", ") + (r.ingredients.length > 3 ? ", …" : "") + '</p><p class="who">' + (r.credit ? r.credit.split(",")[0] : r.storyTitle) + "</p></div></a>"; }
-    function render() { var rs = rows(); document.getElementById("count").textContent = rs.length + " of " + all.length + " drinks" + (state.cab.length ? " you can make" : ""); document.getElementById("grid").innerHTML = rs.slice(0, state.limit).map(card).join(""); document.getElementById("more").style.display = rs.length > state.limit ? "" : "none"; document.querySelectorAll("#spirits button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-spirit") === state.spirit)); }); document.querySelectorAll("#cabinet button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.cab.indexOf(b.getAttribute("data-cab")) >= 0)); }); document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); }); }
+    function seatAd() {
+      var grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]');
+      if (!ad) return;
+      if (ad.parentNode === grid) grid.parentNode.insertBefore(ad, grid.nextSibling);
+      var cards = grid.querySelectorAll(".recipe-card");
+      if (cards.length < 2) return;
+      var rowTop = cards[0].offsetTop, cols = 1;
+      for (var i = 1; i < cards.length; i++) { if (Math.abs(cards[i].offsetTop - rowTop) > 4) break; cols++; }
+      var at = Math.min(cards.length, Math.max(cols, 2));
+      if (at < cards.length) grid.insertBefore(ad, cards[at]);
+    }
+    function render() { var rs = rows(), grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]'); if (ad && ad.parentNode === grid) grid.parentNode.insertBefore(ad, grid.nextSibling); document.getElementById("count").textContent = rs.length + " of " + all.length + " drinks" + (state.cab.length ? " you can make" : ""); grid.innerHTML = rs.slice(0, state.limit).map(card).join(""); seatAd(); document.getElementById("more").style.display = rs.length > state.limit ? "" : "none"; document.querySelectorAll("#spirits button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-spirit") === state.spirit)); }); document.querySelectorAll("#cabinet button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.cab.indexOf(b.getAttribute("data-cab")) >= 0)); }); document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); }); }
+    addEventListener("resize", seatAd);
     document.getElementById("spirits").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.spirit = b.getAttribute("data-spirit"); state.limit = 24; render(); });
     document.getElementById("cabinet").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var k = b.getAttribute("data-cab"), i = state.cab.indexOf(k); if (i >= 0) state.cab.splice(i, 1); else state.cab.push(k); state.limit = 24; render(); });
     document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); render(); });

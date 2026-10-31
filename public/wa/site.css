@@ -558,6 +558,11 @@ body.leaving { opacity: 0; transition: opacity 180ms ease; }
 .place.big { grid-column: auto; min-height: 200px; }
 .place.big strong { font-size: 20px; }
 .recipes { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.recipes > .ad { grid-column: 1 / -1; }
+.recipes > .ad.ad-filled { margin: 6px auto; }
+.producers > .ad { background: var(--paper); padding: 16px 8px; }
+.producers > .ad.ad-filled { margin: 0 auto; }
+.video-break.ad-filled { margin: 8px auto 18px; }
 @media (max-width: 1200px) { .recipes { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .recipes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .recipes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -714,8 +719,12 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 .ad > span, .ad i { display: none; }
 .ad-billboard, .ad-leader, .ad-mrec, .ad-above, .ad-above.ad-billboard { min-height: 0; margin: 0; }
 .ad-empty { display: none; }
-.ad-filled { margin: 12px auto; }
+.ad-filled { margin: 12px auto; max-width: 100%; }
 .ad-above.ad-filled { margin: 8px auto 0; }
+.ad-filled > div { max-width: 100%; }
+.band:has(+ .ad-filled) { padding-bottom: 28px; }
+.ad-filled + .band,
+.ad-filled + .nl-band { padding-top: 28px; }
 .mast nav { gap: 16px; }
 
 /* Video channel */
@@ -907,9 +916,9 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 .maps[data-which="flavor"] .map[data-map="flavor"] { display: block; }
 .map-switch { justify-self: start; }
 .map canvas { height: 280px; }
-.results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 236px), 1fr)); }
-.results > .ad { grid-column: 1 / -1; }
-.results > .ad.ad-filled { margin: 6px auto 10px; }
+.results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); align-items: start; }
+.results > .ad { grid-column: auto; justify-self: center; align-self: start; width: max-content; max-width: 100%; min-width: 0; }
+.results > .ad.ad-filled { margin: 0; }
 #lenses { margin: -6px 0 0; }
 #lenses .lens { display: inline-flex; align-items: center; min-width: 0; height: 36px; padding: 0 14px; border-radius: 999px; background: rgba(255,255,255,0.55); text-align: center; }
 #lenses .lens strong { font-size: 13.5px; font-weight: 500; letter-spacing: 0; }

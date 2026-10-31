@@ -199,37 +199,56 @@ WA.ready(function (data) {
   // Shelf scan: the photo goes to the site's own vision route; scores land over the bottles.
   (function () {
     var file = document.getElementById("scanFile"), status = document.getElementById("scanStatus"), shelf = document.getElementById("scanShelf"), cap = document.getElementById("scanCap"), list = document.getElementById("scanList");
-    function say(text) { status.textContent = text; document.getElementById("demoCapText").textContent = text; }
+    // The scan takes the whole screen: the photo, the sweep while it reads, then the scores on the bottles and the list under them.
+    var ov = null;
+    function overlay() {
+      if (ov) return ov;
+      ov = document.createElement("div"); ov.id = "scanOverlay"; ov.setAttribute("data-state", "reading");
+      ov.innerHTML = '<div class="so-head"><div><span class="mono">Shelf scan</span><strong id="soStatus">Reading the photo…</strong></div><button type="button" class="so-close" id="soClose" aria-label="Close">&times;</button></div>'
+        + '<div class="so-photo"><img id="soImg" alt="Your shelf"><div class="so-marks" id="soMarks"></div><div class="so-sweep"></div><div class="so-reading"><span style="--i:0">Reading…</span><span style="--i:1">Reading…</span><span style="--i:2">Reading…</span></div></div>'
+        + '<div class="so-sheet"><div class="so-best" id="soBest" hidden></div><div class="dense" id="soList"></div><p class="so-note" id="soNote"></p><div class="so-actions"><button type="button" class="pill solid" id="soAgain">Scan another shelf</button><button type="button" class="pill" id="soDone">Done</button></div></div>';
+      document.body.appendChild(ov);
+      function close() { ov.setAttribute("data-open", "false"); document.body.classList.remove("scan-open"); }
+      document.getElementById("soClose").addEventListener("click", close); document.getElementById("soDone").addEventListener("click", close);
+      document.getElementById("soAgain").addEventListener("click", function () { file.click(); });
+      // The marks layer sits exactly on the photograph, whatever the screen's shape.
+      function fit() { var img = document.getElementById("soImg"), m = document.getElementById("soMarks"), ph = img.parentElement; if (!img.naturalWidth) return; var r = img.getBoundingClientRect(), p = ph.getBoundingClientRect(); m.style.left = (r.left - p.left) + "px"; m.style.top = (r.top - p.top) + "px"; m.style.width = r.width + "px"; m.style.height = r.height + "px"; }
+      document.getElementById("soImg").addEventListener("load", fit); addEventListener("resize", fit); ov.__fit = fit;
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ov.getAttribute("data-open") === "true") close(); });
+      return ov;
+    }
+    function show(state, text) { overlay(); ov.setAttribute("data-open", "true"); document.body.classList.add("scan-open"); if (state) ov.setAttribute("data-state", state); if (text != null) { document.getElementById("soStatus").textContent = text; status.textContent = text; } }
     function upload(dataUrl) {
-      var phone = document.getElementById("demoPhone"); phone.setAttribute("data-live", "true"); document.getElementById("demoShelf").src = dataUrl; document.getElementById("demoShelf").style.objectPosition = "center center"; document.getElementById("demoMarks").innerHTML = ""; phone.setAttribute("data-phase", "1");
-      say("Reading the labels…"); phone.scrollIntoView({ behavior: "smooth", block: "center" });
+      show("reading", "Reading the labels…"); document.getElementById("soImg").src = dataUrl; document.getElementById("soMarks").innerHTML = ""; document.getElementById("soList").innerHTML = ""; document.getElementById("soNote").textContent = ""; document.getElementById("soBest").hidden = true;
       var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null, timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 55000) : null;
       fetch("/api/wa/shelf-scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: dataUrl }), signal: ctrl ? ctrl.signal : undefined })
         .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ("Scan failed (" + r.status + ")")); return j; }, function () { throw new Error("Scan failed (" + r.status + ")"); }); })
         .then(function (res) {
           if (timer) clearTimeout(timer);
-          var found = res.bottles || [], rated = found.filter(function (b) { return b.rating; });
-          var marks = document.getElementById("demoMarks"); marks.innerHTML = found.map(function (b) { return '<span class="mark on" style="left:' + (b.box.x * 100) + '%;top:' + (b.box.y * 100) + '%;width:' + (b.box.w * 100) + '%;height:' + (b.box.h * 100) + '%"><em class="' + (b.rating ? "" : "none") + (res.best_value === b.label ? " best" : "") + '">' + (b.rating ? b.rating.score : "—") + "</em></span>"; }).join("");
-          document.getElementById("demoPhone").setAttribute("data-phase", "3");
-          say(found.length ? found.length + (found.length === 1 ? " bottle" : " bottles") + " found" + (rated.length < found.length ? ", " + rated.length + " rated" : "") + (res.best_value ? " · best value: " + res.best_value : "") : "No legible labels. Try closer, with the labels facing the camera.");
-          list.style.display = found.length ? "" : "none";
-          list.innerHTML = found.map(function (b) { var r = b.rating; return r ? '<a href="bottle.html#' + encodeURIComponent(r.slug || "") + '"><span class="sc score-type">' + r.score + '</span><span><span class="nm">' + r.name + '</span><span class="sub">' + r.category + (b.label !== r.name ? " · read as " + b.label : "") + '</span></span><span class="when">' + WA.fmt(r.price || 0) + "</span></a>" : '<a><span class="sc score-type">—</span><span><span class="nm">' + b.label + '</span><span class="sub">Not in the ratings yet</span></span></a>'; }).join("");
-          if (found.length) list.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          var found = res.bottles || [], rated = found.filter(function (b) { return b.rating; }), bestRow = null;
+          document.getElementById("soMarks").innerHTML = found.map(function (b, i) { var best = res.best_value === b.label; if (best) bestRow = b; return '<span class="mark on" style="left:' + (b.box.x * 100) + '%;top:' + (b.box.y * 100) + '%;width:' + (b.box.w * 100) + '%;height:' + (b.box.h * 100) + '%;--i:' + i + '"><em class="' + (b.rating ? "" : "none") + (best ? " best" : "") + '">' + (b.rating ? b.rating.score : "—") + "</em></span>"; }).join("");
+          var list = document.getElementById("soList");
+          list.innerHTML = found.slice().sort(function (a, b) { return (b.rating ? b.rating.score : 0) - (a.rating ? a.rating.score : 0); }).map(function (b) { var r = b.rating; return r ? '<a href="bottle.html#' + encodeURIComponent(r.slug || "") + '" data-slug="' + (r.slug || "") + '"><span class="sc score-type">' + r.score + '</span><span><span class="nm">' + r.name + '</span><span class="sub">' + r.category + (b.label !== r.name ? " · read as " + b.label : "") + '</span></span><span class="when">' + WA.fmt(r.price || 0) + "</span></a>" : '<a class="unrated"><span class="sc score-type">—</span><span><span class="nm">' + b.label + '</span><span class="sub">Not in the ratings yet</span></span></a>'; }).join("");
+          if (bestRow && bestRow.rating) { var bb = document.getElementById("soBest"); bb.hidden = false; bb.innerHTML = '<span class="mono">Best value on this shelf</span><strong>' + bestRow.rating.name + "</strong><span>" + bestRow.rating.score + " points · " + WA.fmt(bestRow.rating.price || 0) + "</span>"; }
+          if (ov.__fit) ov.__fit();
+          show("done", found.length ? found.length + (found.length === 1 ? " bottle" : " bottles") + " found" + (rated.length < found.length ? ", " + rated.length + " rated" : "") : "No legible labels");
+          document.getElementById("soNote").textContent = found.length ? "Tap a bottle for the full note. Scores are Whisky Advocate's blind-tasting ratings." : "Try closer, with the labels facing the camera and the shelf in good light.";
+          if (WA.decorateBuy) WA.decorateBuy(list);
         })
-        .catch(function (e) { if (timer) clearTimeout(timer); var m = String(e && e.message || e); say(/abort/i.test(m) ? "That took too long. Try again with a closer photo." : /Failed to fetch|NetworkError|Load failed/.test(m) ? (location.hostname === "localhost" || /claude/.test(location.hostname) ? "Shelf scan runs on the live site, not in this preview." : "The scan could not reach the server. Check the connection and try again.") : m); document.getElementById("demoPhone").setAttribute("data-phase", "0"); });
+        .catch(function (e) { if (timer) clearTimeout(timer); var m = String(e && e.message || e); show("error", /abort/i.test(m) ? "That took too long" : /Failed to fetch|NetworkError|Load failed/.test(m) ? "Could not reach the server" : m); document.getElementById("soNote").textContent = /abort/i.test(m) ? "Try again with a closer photo." : /Failed to fetch|NetworkError|Load failed/.test(m) ? (location.hostname === "localhost" || /claude/.test(location.hostname) ? "Shelf scan runs on the live site, not in this preview." : "Check the connection and try again.") : "Try again in a moment."; });
     }
     function shrink(source, w, h) { var scale = Math.min(1, 1600 / Math.max(w, h)), c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w * scale)); c.height = Math.max(1, Math.round(h * scale)); c.getContext("2d").drawImage(source, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", 0.85); }
     file.addEventListener("change", function () {
       var f = file.files && file.files[0]; if (!f) return;
-      say("Reading the photo…");
-      // Decode with createImageBitmap first (it handles the phone's own formats and orientation), then fall back to an Image, then to the file itself.
+      show("reading", "Reading the photo…");
       var done = false;
+      function fail(msg) { show("error", "Could not read that photo"); document.getElementById("soNote").textContent = msg; }
       function viaImage() {
         var img = new Image(), url = URL.createObjectURL(f);
-        img.onload = function () { if (done) return; done = true; try { upload(shrink(img, img.naturalWidth || img.width, img.naturalHeight || img.height)); } catch (e) { say("Could not read that photo. Try again, or pick one from the library."); } URL.revokeObjectURL(url); };
+        img.onload = function () { if (done) return; done = true; try { upload(shrink(img, img.naturalWidth || img.width, img.naturalHeight || img.height)); } catch (e) { fail("Try again, or pick one from the library."); } URL.revokeObjectURL(url); };
         img.onerror = function () { if (done) return; done = true; URL.revokeObjectURL(url);
-          if (/^image\/(jpeg|png|webp)$/.test(f.type) && f.size < 3500000) { var fr = new FileReader(); fr.onload = function () { upload(String(fr.result)); }; fr.onerror = function () { say("Could not read that photo."); }; fr.readAsDataURL(f); }
-          else say("Could not read that photo. In Settings, Camera, Formats, choose Most Compatible, or pick a JPEG from the library."); };
+          if (/^image\/(jpeg|png|webp)$/.test(f.type) && f.size < 3500000) { var fr = new FileReader(); fr.onload = function () { upload(String(fr.result)); }; fr.onerror = function () { fail("Try again, or pick one from the library."); }; fr.readAsDataURL(f); }
+          else fail("In Settings, Camera, Formats, choose Most Compatible, or pick a JPEG from the library."); };
         img.src = url;
       }
       if (window.createImageBitmap) { createImageBitmap(f, { imageOrientation: "from-image" }).then(function (bm) { if (done) return; done = true; try { upload(shrink(bm, bm.width, bm.height)); } finally { if (bm.close) bm.close(); } }, function () { viaImage(); }); }

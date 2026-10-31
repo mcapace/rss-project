@@ -95,16 +95,8 @@
     items.forEach(function (el) { io.observe(el); });
   }
 
-  /* Page to page: cross-document view transitions where the browser has them, a short fade elsewhere. */
-  function transitions() {
-    if (!MOTION || ("startViewTransition" in document)) return;
-    document.addEventListener("click", function (e) {
-      var a = e.target.closest("a[href]"); if (!a || a.target || e.metaKey || e.ctrlKey || e.button) return;
-      var href = a.getAttribute("href"); if (!/^[a-z-]+\.html/.test(href) || href.split("#")[0] === location.pathname.split("/").pop()) return;
-      e.preventDefault(); document.body.classList.add("leaving"); setTimeout(function () { location.href = href; }, 170);
-    });
-    addEventListener("pageshow", function () { document.body.classList.remove("leaving"); });
-  }
+  /* Page to page is a direct load. A crossfade kept the previous channel on screen. */
+  function transitions() {}
 
   /* The ambient field: the same whisky shader, faint and slow, under every page, so the glass surfaces have something to blur. */
   function ambient() {

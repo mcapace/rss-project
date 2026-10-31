@@ -181,7 +181,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
             if (!turns.length) turns.push({ role: "user", text: "Question about a story I am reading: " + q + "\n\n" + context }); else turns.push({ role: "user", text: q });
             answer.setAttribute("data-open", "true"); document.getElementById("answerFacets").innerHTML = '<span class="facet">about this story</span>'; document.getElementById("answerText").textContent = "Reading the story…"; document.getElementById("answerPicks").innerHTML = ""; suggest.innerHTML = "";
             WA.withNotes(rows, function (notes) {
-              fetch("/api/wa/ask", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ turns: turns.slice(-8), bottles: rows.slice(0, 14).map(function (r) { return WA.candidate(r, "", notes[r.slug]); }), page: "story: " + st.title.slice(0, 150) }) })
+              fetch("/api/wa/ask", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ turns: turns.slice(-8), bottles: pool.slice(0, 14).map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }), page: "story: " + st.title.slice(0, 150) }) })
                 .then(function (r) { return r.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (e) { j = null; } if (!r.ok || !j || !j.answer) throw new Error(j && j.error ? j.error : "Try again in a moment."); return j; }); })
                 .then(function (j) {
                   turns.push({ role: "assistant", text: j.answer });

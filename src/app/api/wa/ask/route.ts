@@ -25,7 +25,7 @@ function limited(ip: string) {
 }
 
 type Turn = { role: "user" | "assistant"; text: string };
-type Bottle = { slug: string; name: string; score: number; price: number | null; category: string; producer: string; note?: string };
+type Bottle = { slug: string; name: string; score: number; price: number | null; category: string; producer: string; note?: string; how?: string };
 
 const SCHEMA = {
   type: "object",
@@ -52,11 +52,11 @@ export async function POST(request: Request) {
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Send JSON." }, { status: 400, headers: CORS }); }
   const turns = (Array.isArray(body.turns) ? body.turns : []).filter(t => t && (t.role === "user" || t.role === "assistant") && typeof t.text === "string").slice(-10).map(t => ({ role: t.role, text: t.text.slice(0, 1200) }));
   if (!turns.length || turns[turns.length - 1].role !== "user") return NextResponse.json({ error: "Ask something first." }, { status: 400, headers: CORS });
-  const bottles = (Array.isArray(body.bottles) ? body.bottles : []).slice(0, 14).map(b => ({ slug: String(b.slug || "").slice(0, 200), name: String(b.name || "").slice(0, 160), score: Number(b.score) || 0, price: b.price == null ? null : Number(b.price), category: String(b.category || "").slice(0, 60), producer: String(b.producer || "").slice(0, 80), note: String(b.note || "").slice(0, 260) }));
+  const bottles = (Array.isArray(body.bottles) ? body.bottles : []).slice(0, 14).map(b => ({ slug: String(b.slug || "").slice(0, 200), name: String(b.name || "").slice(0, 160), score: Number(b.score) || 0, price: b.price == null ? null : Number(b.price), category: String(b.category || "").slice(0, 60), producer: String(b.producer || "").slice(0, 80), note: String(b.note || "").slice(0, 260), how: String(b.how || "").slice(0, 40) }));
   const page = String(body.page || "").slice(0, 200);
 
   const context = bottles.length
-    ? "Bottles the site found for the latest question (slug | name | score | price | category | producer | note):\n" + bottles.map(b => `${b.slug} | ${b.name} | ${b.score} | ${b.price == null ? "price n/a" : "$" + b.price} | ${b.category} | ${b.producer} | ${b.note || ""}`).join("\n")
+    ? "Bottles the site found for the latest question (slug | name | score | price | category | producer | how it relates to the page | note). When the reader says \"these\" or \"this story\", they mean the bottles marked as named in the text:\n" + bottles.map(b => `${b.slug} | ${b.name} | ${b.score} | ${b.price == null ? "price n/a" : "$" + b.price} | ${b.category} | ${b.producer} | ${b.how || ""} | ${b.note || ""}`).join("\n")
     : "The site found no bottles for the latest question.";
   const messages: Anthropic.MessageParam[] = turns.map((t, i) => ({ role: t.role, content: i === turns.length - 1 ? `${t.text}\n\n[${context}${page ? `\nThe reader is on: ${page}` : ""}]` : t.text }));
 

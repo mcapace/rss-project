@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guides</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="guides.html" aria-current="page">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
+</header>
+
+<section class="band" style="padding-top: 28px">
+  <div class="band-head"><div><h1 class="d1">Guides</h1></div><p id="lede"></p></div>
+  <div class="search-line" style="margin-bottom: 26px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg><input id="q" type="text" placeholder="What do you want to know? Proof, sherry casks, how to store a bottle" aria-label="Search the guides"></div>
+  <div id="searchOut" class="dense" style="display: none; margin-bottom: 26px"></div>
+  <div class="start" id="start"></div>
+</section>
+
+<section class="band" id="shelf">
+  <div class="band-head"><div><span class="mono" id="shelfKicker">Start here</span><h2 class="d2" style="margin-top:10px" id="shelfTitle"></h2></div><div class="suggest" id="kinds"></div></div>
+  <div class="picks3" id="shelfPicks"></div>
+  <div class="dense" id="shelfList" style="margin-top: 14px"></div>
+  <div class="more"><button type="button" class="pill" id="more">More guides</button></div>
+</section>
+
+<section class="band" id="glossaryBand">
+  <div class="band-head"><div><span class="mono">Glossary</span><h2 class="d2" style="margin-top:10px">The words, <em class="hi">defined by the people who use them.</em></h2></div><p>One hundred and fifty-seven terms from the archive. Tap a term to open it; the links inside jump to other terms.</p></div>
+  <div class="glossary">
+    <div class="letters" id="letters"></div>
+    <div>
+      <div class="search-line" style="margin-bottom: 14px; max-width: 100%"><input id="gq" type="text" placeholder="Find a term" aria-label="Find a glossary term"></div>
+      <div class="terms" id="terms"></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
+  <div><h4>About this page</h4><p>Every guide and every glossary term is real, from the Whisky Advocate archive since 2013. The shelves are sorted from the tags the editors gave each story.</p></div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+WA.ready(function () {
+  WA.stories(function (all) {
+    var G = all.filter(function (s) { return s.sec === "guides"; });
+    var KINDS = [["101", "Whisky 101", "How it is made, what the words mean, how to taste it."], ["howto", "How to", "Serve it, store it, pair it, pour it."], ["buying", "Buying guides", "What to buy for the occasion and the budget."], ["list", "The lists", "The panel's picks, by category, price and mood."], ["collecting", "Collecting", "Auctions, allocations, what holds its value."], ["gear", "Gear", "Glasses, decanters, tools, and what to skip."]];
+    var state = { kind: "101", limit: 20 };
+    document.getElementById("lede").textContent = G.length + " guides from the archive, from the first dram to the auction room, plus the glossary. Start with Whisky 101, or search for the thing you want to know.";
+    document.getElementById("start").innerHTML = KINDS.map(function (k) { var n = G.filter(function (s) { return s.kind === k[0]; }).length; return '<a href="#shelf" data-kind="' + k[0] + '"><span class="n">' + n + " guides</span><strong>" + k[1] + "</strong><span>" + k[2] + "</span></a>"; }).join("");
+    document.getElementById("kinds").innerHTML = KINDS.map(function (k) { return '<button type="button" data-kind="' + k[0] + '" aria-pressed="' + (k[0] === state.kind) + '">' + k[1] + "</button>"; }).join("");
+    function shelf() {
+      var k = KINDS.filter(function (x) { return x[0] === state.kind; })[0], rows = G.filter(function (s) { return s.kind === state.kind; });
+      document.getElementById("shelfKicker").textContent = k[1]; document.getElementById("shelfTitle").textContent = k[2];
+      document.getElementById("shelfPicks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + k[1] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join("");
+      document.getElementById("shelfList").innerHTML = rows.slice(3, 3 + state.limit).map(WA.storyRow).join("");
+      document.getElementById("more").style.display = rows.length > 3 + state.limit ? "" : "none";
+      document.querySelectorAll("#kinds button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-kind") === state.kind)); });
+    }
+    document.getElementById("kinds").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.kind = b.getAttribute("data-kind"); state.limit = 20; shelf(); });
+    document.getElementById("start").addEventListener("click", function (e) { var a = e.target.closest("a"); if (!a) return; state.kind = a.getAttribute("data-kind"); state.limit = 20; shelf(); });
+    document.getElementById("more").addEventListener("click", function () { state.limit += 20; shelf(); });
+    document.getElementById("q").addEventListener("input", function () { var q = this.value.trim().toLowerCase(), out = document.getElementById("searchOut"); if (q.length < 2) { out.style.display = "none"; return; } var hits = G.filter(function (s) { return (s.title + " " + s.dek + " " + s.tags.join(" ")).toLowerCase().indexOf(q) >= 0; }).slice(0, 8); out.style.display = ""; out.innerHTML = hits.length ? hits.map(WA.storyRow).join("") : '<a href="#glossaryBand"><span class="tag">Glossary</span><span><span class="nm">No guide matches. Try the glossary below.</span></span><span class="when"></span></a>'; });
+    shelf();
+  });
+  WA.glossary(function (T) {
+    var letters = {}; T.forEach(function (t) { letters[t.t[0].toUpperCase()] = true; });
+    var state = { letter: "", q: "" };
+    document.getElementById("letters").innerHTML = '<button type="button" data-l="" aria-pressed="true">All</button>' + "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(function (L) { return '<button type="button" data-l="' + L + '"' + (letters[L] ? "" : " disabled") + ' aria-pressed="false">' + L + "</button>"; }).join("");
+    function render() { var q = state.q.toLowerCase(), rows = T.filter(function (t) { return (!state.letter || t.t[0].toUpperCase() === state.letter) && (!q || (t.t + " " + t.text).toLowerCase().indexOf(q) >= 0); }); document.getElementById("terms").innerHTML = rows.map(function (t) { return '<details class="term" id="' + t.slug + '"' + (q && rows.length <= 3 ? " open" : "") + '><summary>' + t.t + "<small>" + t.text.slice(0, 70).replace(/\s\S*$/, "") + "…</small></summary><div class=\"def\">" + t.body + "</div></details>"; }).join(""); document.querySelectorAll("#letters button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-l") === state.letter)); }); }
+    document.getElementById("letters").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b || b.disabled) return; state.letter = b.getAttribute("data-l"); render(); });
+    document.getElementById("gq").addEventListener("input", function () { state.q = this.value; state.letter = ""; render(); });
+    document.getElementById("terms").addEventListener("click", function (e) { var a = e.target.closest('a[href^="#"]'); if (!a) return; var id = a.getAttribute("href").slice(1), el = document.getElementById(id); if (!el) { state.letter = ""; state.q = ""; document.getElementById("gq").value = ""; render(); el = document.getElementById(id); } if (el) { e.preventDefault(); el.open = true; el.scrollIntoView({ behavior: "smooth", block: "center" }); history.replaceState(null, "", "#" + id); } });
+    render();
+    var h = (location.hash || "").slice(1); if (h && document.getElementById(h)) { var el = document.getElementById(h); el.open = true; setTimeout(function () { el.scrollIntoView({ block: "center" }); }, 100); }
+  });
+});
+</script>
+</body>
+</html>

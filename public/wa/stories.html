@@ -9,14 +9,15 @@
 </head>
 <body>
 <header class="mast">
-  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="stories.html#guides">Guides</a><a href="cocktails.html">Cocktails</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
   <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
 </header>
 
 <section class="band" style="padding-top: 28px">
-  <div class="band-head"><div><span class="mono">Stories</span><h1 class="d1" style="margin-top: 12px" id="sectionTitle">Not a grid of thumbnails. <em class="hi">A front page.</em></h1></div><p>The editors pick three. Everything else is a dense, scannable list, so a section front reads like a good newspaper, not a feed. Every story here is real, from the archive.</p></div>
+  <div class="band-head"><div><h1 class="d1" id="sectionTitle">Stories</h1></div><p>The editors pick three; everything else is a scannable list. Every story is real, from the archive.</p></div>
   <div class="suggest" id="sections" style="margin: 0 0 28px"><button type="button" aria-pressed="true" data-sec="all">All</button><button type="button" data-sec="news">News</button><button type="button" data-sec="features">Features</button><button type="button" data-sec="guides">Guides</button><button type="button" data-sec="cocktails">Cocktails</button><button type="button" data-sec="travel">Travel</button><button type="button" data-sec="life">Whisky Life</button></div>
+  <p class="muted" id="sectionLink" style="margin: -12px 0 22px; font-size: 14px"></p>
   <div class="picks3" id="picks"></div>
   <div class="dense" id="list"></div>
   <div class="more"><button type="button" class="pill" id="more">More stories</button></div>
@@ -35,12 +36,12 @@
 <script src="site.js"></script>
 <script>
 WA.ready(function (data) {
-  var TITLE = { all: 'Not a grid of thumbnails. <em class="hi">A front page.</em>', news: 'What happened <em class="hi">this week.</em>', features: 'The long reads, <em class="hi">reported.</em>', guides: 'What to buy, <em class="hi">and why.</em>', cocktails: 'Drinks worth <em class="hi">the whisky.</em>', travel: 'Where the bar is <em class="hi">worth the trip.</em>', life: 'Whisky, <em class="hi">lived.</em>' };
+  var TITLE = { all: "Stories", news: "News", features: "Features", guides: "Guides", cocktails: "Cocktails", travel: "Travel", life: "Whisky Life" };
   WA.stories(function (all) {
     var shown = 0, rows = [];
     function render(sec, reset) {
       rows = all.filter(function (s) { return sec === "all" || s.sec === sec; });
-      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").innerHTML = TITLE[sec]; }
+      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").innerHTML = TITLE[sec]; var SL = { guides: ["guides.html", "Guides has its own home: Whisky 101, the buying guides, the lists and the glossary."], travel: ["travel.html", "Travel has its own home: every destination, the bars and the distilleries to visit."], cocktails: ["cocktails.html", "Cocktails has its own home: every recipe, searchable by what is in your cabinet."] }; document.getElementById("sectionLink").innerHTML = SL[sec] ? SL[sec][1] + ' <a href="' + SL[sec][0] + '" style="color: var(--amber)">Open it</a>' : ""; }
       var next = rows.slice(3 + shown, 3 + shown + 30); shown += next.length;
       document.getElementById("list").innerHTML += next.map(WA.storyRow).join("");
       document.getElementById("more").style.display = 3 + shown < rows.length ? "" : "none";

@@ -10,7 +10,7 @@
 <body>
 <div class="progress" id="progress" aria-hidden="true"></div>
 <header class="mast">
-  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="stories.html#guides">Guides</a><a href="cocktails.html">Cocktails</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
   <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
   <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
 </header>
@@ -79,11 +79,12 @@ WA.ready(function (recent) { WA.archive(function (data) {
   WA.stories(function (all) {
     var storyBySlug = {}; all.forEach(function (st) { storyBySlug[st.slug.toLowerCase()] = st; });
     var slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
-    WA.articles(function (bodies) {
-      var st = storyBySlug[slug]; if (!st || !bodies[st.slug]) { st = all.filter(function (x) { return bodies[x.slug]; })[0]; history.replaceState(null, "", "#" + st.slug); }
+    var st = storyBySlug[slug] || all[0]; if (!storyBySlug[slug]) history.replaceState(null, "", "#" + st.slug);
+    WA.article(st.slug, function (body) {
+      var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p><a href=\"https://whiskyadvocate.com/" + st.slug + "\">Read this story on whiskyadvocate.com</a></p>";
       document.title = st.title + " · Whisky Advocate";
       var sec = WA.SECTION[st.sec];
-      document.getElementById("crumbs").innerHTML = '<a href="stories.html">Stories</a><span>›</span><a href="stories.html#' + st.sec + '">' + sec + "</a>" + (st.tags[0] ? "<span>›</span><span>" + st.tags[0] + "</span>" : "");
+      document.getElementById("crumbs").innerHTML = '<a href="stories.html">Stories</a><span>›</span><a href="' + WA.SECTION_HREF[st.sec] + '">' + sec + "</a>" + (st.tags[0] ? "<span>›</span><span>" + st.tags[0] + "</span>" : "");
       document.getElementById("kicker").textContent = sec + (st.tags[0] ? " · " + st.tags[0] : "");
       document.getElementById("title").textContent = st.title;
       var dek = document.getElementById("dek"); if (st.dek) dek.textContent = st.dek; else dek.remove();
@@ -104,7 +105,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var prose = document.getElementById("prose"); prose.innerHTML = holder.innerHTML;
       // Author, tags, sign-up.
       var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;
-      prose.insertAdjacentHTML("beforeend", '<div class="author" style="margin-top: 2.4em"><span class="avatar" aria-hidden="true">' + WA.initials(st.by) + '</span><div><h3>' + st.by + '</h3><p>' + (more ? more + " more stories in the archive." : "Whisky Advocate contributor.") + '</p></div></div>' + (st.tags.length ? '<div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px">' + st.tags.map(function (t) { return '<a href="stories.html#' + st.sec + '">' + t + "</a>"; }).join("") + "</div></div>" : "") + '<div class="signup" style="margin-top: 2em"><div><h3>The Saturday bottle</h3><p>One bottle, one note, one reason to buy it. Every Saturday.</p></div><form onsubmit="event.preventDefault(); this.querySelector(\'button\').textContent = \'You are in\';"><input type="email" placeholder="you@example.com" aria-label="Email"><button type="button" class="pill amber">Sign up</button></form></div>');
+      prose.insertAdjacentHTML("beforeend", '<div class="author" style="margin-top: 2.4em"><span class="avatar" aria-hidden="true">' + WA.initials(st.by) + '</span><div><h3>' + st.by + '</h3><p>' + (more ? more + " more stories in the archive." : "Whisky Advocate contributor.") + '</p></div></div>' + (st.tags.length ? '<div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px">' + st.tags.map(function (t) { return '<a href="' + WA.SECTION_HREF[st.sec] + '">' + t + "</a>"; }).join("") + "</div></div>" : "") + '<div class="signup" style="margin-top: 2em"><div><h3>The Saturday bottle</h3><p>One bottle, one note, one reason to buy it. Every Saturday.</p></div><form onsubmit="event.preventDefault(); this.querySelector(\'button\').textContent = \'You are in\';"><input type="email" placeholder="you@example.com" aria-label="Email"><button type="button" class="pill amber">Sign up</button></form></div>');
       document.getElementById("byline").innerHTML = '<span class="avatar sm" aria-hidden="true">' + WA.initials(st.by) + '</span><span>By <strong>' + st.by + '</strong></span><span>' + new Date(st.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + "</span>" + (st.min ? "<span>" + st.min + " minute read</span>" : "") + (mentioned ? "<span>" + picks.length + " bottle" + (picks.length > 1 ? "s" : "") + " mentioned</span>" : "");
       document.getElementById("listen").textContent = "Listen" + (st.min ? " · " + st.min + " min" : "");
       // Table of contents from the story's own headings.

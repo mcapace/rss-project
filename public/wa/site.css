@@ -1387,3 +1387,42 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 }
 /* After a real scan the demo chips step aside; the result speaks for itself. */
 .demo-phone[data-live="true"] ~ .scan-chip { display: none; }
+
+/* The full-screen scan: the photo, the sweep while the labels are read, then the scores and the list. */
+#scanOverlay { position: fixed; inset: 0; z-index: 90; display: none; grid-template-rows: auto minmax(0, 1fr) auto; background: #15110d; color: #fbf5ec; }
+#scanOverlay[data-open="true"] { display: grid; animation: fade-in 220ms ease; }
+body.scan-open { overflow: hidden; }
+.so-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: max(14px, env(safe-area-inset-top)) 18px 12px; }
+.so-head .mono { color: rgba(251,245,236,0.6); }
+.so-head strong { display: block; font-weight: 500; font-size: 17px; margin-top: 2px; }
+.so-close { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(251,245,236,0.25); background: rgba(251,245,236,0.1); color: #fbf5ec; font-size: 22px; line-height: 1; cursor: pointer; }
+.so-photo { position: relative; overflow: hidden; display: grid; place-items: center; background: #000; }
+.so-photo img { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
+.so-marks { position: absolute; }
+.so-photo .so-marks { inset: 0; margin: auto; }
+.so-sweep { position: absolute; left: 0; right: 0; top: -120px; height: 110px; background: linear-gradient(180deg, rgba(227,164,67,0) 0%, rgba(227,164,67,0.38) 60%, rgba(255,251,245,0.95) 100%); opacity: 0; pointer-events: none; }
+#scanOverlay[data-state="reading"] .so-sweep { opacity: 1; animation: so-sweep 1.5s cubic-bezier(0.4,0,0.6,1) infinite alternate; }
+@keyframes so-sweep { from { transform: translateY(0); } to { transform: translateY(calc(100vh)); } }
+.so-reading { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 8px; opacity: 0; pointer-events: none; }
+.so-reading span { padding: 4px 10px; border-radius: 999px; background: rgba(23,18,13,0.72); color: #fff; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; animation: reading-blink 900ms ease-in-out infinite alternate; animation-delay: calc(var(--i) * 300ms); }
+#scanOverlay[data-state="reading"] .so-reading { opacity: 1; }
+.so-marks .mark { position: absolute; border: 2px solid rgba(255,251,245,0.95); border-radius: 10px; box-shadow: 0 0 0 1px rgba(23,18,13,0.3); opacity: 0; transform: scale(0.9); animation: so-mark 420ms cubic-bezier(0.22,1,0.36,1) forwards; animation-delay: calc(var(--i, 0) * 90ms); }
+@keyframes so-mark { to { opacity: 1; transform: none; } }
+.so-marks .mark em { position: absolute; left: 50%; top: -15px; transform: translateX(-50%); padding: 3px 10px; border-radius: 999px; background: var(--gold); color: var(--ink); font-family: var(--mono); font-style: normal; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.so-marks .mark em.none { background: rgba(251,245,236,0.85); color: var(--ink-3); }
+.so-marks .mark em.best { background: var(--amber); color: #fff; box-shadow: 0 0 0 3px rgba(255,251,245,0.9), 0 0 24px rgba(201,115,29,0.8); }
+.so-marks .mark:has(em.best) { border-color: var(--amber); box-shadow: 0 0 0 1px rgba(23,18,13,0.3), 0 0 30px rgba(201,115,29,0.4); }
+.so-sheet { background: var(--paper); color: var(--ink); border-radius: 22px 22px 0 0; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); max-height: 46vh; overflow-y: auto; display: grid; gap: 12px; }
+#scanOverlay[data-state="reading"] .so-sheet { max-height: 0; padding: 0; overflow: hidden; }
+.so-best { display: grid; gap: 2px; padding: 12px 14px; border-radius: 16px; background: linear-gradient(135deg, rgba(227,164,67,0.25), rgba(201,115,29,0.12)); border: 1px solid rgba(201,115,29,0.3); }
+.so-best strong { font-weight: 500; font-size: 16px; }
+.so-best > span:last-child { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
+.so-sheet .dense a { grid-template-columns: 44px minmax(0, 1fr) auto; }
+.so-sheet .dense a.unrated { opacity: 0.7; }
+.so-note { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.so-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (min-width: 900px) { #scanOverlay { grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) 400px; } .so-head { grid-column: 1 / -1; } .so-sheet { grid-row: 2; grid-column: 2; max-height: none; border-radius: 0; border-left: 1px solid var(--rule); } .so-photo { grid-row: 2; grid-column: 1; } #scanOverlay[data-state="reading"] .so-sheet { max-height: none; padding: 16px; } }
+.so-photo .so-marks { inset: auto; margin: 0; left: 0; top: 0; width: 100%; height: 100%; }
+.so-actions { align-items: center; align-self: start; }
+.so-actions .pill { height: 44px; display: inline-flex; align-items: center; }
+.so-sheet { align-content: start; }

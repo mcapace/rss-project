@@ -49,7 +49,9 @@ export async function runRehost(args: string[], log: (line: string) => void = co
   if (writer && !bucket) throw new Error("Apply needs S3_BUCKET and AWS credentials.");
   const s3 = writer ? new S3Client({ region: process.env.AWS_REGION || "us-east-1" }) : null;
 
-  const { data, error } = await reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand).ilike("body_html", "%<img%").order("updated_at", { ascending: false }).limit(limit);
+  // Only documents that still point at one of the legacy hosts, so repeated passes make progress.
+  const { data, error } = await reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand)
+    .or(hosts.map(host => `body_html.ilike.%${host.replace(/[%_,()]/g, "")}%`).join(",")).order("updated_at", { ascending: true }).limit(limit);
   if (error) throw new Error(`Could not read documents: ${error.message}`);
   const summary = { mode: writer ? "development-apply" : "dry-run", brand, documents: 0, images_found: 0, images_rehosted: 0, renditions: 0, bodies_rewritten: 0, failures: [] as string[] };
 

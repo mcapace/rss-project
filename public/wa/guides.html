@@ -60,7 +60,7 @@
 <script src="site.js"></script>
 <script>
 WA.ready(function () {
-  WA.stories(function (all) {
+  WA.storiesAll(function (all) {
     var G = all.filter(function (s) { return s.sec === "guides"; });
     var KINDS = [["101", "Whisky 101", "How it is made, what the words mean, how to taste it."], ["howto", "How to", "Serve it, store it, pair it, pour it."], ["buying", "Buying guides", "What to buy for the occasion and the budget."], ["list", "The lists", "The panel's picks, by category, price and mood."], ["collecting", "Collecting", "Auctions, allocations, what holds its value."], ["gear", "Gear", "Glasses, decanters, tools, and what to skip."]];
     var state = { kind: "101", limit: 20 };

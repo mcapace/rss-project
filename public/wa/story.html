@@ -91,10 +91,10 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, bySlug = data.bySlug;
   function embed(r) { return '<a class="embed" data-slug="' + (r.slug || "") + '" href="' + WA.bottleHref(r) + '" data-embed="' + r.slug + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="nt" data-note></span></span><span class="pr">' + fmt(r.p) + (r.by ? "<br><span style=\"font-family:var(--font); font-size:12px; color:var(--ink-3)\">" + r.by + "</span>" : "") + "</span></a>"; }
   function catOf(st) { var t = (st.tags.join(" ") + " " + st.title).toLowerCase(); if (/bourbon|kentucky/.test(t)) return "Bourbon/Tennessee Whiskey"; if (/\brye\b/.test(t)) return "Rye Whiskey"; if (/japan/.test(t)) return "Japanese Whisky"; if (/irish/.test(t)) return "Irish Single Malt"; if (/scotch|single malt|islay|speyside|macallan|bowmore|laphroaig/.test(t)) return "Single Malt Scotch"; return null; }
-  WA.stories(function (all) {
+  WA.storyBySlug(decodeURIComponent((location.hash || "").slice(1)), function (found, all) {
     var storyBySlug = {}; all.forEach(function (st) { storyBySlug[st.slug.toLowerCase()] = st; });
     var slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
-    var st = storyBySlug[slug] || all[0]; if (!storyBySlug[slug]) history.replaceState(null, "", "#" + st.slug);
+    var st = found || all[0]; if (!found) history.replaceState(null, "", "#" + st.slug);
     WA.article(st.slug, function (body) {
       var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p class=\"muted\">The full text of this story is still being brought over from the archive.</p>";
       document.title = st.title + " · Whisky Advocate";
@@ -175,6 +175,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
         picks.forEach(function (r) { if (r.pr) data.filter(function (x) { return x.pr === r.pr && x !== r; }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 2).forEach(function (x) { add(x, "same house as a bottle named"); }); });
         if (cat) { data.filter(function (r) { return r.c === cat && r.d >= "2024"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6).forEach(function (r) { add(r, "same style, top rated"); }); data.filter(function (r) { return r.c === cat && r.p > 0 && r.p <= 70 && r.s >= 88 && r.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 4).forEach(function (r) { add(r, "same style, value"); }); }
         var rows = pool.map(function (x) { return x.r; });
+      if (WA.setContext) WA.setContext({ kind: "story", title: st.title, summary: ((st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ")).slice(0, 500), slugs: rows.slice(0, 8).map(function (x) { return x.slug; }) });
       // Ask about this story: the question goes to the assistant with the story and its bottles, not to the archive search.
         (function () {
           var form = document.getElementById("askForm"), input = document.getElementById("askInput"), suggest = document.getElementById("suggest"), answer = document.getElementById("answer");

@@ -49,7 +49,7 @@
 <script src="site.js"></script>
 <script>
 WA.ready(function () {
-  WA.stories(function (all) {
+  WA.storiesAll(function (all) {
     var T = all.filter(function (s) { return s.sec === "travel"; });
     var REGIONS = ["Scotland", "Ireland", "United States", "England & Europe", "Japan & Asia", "Rest of the world", "On the road"];
     var state = { region: "", place: "", what: "", limit: 20, allPlaces: false };

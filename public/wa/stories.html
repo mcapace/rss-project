@@ -50,7 +50,7 @@
 <script>
 WA.ready(function (data) {
   var TITLE = { all: "Stories", news: "News", features: "Features", guides: "Guides", cocktails: "Cocktails", travel: "Travel", life: "Whisky Life" };
-  WA.stories(function (all) {
+  WA.storiesAll(function (all) {
     var shown = 0, rows = [];
     function render(sec, reset) {
       var tag = /^tag=/.test(sec) ? decodeURIComponent(sec.slice(4)).toLowerCase() : "", by = /^by=/.test(sec) ? decodeURIComponent(sec.slice(3)).toLowerCase() : "";

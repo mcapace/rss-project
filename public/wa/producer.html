@@ -34,6 +34,7 @@
 </section>
 
 <section class="band">
+  <div id="housePicks" hidden style="margin-bottom: 34px"><div class="band-head"><div><span class="mono">Where to start</span><h2 class="d2" style="margin-top:10px">The bottles to know the house by.</h2><p class="rec-line"></p></div></div><div class="rail"></div></div>
   <div class="band-head"><div><span class="mono">Portfolio</span><h2 class="d2" style="margin-top:10px">Every bottle we have rated.</h2></div><a class="pill" href="industry.html">Export as sell sheet</a></div>
   <div class="rail" id="bottles"></div>
 </section>
@@ -91,6 +92,22 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], [WA.fmt(prices[0]) + (prices.length > 1 ? " to " + WA.fmt(prices[prices.length - 1]) : ""), "price range"], [Object.keys(cats).length, Object.keys(cats).length === 1 ? "category" : "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
     var shownRows = rows.slice().sort(function (a, b) { return b.s - a.s; }); document.getElementById("bottles").innerHTML = shownRows.slice(0, 24).map(function (r) { return WA.bottleCard(r); }).join("") + (shownRows.length > 24 ? '<div class="more" style="grid-column: 1 / -1"><button type="button" class="pill" id="moreBottles">All ' + shownRows.length + " bottles</button></div>" : ""); WA.fillNotes(document.getElementById("bottles")); var mb = document.getElementById("moreBottles"); if (mb) mb.addEventListener("click", function () { document.getElementById("bottles").innerHTML = shownRows.map(function (r) { return WA.bottleCard(r); }).join(""); WA.fillNotes(document.getElementById("bottles")); });
     drawTimeline(rows);
+    (function () {
+      var host = document.getElementById("housePicks"); if (!host || !WA.recommend) return; host.hidden = true;
+      var pool = [], seen = {}, byslug = {};
+      function add(x, how) { if (!x || seen[x.slug] || pool.length >= 18) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
+      shownRows.slice(0, 8).forEach(function (x) { add(x, "highest scores"); });
+      rows.filter(function (x) { return x.p > 0; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 5).forEach(function (x) { add(x, "best value"); });
+      rows.slice().reverse().slice(0, 4).forEach(function (x) { add(x, "newest"); });
+      WA.withNotes(pool.map(function (x) { return x.r; }), function (notes) {
+        WA.recommend({ kind: "producer", slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), title: name, summary: rows.length + " bottles rated, mostly " + mainCat + ", highest " + best.s + " points, prices " + WA.fmt(prices[0]) + " to " + WA.fmt(prices[prices.length - 1]) + ".", candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {
+          if (!rec || !rec.picks.length) return;
+          host.hidden = false; host.querySelector(".rail").innerHTML = WA.recCards(rec.picks, byslug); WA.fillNotes(host.querySelector(".rail"));
+          if (rec.line) host.querySelector(".rec-line").textContent = rec.line;
+        });
+      });
+      if (WA.setContext) WA.setContext({ kind: "producer", title: name, summary: rows.length + " bottles rated, mostly " + mainCat + ", highest " + best.s + " points.", slugs: shownRows.slice(0, 8).map(function (x) { return x.slug; }) });
+    })();
     document.getElementById("others").innerHTML = ranked.filter(function (p) { return p !== name; }).slice(0, 8).map(function (p) { var rs = byProducer[p], top = rs.reduce(function (a, r) { return r.s > a.s ? r : a; }, rs[0]); return '<a href="' + WA.producerHref(p) + '"><span class="sc score-type">' + top.s + '</span><span><span class="nm">' + p + '</span><span class="sub">' + rs.length + " rated · best " + top.n + '</span></span><span class="when">' + rs[0].c.replace("/Tennessee Whiskey", "") + "</span></a>"; }).join("");
     scrollTo(0, 0);
   }

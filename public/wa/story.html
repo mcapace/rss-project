@@ -172,7 +172,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var TTS_URL = (location.hostname === "localhost" || /claude\.ai|claudeusercontent/.test(location.hostname) || location.protocol === "file:") ? "https://rss-project-ten.vercel.app/api/wa/tts" : "/api/wa/tts";
     function parts() { var out = [document.getElementById("title").textContent]; var dek = document.getElementById("dek"); if (dek && dek.textContent.trim()) out.push(dek.textContent.trim()); document.querySelectorAll("#prose p, #prose h2, #prose h3, #prose li").forEach(function (p) { var t = p.textContent.replace(/\s+/g, " ").trim(); if (t.length > 2) out.push(t); }); return out; }
     function stop() { playing = false; paused = false; at = 0; if (audio) { audio.pause(); audio.src = ""; audio = null; } next = null; if (synth) synth.cancel(); btn.textContent = label; btn.setAttribute("aria-pressed", "false"); }
-    function fetchClip(i) { return fetch(TTS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: queue[i] }) }).then(function (r) { if (r.status === 503) throw new Error("no-voice"); if (!r.ok) throw new Error("tts " + r.status); return r.blob(); }).then(function (b) { return URL.createObjectURL(b); }); }
+    function fetchClip(i) { return fetch(TTS_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: queue[i] }) }).then(function (r) { if (!r.ok) throw new Error("no-voice"); return r.blob(); }).then(function (b) { return URL.createObjectURL(b); }); }
     function playFrom(i) {
       if (!playing || i >= queue.length) { stop(); return; }
       at = i; var clip = next && next.i === i ? next.p : fetchClip(i); next = null;
@@ -181,7 +181,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
         audio = new Audio(url); audio.onended = function () { URL.revokeObjectURL(url); playFrom(i + 1); }; audio.onerror = function () { playFrom(i + 1); };
         audio.play().catch(function () { btn.textContent = "Tap to play"; });
         if (i + 1 < queue.length) next = { i: i + 1, p: fetchClip(i + 1) };   // the next paragraph loads while this one plays
-      }).catch(function (e) { if (String(e.message) === "no-voice" && synth) { useBrowser = true; speakBrowser(i); } else { btn.textContent = "Voice unavailable"; setTimeout(stop, 2500); } });
+      }).catch(function () { if (synth && window.SpeechSynthesisUtterance) { useBrowser = true; speakBrowser(i); } else { btn.textContent = "Voice unavailable"; setTimeout(stop, 2500); } });
     }
     function speakBrowser(i) {
       if (!playing || i >= queue.length) { stop(); return; }

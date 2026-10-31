@@ -14,7 +14,8 @@ export const maxDuration = 15;
  * the same Braze channels either way.
  *
  * Environment: BRAZE_REST_ENDPOINT (for example https://rest.iad-01.braze.com)
- * and BRAZE_API_KEY with users.track and subscription.status.set permissions.
+ * and BRAZE_REST_API_KEY (the name the audience dashboard uses; BRAZE_API_KEY
+ * also works) with users.track and subscription.status.set permissions.
  */
 const NEWSLETTERS: Record<string, { name: string; group: string; cadence: string }> = {
   notes: { name: "WhiskyNotes", group: "573ad896-cee4-4cb6-a5e6-02a525b1e497", cadence: "Twice a month" },
@@ -25,6 +26,7 @@ const NEWSLETTERS: Record<string, { name: string; group: string; cadence: string
 
 const INDUSTRIES = new Set(["Consumer", "Cigar Distributor", "Cigar Manufacturer", "Cigar Retailer", "Importer", "Distiller", "Winery", "Wine/Spirits Distributor", "Beer Distributor", "Brewer", "Restaurant", "Bar", "Hotel", "Independent Retailer (Wine/Spirits/Beer)", "Chain Retailer (Wine/Spirits/Beer)", "Club (Private, Country)", "Duty Free Operator", "Finance", "Media/PR", "Other"]);
 
+const brazeKey = () => process.env.BRAZE_REST_API_KEY || process.env.BRAZE_API_KEY || "";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" };
 const bucket = new Map<string, { count: number; at: number }>();
 
@@ -36,7 +38,7 @@ function limited(ip: string) {
 
 async function braze(path: string, body: unknown) {
   const endpoint = (process.env.BRAZE_REST_ENDPOINT as string).replace(/\/+$/, "");
-  const response = await fetch(`${endpoint}${path}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.BRAZE_API_KEY}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(8000) });
+  const response = await fetch(`${endpoint}${path}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${brazeKey()}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(8000) });
   const text = await response.text();
   if (!response.ok) throw new Error(`Braze ${path} ${response.status}: ${text.slice(0, 300)}`);
   return text;
@@ -58,8 +60,8 @@ export async function POST(request: Request) {
   const eu = body.eu === true;
   const source = String(body.source ?? "site").slice(0, 60);
 
-  if (!process.env.BRAZE_REST_ENDPOINT || !process.env.BRAZE_API_KEY) {
-    return NextResponse.json({ error: "Sign-up is not connected yet: the site needs BRAZE_REST_ENDPOINT and BRAZE_API_KEY. Until then, use the sign-up page at winespectator.com/newsletter/whiskyadvocate.", fallback: "https://www.winespectator.com/newsletter/whiskyadvocate" }, { status: 503, headers: CORS });
+  if (!process.env.BRAZE_REST_ENDPOINT || !brazeKey()) {
+    return NextResponse.json({ error: "Sign-up is not connected yet: the site needs BRAZE_REST_ENDPOINT and BRAZE_REST_API_KEY. Until then, use the sign-up page at winespectator.com/newsletter/whiskyadvocate.", fallback: "https://www.winespectator.com/newsletter/whiskyadvocate" }, { status: 503, headers: CORS });
   }
 
   try {

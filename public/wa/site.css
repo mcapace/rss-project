@@ -768,3 +768,9 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 .story h3 { font-size: 24px; line-height: 1.12; min-height: 54px; }
 .story.lead h3 { font-size: 30px; line-height: 0.9; min-height: 54px; }
 .story p { font-size: 14px; line-height: 1.5; min-height: 63px; -webkit-line-clamp: 3; }
+
+/* Rating cards follow the same standard: name 3 lines reserved, note 3 lines, so rows line up. */
+.bottle h3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 1.2; min-height: 3.6em; }
+.bottle p[data-note] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; line-height: 1.45; min-height: 4.35em; }
+#fresh.grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1000px) { #fresh.grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

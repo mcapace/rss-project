@@ -883,10 +883,10 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 
 /* Ratings, redesigned: a sticky glass filter rail with popovers, full-width results, the maps as an Explore panel. */
 .finder { display: block; }
-.rail-wrap { position: sticky; top: 64px; z-index: 30; margin: 0 0 18px; }
-.rail-wrap .rail { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; }
-.rail-pill { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: rgba(255,255,255,0.55); font-size: 13.5px; color: var(--ink); transition: background-color 200ms, border-color 200ms, transform 300ms cubic-bezier(0.22,1,0.36,1); }
-.rail-pill:hover { background: rgba(255,255,255,0.85); }
+.rail-wrap { position: sticky; top: 66px; z-index: 30; margin: 0 calc(-1 * var(--gutter)) 22px; padding: 12px var(--gutter) 16px; background: var(--paper); }
+.rail-wrap .rail { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; background: var(--paper); }
+.rail-pill { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: #fff; font-size: 13.5px; color: var(--ink); transition: background-color 200ms, border-color 200ms, transform 300ms cubic-bezier(0.22,1,0.36,1); }
+.rail-pill:hover { background: #fff; }
 .rail-pill .k { color: var(--ink-3); }
 .rail-pill .v { font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-pill::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: translateY(-2px) rotate(45deg); margin-left: 2px; transition: transform 200ms; }
@@ -922,7 +922,7 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 #lenses .lens[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .finder .results .bottle .score { font-size: 54px; }
 @media (max-width: 960px) {
-  .rail-wrap { top: 56px; margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--gutter)); }
+  .rail-wrap { top: 56px; }
   .rail-wrap .rail { flex-wrap: nowrap; overflow-x: auto; border-radius: 0; padding: 10px var(--gutter); scrollbar-width: none; }
   .rail-wrap .rail::-webkit-scrollbar { display: none; }
   .rail-pill { flex: 0 0 auto; }
@@ -1330,20 +1330,24 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
 .lead-copy h2 a { color: inherit; text-decoration: none; }
 .lead-copy h2 a:hover { color: var(--amber); }
 .lead-meta { margin: 8px 0 0; color: var(--ink-3); font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; }
-.lead-copy p[data-note] { margin: 14px 0 0; max-width: 62ch; color: var(--ink-2); font-size: 16px; line-height: 1.5; }
+.lead-copy p[data-note] { margin: 16px 0 0; max-width: 62ch; color: var(--ink-2); font-size: 16px; line-height: 1.55; }
 .lead-pour .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; font-family: var(--mono); font-size: 13px; color: var(--ink-2); }
 .lead-pour .foot button, .shelf-bottle .foot button { padding: 4px 10px; border: 1px solid var(--rule); border-radius: 999px; background: rgba(255,255,255,0.45); font-family: var(--font); font-size: 12px; font-weight: 500; color: var(--ink-2); }
 .lead-pour .foot button[aria-pressed="true"], .shelf-bottle .foot button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
 .lead-pour .buy-slot { display: flex; height: 32px; }
 .lead-pour .buy-slot:empty { display: none; }
 .lead-pour .buy-slot .buy-chip { height: 32px; }
-.runway-ad { display: flex; justify-content: center; margin: 22px 0 6px; }
-.runway-ad:has(.ad-empty) { display: none; }
+.runway { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 8px 36px; align-items: start; margin-top: 28px; }
+.runway:has(.ad-empty) { grid-template-columns: minmax(0, 1fr); }
+.runway:has(.ad-empty) .runway-ad { display: none; }
+.runway-ad { display: flex; justify-content: center; margin: 8px 0 0; }
 .runway-ad .ad-filled { margin: 0; }
+@media (max-width: 900px) { .runway { grid-template-columns: 1fr; } .runway-ad { order: -1; margin: 4px auto 20px; } }
 .ratings-empty { margin: 0; padding: 28px; border-radius: 28px; background: var(--glass); color: var(--ink-2); }
-.shelf { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 8px 22px; align-items: start; margin: 26px 0 4px; }
-.shelf-label b { display: block; font-weight: 500; font-size: clamp(28px, 3vw, 42px); line-height: 0.92; letter-spacing: -0.03em; color: var(--amber); }
-.shelf-label span { display: block; margin-top: 8px; color: var(--ink-3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.shelf { display: grid; grid-template-columns: 1fr; gap: 2px; align-items: start; margin: 28px 0 8px; }
+.shelf-label { display: flex; align-items: baseline; gap: 14px; }
+.shelf-label b { font-weight: 500; font-size: clamp(28px, 3vw, 40px); line-height: 1; letter-spacing: -0.03em; color: var(--amber); }
+.shelf-label span { color: var(--ink-3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
 .shelf-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; padding: 10px 4px 18px; }
 .shelf-bottle { flex: 0 0 228px; width: 228px; display: flex; flex-direction: column; scroll-snap-align: start; padding: 14px 14px 12px; border-radius: 22px; background: var(--glass); border: 1px solid var(--glass-edge); backdrop-filter: blur(18px) saturate(1.25); -webkit-backdrop-filter: blur(18px) saturate(1.25); box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), var(--glass-shadow); cursor: pointer; animation: shelf-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both; transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 400ms ease; }
 .shelf-row .shelf-bottle:nth-child(2) { animation-delay: 45ms; }
@@ -1379,7 +1383,7 @@ body.finder-page footer.site { background: color-mix(in srgb, var(--paper) 92%, 
   .lead-score { font-size: 52px; }
   .lead-copy h2 { font-size: 22px; }
   .lead-copy p[data-note] { font-size: 14px; }
-  .shelf { grid-template-columns: 1fr; gap: 4px; }
+  .shelf { gap: 4px; }
   .shelf-row { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
   .shelf-bottle { flex-basis: 210px; width: 210px; }
 }

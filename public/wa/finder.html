@@ -170,7 +170,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;
     return '<article class="lead-pour" data-slug="' + esc(r.slug || "") + '">' +
       '<a class="lead-shot" href="' + WA.bottleHref(r) + '">' + pourImg(r) + '</a>' +
-      '<div class="lead-copy"><span class="mono">On the runway</span><div class="lead-score score-type">' + r.s + '<small>points</small></div><h2><a href="' + WA.bottleHref(r) + '">' + esc(r.n) + '</a></h2><p class="lead-meta">' + esc(r.c) + (r.pr ? " · " + esc(r.pr) : "") + '</p><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div></div><p data-note data-full></p></article>';
+      '<div class="lead-copy"><span class="mono">On the runway</span><div class="lead-score score-type">' + r.s + '<small>points</small></div><h2><a href="' + WA.bottleHref(r) + '">' + esc(r.n) + '</a></h2><p class="lead-meta">' + esc(r.c) + (r.pr ? " · " + esc(r.pr) : "") + '</p><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div><p data-note data-full></p></div></article>';
   }
   function shelfCard(r) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;

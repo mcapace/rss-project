@@ -15,17 +15,17 @@ def shard(slug):
 old = json.load(open(f"{WEB}/stories.json")); old_by = {s["slug"]: s for s in old}
 ratings = json.load(open(f"{WEB}/ratings.json")); ci = ratings["cols"].index("slug") if "slug" in ratings["cols"] else None
 rating_slugs = {str(r[ci]).lower() for r in ratings["rows"]} if ci is not None else set()
-CACHE = "/tmp/ga/export/rows.json"
-if os.path.exists(CACHE): rows = json.load(open(CACHE))
+CACHE = os.environ.get("WA_EXPORT_CACHE", "")
+if CACHE and os.path.exists(CACHE): rows = json.load(open(CACHE))
 else:
     rows = []; off = 0
     while True:
-        page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'categories' as cats, metadata->'tags' as tags,
+        page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
           metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner
           from cms_documents where brand='wa' and kind='article' and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
         rows += page; off += 120; print("fetched", len(rows), file=sys.stderr)
         if len(page) < 120: break
-    json.dump(rows, open(CACHE, "w"))
+    if CACHE: json.dump(rows, open(CACHE, "w"))
 # Section from the tags, the way the site already files its stories.
 TAGSETS = [("cocktails", {"Cocktails", "Cocktail", "Recipe", "Recipes", "Old Fashioned", "Highball", "Manhattan", "Hot Toddy", "Punch"}),
            ("travel", {"Travel", "Bars", "Where To", "whisky bars", "Dispatches", "Distillery Tours", "Bar", "Restaurants"}),
@@ -57,7 +57,12 @@ for r in rows:
     refs = sorted({m.group(1).rstrip("/") for m in re.finditer(r'href="https?://(?:www\.)?whiskyadvocate\.com/([^"?#]+)', body) if m.group(1).rstrip("/").lower() in rating_slugs})
     d = (r["d"] or "")[:10]
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d): d = o.get("d") or ""; missing_date += 1 if not d else 0
-    stories.append({"id": r["id"], "title": r["title"], "slug": slug, "by": r["byline"] or o.get("by") or "", "d": d, "sec": sec, "tags": tags or o.get("tags") or [], "hero": hero, "dek": dek, "min": str(max(1, round(words / 230))) if words else o.get("min"), "refs": refs or o.get("refs") or []})
+    ai = r.get("ai_tags") or []
+    if ai: tags = list(dict.fromkeys(list(ai) + [t for t in tags if t not in ai]))[:14]
+    entry = {"id": r["id"], "title": r["title"], "slug": slug, "by": r["byline"] or o.get("by") or "", "d": d, "sec": sec, "tags": tags or o.get("tags") or [], "hero": hero, "dek": dek, "min": str(max(1, round(words / 230))) if words else o.get("min"), "refs": refs or o.get("refs") or []}
+    q = " ".join(filter(None, [r.get("ai_summary") or "", " ".join(r.get("ai_search") or [])])).strip()
+    if q: entry["q"] = q
+    stories.append(entry)
     shards[shard(slug)][slug] = body
 stories = [s for s in stories if s["d"]]; stories.sort(key=lambda s: s["d"], reverse=True)
 os.makedirs(f"{WEB}/articles", exist_ok=True)

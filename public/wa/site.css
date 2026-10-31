@@ -686,14 +686,16 @@ body.has-stage[data-top="true"] .mast { background: transparent; }
 @media (max-width: 960px) { .profile-grid { grid-template-columns: 1fr; } .profile-grid .profile { grid-template-columns: 1fr; } .profile-grid .compass-card { grid-row: auto; } }
 
 /* Top 20 */
-.top20-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.top20-card { display: grid; grid-template-columns: 54px 110px minmax(0, 1fr); gap: 16px; align-items: start; padding: 18px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass); backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); }
+.top20-page .suggest { margin: 18px 0 28px; }
+.top20-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.top20-grid > .ad { grid-column: 1 / -1; justify-self: center; align-self: center; width: auto; max-width: 100%; margin: 8px auto; }
+.top20-card { display: grid; grid-template-columns: 54px 120px minmax(0, 1fr); gap: 22px; align-items: center; padding: 22px 26px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass); backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); }
 .top20-card .rank { font-family: var(--mono); font-size: 22px; color: var(--amber); font-weight: 500; }
-.top20-card img { width: 110px; height: 140px; object-fit: contain; }
-.top20-card h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.15; }
-.top20-card .meta { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.top20-card img { width: 110px; height: 150px; object-fit: contain; mix-blend-mode: multiply; background: transparent; }
+.top20-card h3 { font-size: 19px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.2; }
+.top20-card .meta { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
 .top20-card .meta b { font-size: 18px; }
-.top20-card p { margin-top: 8px; font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+.top20-card p { margin-top: 12px; font-size: 14.5px; color: var(--ink-2); line-height: 1.55; }
 @media (max-width: 900px) { .top20-grid { grid-template-columns: 1fr; } .top20-card { grid-template-columns: 40px 80px minmax(0, 1fr); } }
 
 /* Fixes: author block alignment, the sign-up on glass, thumbnails that never cover the card's words. */
@@ -1059,11 +1061,11 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 .embed .buy-chip { margin-left: 8px; }
 a.mention { color: var(--copper); text-decoration: underline; text-decoration-color: rgba(201,115,29,0.4); text-underline-offset: 3px; }
 a.mention:hover { text-decoration-color: var(--copper); }
-.top20-card .acts { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+.top20-card .acts { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
 .top20-card .acts .pill { height: 28px; padding: 0 11px; font-size: 12.5px; }
 .top20-card .meta .owner { display: block; color: var(--ink-3); font-size: 12px; margin-top: 2px; }
-.top20-card.woty { grid-column: 1 / -1; grid-template-columns: 54px 180px minmax(0, 1fr); background: linear-gradient(135deg, rgba(255,251,245,0.9), rgba(227,164,67,0.18)); }
-.top20-card.woty img { width: 180px; height: 220px; }
+.top20-card.woty { grid-column: 1 / -1; grid-template-columns: 64px 200px minmax(0, 1fr); gap: 36px; padding: 32px 40px; background: linear-gradient(135deg, rgba(255,251,245,0.9), rgba(227,164,67,0.18)); }
+.top20-card.woty img { width: 180px; height: 240px; }
 .top20-card.woty h3 { font-size: 26px; }
 .top20-card .body .mono { display: block; margin-bottom: 6px; color: var(--copper); }
 @media (max-width: 760px) { .top20-card.woty { grid-template-columns: 44px 110px minmax(0, 1fr); } .top20-card.woty img { width: 110px; height: 140px; } }

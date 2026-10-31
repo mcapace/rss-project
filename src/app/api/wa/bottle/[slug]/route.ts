@@ -28,7 +28,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
   try {
     const { data } = await cmsDb().from("cms_documents").select("metadata").eq("brand", brand).eq("slug", slug).eq("kind", "rating").limit(1).maybeSingle();
     const legacy = (data?.metadata as { legacy_media?: { thumb_file?: string } } | null)?.legacy_media?.thumb_file;
-    if (legacy) return NextResponse.redirect(legacy.startsWith("http") ? legacy : new URL(legacy, BASE[brand]).toString(), { status: 302, headers: { "Cache-Control": "public, max-age=3600" } });
+    if (legacy) return NextResponse.redirect(legacy.startsWith("http") ? legacy : new URL(legacy, BASE[brand]).toString(), { status: 302, headers: { "Cache-Control": "public, max-age=300, s-maxage=300" } });
   } catch { /* no database: nothing to send on to */ }
   return new NextResponse(null, { status: 404 });
 }

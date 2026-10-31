@@ -113,7 +113,8 @@
     var pointer = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 }, running = true;
     addEventListener("pointermove", function (e) { target.x = e.clientX / innerWidth; target.y = e.clientY / innerHeight; }, { passive: true });
     document.addEventListener("visibilitychange", function () { running = !document.hidden; if (running) requestAnimationFrame(frame); });
-    function frame(now) { if (!running) return; pointer.x += (target.x - pointer.x) * 0.04; pointer.y += (target.y - pointer.y) * 0.04; gl.render(now * 0.6, 1, pointer, 0.55); requestAnimationFrame(frame); }
+    var finder = document.body.classList.contains("finder-page");
+    function frame(now) { if (!running) return; pointer.x += (target.x - pointer.x) * 0.04; pointer.y += (target.y - pointer.y) * 0.04; gl.render(now * (finder ? 0.85 : 0.6), finder ? 0.12 : 1, pointer, finder ? 1 : 0.55); requestAnimationFrame(frame); }
     requestAnimationFrame(frame);
   }
   /* Pictures drift a little against the scroll, so the page reads in layers. */
@@ -168,10 +169,10 @@
   }
   /* Cards rendered from the archive carry no note; fill them in once their shard arrives. */
   function fillNotes(root) { decorateBuy(root);
-    root.querySelectorAll(".bottle[data-slug]").forEach(function (card) {
+    root.querySelectorAll(".bottle[data-slug], .lead-pour[data-slug], .shelf-bottle[data-slug]").forEach(function (card) {
       var p = card.querySelector("p[data-note]"); if (!p || p.textContent) return;
       var slug = card.getAttribute("data-slug");
-      note(slug, function (f) { var r = ARCHIVE && ARCHIVE.bySlug[slug.toLowerCase()]; if (r && !r.f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") : f; } p.textContent = r ? r.t : f.slice(0, 110); });
+      note(slug, function (f) { var r = ARCHIVE && ARCHIVE.bySlug[slug.toLowerCase()]; if (r && !r.f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") + "…" : f; } if (p.hasAttribute("data-full")) p.textContent = !f ? "" : (f.length > 460 ? f.slice(0, 460).replace(/\s\S*$/, "") + "…" : f); else p.textContent = r && r.t ? r.t : (f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") + "…" : f); });
     });
   }
   function hashSlug() { var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
@@ -358,7 +359,7 @@
   function bottleCard(r, opts) {
     opts = opts || {};
     var idx = DATA.indexOf(r), on = opts.compare && opts.compare.indexOf(idx) >= 0;
-    return '<article class="bottle' + (r.img ? " has-img" : "") + '" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '">' + (r.img ? '<a class="thumb" href="' + bottleHref(idx) + '"><img src="' + r.img + '" alt="" loading="lazy"></a>' : "") + '<div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + "</div></article>";
+    return '<article class="bottle' + (r.img ? " has-img" : "") + '" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '">' + (r.img ? '<a class="thumb" href="' + bottleHref(idx) + '"><img src="' + r.img + '" alt="" loading="lazy"></a>' : "") + '<div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + '<span class="buy-slot"></span></div></article>';
   }
   window.WA.bottleCard = bottleCard;
 /* The store: ratings matched to products at store.whiskyadvocate.com (shop.json), the catalog itself (store.json). */
@@ -368,7 +369,7 @@ function productFor(slug) { if (!SHOP || !slug) return null; var h = SHOP[slug];
 function buyHref(p) { return "https://store.whiskyadvocate.com/products/" + p.h + "?utm_source=whiskyadvocate&utm_medium=site&utm_campaign=shop"; }
 function buyChip(p, label) { return '<a class="buy-chip" href="' + buyHref(p) + '" target="_blank" rel="noopener">' + (label || (p.p ? "Buy · $" + Math.round(p.p) : "Buy")) + "</a>"; }
 /* Every rendered card with a data-slug gets its Buy chip once the catalog is in. */
-function decorateBuy(root) { shop(function () { (root || document).querySelectorAll("[data-slug]:not([data-shop])").forEach(function (card) { card.setAttribute("data-shop", "1"); var p = productFor(card.getAttribute("data-slug")); if (!p) return; var foot = card.querySelector(".foot"); if (foot) foot.insertAdjacentHTML("afterbegin", buyChip(p)); }); }); }
+function decorateBuy(root) { shop(function () { (root || document).querySelectorAll("[data-slug]:not([data-shop])").forEach(function (card) { card.setAttribute("data-shop", "1"); var p = productFor(card.getAttribute("data-slug")); var slot = card.querySelector(".buy-slot"); if (slot) { if (p) slot.innerHTML = buyChip(p); return; } if (!p) return; var foot = card.querySelector(".foot"); if (foot) foot.insertAdjacentHTML("afterbegin", buyChip(p)); }); }); }
 /* Anchor text: the first plain mention of each bottle in a story body becomes a link to its rating. */
 function linkMentions(holder, picks) {
   var done = 0;

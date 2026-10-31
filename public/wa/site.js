@@ -10,10 +10,14 @@
 
   window.WA = { data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, value: value, slugOf: slugOf };
 
+  // Names that reached the archive with HTML entities ("Jacob&#039;s Pardon") read as text everywhere.
+  var ENT = document.createElement("textarea");
+  function unentText(v) { if (typeof v !== "string" || v.indexOf("&") < 0) return v; ENT.innerHTML = v; return ENT.value; }
+  function unent(o) { if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) o[i] = typeof o[i] === "string" ? unentText(o[i]) : unent(o[i]); } else if (o && typeof o === "object") { for (var k in o) o[k] = typeof o[k] === "string" ? unentText(o[k]) : unent(o[k]); } return o; }
   function loaded(cb) {
     var el = document.getElementById("data");
     if (el) { DATA = JSON.parse(el.textContent); cb(DATA); return; }
-    fetch("data.json").then(function (r) { return r.json(); }).then(function (d) { DATA = d; cb(d); });
+    fetch("data.json").then(function (r) { return r.json(); }).then(function (d) { DATA = unent(d); cb(DATA); });
   }
 
   /* Entrance, home only: a quiet loader, then a layered scene with a WebGL whisky field under it.
@@ -146,7 +150,7 @@
   function archive(cb) {
     if (ARCHIVE) return cb(ARCHIVE);
     fetch("ratings.json").then(function (r) { return r.json(); }).then(function (d) {
-      ARCHIVE = d.rows.map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = row[i]; }); o.t = ""; return o; });
+      ARCHIVE = d.rows.map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = typeof row[i] === "string" && row[i].indexOf("&") >= 0 ? unentText(row[i]) : row[i]; }); o.t = ""; return o; });
       ARCHIVE.words = d.words || []; window.WA.WORDS = ARCHIVE.words;
       var bySlug = {}; ARCHIVE.forEach(function (r) { bySlug[r.slug.toLowerCase()] = r; });
       ARCHIVE.bySlug = bySlug; DATA = ARCHIVE; cb(ARCHIVE);

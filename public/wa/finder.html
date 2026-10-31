@@ -73,7 +73,6 @@
       <div class="shelves" id="shelves"></div>
       <div class="runway-ad"><div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div></div>
     </div>
-    <div class="more"><button type="button" class="pill" id="more">Show more</button></div>
   </div>
 </section>
 
@@ -131,7 +130,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
   document.getElementById("sinceLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.since = b.getAttribute("data-since"); state.region = null; state.limit = 12; syncControls(); render(); });
   document.getElementById("scoreLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.score = +b.getAttribute("data-score"); state.region = null; state.lens = ""; syncControls(); render(); });
   document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); syncControls(); render(); });
-  document.getElementById("more").addEventListener("click", function () { state.limit += 12; render(); });
   document.getElementById("clear").addEventListener("click", function () { setLens(""); syncControls(); render(); });
   WA.onAsk = function (f) { if (!f) { state.terms = []; render(); return; }
     state.types = f.types.length ? f.types.reduce(function (a, t) { return a.concat(t.cats); }, []) : [];
@@ -234,16 +232,14 @@ WA.ready(function (recent) { WA.archive(function (data) {
       shelves.innerHTML = groups.map(function (list, i) {
         var page = list.slice(0, state.limit);
         if (!page.length) return "";
-        return '<section class="shelf"><div class="shelf-label"><b>' + SHELVES[i].name + '</b><span>' + SHELVES[i].range + '</span></div><div class="shelf-row">' + page.map(shelfCard).join("") + '</div></section>';
+        var rest = list.length - page.length;
+        var more = rest ? '<button type="button" class="shelf-more" data-more="' + i + '">Show more<small>' + rest.toLocaleString() + " more</small></button>" : "";
+        return '<section class="shelf" data-shelf="' + i + '"><div class="shelf-label"><b>' + SHELVES[i].name + '</b><span>' + SHELVES[i].range + '</span></div><div class="shelf-row">' + page.map(shelfCard).join("") + more + "</div></section>";
       }).join("");
       WA.fillNotes(lead);
       WA.fillNotes(shelves);
     }
     requestAnimationFrame(function () { lead.classList.add("is-in"); });
-    var moreLeft = [[], [], [], []];
-    rows.forEach(function (r) { moreLeft[shelfOf(r.s)].push(r); });
-    if (rows[0]) { var bi = moreLeft[shelfOf(rows[0].s)].indexOf(rows[0]); if (bi >= 0) moreLeft[shelfOf(rows[0].s)].splice(bi, 1); }
-    document.getElementById("more").style.display = moreLeft.some(function (g) { return g.length > state.limit; }) ? "" : "none";
     if (document.getElementById("maps").getAttribute("data-open") !== "false") drawMaps(rows);
   }
   document.querySelector(".finder").addEventListener("click", function (e) {
@@ -255,6 +251,19 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var open = card.classList.contains("is-open");
     shelves.querySelectorAll(".shelf-bottle.is-open").forEach(function (c) { c.classList.remove("is-open"); });
     if (!open) card.classList.add("is-open");
+  });
+  shelves.addEventListener("click", function (e) {
+    var more = e.target.closest(".shelf-more");
+    if (!more) return;
+    var row = more.closest(".shelf-row");
+    var id = more.getAttribute("data-more");
+    var seen = row.querySelectorAll(".shelf-bottle").length;
+    state.limit += 12;
+    render();
+    var next = shelves.querySelector('.shelf[data-shelf="' + id + '"] .shelf-row');
+    if (!next) return;
+    var card = next.querySelectorAll(".shelf-bottle")[seen];
+    if (card) next.scrollLeft = card.offsetLeft - next.offsetLeft;
   });
   shelves.addEventListener("keydown", function (e) {
     if (e.key !== "Enter" && e.key !== " ") return;

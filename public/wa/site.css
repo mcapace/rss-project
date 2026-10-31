@@ -1603,3 +1603,29 @@ a.author p::after { content: " →"; color: var(--copper); }
 .fest-copy .app-cta em { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fest-copy .app-cta-go { padding: 7px 12px; font-size: 12.5px; }
 @media (max-width: 560px) { .fest-copy .app-cta { grid-template-columns: 44px minmax(0, 1fr); } .fest-copy .app-cta em { white-space: normal; } .fest-copy .app-cta-go { grid-column: 2; justify-self: start; } }
+
+/* Tablets in landscape (1024 to 1200 wide, short screens): the mast stays centered and nothing wraps, the opener fits one screen, pictures keep their ratio. */
+@media (max-width: 1200px) and (min-width: 901px) {
+  .mast { gap: 12px; }
+  .mast nav { gap: 12px; font-size: 13px; }
+  .mast .tools { gap: 6px; }
+  .mast .tools .pill { padding: 0 11px; height: 36px; font-size: 13px; white-space: nowrap; }
+  .mast .fest-pill, .mast .tools a[href="tools.html"], .mast .tools a[href^="https://store."] { display: none; }
+  .mast .search-btn span { display: none; }
+}
+@media (max-width: 1100px) and (min-width: 861px) {
+  .front.rotator { align-items: start; }
+  .rot-stage { min-height: 0; }
+  .front .story.lead.has-img.rot-slide.on { position: relative; height: auto; min-height: 0; grid-template-rows: auto auto auto auto; }
+  .front .story.lead.has-img.rot-slide.on img { min-height: 0; height: auto; aspect-ratio: 16 / 10; }
+  .fest-row.fest-tiers4 { grid-template-columns: 1fr 1fr; }
+  .fest { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); }
+  .grid.cocktail-grid, .cocktails-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-height: 840px) and (min-width: 700px) {
+  .scene-copy h2 { font-size: clamp(30px, 6.2vh, 56px); }
+  .scene-copy p { margin-top: 12px; font-size: 15px; }
+  .scene-copy > div { padding: 22px 26px; }
+  .ask-landing { bottom: 18px; }
+  .ask-landing .suggest { display: none; }
+}

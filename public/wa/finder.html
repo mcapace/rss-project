@@ -114,7 +114,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); syncControls(); render(); });
   document.getElementById("more").addEventListener("click", function () { state.limit += 12; render(); });
   document.getElementById("clear").addEventListener("click", function () { setLens(""); syncControls(); render(); });
-  WA.onAsk = function (f) {
+  WA.onAsk = function (f) { if (!f) { state.terms = []; render(); return; }
     state.types = f.types.length ? f.types.reduce(function (a, t) { return a.concat(t.cats); }, []) : [];
     state.price = f.price ? [40, 60, 100, 200, 400].filter(function (p) { return p >= f.price; })[0] || 400 : 400;
     state.score = f.score ? [94, 92, 90, 88, 80].filter(function (s) { return s <= f.score; })[0] || 80 : 80;

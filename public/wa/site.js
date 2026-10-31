@@ -233,8 +233,21 @@
   function nameScore(terms, r) { var total = 0; for (var i = 0; i < terms.length; i++) { var h = termHit(terms[i], r); if (!h) return 0; total += h; } return total; }
   window.WA.nameTerms = nameTerms; window.WA.nameScore = nameScore; window.WA.norm = norm;
 
-  function understand(q) {
-    var f = { types: [], price: null, score: null, chars: [], text: q, terms: nameTerms(q) };
+  /* Typos in the words that carry meaning ("peety", "smokey", "sherryed") are corrected before anything is matched. */
+  var VOCAB = ["peat", "peaty", "peated", "smoky", "smoke", "smokey", "sherry", "sherried", "sweet", "rich", "light", "fruity", "floral", "spicy", "bourbon", "rye", "scotch", "irish", "japanese", "canadian", "islay", "speyside", "highland", "campbeltown", "lowland", "cheap", "value", "gift", "winter", "summer", "bottle", "whisky", "whiskey", "whiskies", "best", "under", "points", "single", "malt", "blended", "cask", "strength", "manhattan", "cocktail", "night", "friend", "budget"];
+  function fixTypos(q) {
+    var words = (window.WA.WORDS || []).concat(VOCAB);
+    return q.split(/(\s+)/).map(function (tok) {
+      var t = tok.toLowerCase().replace(/[^a-z]/g, ""); if (t.length < 4 || /\s/.test(tok)) return tok;
+      if (INTENT.test(t) || words.indexOf(t) >= 0) return tok;
+      var best = null, bd = 2;
+      for (var i = 0; i < words.length; i++) { var w = words[i]; if (Math.abs(w.length - t.length) > 1) continue; var d = edit(t, w, 1); if (d < bd) { bd = d; best = w; } }
+      return best ? tok.replace(/[A-Za-z]+/, best) : tok;
+    }).join("");
+  }
+  function understand(raw) {
+    var q = fixTypos(raw);
+    var f = { types: [], price: null, score: null, chars: [], text: q, raw: raw, terms: nameTerms(q) };
     TYPES.forEach(function (t) { if (t.match.test(q)) f.types.push(t); });
     var m = q.match(/(?:under|below|less than|up to|max(?:imum)?)\s*\$?\s*(\d{2,4})/i) || q.match(/\$\s*(\d{2,4})/); if (m) f.price = +m[1];
     var s = q.match(/(\d{2})\s*(?:points?|pts|\+|or higher|or better|and up)/i); if (s) f.score = +s[1];
@@ -254,7 +267,9 @@
       if (f.price && r.p > f.price) return null;
       if (f.score && r.s < f.score) return null;
       var fit = f.chars.reduce(function (acc, c) { return acc + Math.min(3, charScore(r, c)); }, 0);
-      return { r: r, rank: r.s + fit * 1.5 + ns * 6 + (r.d ? (+r.d.slice(0, 4) - 2013) * 0.15 : 0) };
+      // Unasked-for trophies sink a little: a $7,500 bottle is not the answer to "peaty whisky".
+      var reach = (!named && !f.price && r.p) ? (r.p > 1000 ? 5 : r.p > 400 ? 3 : r.p > 200 ? 1 : 0) : 0;
+      return { r: r, rank: r.s + fit * 1.5 + ns * 6 + (r.d ? (+r.d.slice(0, 4) - 2013) * 0.15 : 0) - reach };
     }).filter(Boolean);
     // A typed name that matches nothing exactly still finds its nearest spellings.
     if (named && !out.length) { out = rows.map(function (r) { var best = 0; named.forEach(function (t) { best += termHit(t, r); }); return best ? { r: r, rank: r.s + best * 6 } : null; }).filter(Boolean); }
@@ -290,23 +305,30 @@
   function askBar() {
     var form = document.getElementById("askForm"); if (!form) return;
     var input = document.getElementById("askInput"), answer = document.getElementById("answer");
+    var askedAt = 0;
     function ask(q) {
       if (!q.trim() || !DATA) return;
+      askedAt = Date.now(); if (timer) clearTimeout(timer); document.querySelectorAll(".ask-menu").forEach(function (m) { m.setAttribute("data-open", "false"); });
       var f = understand(q);
       if (f.terms.length && !ARCHIVE) { archive(function () { ask(q); }); return; }
       var picks = apply(f, DATA);
       document.getElementById("answerFacets").innerHTML = facetLabels(f).map(function (l) { return '<span class="facet">' + l + "</span>"; }).join("") || '<span class="facet">everything</span>';
       document.getElementById("answerText").innerHTML = answerFor(f, picks);
       document.getElementById("answerPicks").innerHTML = picks.slice(0, 4).map(function (r) { return '<a class="pick" href="' + bottleHref(DATA.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="ct">' + r.c + "</span></span><span class=\"pr\">" + fmt(r.p) + "</span></a>"; }).join("");
+      if (!answer.querySelector(".answer-close")) { var x = document.createElement("button"); x.type = "button"; x.className = "answer-close"; x.setAttribute("aria-label", "Clear the answer"); x.innerHTML = "&times;"; x.addEventListener("click", clearAnswer); document.getElementById("answerFacets").insertAdjacentElement("afterend", x); }
       answer.setAttribute("data-show", "true");
       setTimeout(function () { if (window.WA.scrollAnswer) window.WA.scrollAnswer(); else answer.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 50);
       if (window.WA.onAsk) window.WA.onAsk(f);
     }
+    function clearAnswer() { answer.setAttribute("data-show", "false"); input.value = ""; input.focus(); if (window.WA.onAsk) window.WA.onAsk(null); }
+    window.WA.clearAnswer = clearAnswer;
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && answer.getAttribute("data-show") === "true") clearAnswer(); });
     form.addEventListener("submit", function (e) { e.preventDefault(); menu.setAttribute("data-open", "false"); ask(input.value); });
     // Predictive: bottles, producers, stories and taste words appear as you type; a tap opens them, Enter asks.
     var menu = document.createElement("div"); menu.className = "ask-menu"; menu.setAttribute("data-open", "false"); form.insertAdjacentElement("afterend", menu);
     var timer = null;
     function suggestFor(q) {
+      if (Date.now() - askedAt < 1200) { menu.setAttribute("data-open", "false"); return; }
       var terms = nameTerms(q); if (!terms.length) { menu.setAttribute("data-open", "false"); return; }
       var rows = DATA || [], scored = [];
       for (var i = 0; i < rows.length; i++) { var ns = nameScore(terms, rows[i]); if (ns) scored.push({ r: rows[i], ns: ns }); }

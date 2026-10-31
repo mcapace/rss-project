@@ -881,10 +881,10 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 
 /* Ratings, redesigned: a sticky glass filter rail with popovers, full-width results, the maps as an Explore panel. */
 .finder { display: block; }
-.rail-wrap { position: sticky; top: 64px; z-index: 30; margin: 0 calc(-1 * var(--gutter)) 18px; padding: 8px var(--gutter) 14px; background: var(--paper); }
-.rail-wrap .rail { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; background: var(--paper); }
-.rail-pill { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: #fff; font-size: 13.5px; color: var(--ink); transition: background-color 200ms, border-color 200ms, transform 300ms cubic-bezier(0.22,1,0.36,1); }
-.rail-pill:hover { background: #fff; }
+.rail-wrap { position: sticky; top: 64px; z-index: 30; margin: 0 0 18px; }
+.rail-wrap .rail { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 999px; }
+.rail-pill { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: rgba(255,255,255,0.55); font-size: 13.5px; color: var(--ink); transition: background-color 200ms, border-color 200ms, transform 300ms cubic-bezier(0.22,1,0.36,1); }
+.rail-pill:hover { background: rgba(255,255,255,0.85); }
 .rail-pill .k { color: var(--ink-3); }
 .rail-pill .v { font-weight: 500; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-pill::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: translateY(-2px) rotate(45deg); margin-left: 2px; transition: transform 200ms; }
@@ -920,8 +920,8 @@ footer.site { grid-template-columns: 1.2fr 1fr 1fr 1fr; }
 #lenses .lens[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .finder .results .bottle .score { font-size: 54px; }
 @media (max-width: 960px) {
-  .rail-wrap { top: 56px; padding: 8px 0 14px; }
-  .rail-wrap .rail { flex-wrap: nowrap; overflow-x: auto; border-radius: 0; padding: 10px var(--gutter); scrollbar-width: none; background: var(--paper); }
+  .rail-wrap { top: 56px; margin-left: calc(-1 * var(--gutter)); margin-right: calc(-1 * var(--gutter)); }
+  .rail-wrap .rail { flex-wrap: nowrap; overflow-x: auto; border-radius: 0; padding: 10px var(--gutter); scrollbar-width: none; }
   .rail-wrap .rail::-webkit-scrollbar { display: none; }
   .rail-pill { flex: 0 0 auto; }
   .rail-explore { margin-left: 0; }
@@ -1213,3 +1213,11 @@ footer.site .social svg { width: 18px; height: 18px; }
 /* The Whisky Advocate mark in the mast, a size up. */
 .wordmark img { height: 40px; }
 @media (max-width: 760px) { .wordmark img { height: 32px; } }
+/* The answer: full width under the ask bar, centred, with a way to clear it. */
+.ask .answer, .answer { width: 100%; max-width: 1100px; margin: 20px auto 0; position: relative; }
+.answer-head { padding-right: 56px; }
+.answer-close { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--rule); background: rgba(255,255,255,0.7); color: var(--ink-2); font-size: 20px; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: background-color 200ms, color 200ms; }
+.answer-close:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+@media (max-width: 760px) { .answer-body { grid-template-columns: 1fr; } .answer-text { border-right: 0; border-bottom: 1px solid var(--rule-2); } }
+.hero.after-stage .ask { width: 100%; max-width: 1100px; margin: 0 auto; justify-self: center; }
+.hero.after-stage { justify-items: center; }

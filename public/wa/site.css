@@ -1565,3 +1565,6 @@ body[data-menu="true"] { overflow: hidden; }
 .rec { display: grid; gap: 8px; align-content: start; }
 .rec-why { margin: 0; padding: 0 8px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
 .rec-line { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); max-width: 60ch; }
+/* A small picture from the old CMS (a 300px bottle thumbnail) is shown at its own size, never stretched, and its white card melts into the paper. */
+.prose img.small { width: auto; max-width: min(100%, 320px); max-height: 420px; margin: 1.4em auto; border-radius: 0; mix-blend-mode: multiply; }
+.prose img.bottle-shot { mix-blend-mode: normal; }

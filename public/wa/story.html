@@ -131,8 +131,10 @@ WA.ready(function (recent) { WA.archive(function (data) {
           var block = im.closest("figure, p, div") || im, prev = block.previousElementSibling, next = block.nextElementSibling;
           var near = ((im.alt || "") + " " + (block.textContent || "") + " " + (prev ? prev.textContent : "") + " " + (next ? next.textContent : "")).toLowerCase();
           var hit = null; if (mentioned) picks.forEach(function (r) { var k = nameKey(r); if (k.length >= 8 && (r.img || r.slug) && (file.indexOf(k) >= 0 || near.indexOf(k) >= 0) && (!hit || k.length > nameKey(hit).length)) hit = r; });
+          // A bottle picture the old CMS dropped in by file name ("bookers_the_reserves_rye_2026_300.png") finds its rating by those words.
+          if (!hit && /_\d{3}(_\(\d+\))?$|bottle|^[a-z]/.test(file)) { var terms = WA.nameTerms(file.replace(/\b(\d{3,4}|hero|bottle|front|solo|shot|low|resolution|screen|copy|final|new|png|jpg)\b/g, " ")); if (terms.length >= 2) { var best = null, bs = 0; data.forEach(function (r) { var sc = WA.nameScore(terms, r); if (sc > bs || (sc === bs && best && r.d > best.d)) { bs = sc; best = r; } }); if (best && bs >= terms.length) hit = best; } }
           function swap() { if (!hit || im.classList.contains("bottle-shot")) return; im.classList.add("bottle-shot"); im.onerror = function () { im.onerror = null; im.classList.remove("bottle-shot"); im.src = orig; }; im.src = hit.img || ("/api/wa/bottle/" + encodeURIComponent(hit.slug)); }
-          function mark() { if (im.naturalWidth && im.naturalHeight > im.naturalWidth * 1.15) { im.classList.add("tall"); swap(); } }
+          function mark() { if (im.naturalWidth && im.naturalHeight > im.naturalWidth * 1.15) { im.classList.add("tall"); swap(); } if (im.naturalWidth && im.naturalWidth <= 420 && !im.classList.contains("bottle-shot")) im.classList.add("small"); }
           if (hit && file.indexOf(nameKey(hit)) >= 0) swap(); else { if (im.complete && im.naturalWidth) mark(); im.addEventListener("load", mark); }
         });
       })();

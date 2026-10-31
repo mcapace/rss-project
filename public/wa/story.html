@@ -72,9 +72,9 @@
 
 <script src="site.js"></script>
 <script>
-WA.ready(function (data) {
-  var fmt = WA.fmt, bySlug = {}; data.forEach(function (r, i) { if (r.slug) bySlug[r.slug.toLowerCase()] = i; });
-  function embed(r) { return '<a class="embed" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="nt">' + r.t + "…</span></span><span class=\"pr\">" + fmt(r.p) + (r.by ? "<br><span style=\"font-family:var(--font); font-size:12px; color:var(--ink-3)\">" + r.by + "</span>" : "") + "</span></a>"; }
+WA.ready(function (recent) { WA.archive(function (data) {
+  var fmt = WA.fmt, bySlug = data.bySlug;
+  function embed(r) { return '<a class="embed" href="' + WA.bottleHref(r) + '" data-embed="' + r.slug + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="nt" data-note></span></span><span class="pr">' + fmt(r.p) + (r.by ? "<br><span style=\"font-family:var(--font); font-size:12px; color:var(--ink-3)\">" + r.by + "</span>" : "") + "</span></a>"; }
   function catOf(st) { var t = (st.tags.join(" ") + " " + st.title).toLowerCase(); if (/bourbon|kentucky/.test(t)) return "Bourbon/Tennessee Whiskey"; if (/\brye\b/.test(t)) return "Rye Whiskey"; if (/japan/.test(t)) return "Japanese Whisky"; if (/irish/.test(t)) return "Irish Single Malt"; if (/scotch|single malt|islay|speyside|macallan|bowmore|laphroaig/.test(t)) return "Single Malt Scotch"; return null; }
   WA.stories(function (all) {
     var storyBySlug = {}; all.forEach(function (st) { storyBySlug[st.slug.toLowerCase()] = st; });
@@ -90,14 +90,14 @@ WA.ready(function (data) {
       if (st.hero) { var h = document.getElementById("hero"); h.hidden = false; h.querySelector("img").src = st.hero; h.querySelector("img").alt = st.title; h.querySelector("figcaption").textContent = "Photograph: Whisky Advocate"; }
       // The body: links to other stories and to rated bottles stay inside the site.
       var holder = document.createElement("div"); holder.innerHTML = bodies[st.slug];
-      holder.querySelectorAll("a[href]").forEach(function (a) { var m = a.getAttribute("href").match(/^https?:\/\/(?:www\.)?whiskyadvocate\.com\/([^?#]+)/); if (!m) return; var k = m[1].replace(/\/$/, "").toLowerCase(); if (storyBySlug[k]) a.setAttribute("href", "story.html#" + storyBySlug[k].slug); else if (bySlug[k] != null) a.setAttribute("href", WA.bottleHref(bySlug[k])); });
+      holder.querySelectorAll("a[href]").forEach(function (a) { var m = a.getAttribute("href").match(/^https?:\/\/(?:www\.)?whiskyadvocate\.com\/([^?#]+)/); if (!m) return; var k = m[1].replace(/\/$/, "").toLowerCase(); if (storyBySlug[k]) a.setAttribute("href", "story.html#" + storyBySlug[k].slug); else if (bySlug[k]) a.setAttribute("href", WA.bottleHref(bySlug[k])); });
       holder.querySelectorAll("img").forEach(function (im) { im.setAttribute("loading", "lazy"); });
       var paras = holder.querySelectorAll("p"); if (paras[0] && paras[0].textContent.length > 120 && !paras[0].querySelector("img")) paras[0].classList.add("drop");
       // Bottles the story mentions: linked by slug, or named in the text.
-      var text = holder.textContent.toLowerCase(), picks = st.refs.map(function (i) { return data[i]; });
-      data.forEach(function (r) { if (picks.length >= 6 || picks.indexOf(r) >= 0) return; var key = r.n.split(",")[0].replace(/\s*\(.*$/, "").trim().toLowerCase(); if (key.length >= 10 && text.indexOf(key) >= 0) picks.push(r); });
+      var text = holder.textContent.toLowerCase(), picks = st.refs.map(function (sl) { return bySlug[sl.toLowerCase()]; }).filter(Boolean);
+      data.forEach(function (r) { if (picks.length >= 6 || picks.indexOf(r) >= 0 || r.d < "2019") return; var key = r.n.split(",")[0].replace(/\s*\(.*$/, "").trim().toLowerCase(); if (key.length >= 10 && text.indexOf(key) >= 0) picks.push(r); });
       var mentioned = picks.length > 0, cat = catOf(st);
-      if (!mentioned && cat) picks = data.filter(function (r) { return r.c === cat; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
+      if (!mentioned && cat) picks = data.filter(function (r) { return r.c === cat && r.d >= "2025"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
       var ps = Array.prototype.filter.call(holder.querySelectorAll("p"), function (p) { return p.textContent.length > 200; });
       if (mentioned) { [2, 6].forEach(function (at, k) { if (picks[k] && ps[at]) ps[at].insertAdjacentHTML("afterend", embed(picks[k])); }); }
       var heads = Array.prototype.filter.call(holder.querySelectorAll("h2, h3"), function (h) { if (h.textContent.trim()) return true; h.remove(); return false; }); heads.forEach(function (h, k) { h.id = "s" + (k + 1); });
@@ -113,7 +113,8 @@ WA.ready(function (data) {
       document.getElementById("marginLabel").textContent = mentioned ? "Bottles in this story" : "Related bottles";
       document.getElementById("railKicker").textContent = mentioned ? "The bottles in this story" : "Related bottles, rated";
       document.getElementById("marginBottles").innerHTML = picks.slice(0, 4).map(function (r) { return '<a class="mini" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><br><span class="pr">' + fmt(r.p) + "</span></span></a>"; }).join("");
-      if (picks.length) document.getElementById("rail").innerHTML = picks.map(function (r) { return WA.bottleCard(r); }).join(""); else document.getElementById("railBand").remove();
+      if (picks.length) { document.getElementById("rail").innerHTML = picks.map(function (r) { return WA.bottleCard(r); }).join(""); WA.fillNotes(document.getElementById("rail")); } else document.getElementById("railBand").remove();
+      prose.querySelectorAll(".embed[data-embed]").forEach(function (e) { WA.note(e.getAttribute("data-embed"), function (f) { e.querySelector(".nt").textContent = f.slice(0, 150).replace(/\s\S*$/, "") + "…"; }); });
       document.getElementById("suggest").innerHTML = [cat ? "Best " + cat.split("/")[0].toLowerCase() + " under $80" : "Best whisky under $80 rated 90 or higher", "Something like the bottles in this story", "What should I drink tonight?"].map(function (q) { return '<button type="button">' + q + "</button>"; }).join("");
       var next = all.filter(function (x) { return x.sec === st.sec && x !== st; }).slice(0, 4);
       document.getElementById("nextTitle").textContent = "More from " + (st.sec === "life" ? "Whisky Life" : sec + (sec.slice(-1) === "s" ? "" : "s")) + ".";
@@ -128,7 +129,7 @@ WA.ready(function (data) {
   document.getElementById("listen").addEventListener("click", function () { this.textContent = this.textContent.indexOf("Pause") === 0 ? "Listen" : "Pause"; });
   document.getElementById("saveStory").addEventListener("click", function () { this.textContent = "Saved"; });
   document.getElementById("share").addEventListener("click", function () { var b = this; try { navigator.clipboard.writeText(location.href).then(function () { b.textContent = "Link copied"; }, function () { b.textContent = "Copy the address bar"; }); } catch (e) { b.textContent = "Copy the address bar"; } });
-});
+}); });
 </script>
 </body>
 </html>

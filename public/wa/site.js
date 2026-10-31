@@ -1,12 +1,12 @@
 /* Whisky Advocate concept: shared behaviour. Data is real (320 recent ratings); the "AI" is a deterministic stand-in. */
 (function () {
   var DATA = null;
-  var fmt = function (n) { return "$" + Math.round(n).toLocaleString(); };
+  var fmt = function (n) { return n > 0 ? "$" + Math.round(n).toLocaleString() : "Price n/a"; };
   function charScore(r, c) { return c === "smoky" ? r.sm : c === "sweet" ? r.sw : c === "rich" ? r.ri : r.li; }
   function slugOf(r) { return (r.pr + " " + r.n).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
-  function bottleHref(i) { return "bottle.html#" + i; }
+  function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; return "bottle.html#" + (r && r.slug ? encodeURIComponent(r.slug) : x); }
   function producerHref(name) { return "producer.html#" + encodeURIComponent(name); }
-  var value = function (r) { return r.s - 80 - Math.log(r.p / 30) * 4; };
+  var value = function (r) { return r.s - 80 - Math.log((r.p > 0 ? r.p : 60) / 30) * 4; };
 
   window.WA = { data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, value: value, slugOf: slugOf };
 
@@ -151,6 +151,34 @@
   function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
   window.WA.stories = stories; window.WA.articles = articles; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
 
+
+  /* The whole ratings archive (every published rating, names and numbers) and the notes, sharded by slug, on demand. */
+  var ARCHIVE = null, NOTES = {};
+  function archive(cb) {
+    if (ARCHIVE) return cb(ARCHIVE);
+    fetch("ratings.json").then(function (r) { return r.json(); }).then(function (d) {
+      ARCHIVE = d.rows.map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = row[i]; }); o.t = ""; return o; });
+      var bySlug = {}; ARCHIVE.forEach(function (r) { bySlug[r.slug.toLowerCase()] = r; });
+      ARCHIVE.bySlug = bySlug; DATA = ARCHIVE; cb(ARCHIVE);
+    });
+  }
+  function shardOf(slug) { var h = 0; for (var i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0; return String(h % 64).padStart(2, "0"); }
+  function note(slug, cb) {
+    var k = shardOf(slug); if (NOTES[k]) return cb(NOTES[k][slug] || "");
+    fetch("notes/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { NOTES[k] = d; cb(d[slug] || ""); }, function () { cb(""); });
+  }
+  /* Cards rendered from the archive carry no note; fill them in once their shard arrives. */
+  function fillNotes(root) {
+    root.querySelectorAll(".bottle[data-slug]").forEach(function (card) {
+      var p = card.querySelector("p[data-note]"); if (!p || p.textContent) return;
+      var slug = card.getAttribute("data-slug");
+      note(slug, function (f) { var r = ARCHIVE && ARCHIVE.bySlug[slug.toLowerCase()]; if (r && !r.f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") : f; } p.textContent = r ? r.t : f.slice(0, 110); });
+    });
+  }
+  function hashSlug() { var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
+  function find(data, slug) { if (!slug) return null; if (data.bySlug) return data.bySlug[slug.toLowerCase()] || null; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = parseInt(slug, 10); return isNaN(n) ? null : data[n] || null; }
+  window.WA.archive = archive; window.WA.note = note; window.WA.fillNotes = fillNotes; window.WA.hashSlug = hashSlug; window.WA.find = find;
+
   /* Query understanding */
   var TYPES = [
     { key: "Bourbon", match: /bourbon|kentucky|wheated/i, cats: ["Bourbon/Tennessee Whiskey"] },
@@ -222,7 +250,7 @@
   function bottleCard(r, opts) {
     opts = opts || {};
     var idx = DATA.indexOf(r), on = opts.compare && opts.compare.indexOf(idx) >= 0;
-    return '<article class="bottle" data-pinned="' + !!on + '"><div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\">" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + "</div></article>";
+    return '<article class="bottle" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '"><div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + "</div></article>";
   }
   window.WA.bottleCard = bottleCard;
 

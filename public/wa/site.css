@@ -1561,3 +1561,7 @@ body[data-menu="true"] { overflow: hidden; }
 .menu-cols .menu-group a { font-size: 14px; font-weight: 400; }
 .menu-head img { width: 132px; }
 @media (max-width: 860px) { .front.rotator { grid-template-columns: 1fr; } }
+/* A recommended bottle carries the editor's line of why. */
+.rec { display: grid; gap: 8px; align-content: start; }
+.rec-why { margin: 0; padding: 0 8px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.rec-line { margin: 6px 0 0; font-size: 14px; color: var(--ink-2); max-width: 60ch; }

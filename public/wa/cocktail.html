@@ -76,9 +76,33 @@ WA.ready(function () {
     document.querySelector(".serves").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; n = +b.getAttribute("data-n"); document.querySelectorAll(".serves button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); renderIng(); });
     document.getElementById("steps").innerHTML = (r.method.match(/[^.!?]+[.!?]+/g) || [r.method]).map(function (s) { return "<p>" + s.trim() + "</p>"; }).join("");
     document.getElementById("subs").innerHTML = r.subs.map(function (s) { return '<div class="subrecipe"><h4>' + s.name + "</h4><ul>" + s.ingredients.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul><p>" + s.method + "</p></div>"; }).join("");
-    var cats = CAT[r.spirit] || null, want = cats ? data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.p > 0 && x.p <= 60 && x.s >= 88 && x.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 3) : [];
-    document.getElementById("wantNote").textContent = cats ? "A " + r.spirit + " under $60 that the panel rated 88 or higher, best value first. Mixing does not need the dear bottle." : "This one is built on something other than whisky. Use what the recipe names.";
+    var cats = CAT[r.spirit] || null, want = [], named = null, namedLine = "";
+    // The bottle the recipe names, if the panel has rated it: "Rittenhouse rye" finds Rittenhouse before any value pick.
+    (function () {
+      var GENERIC = /^(single|blended|the|old|straight|small|batch|bottled|year|cask|whisky|whiskey|bourbon|rye|scotch|malt|irish|japanese|canadian|tennessee|kentucky|reserve|distillery|barrel|proof|wheat|wheated|american|new|limited|edition|special|release|select|private|vintage|very)$/;
+      var brands = {}; data.forEach(function (x) { if (x.pr && x.pr.length >= 4 && !GENERIC.test(x.pr.toLowerCase())) brands[x.pr.toLowerCase()] = x.pr; var w = x.n.split(/[,(]/)[0].trim().split(" "); for (var k = Math.min(3, w.length); k >= 1; k--) { var key = w.slice(0, k).join(" ").toLowerCase(); if (key.length >= 4 && !w.slice(0, k).every(function (t) { return GENERIC.test(t.toLowerCase()); }) && !GENERIC.test(w[0].toLowerCase())) brands[key] = brands[key] || w.slice(0, k).join(" "); } });
+      var keys = Object.keys(brands).sort(function (a, b) { return b.length - a.length; });
+      r.ingredients.some(function (line) { if (!/whisk|bourbon|rye|scotch|irish|japanese|canadian|malt/i.test(line)) return false; var low = " " + line.toLowerCase() + " "; return keys.some(function (k) { if (low.indexOf(" " + k + " ") < 0 && low.indexOf(" " + k + ",") < 0 && low.indexOf(" " + k + "'s") < 0) return false; var hits = data.filter(function (x) { return x.pr && x.pr.toLowerCase() === k || x.n.toLowerCase().indexOf(k + " ") === 0 || x.n.toLowerCase().indexOf(k + ",") === 0; }); if (!hits.length) return false; named = brands[k]; namedLine = line; want = hits.sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 3); return true; }); });
+    })();
+    if (!want.length && cats) want = data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.p > 0 && x.p <= 60 && x.s >= 88 && x.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 3);
+    document.getElementById("wantNote").textContent = named ? "The recipe calls for " + namedLine.replace(/^[\d\s\/.½¼¾]+(oz|ounces?|ml|cl|dashes?|dash|parts?|tsp|tbsp|barspoons?)?\.?\s*/i, "") + ". The panel's notes on " + named + "." : cats ? "A " + r.spirit + " under $60 that the panel rated 88 or higher, best value first. Mixing does not need the dear bottle." : "This one is built on something other than whisky. Use what the recipe names.";
     document.getElementById("bottles").innerHTML = want.map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(document.getElementById("bottles"));
+    // Then the editor's choice from everything the recipe could use: the bottle it names, the style's best values and its best bottles.
+    (function () {
+      var pool = [], seen = {}, byslug = {};
+      function add(x, how) { if (!x || seen[x.slug] || pool.length >= 22) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
+      want.forEach(function (x) { add(x, named ? "named in the recipe" : "style, value"); });
+      if (cats) { data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.p > 0 && x.p <= 60 && x.s >= 88 && x.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 8).forEach(function (x) { add(x, "style, value"); }); data.filter(function (x) { return cats.indexOf(x.c) >= 0 && x.d >= "2024"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6).forEach(function (x) { add(x, "style, top rated"); }); }
+      if (!pool.length) return;
+      WA.withNotes(pool.map(function (x) { return x.r; }), function (notes) {
+        WA.recommend({ kind: "cocktail", slug: r.slug, title: r.name, summary: ((r.intro || "") + " " + (r.method || "")).slice(0, 900), ingredients: r.ingredients, candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {
+          if (!rec) return;
+          if (!rec.picks.length) { document.getElementById("wants").hidden = true; return; }
+          if (rec.line) { var n = document.getElementById("wantNote"); n.textContent = rec.line; n.hidden = false; }
+          document.getElementById("bottles").innerHTML = WA.recCards(rec.picks, byslug); WA.fillNotes(document.getElementById("bottles"));
+        });
+      });
+    })();
     var more = all.filter(function (x) { return x !== r && x.spirit === r.spirit; }).slice(0, 4);
     document.getElementById("moreTitle").textContent = "More " + (r.spirit === "other" ? "" : r.spirit + " ") + "drinks from the archive.";
     document.getElementById("more").innerHTML = more.map(function (x) { return '<a class="recipe-card" href="cocktail.html#' + encodeURIComponent(x.slug) + '"><img src="' + x.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + x.ingredients.length + ' ingredients</span><h3>' + x.name + '</h3><p class="who">' + (x.credit ? x.credit.split(",")[0] : x.storyTitle) + "</p></div></a>"; }).join("");

@@ -567,3 +567,19 @@ document.body.appendChild(waAds);
   ov.addEventListener("click", function (e) { if (e.target.closest("a")) open(false); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ov.getAttribute("data-open") === "true") open(false); });
 })();
+
+/* Recommendations: the page hands its candidates to /api/wa/recommend and an editor-grade model chooses what belongs beside it. */
+(function () {
+  var cache = {};
+  window.WA.recommend = function (req, cb) {
+    var key = req.kind + ":" + req.slug + ":" + (req.candidates || []).map(function (c) { return c.slug; }).join(",");
+    if (cache[key]) return cb(cache[key]);
+    if (!req.candidates || !req.candidates.length) return cb(null);
+    fetch("/api/wa/recommend", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(req) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.picks) cache[key] = j; cb(j && j.picks ? j : null); }, function () { cb(null); });
+  };
+  window.WA.candidate = function (r, how, note) { return { slug: r.slug, name: r.n, score: r.s, price: r.p > 0 ? r.p : null, category: r.c, producer: r.pr || "", how: how, note: note || "" }; };
+  window.WA.withNotes = function (rows, cb) { var left = rows.length, notes = {}; if (!left) return cb(notes); rows.forEach(function (r) { WA.note(r.slug, function (t) { notes[r.slug] = (t || "").replace(/\s+/g, " ").slice(0, 220); if (--left === 0) cb(notes); }); }); };
+  window.WA.recCards = function (picks, byslug) { return picks.map(function (p) { var r = byslug[p.slug]; return r ? '<div class="rec">' + WA.bottleCard(r) + (p.why ? '<p class="rec-why">' + p.why + "</p>" : "") + "</div>" : ""; }).join(""); };
+})();

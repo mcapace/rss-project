@@ -278,7 +278,7 @@ WA.ready(function (data) {
       front.querySelectorAll(".rot-slide").forEach(function (el, k) { var on = k === at; el.classList.toggle("on", on); el.setAttribute("aria-hidden", String(!on)); el.tabIndex = on ? 0 : -1; });
       front.querySelectorAll(".rot-dot").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
     }
-    function arm() { clearInterval(timer); timer = setInterval(function () { if (front.getAttribute("data-paused") !== "true" && !document.hidden) show(at + 1); }, STEP); }
+    function arm() { clearInterval(timer); timer = setInterval(function () { if (!document.hidden) show(at + 1); }, STEP); }
     function build(list) {
       five = list.filter(Boolean).slice(0, 5); at = 0;
       if (!five.length) { front.innerHTML = ""; return; }
@@ -288,10 +288,6 @@ WA.ready(function (data) {
       show(0); arm();
     }
     front.addEventListener("click", function (e) { var b = e.target.closest(".rot-dot"); if (!b) return; show(+b.getAttribute("data-i")); arm(); });
-    front.addEventListener("mouseenter", function () { front.setAttribute("data-paused", "true"); });
-    front.addEventListener("mouseleave", function () { front.setAttribute("data-paused", "false"); });
-    front.addEventListener("focusin", function () { front.setAttribute("data-paused", "true"); });
-    front.addEventListener("focusout", function () { front.setAttribute("data-paused", "false"); });
     (function () { var x0 = null; front.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true }); front.addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 48) { show(at + (dx < 0 ? 1 : -1)); arm(); } }, { passive: true }); })();
     build(news.slice(0, 5));
     fetch("/api/wa/front", { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {

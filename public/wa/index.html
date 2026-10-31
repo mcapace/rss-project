@@ -120,13 +120,17 @@
     </div>
     <div class="scan-stage">
       <div class="demo-phone" id="demoPhone" data-phase="0" aria-hidden="true">
+        <i class="btn btn-mute"></i><i class="btn btn-vol1"></i><i class="btn btn-vol2"></i><i class="btn btn-power"></i>
         <div class="screen">
-          <img src="img/shelf.jpg" alt="" id="demoShelf">
-          <div class="shelf" id="scanShelf" style="display:none"></div>
+          <div class="viewfinder" id="viewfinder"><img src="img/shelf.jpg" alt="" id="demoShelf">
           <div class="finder"><i></i><i></i><i></i><i></i></div>
           <div class="scanline"></div>
           <div class="reading" id="demoReading"><span style="--i:0;left:9%;top:66%">Reading…</span><span style="--i:1;left:40%;top:66%">Reading…</span><span style="--i:2;left:70%;top:66%">Reading…</span></div>
-          <div class="marks" id="demoMarks"></div>
+          <svg class="trace" viewBox="0 0 720 787" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g class="bottle" style="--i:0"><path d="M92,164 Q92,156 114,156 Q136,156 136,164 L136,190 L134,193 L134,254 C134,280 169,272 169,306 L169,494 Q169,504 159,504 L69,504 Q59,504 59,494 L59,306 C59,272 94,280 94,254 L94,193 L92,190 Z"/><g class="tag" transform="translate(114,130)"><rect x="-26" y="-16" width="52" height="32" rx="16"/><text y="6">92</text></g></g><g class="bottle" style="--i:1"><path d="M204,171 Q204,163 226,163 Q248,163 248,171 L248,197 L246,200 L246,261 C246,287 282,279 282,313 L282,494 Q282,504 272,504 L180,504 Q170,504 170,494 L170,313 C170,279 206,287 206,261 L206,200 L204,197 Z"/><g class="tag" transform="translate(226,137)"><rect x="-26" y="-16" width="52" height="32" rx="16"/><text y="6">88</text></g></g><g class="bottle best" style="--i:2"><path d="M323,176 Q323,168 342,168 Q361,168 361,176 L361,202 L359,205 L359,266 C359,292 390,284 390,318 L390,494 Q390,504 380,504 L304,504 Q294,504 294,494 L294,318 C294,284 325,292 325,266 L325,205 L323,202 Z"/><g class="tag" transform="translate(342,142)"><rect x="-26" y="-16" width="52" height="32" rx="16"/><text y="6">94</text></g></g><g class="bottle" style="--i:3"><path d="M426,180 Q426,172 444,172 Q462,172 462,180 L462,206 L460,209 L460,270 C460,296 490,288 490,322 L490,494 Q490,504 480,504 L408,504 Q398,504 398,494 L398,322 C398,288 428,296 428,270 L428,209 L426,206 Z"/><g class="tag" transform="translate(444,146)"><rect x="-26" y="-16" width="52" height="32" rx="16"/><text y="6">90</text></g></g><g class="bottle" style="--i:4"><path d="M523,185 Q523,177 541,177 Q559,177 559,185 L559,211 L557,214 L557,275 C557,301 586,293 586,327 L586,494 Q586,504 576,504 L506,504 Q496,504 496,494 L496,327 C496,293 525,301 525,275 L525,214 L523,211 Z"/><g class="tag" transform="translate(541,151)"><rect x="-26" y="-16" width="52" height="32" rx="16"/><text y="6">86</text></g></g><g class="bottle" style="--i:5"><path d="M616,188 Q616,180 638,180 Q660,180 660,188 L660,214 L657,217 L657,278 C657,304 692,296 692,330 L692,494 Q692,504 682,504 L594,504 Q584,504 584,494 L584,330 C584,296 619,304 619,278 L619,217 L616,214 Z"/><g class="tag" transform="translate(638,154)"><rect x="-26" y="-16" width="52" height="32" rx="16"/><text y="6">91</text></g></g></svg>
+          <div class="marks" id="demoMarks"></div></div>
+          <div class="shelf" id="scanShelf" style="display:none"></div>
+          <div class="island"></div>
+          <div class="status"><span>9:41</span><span class="status-right"><i class="sig"></i><i class="wifi"></i><i class="bat"></i></span></div>
           <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Reading labels…</strong></div>
         </div>
       </div>
@@ -182,13 +186,13 @@ WA.ready(function (data) {
   (function () {
     var phone = document.getElementById("demoPhone"), marks = document.getElementById("demoMarks"), capText = document.getElementById("demoCapText");
     var DEMO = [{ x: 0.05, y: 0.28, w: 0.17, h: 0.42, s: 92 }, { x: 0.22, y: 0.28, w: 0.15, h: 0.42, s: 88 }, { x: 0.37, y: 0.28, w: 0.16, h: 0.42, s: 94, best: true }, { x: 0.53, y: 0.28, w: 0.15, h: 0.42, s: 90 }, { x: 0.68, y: 0.28, w: 0.14, h: 0.42, s: 86 }, { x: 0.82, y: 0.28, w: 0.14, h: 0.42, s: 91 }];
-    function build() { marks.innerHTML = DEMO.map(function (b, i) { return '<span class="mark" style="left:' + (b.x * 100) + '%;top:' + (b.y * 100) + '%;width:' + (b.w * 100) + '%;height:' + (b.h * 100) + '%;--i:' + i + '"><em' + (b.best ? ' class="best"' : "") + ">" + b.s + "</em></span>"; }).join(""); }
+    function build() { marks.innerHTML = ""; }
     var PHASES = [[0, "Shelf scan", 700], [1, "Reading labels…", 2400], [2, "Six bottles found", 1500], [3, "Best value: 94 points · $45", 3800]];
     var k = 0;
     var stepsEl = document.getElementById("scanSteps");
     new MutationObserver(function () { var ph = +phone.getAttribute("data-phase"); stepsEl.querySelectorAll("li").forEach(function (li) { var n = +li.getAttribute("data-step"); li.setAttribute("data-on", String(n === ph)); li.setAttribute("data-done", String(n < ph)); }); stepsEl.style.setProperty("--fill", [0, 0, 50, 100][ph] + "%"); document.querySelectorAll(".scan-chip").forEach(function (c) { c.classList.toggle("on", ph >= +c.getAttribute("data-phase")); }); }).observe(phone, { attributes: true, attributeFilter: ["data-phase"] });
-    function step() { if (phone.getAttribute("data-live") === "true") return; var p = PHASES[k]; if (p[0] === 0) build(); phone.setAttribute("data-phase", String(p[0])); capText.textContent = p[1]; if (p[0] === 2) marks.querySelectorAll(".mark").forEach(function (m) { m.classList.add("on"); }); k = (k + 1) % PHASES.length; setTimeout(step, p[2]); }
-    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) step(); else { build(); phone.setAttribute("data-phase", "3"); marks.querySelectorAll(".mark").forEach(function (m) { m.classList.add("on"); }); capText.textContent = "Best value: 94 points · $45"; }
+    function step() { if (phone.getAttribute("data-live") === "true") return; var p = PHASES[k]; if (p[0] === 0) build(); phone.setAttribute("data-phase", String(p[0])); capText.textContent = p[1]; k = (k + 1) % PHASES.length; setTimeout(step, p[2]); }
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) step(); else { build(); phone.setAttribute("data-phase", "3"); capText.textContent = "Best value: 94 points · $45"; }
   })();
   // Shelf scan: the photo goes to the site's own vision route; scores land over the bottles.
   (function () {
@@ -201,7 +205,7 @@ WA.ready(function (data) {
         var scale = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas"); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
         var dataUrl = c.toDataURL("image/jpeg", 0.85);
-        var phone = document.getElementById("demoPhone"); phone.setAttribute("data-live", "true"); document.getElementById("demoShelf").src = dataUrl; document.getElementById("demoMarks").innerHTML = ""; document.getElementById("demoCapText").textContent = "Reading labels…"; phone.setAttribute("data-phase", "1");
+        var phone = document.getElementById("demoPhone"); phone.setAttribute("data-live", "true"); document.getElementById("demoShelf").src = dataUrl; document.getElementById("demoShelf").style.objectPosition = "center center"; document.getElementById("demoMarks").innerHTML = ""; document.getElementById("demoCapText").textContent = "Reading labels…"; phone.setAttribute("data-phase", "1");
         fetch("/api/wa/shelf-scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: dataUrl }) })
           .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Scan failed"); return j; }); })
           .then(function (res) {

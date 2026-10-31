@@ -364,7 +364,9 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
   function compassPoint(r, cx, cy, rad) {
     var hash = 0; for (var i = 0; i < r.n.length; i++) hash = (hash * 31 + r.n.charCodeAt(i)) % 1000;
     var sx = (Math.min(4, r.sw) - Math.min(4, r.sm)) / 4, sy = (Math.min(4, r.ri) - Math.min(4, r.li)) / 4;
-    return { x: cx + sx * rad * 0.8 + ((hash % 17) - 8) * 1.6, y: cy + sy * rad * 0.8 + ((hash % 13) - 6) * 1.6 };
+    var dx = sx * rad * 0.8 + ((hash % 17) - 8) * 1.6, dy = sy * rad * 0.8 + ((hash % 13) - 6) * 1.6, len = Math.hypot(dx, dy), lim = rad - 7;
+    if (len > lim) { dx *= lim / len; dy *= lim / len; }   // every bottle stays inside the compass
+    return { x: cx + dx, y: cy + dy };
   }
   /* Families and their colours, so the maps read by type instead of one wall of amber. */
   var FAMILIES = [["Scotch", /scotch/i, "#c9731d"], ["Bourbon", /bourbon|tennessee/i, "#a4432b"], ["Rye", /rye/i, "#7b4b8f"], ["Irish", /irish/i, "#3f7d5a"], ["Japanese & world", /japan|world|indian|french|taiwan|austral|english|welsh|german|swed|dan|finn|dutch|swiss/i, "#2f7f8f"], ["Canadian", /canad/i, "#b8952a"], ["Other", /./, "#8b7b6a"]];

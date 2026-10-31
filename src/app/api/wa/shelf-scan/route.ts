@@ -19,7 +19,7 @@ const hits = new Map<string, { count: number; until: number }>();
 
 const SCHEMA = {
   type: "object", additionalProperties: false, required: ["bottles"],
-  properties: { bottles: { type: "array", maxItems: 24, items: {
+  properties: { bottles: { type: "array", items: {
     type: "object", additionalProperties: false, required: ["brand", "name", "confidence", "x", "y", "w", "h"],
     properties: {
       brand: { type: "string" }, name: { type: "string" }, age: { type: "string" }, abv: { type: "string" },
@@ -64,7 +64,8 @@ export async function POST(request: Request) {
   if (match[2].length * 0.75 > MAX_IMAGE_BYTES) return NextResponse.json({ error: "The photo is too large. Keep it under 5 MB." }, { status: 413 });
 
   const anthropic = new Anthropic();
-  const message = await anthropic.messages.create({
+  let message;
+  try { message = await anthropic.messages.create({
     model: MODEL, max_tokens: 2000,
     output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> } },
     system: "You read whisky labels in shelf photographs for a ratings lookup. List every bottle whose brand is legible. Give the brand as printed, the expression name without the brand (for example '10 Year Old', 'Small Batch', 'Blue Label'), the age statement and ABV when printed, a confidence from 0 to 1, and the bottle's bounding box as fractions of the image width and height (x, y of the top-left corner, w, h). Leave out bottles you cannot read.",
@@ -72,7 +73,10 @@ export async function POST(request: Request) {
       { type: "image", source: { type: "base64", media_type: match[1] as "image/jpeg" | "image/png" | "image/webp", data: match[2] } },
       { type: "text", text: "Read the labels on this shelf." },
     ] }],
-  });
+  }); } catch (failure) {
+    console.error("shelf-scan", failure instanceof Error ? failure.message : failure);
+    return NextResponse.json({ error: "The labels could not be read right now. Try again in a moment." }, { status: 502 });
+  }
   let seen: Seen[] = [];
   try { seen = (JSON.parse(message.content.map(block => (block.type === "text" ? block.text : "")).join("")) as { bottles: Seen[] }).bottles ?? []; }
   catch { return NextResponse.json({ error: "The labels could not be read. Try a closer, sharper photo." }, { status: 502 }); }

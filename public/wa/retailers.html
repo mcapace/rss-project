@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where to buy</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<canvas class="field" id="field" aria-hidden="true"></canvas>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html">Ratings</a><a href="stories.html">Stories</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a><a href="producers.html">Producers</a><a href="industry.html">Industry</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
+</header>
+<div class="ad ad-billboard" data-slot="wa_retailers_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
+
+<section class="band" style="padding-top: 28px">
+  <div class="chan-head"><h1 class="d1">Where to buy</h1><p class="muted" style="margin-top:8px">Stores that carry Whisky Advocate. Pick a state or type a store or a city.</p></div>
+  <div class="ret-bar"><input id="retQ" type="search" placeholder="Store or city" autocomplete="off"><select id="retState"><option value="">All states</option></select><span class="muted" id="retCount"></span></div>
+  <div class="ret-grid" id="retGrid"></div>
+  <div class="actions" style="margin-top:24px"><span class="muted" style="font-size:14px">Do you sell the magazine? </span><a class="pill solid" href="retailer-club.html">Join the retailer club</a></div>
+</section>
+<script src="site.js"></script>
+<script>
+WA.ready(function () {
+  fetch("retailers.json").then(function (r) { return r.json(); }).then(function (data) {
+    var sel = document.getElementById("retState"), q = document.getElementById("retQ"), grid = document.getElementById("retGrid"), count = document.getElementById("retCount");
+    data.forEach(function (s) { var o = document.createElement("option"); o.value = s.state; o.textContent = s.state.replace(/, US$/, ""); sel.appendChild(o); });
+    function tel(p) { return p && p.length === 10 ? "(" + p.slice(0, 3) + ") " + p.slice(3, 6) + "-" + p.slice(6) : p; }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function render() {
+      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [];
+      data.forEach(function (s) {
+        if (st && s.state !== st) return;
+        var stores = s.stores.filter(function (x) { return !term || (x.name + " " + x.city).toLowerCase().indexOf(term) >= 0; });
+        if (!stores.length) return; n += stores.length;
+        out.push('<section class="ret-state"><h2 class="d3">' + esc(s.state.replace(/, US$/, "")) + ' <span class="muted">' + stores.length + "</span></h2><div class=\"ret-list\">" + stores.map(function (x) {
+          var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website</a>' : "";
+          var ph = x.phone ? '<a href="tel:' + esc(x.phone) + '">' + esc(tel(x.phone)) + "</a>" : "";
+          return '<div class="ret-card glass"><strong>' + esc(x.name) + "</strong><span>" + esc(x.city) + "</span><span class=\"ret-links\">" + ph + web + "</span></div>";
+        }).join("") + "</div></section>");
+      });
+      grid.innerHTML = out.join("") || '<p class="muted">No stores match.</p>';
+      count.textContent = n + (n === 1 ? " store" : " stores");
+    }
+    q.addEventListener("input", render); sel.addEventListener("change", render);
+    var h = decodeURIComponent(location.hash.slice(1)); if (h) { sel.value = h; }
+    render();
+  });
+});
+</script>
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="video.html">Video</a></div>
+  <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
+  <div><h4>Whisky Advocate</h4><a href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a><a href="https://mshanken.cloud.buysub.com/login?redirect=%2F">Subscription help</a><a href="https://www.winespectator.com/newsletter/whiskyadvocate">Newsletters</a><a href="https://store.whiskyadvocate.com/">Store</a><a href="https://www.whiskyfest.com/">WhiskyFest</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a></div>
+  <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
+</footer>
+
+<script src="site.js"></script>
+<script>WA.ready(function () {});</script>
+</body>
+</html>

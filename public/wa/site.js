@@ -346,16 +346,21 @@
     var sx = (Math.min(4, r.sw) - Math.min(4, r.sm)) / 4, sy = (Math.min(4, r.ri) - Math.min(4, r.li)) / 4;
     return { x: cx + sx * rad * 0.8 + ((hash % 17) - 8) * 1.6, y: cy + sy * rad * 0.8 + ((hash % 13) - 6) * 1.6 };
   }
+  /* Families and their colours, so the maps read by type instead of one wall of amber. */
+  var FAMILIES = [["Scotch", /scotch/i, "#c9731d"], ["Bourbon", /bourbon|tennessee/i, "#a4432b"], ["Rye", /rye/i, "#7b4b8f"], ["Irish", /irish/i, "#3f7d5a"], ["Japanese & world", /japan|world|indian|french|taiwan|austral|english|welsh|german|swed|dan|finn|dutch|swiss/i, "#2f7f8f"], ["Canadian", /canad/i, "#b8952a"], ["Other", /./, "#8b7b6a"]];
+  function family(c) { for (var i = 0; i < FAMILIES.length; i++) if (FAMILIES[i][1].test(c || "")) return FAMILIES[i]; return FAMILIES[FAMILIES.length - 1]; }
+  function dot(r, alpha) { var hex = family(r.c)[2]; return "rgba(" + parseInt(hex.slice(1, 3), 16) + "," + parseInt(hex.slice(3, 5), 16) + "," + parseInt(hex.slice(5, 7), 16) + "," + alpha + ")"; }
+  function legend(el, rows) { if (!el) return; var seen = {}; rows.forEach(function (r) { seen[family(r.c)[0]] = (seen[family(r.c)[0]] || 0) + 1; }); el.innerHTML = FAMILIES.filter(function (f) { return seen[f[0]]; }).map(function (f) { return '<span><i style="background:' + f[2] + '"></i>' + f[0] + "</span>"; }).join(""); }
   function drawCompass(canvas, rows, highlight) {
     var f = setupCanvas(canvas), h = f.g, cx = f.w / 2, cy = f.h / 2, rad = Math.min(f.w, f.h) / 2 - 18, rule = "rgba(23,18,13,0.1)";
     h.clearRect(0, 0, f.w, f.h); h.strokeStyle = rule; h.beginPath(); h.arc(cx, cy, rad, 0, Math.PI * 2); h.stroke(); h.beginPath(); h.arc(cx, cy, rad / 2, 0, Math.PI * 2); h.stroke();
     h.beginPath(); h.moveTo(cx - rad, cy); h.lineTo(cx + rad, cy); h.moveTo(cx, cy - rad); h.lineTo(cx, cy + rad); h.stroke();
     h.fillStyle = "#8b7b6a"; h.font = "10.5px JetBrains Mono, monospace"; h.fillText("SMOKY", cx - rad - 2, cy - 6); h.fillText("SWEET", cx + rad - 40, cy - 6); h.fillText("LIGHT", cx + 4, cy - rad + 12); h.fillText("RICH", cx + 4, cy + rad - 4);
-    var pts = rows.map(function (r) { var p = compassPoint(r, cx, cy, rad); h.beginPath(); h.arc(p.x, p.y, 3, 0, Math.PI * 2); h.fillStyle = r === highlight ? "transparent" : r.s >= 92 ? "#c9731d" : "rgba(201,115,29,0.3)"; h.fill(); return { x: p.x, y: p.y, r: r }; });
+    var pts = rows.map(function (r) { var p = compassPoint(r, cx, cy, rad); h.beginPath(); h.arc(p.x, p.y, 2.4, 0, Math.PI * 2); h.fillStyle = r === highlight ? "transparent" : dot(r, r.s >= 92 ? 0.85 : 0.28); h.fill(); return { x: p.x, y: p.y, r: r }; });
     if (highlight) { var hp = compassPoint(highlight, cx, cy, rad); h.beginPath(); h.arc(hp.x, hp.y, 7, 0, Math.PI * 2); h.fillStyle = "#17120d"; h.fill(); h.beginPath(); h.arc(hp.x, hp.y, 11, 0, Math.PI * 2); h.strokeStyle = "#c9731d"; h.lineWidth = 1.5; h.stroke(); }
     return { points: pts, cx: cx, cy: cy, rad: rad };
   }
-  window.WA.drawCompass = drawCompass; window.WA.setupCanvas = setupCanvas; window.WA.compassPoint = compassPoint;
+  window.WA.drawCompass = drawCompass; window.WA.family = family; window.WA.dot = dot; window.WA.legend = legend; window.WA.FAMILIES = FAMILIES; window.WA.setupCanvas = setupCanvas; window.WA.compassPoint = compassPoint;
 
   /* Hash routing helpers */
   window.WA.hashIndex = function () { var h = (location.hash || "").replace("#", ""); var i = parseInt(h, 10); return isNaN(i) ? null : i; };
@@ -363,7 +368,3 @@
 
   window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastState(); ambient(); parallax(); cb(d); }); };
 })();
-
-var waAds = document.createElement("script");
-waAds.src = "ads.js";
-document.body.appendChild(waAds);

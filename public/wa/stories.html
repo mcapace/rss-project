@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stories</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html">Whisky Finder</a><a href="stories.html" aria-current="page">Stories</a><a href="stories.html#guides">Guides</a><a href="stories.html#cocktails">Cocktails</a><a href="industry.html">Industry</a><a href="stories.html#top20">Top 20</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
+</header>
+
+<section class="band" style="padding-top: 28px">
+  <div class="band-head"><div><span class="mono">Stories</span><h1 class="d1" style="margin-top: 12px">Not a grid of thumbnails. <em class="hi">A front page.</em></h1></div><p>The editors pick three. Everything else is a dense, scannable list with scores inline, so a section front reads like a good newspaper, not a feed.</p></div>
+  <div class="suggest" id="sections" style="margin: 0 0 28px"><button type="button" aria-pressed="true" data-sec="all">All</button><button type="button" data-sec="news">News</button><button type="button" data-sec="features">Features</button><button type="button" data-sec="guides">Guides</button><button type="button" data-sec="cocktails">Cocktails</button><button type="button" data-sec="travel">Travel</button><button type="button" data-sec="top20">Top 20</button></div>
+  <div class="picks3">
+    <a class="pick-card" href="story.html"><span class="tag">The editors&rsquo; pick · Feature</span><h3>The quiet return of the Kentucky rickhouse</h3><p class="why">Why the best bourbon of the decade is coming out of warehouses built before the Depression.</p><p class="by">Susannah Skiver Barton · 11 min</p></a>
+    <a class="pick-card" href="stories.html#guides"><span class="tag">The editors&rsquo; pick · Guide</span><h3>Twenty whiskies rated 90 or higher for $75 or less</h3><p class="why">Our tasters&rsquo; shortlist, refreshed every quarter, every bottle linked.</p><p class="by">The tasting panel · 6 min</p></a>
+    <a class="pick-card" href="stories.html#cocktails"><span class="tag">The editors&rsquo; pick · Cocktails</span><h3>A Manhattan that respects the rye</h3><p class="why">Three ratios, one rule, and the four ryes that stand up to vermouth.</p><p class="by">David Fleming · 4 min</p></a>
+  </div>
+  <div class="dense" id="list"></div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">New this week</span><h2 class="d2" style="margin-top:10px">Rated this week, in the order they came in.</h2></div><a class="pill" href="finder.html">All ratings</a></div>
+  <div class="dense" id="ratings"></div>
+</section>
+
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
+  <div><h4>About this page</h4><p>The story list is prototype copy. The ratings below it are real.</p></div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+WA.ready(function (data) {
+  var STORIES = [
+    ["news", "Elmer T. Lee 40th Anniversary bourbon goes to a lottery", "Buffalo Trace opens the draw; here is how it works and what the bottle tastes like.", "Oct 30", "story.html"],
+    ["features", "Sam Heughan, actor and distillery owner", "The Sassenach founder on the whisky he actually drinks.", "Oct 28", "story.html"],
+    ["cocktails", "The Thunder Bird: a whiskey cocktail recipe", "Bourbon, lemon, a little honey, and a trick with the ice.", "Oct 27", "story.html"],
+    ["news", "Best new bourbon and rye, September 2026", "Nineteen new releases, rated.", "Oct 24", "story.html"],
+    ["cocktails", "Whiskey and tequila cocktails for Halloween", "Smoke, spice and a sensible amount of theatre.", "Oct 22", "story.html"],
+    ["guides", "20 whiskies rated 90 points or higher priced $75 or under", "The quarterly value list.", "Oct 20", "story.html"],
+    ["features", "MGP Chapter One: out of the shadows", "The distillery that made everyone else's whiskey steps forward.", "Oct 17", "story.html"],
+    ["travel", "All-inclusive resorts with great whisky selections", "Where the bar is worth the airfare.", "Oct 15", "story.html"],
+    ["guides", "How to shop for bottom-shelf whiskey", "What the panel buys when nobody is watching.", "Oct 12", "story.html"],
+    ["news", "What is Buffturkey?", "The Buffalo Trace and Wild Turkey crossover, explained.", "Oct 10", "story.html"],
+    ["top20", "The 2026 Top 20, with every tasting note", "The list, the arguments, and the bottles still on shelves.", "Oct 1", "story.html"],
+    ["travel", "Islay in forty-eight hours", "Ferries, distilleries, and the pub that matters.", "Sep 29", "story.html"],
+  ];
+  var LABEL = { news: "News", features: "Feature", guides: "Guide", cocktails: "Cocktails", travel: "Travel", top20: "Top 20" };
+  function renderList(sec) {
+    document.getElementById("list").innerHTML = STORIES.filter(function (s) { return sec === "all" || s[0] === sec; }).map(function (s) { return '<a href="' + s[4] + '"><span class="tag">' + LABEL[s[0]] + '</span><span><span class="nm">' + s[1] + '</span><span class="sub">' + s[2] + '</span></span><span class="when">' + s[3] + "</span></a>"; }).join("");
+    document.querySelectorAll("#sections button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sec") === sec)); });
+  }
+  document.getElementById("sections").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var sec = b.getAttribute("data-sec"); history.replaceState(null, "", sec === "all" ? "stories.html" : "#" + sec); renderList(sec); });
+  var h = (location.hash || "").slice(1); renderList(LABEL[h] ? h : "all");
+  addEventListener("hashchange", function () { var h = (location.hash || "").slice(1); renderList(LABEL[h] ? h : "all"); });
+  var fresh = data.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 10);
+  document.getElementById("ratings").innerHTML = fresh.map(function (r) { return '<a href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="sub">' + r.c + " · " + r.pr + '</span></span><span class="when">' + WA.fmt(r.p) + "</span></a>"; }).join("");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bottle</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="mast">
+  <nav aria-label="Sections"><a href="finder.html" aria-current="page">Whisky Finder</a><a href="stories.html">Stories</a><a href="stories.html#guides">Guides</a><a href="stories.html#cocktails">Cocktails</a><a href="industry.html">Industry</a><a href="stories.html#top20">Top 20</a></nav>
+  <a class="wordmark" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a>
+  <div class="tools"><a class="pill" href="finder.html">Search</a><a class="pill solid" href="#">Subscribe</a></div>
+</header>
+
+<section class="band" style="padding-top: 28px">
+  <div class="crumbs" style="margin-bottom: 26px"><a href="finder.html">Whisky Finder</a><span>›</span><a id="crumbCat" href="finder.html">Category</a><span>›</span><a id="crumbProd" href="producer.html">Producer</a><span>›</span><span id="crumbName">Bottle</span></div>
+  <div class="bottle-hero">
+    <div>
+      <span class="mono" id="kicker">Rating</span>
+      <h1 class="d2" id="name" style="margin-top:10px; max-width: 20ch"></h1>
+      <p class="byline" style="margin-top: 12px"><span id="tasterLine"></span><span id="when"></span><span id="issue"></span></p>
+      <div class="score-block" style="margin-top: 26px"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div>
+      <p style="margin-top: 14px"><span class="band-label" id="band"></span></p>
+      <p class="note" id="note" style="margin-top: 22px"></p>
+      <div class="actions" style="margin-top: 26px"><button type="button" class="pill amber" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button><a class="pill" href="industry.html">Sell sheet (trade)</a></div>
+      <div class="buy" id="buy" style="margin-top: 18px; display: none"></div>
+    </div>
+    <aside style="display: grid; gap: 14px">
+      <div class="hero-art"><img id="art" src="img/bottle-other.jpg" alt=""><div class="badge"><b id="badgeScore"></b><span>points</span></div><span class="cap">Category still. The real page shows the bottle photographed by the panel.</span></div>
+      <dl class="facts" id="facts"></dl>
+    </aside>
+  </div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">Tasting profile</span><h2 class="d2" style="margin-top:10px">Nose, palate, finish.</h2></div><p id="profileNote">The note split the way the panel writes it, with the descriptors it uses most pulled out.</p></div>
+  <div class="profile" id="profile"></div>
+  <div class="two" style="margin-top: 14px">
+    <div class="verdict"><h3>Descriptors in the note</h3><div class="descriptors" id="descriptors" style="margin-top: 6px"></div></div>
+    <div class="verdict"><h3>How to drink it</h3><p class="big" id="serveBig"></p><p id="serveNote"></p></div>
+    <div class="verdict"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other recent rating.</p></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">The score in context</span><h2 class="d2" style="margin-top:10px" id="ctxTitle"></h2></div><p id="ctxNote"></p></div>
+  <div class="two">
+    <div class="verdict"><h3>The Whisky Advocate scale</h3><div class="scale"><i id="scaleDot"></i></div><div class="scale-labels"><span>80 Good</span><span>85 Very good</span><span>90 Outstanding</span><span>95 Classic</span></div><p id="scaleNote"></p></div>
+    <div class="verdict"><h3>Value</h3><p class="big" id="valueBig"></p><p id="valueNote"></p></div>
+    <div class="verdict"><h3>Price against its category</h3><div class="price-ladder" id="ladder" style="margin-top: 8px"></div><div class="price-ladder-labels"><span>under $40</span><span>$40–60</span><span>$60–100</span><span>$100–200</span><span>$200+</span></div><p id="ladderNote"></p></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">If you like this</span><h2 class="d2" style="margin-top:10px">Try these next.</h2></div><p>Picked by score, price, category and where they sit on the compass.</p></div>
+  <div class="rail" id="similar"></div>
+</section>
+
+<section class="band" id="producerBand">
+  <div class="band-head"><div><span class="mono">From the same house</span><h2 class="d2" style="margin-top:10px" id="producerTitle"></h2></div><a class="pill" id="producerAll" href="producer.html">The whole portfolio</a></div>
+  <div class="rail" id="fromProducer"></div>
+</section>
+
+<section class="band" id="issueBand">
+  <div class="band-head"><div><span class="mono">Rated alongside it</span><h2 class="d2" style="margin-top:10px" id="issueTitle"></h2></div><p>The other bottles the panel scored in the same issue.</p></div>
+  <div class="dense" id="sameIssue"></div>
+</section>
+
+<section class="band">
+  <div class="band-head"><div><span class="mono">In our stories</span><h2 class="d2" style="margin-top:10px">Where this bottle has appeared.</h2></div></div>
+  <div class="dense" id="mentions"></div>
+</section>
+
+<section class="band" id="askBand">
+  <div class="ask-inline">
+    <span class="mono">Ask about this bottle</span>
+    <div class="ask" style="margin-top: 12px">
+      <form id="askForm" autocomplete="off">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
+        <input id="askInput" type="text" placeholder="Is it worth the price?" aria-label="Ask about this bottle">
+        <button type="submit" class="go">Ask</button>
+      </form>
+      <div class="suggest" id="suggest"><button type="button">Is it worth the price?</button><button type="button">What is similar for less?</button><button type="button">How should I drink it?</button><button type="button">What does the panel mean by this note?</button></div>
+      <div class="answer" id="answer" aria-live="polite"><div class="answer-head" id="answerFacets"></div><div class="answer-body"><div class="answer-text" id="answerText"></div><div class="answer-picks" id="answerPicks"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><a href="index.html">Home</a><a href="finder.html">Whisky Finder</a><a href="stories.html">Stories</a><a href="industry.html">Industry</a></div>
+  <div><h4>About this page</h4><p>Score, note, taster, issue, price and producer are the archive's. The still, the shops and the story mentions are a concept.</p></div>
+</footer>
+
+<script src="site.js"></script>
+<script>
+WA.ready(function (data) {
+  var fmt = WA.fmt, cur = null;
+  var ART = { "Bourbon/Tennessee Whiskey": "bourbon", "Rye Whiskey": "rye", "Single Malt Scotch": "scotch", "Blended Scotch Whisky": "blended", "Blended Malt Scotch Whisky": "blended", "Single Grain Scotch": "blended", "Irish Single Malt": "irish", "Blended Irish Whiskey": "irish", "Irish": "irish", "Irish Single Pot Still": "irish", "Japanese Whisky": "japanese" };
+  var WORDS = ["vanilla", "caramel", "toffee", "honey", "butterscotch", "maple", "brown sugar", "oak", "cedar", "leather", "tobacco", "smoke", "peat", "brine", "sea salt", "iodine", "sherry", "raisin", "fig", "date", "prune", "dried fruit", "cherry", "plum", "apple", "pear", "peach", "apricot", "orange", "lemon", "citrus", "grapefruit", "chocolate", "cocoa", "coffee", "espresso", "nutmeg", "cinnamon", "clove", "ginger", "pepper", "chili", "spice", "mint", "eucalyptus", "heather", "floral", "rose", "grass", "hay", "cereal", "malt", "biscuit", "bread", "pastry", "cream", "butter", "nutty", "almond", "walnut", "hazelnut", "marzipan", "coconut", "tropical", "pineapple", "banana", "mango", "fudge", "licorice", "anise", "rye", "corn", "tannic", "oily", "waxy", "creamy", "dry", "sweet", "bitter", "warm", "long finish"];
+  function band(s) { return s >= 95 ? ["Classic", "A great whisky. The panel reserves this for bottles it would put against anything."] : s >= 90 ? ["Outstanding", "A whisky of superior character and style, the kind the panel recommends without hesitation."] : s >= 85 ? ["Very good", "A whisky with special qualities. Worth seeking out at the right price."] : ["Good", "A solid, well made whisky. Buy it for what it does, not what it could be."]; }
+  function sentences(t) { return (t || "").replace(/\s+/g, " ").match(/[^.!?]+[.!?]+/g) || [t]; }
+  function profile(full) {
+    var parts = { Nose: [], Palate: [], Finish: [] }, current = "Nose";
+    sentences(full).forEach(function (s) { var l = s.toLowerCase(); if (/finish|lingers|aftertaste|fades|lengthy|long and/.test(l)) current = "Finish"; else if (/palate|mouth|sip|entry|mid-palate|tongue|texture|mouthfeel/.test(l)) current = "Palate"; else if (/nose|aroma|smell|scent/.test(l) && current === "Nose") current = "Nose"; parts[current].push(s.trim()); });
+    if (!parts.Palate.length && parts.Nose.length > 1) parts.Palate = parts.Nose.splice(Math.ceil(parts.Nose.length / 2));
+    if (!parts.Finish.length && parts.Palate.length > 1) parts.Finish = [parts.Palate.pop()];
+    return parts;
+  }
+  function serve(r) {
+    var a = r.a || 0;
+    if (a >= 55) return ["Cask strength. Add water, slowly.", "At " + a + "% a teaspoon of water per dram opens the nose and tames the heat. Taste it neat first, then again after."];
+    if (a >= 46) return ["Neat, with a drop of water if it bites.", "At " + a + "% it holds its shape neat. A few drops of water bring out the fruit without thinning it."];
+    if (a > 0) return ["Neat, or over one large cube.", "At " + a + "% it is gentle enough to sip as it comes, and it stays itself over a single large cube."];
+    return ["Neat first.", "Taste it as it comes before you decide on water or ice."];
+  }
+  function show() {
+    var i = WA.hashIndex(); if (i == null || !data[i]) i = data.map(function (r, k) { return k; }).sort(function (a, b) { return data[b].s - data[a].s; })[0];
+    var r = cur = data[i], B = band(r.s);
+    document.title = r.n + " · " + r.s + " points";
+    document.getElementById("crumbCat").textContent = r.c; document.getElementById("crumbName").textContent = r.n;
+    var cp = document.getElementById("crumbProd"); cp.textContent = r.pr; cp.href = WA.producerHref(r.pr);
+    document.getElementById("kicker").textContent = r.c + (r.issue ? " · " + r.issue + " issue" : "");
+    document.getElementById("name").textContent = r.n;
+    document.getElementById("tasterLine").innerHTML = r.by ? "Rated by <strong>" + r.by + "</strong>" : "Rated by <strong>the Whisky Advocate tasting panel</strong>";
+    document.getElementById("when").textContent = r.d ? new Date(r.d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
+    document.getElementById("issue").innerHTML = '<a href="' + WA.producerHref(r.pr) + '" style="color: var(--amber)">' + r.pr + "</a>";
+    document.getElementById("score").textContent = r.s; document.getElementById("badgeScore").textContent = r.s;
+    document.getElementById("band").textContent = B[0] + " · " + r.s + " to " + (r.s >= 95 ? 100 : r.s >= 90 ? 94 : r.s >= 85 ? 89 : 84);
+    var sents = sentences(r.f || r.t); document.getElementById("note").textContent = sents.slice(0, 2).join(" ");
+    document.getElementById("art").src = "img/bottle-" + (ART[r.c] || "other") + ".jpg";
+    document.getElementById("facts").innerHTML = [["Price", fmt(r.p)], ["ABV", r.a ? r.a + "%" : "—"], ["Category", r.c], ["Producer", r.pr], ["Taster", r.by || "Tasting panel"], ["Issue", r.issue || "—"]].map(function (x) { return "<div><dt>" + x[0] + "</dt><dd>" + x[1] + "</dd></div>"; }).join("");
+    var P = profile(r.f || r.t);
+    document.getElementById("profile").innerHTML = ["Nose", "Palate", "Finish"].map(function (k) { return '<div class="part"><h3>' + k + "</h3><p>" + (P[k].join(" ") || "The panel's note does not separate this out.") + "</p></div>"; }).join("");
+    var low = (r.f || r.t || "").toLowerCase(), found = WORDS.filter(function (w) { return low.indexOf(w) >= 0; });
+    document.getElementById("descriptors").innerHTML = (found.length ? found : ["balanced"]).slice(0, 14).map(function (w, k) { return "<span" + (k < 3 ? ' class="hot"' : "") + ">" + w + "</span>"; }).join("");
+    var S = serve(r); document.getElementById("serveBig").textContent = S[0]; document.getElementById("serveNote").textContent = S[1] + (/scotch/i.test(r.c) ? " A tulip glass keeps the aromas together." : /bourbon|rye/i.test(r.c) ? " A rocks glass is fine; a tulip glass shows more." : "");
+    WA.drawCompass(document.getElementById("compass"), data, r);
+    var peers = data.filter(function (x) { return x.c === r.c; }), below = peers.filter(function (x) { return x.s < r.s; }).length, pct = Math.round(below / Math.max(1, peers.length - 1) * 100);
+    document.getElementById("ctxTitle").textContent = r.s + " puts it ahead of " + pct + "% of recent " + r.c.replace("/Tennessee Whiskey", "").toLowerCase() + " ratings.";
+    document.getElementById("ctxNote").textContent = peers.length + " " + r.c.toLowerCase() + " bottles rated recently, from " + Math.min.apply(null, peers.map(function (x) { return x.s; })) + " to " + Math.max.apply(null, peers.map(function (x) { return x.s; })) + " points.";
+    document.getElementById("scaleDot").style.left = ((r.s - 80) / 20 * 100) + "%"; document.getElementById("scaleNote").textContent = B[1];
+    var cheaperBetter = peers.filter(function (x) { return x.p < r.p && x.s >= r.s; }), v = WA.value(r), frontier = data.filter(function (x) { return x.p <= r.p; }).every(function (x) { return x.s <= r.s; });
+    document.getElementById("valueBig").textContent = frontier ? "Nothing scores higher for less." : v > 4 ? "Strong value." : v > 1 ? "Fair at the price." : "You are paying for the name.";
+    document.getElementById("valueNote").textContent = (cheaperBetter.length ? cheaperBetter.length + " " + r.c.toLowerCase() + (cheaperBetter.length === 1 ? " bottle scores" : " bottles score") + " as high for less; the cheapest is " + cheaperBetter.sort(function (a, b) { return a.p - b.p; })[0].n + " at " + fmt(cheaperBetter[0].p) + "." : "No recent bottle in its category matches the score for less money.");
+    var bands = [[0, 40], [40, 60], [60, 100], [100, 200], [200, 9999]], counts = bands.map(function (b) { return peers.filter(function (x) { return x.p >= b[0] && x.p < b[1]; }).length; }), max = Math.max.apply(null, counts.concat([1])), mine = bands.findIndex(function (b) { return r.p >= b[0] && r.p < b[1]; });
+    document.getElementById("ladder").innerHTML = counts.map(function (c, k) { return '<i class="' + (k === mine ? "me" : "") + '" style="height:' + Math.max(6, c / max * 70) + 'px" title="' + c + ' bottles"></i>'; }).join("");
+    document.getElementById("ladderNote").textContent = "At " + fmt(r.p) + " it sits in the " + ["under $40", "$40 to $60", "$60 to $100", "$100 to $200", "over $200"][mine] + " band with " + (counts[mine] - 1) + " other " + (counts[mine] === 2 ? "bottle" : "bottles") + " in its category.";
+    var sim = data.filter(function (x) { return x !== r; }).map(function (x) { var d = Math.abs(x.s - r.s) * 1.2 + (x.c === r.c ? 0 : 3) + Math.abs(Math.log(x.p / r.p)) * 2 + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))) * 0.6; }, 0); return { x: x, d: d }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; });
+    document.getElementById("similar").innerHTML = sim.map(function (x) { return WA.bottleCard(x); }).join("");
+    var fromP = data.filter(function (x) { return x.pr === r.pr && x !== r; });
+    document.getElementById("producerBand").style.display = fromP.length ? "" : "none";
+    document.getElementById("producerTitle").textContent = fromP.length + " more from " + r.pr + "."; document.getElementById("producerAll").href = WA.producerHref(r.pr);
+    document.getElementById("fromProducer").innerHTML = fromP.slice(0, 4).map(function (x) { return WA.bottleCard(x); }).join("");
+    var same = data.filter(function (x) { return x.issue && x.issue === r.issue && x !== r; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6);
+    document.getElementById("issueBand").style.display = same.length ? "" : "none";
+    document.getElementById("issueTitle").textContent = "The " + r.issue + " issue.";
+    document.getElementById("sameIssue").innerHTML = same.map(function (x) { return '<a href="' + WA.bottleHref(data.indexOf(x)) + '"><span class="sc score-type">' + x.s + '</span><span><span class="nm">' + x.n + '</span><span class="sub">' + x.c + (x.by ? " · " + x.by : "") + '</span></span><span class="when">' + fmt(x.p) + "</span></a>"; }).join("");
+    document.getElementById("mentions").innerHTML = [["Feature", "The quiet return of the Kentucky rickhouse", "story.html"], ["Guide", "Twenty whiskies rated 90 or higher for $75 or less", "stories.html#guides"], ["New releases", "What we rated in the " + (r.issue || "latest") + " issue", "stories.html"]].map(function (m) { return '<a href="' + m[2] + '"><span class="tag">' + m[0] + '</span><span><span class="nm">' + m[1] + '</span></span><span class="when">Read</span></a>'; }).join("");
+    document.getElementById("buy").innerHTML = [["Astor Wines & Spirits", "0.8 mi", r.p * 0.98], ["Park Avenue Liquor", "1.4 mi", r.p * 1.04], ["Total Wine, Westbury", "9.2 mi", r.p * 0.95]].map(function (s) { return "<div><span>" + s[0] + '</span><span class="dist">' + s[1] + '</span><span class="pr">' + fmt(s[2]) + "</span></div>"; }).join("");
+    document.getElementById("compareLink").href = "finder.html#" + (ART[r.c] === "rye" ? "cocktail" : ART[r.c] === "scotch" ? "peat" : "value");
+    var ld = { "@context": "https://schema.org", "@type": "Review", "itemReviewed": { "@type": "Product", "name": r.n, "brand": r.pr, "category": r.c, "offers": { "@type": "Offer", "price": r.p, "priceCurrency": "USD" } }, "reviewRating": { "@type": "Rating", "ratingValue": r.s, "bestRating": 100 }, "author": { "@type": "Person", "name": r.by || "Whisky Advocate" }, "publisher": { "@type": "Organization", "name": "Whisky Advocate" }, "datePublished": r.d };
+    var s = document.getElementById("ld") || document.createElement("script"); s.id = "ld"; s.type = "application/ld+json"; s.textContent = JSON.stringify(ld); document.head.appendChild(s);
+    document.getElementById("buy").style.display = "none";
+    scrollTo(0, 0);
+  }
+  document.getElementById("save").addEventListener("click", function () { this.textContent = "Saved to my shelf"; this.setAttribute("aria-pressed", "true"); });
+  document.getElementById("buyBtn").addEventListener("click", function () { var b = document.getElementById("buy"); b.style.display = b.style.display === "none" ? "" : "none"; });
+  document.getElementById("askBtn").addEventListener("click", function () { document.getElementById("askBand").scrollIntoView({ behavior: "smooth" }); document.getElementById("askInput").focus(); });
+  // Bottle-specific answers override the generic ask.
+  var form = document.getElementById("askForm"), input = document.getElementById("askInput"), answer = document.getElementById("answer");
+  function localAsk(q) {
+    var r = cur, l = q.toLowerCase(), text = "", picks = [];
+    if (/worth|price|value|expensive|cheap/.test(l)) { text = "<p>" + document.getElementById("valueBig").textContent + " " + document.getElementById("valueNote").textContent + "</p><p>At " + fmt(r.p) + " and " + r.s + " points it sits " + (WA.value(r) > 2 ? "above" : "on") + " the value curve for recent " + r.c.toLowerCase() + ".</p>"; picks = data.filter(function (x) { return x.c === r.c && x.p < r.p && x.s >= r.s - 1; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4); }
+    else if (/similar|like this|less|alternative|instead/.test(l)) { picks = data.filter(function (x) { return x !== r && x.c === r.c && x.p <= r.p; }).map(function (x) { return { x: x, d: Math.abs(x.s - r.s) + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))); }, 0) }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; }); text = "<p>" + (picks.length ? "Closest in character and score at or below " + fmt(r.p) + ": <strong>" + picks[0].n + "</strong>, " + picks[0].s + " points at " + fmt(picks[0].p) + "." : "Nothing in its category comes close for less; the list beside this is the nearest.") + "</p>"; }
+    else if (/drink|serve|water|ice|neat|glass/.test(l)) { var S = serve(r); text = "<p>" + S[0] + " " + S[1] + "</p>"; picks = []; }
+    else { var f = (r.f || r.t); text = "<p>" + (r.by || "The panel") + " wrote: &ldquo;" + f.slice(0, 260) + (f.length > 260 ? "…" : "") + "&rdquo;</p><p>In plain terms: " + (WA.charScore(r, "smoky") ? "there is smoke in it, " : "") + (WA.charScore(r, "sweet") ? "it leans sweet and fruited, " : "") + (WA.charScore(r, "rich") ? "it is full in the mouth, " : "") + (WA.charScore(r, "light") ? "it is on the lighter side, " : "") + "and the score says " + band(r.s)[0].toLowerCase() + ".</p>"; picks = []; }
+    document.getElementById("answerFacets").innerHTML = '<span class="facet">' + r.n + "</span>";
+    document.getElementById("answerText").innerHTML = text + '<div class="src"><a href="' + WA.producerHref(r.pr) + '">' + r.pr + '</a><a href="finder.html">Whisky Finder</a></div>';
+    document.getElementById("answerPicks").innerHTML = picks.map(function (x) { return '<a class="pick" href="' + WA.bottleHref(data.indexOf(x)) + '"><span class="sc score-type">' + x.s + '</span><span><span class="nm">' + x.n + '</span><span class="ct">' + x.c + "</span></span><span class=\"pr\">" + fmt(x.p) + "</span></a>"; }).join("");
+    answer.setAttribute("data-show", "true");
+  }
+  form.addEventListener("submit", function (e) { e.preventDefault(); e.stopImmediatePropagation(); localAsk(input.value || "worth"); }, true);
+  document.getElementById("suggest").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; e.stopImmediatePropagation(); input.value = b.textContent; localAsk(b.textContent); }, true);
+  addEventListener("hashchange", show); addEventListener("resize", function () { if (cur) WA.drawCompass(document.getElementById("compass"), data, cur); });
+  show();
+});
+</script>
+</body>
+</html>

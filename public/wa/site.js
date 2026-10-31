@@ -356,10 +356,26 @@
   }
 
   /* Bottle card markup, shared */
+  function shot(cat) {
+    var c = String(cat || "");
+    if (/rye/i.test(c)) return "img/bottle-rye.jpg";
+    if (/japan/i.test(c)) return "img/bottle-japanese.jpg";
+    if (/irish|poit/i.test(c)) return "img/bottle-irish.jpg";
+    if (/blend/i.test(c)) return "img/bottle-blended.jpg";
+    if (/scotch|single malt/i.test(c)) return "img/bottle-scotch.jpg";
+    if (/bourbon|tennessee|corn|wheat|white whiskey|canadian|american/i.test(c)) return "img/bottle-bourbon.jpg";
+    return "img/bottle-other.jpg";
+  }
+  function bottleSrc(r) { return (r && r.img) ? r.img : shot(r && r.c); }
+  function bottleImg(r) {
+    var src = bottleSrc(r), fb = shot(r && r.c);
+    return '<img src="' + src + '" alt="" loading="lazy"' + (r && r.img ? ' data-stock="' + fb + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-stock\')"' : "") + ">";
+  }
+  window.WA.shot = shot; window.WA.bottleSrc = bottleSrc;
   function bottleCard(r, opts) {
     opts = opts || {};
     var idx = DATA.indexOf(r), on = opts.compare && opts.compare.indexOf(idx) >= 0;
-    return '<article class="bottle' + (r.img ? " has-img" : "") + '" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '">' + (r.img ? '<a class="thumb" href="' + bottleHref(idx) + '"><img src="' + r.img + '" alt="" loading="lazy"></a>' : "") + '<div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + '<span class="buy-slot"></span></div></article>';
+    return '<article class="bottle has-img" data-pinned="' + !!on + '" data-slug="' + (r.slug || "") + '"><a class="thumb" href="' + bottleHref(idx) + '">' + bottleImg(r) + '</a><div class="top"><div class="score score-type">' + r.s + "<small>points</small></div><div class=\"cat\">" + r.c + '</div></div><div><h3><a href="' + bottleHref(idx) + '">' + r.n + "</a></h3><p style=\"margin-top:6px\" data-note>" + (r.t || "") + '</p></div><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + "</span>" + (opts.compare ? '<button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + "</button>" : '<a href="' + producerHref(r.pr) + '" style="color:var(--ink-3)">' + r.pr + "</a>") + '<span class="buy-slot"></span></div></article>';
   }
   window.WA.bottleCard = bottleCard;
 /* The store: ratings matched to products at store.whiskyadvocate.com (shop.json), the catalog itself (store.json). */

@@ -162,17 +162,21 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var SHELVES = [{ name: "Classic", range: "95 and above" }, { name: "Outstanding", range: "90 to 94" }, { name: "Very good", range: "85 to 89" }, { name: "Good", range: "80 to 84" }];
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]; }); }
   function shelfOf(score) { return score >= 95 ? 0 : score >= 90 ? 1 : score >= 85 ? 2 : 3; }
+  function pourImg(r, lazy) {
+    var src = WA.bottleSrc(r), fb = WA.shot(r.c);
+    return '<img src="' + esc(src) + '" alt=""' + (lazy ? ' loading="lazy"' : "") + (r.img ? ' data-stock="' + esc(fb) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-stock\')"' : "") + ">";
+  }
   function leadMarkup(r) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;
     return '<article class="lead-pour" data-slug="' + esc(r.slug || "") + '">' +
-      (r.img ? '<a class="lead-shot" href="' + WA.bottleHref(r) + '"><img src="' + esc(r.img) + '" alt=""></a>' : '<span class="lead-shot"></span>') +
+      '<a class="lead-shot" href="' + WA.bottleHref(r) + '">' + pourImg(r) + '</a>' +
       '<div class="lead-copy"><span class="mono">On the runway</span><div class="lead-score score-type">' + r.s + '<small>points</small></div><h2><a href="' + WA.bottleHref(r) + '">' + esc(r.n) + '</a></h2><p class="lead-meta">' + esc(r.c) + (r.pr ? " · " + esc(r.pr) : "") + '</p><div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div></div><p data-note data-full></p></article>';
   }
   function shelfCard(r) {
     var idx = data.indexOf(r), on = state.compare.indexOf(idx) >= 0;
-    return '<article class="shelf-bottle' + (r.img ? " has-img" : "") + '" data-slug="' + esc(r.slug || "") + '" tabindex="0">' +
+    return '<article class="shelf-bottle has-img" data-slug="' + esc(r.slug || "") + '" tabindex="0">' +
       '<div class="top"><div class="score score-type">' + r.s + '<small>points</small></div><div class="cat">' + esc(r.c) + '</div></div>' +
-      (r.img ? '<span class="thumb"><img src="' + esc(r.img) + '" alt="" loading="lazy"></span>' : '<span class="thumb"></span>') +
+      '<span class="thumb">' + pourImg(r, true) + '</span>' +
       '<h3><a href="' + WA.bottleHref(r) + '">' + esc(r.n) + '</a></h3>' +
       '<div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div>' +
       '<p data-note></p></article>';
@@ -205,18 +209,24 @@ WA.ready(function (recent) { WA.archive(function (data) {
       lead.innerHTML = '<p class="ratings-empty">Nothing in the archive matches. Clear a filter and the runway fills again.</p>';
       shelves.innerHTML = "";
     } else {
-      lead.innerHTML = leadMarkup(shown[0]);
       var groups = [[], [], [], []];
-      shown.slice(1).forEach(function (r) { groups[shelfOf(r.s)].push(r); });
+      rows.forEach(function (r) { groups[shelfOf(r.s)].push(r); });
+      var top = shown[0], band = groups[shelfOf(top.s)], at = band.indexOf(top);
+      if (at >= 0) band.splice(at, 1);
+      lead.innerHTML = leadMarkup(top);
       shelves.innerHTML = groups.map(function (list, i) {
-        if (!list.length) return "";
-        return '<section class="shelf"><div class="shelf-label"><b>' + SHELVES[i].name + '</b><span>' + SHELVES[i].range + '</span></div><div class="shelf-row">' + list.map(shelfCard).join("") + '</div></section>';
+        var page = list.slice(0, state.limit);
+        if (!page.length) return "";
+        return '<section class="shelf"><div class="shelf-label"><b>' + SHELVES[i].name + '</b><span>' + SHELVES[i].range + '</span></div><div class="shelf-row">' + page.map(shelfCard).join("") + '</div></section>';
       }).join("");
       WA.fillNotes(lead);
       WA.fillNotes(shelves);
     }
     requestAnimationFrame(function () { lead.classList.add("is-in"); });
-    document.getElementById("more").style.display = rows.length > state.limit ? "" : "none";
+    var moreLeft = [[], [], [], []];
+    rows.forEach(function (r) { moreLeft[shelfOf(r.s)].push(r); });
+    if (rows[0]) { var bi = moreLeft[shelfOf(rows[0].s)].indexOf(rows[0]); if (bi >= 0) moreLeft[shelfOf(rows[0].s)].splice(bi, 1); }
+    document.getElementById("more").style.display = moreLeft.some(function (g) { return g.length > state.limit; }) ? "" : "none";
     if (document.getElementById("maps").getAttribute("data-open") !== "false") drawMaps(rows);
   }
   document.querySelector(".finder").addEventListener("click", function (e) {

@@ -15,7 +15,7 @@
 </header>
 
 <section class="band" style="padding-top: 28px">
-  <div class="band-head"><div><span class="mono">Stories</span><h1 class="d1" style="margin-top: 12px" id="sectionTitle">Not a grid of thumbnails. <em class="hi">A front page.</em></h1></div><p>The editors pick three. Everything else is a dense, scannable list, so a section front reads like a good newspaper, not a feed. Every story here is real, from the archive.</p></div>
+  <div class="band-head"><div><h1 class="d1" id="sectionTitle">Stories</h1></div><p>The editors pick three; everything else is a scannable list. Every story is real, from the archive.</p></div>
   <div class="suggest" id="sections" style="margin: 0 0 28px"><button type="button" aria-pressed="true" data-sec="all">All</button><button type="button" data-sec="news">News</button><button type="button" data-sec="features">Features</button><button type="button" data-sec="guides">Guides</button><button type="button" data-sec="cocktails">Cocktails</button><button type="button" data-sec="travel">Travel</button><button type="button" data-sec="life">Whisky Life</button></div>
   <p class="muted" id="sectionLink" style="margin: -12px 0 22px; font-size: 14px"></p>
   <div class="picks3" id="picks"></div>
@@ -36,7 +36,7 @@
 <script src="site.js"></script>
 <script>
 WA.ready(function (data) {
-  var TITLE = { all: 'Not a grid of thumbnails. <em class="hi">A front page.</em>', news: 'What happened <em class="hi">this week.</em>', features: 'The long reads, <em class="hi">reported.</em>', guides: 'What to buy, <em class="hi">and why.</em>', cocktails: 'Drinks worth <em class="hi">the whisky.</em>', travel: 'Where the bar is <em class="hi">worth the trip.</em>', life: 'Whisky, <em class="hi">lived.</em>' };
+  var TITLE = { all: "Stories", news: "News", features: "Features", guides: "Guides", cocktails: "Cocktails", travel: "Travel", life: "Whisky Life" };
   WA.stories(function (all) {
     var shown = 0, rows = [];
     function render(sec, reset) {

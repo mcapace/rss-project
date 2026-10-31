@@ -30,17 +30,17 @@
       "precision highp float;uniform vec2 u_res;uniform float u_time;uniform vec2 u_pointer;uniform float u_progress;uniform float u_intro;",
       "float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);}",
       "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}",
-      "float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*noise(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}",
-      "void main(){vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv;p.x*=u_res.x/u_res.y;float t=u_time*.06;",
-      "float flow=t*(1.+(1.-u_progress)*1.6);",
+      "float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}",
+      "void main(){vec2 uv=gl_FragCoord.xy/u_res;vec2 p=uv;p.x*=u_res.x/u_res.y;float t=u_time*.04;",
+      "float flow=t*(1.+(1.-u_progress)*1.2);",
       "vec2 q=vec2(fbm(p*1.5+vec2(0.,flow)),fbm(p*1.5+vec2(5.2,flow*.8)));",
       "vec2 r=vec2(fbm(p*1.5+2.*q+vec2(1.7,9.2)+.15*t),fbm(p*1.5+2.*q+vec2(8.3,2.8)-.12*t));",
       "float f=fbm(p*1.5+2.4*r);",
-      "vec2 m=u_pointer;m.x*=u_res.x/u_res.y;float d=length(p-m);f+=.06*exp(-d*d*5.)*sin(d*26.-u_time*2.5);",
+      "vec2 m=u_pointer;m.x*=u_res.x/u_res.y;float d=length(p-m);f+=.035*exp(-d*d*5.)*sin(d*22.-u_time*1.8);",
       "vec3 paper=vec3(.969,.953,.925);vec3 amber=vec3(.788,.451,.114);vec3 gold=vec3(.89,.643,.263);vec3 cask=vec3(.31,.165,.063);",
       "float liquid=smoothstep(.38,.78,f);vec3 col=mix(gold,amber,smoothstep(.45,.8,f));col=mix(col,cask,smoothstep(.76,.95,f)*.5);",
       "float hi=pow(max(0.,1.-abs(f-.64)*9.),3.);col+=hi*.22;",
-      "float top=smoothstep(.0,.55,uv.y);float strength=(.42+.3*(1.-u_progress))*u_intro*mix(1.,top,.7);",
+      "float top=smoothstep(.0,.55,uv.y);float strength=(.26+.2*(1.-u_progress))*u_intro*mix(1.,top,.7);",
       "vec3 o=mix(paper,col,liquid*strength);gl_FragColor=vec4(o,1.);}"
     ].join("\n");
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { return null; } return s; }
@@ -63,7 +63,7 @@
     document.body.classList.add("has-stage");
     var holder = document.getElementById("storyStage"), loader = document.getElementById("loader"), root = document.documentElement;
     var q = function (sel) { return stage.querySelector(sel); };
-    var L = { sheet: q(".layer.sheet"), mist: q(".layer.mist"), bokeh: q(".layer.bokeh"), glass: q(".layer.glass") };
+    var L = { sheet: q(".layer.sheet"), mist: q(".layer.mist") };
     var video = q("video"), copies = [].slice.call(stage.querySelectorAll(".scene-copy")), compassScene = document.getElementById("compassScene"), compass = document.getElementById("stageCompass");
     var gl = MOTION ? initGL(document.getElementById("gl")) : null;
     var pointer = { x: 0.5, y: 0.5 }, target = { x: 0.5, y: 0.5 };
@@ -79,7 +79,7 @@
     }
     var waits = [new Promise(function (res) { setTimeout(res, MOTION ? 700 : 0); })];
     if (document.fonts && document.fonts.ready) waits.push(document.fonts.ready);
-    [L.sheet, L.glass].forEach(function (l) { var im = l.querySelector("img"); if (im && !im.complete) waits.push(new Promise(function (res) { im.onload = im.onerror = res; })); });
+    [L.sheet].forEach(function (l) { var im = l.querySelector("img"); if (im && !im.complete) waits.push(new Promise(function (res) { im.onload = im.onerror = res; })); });
     if (video) waits.push(new Promise(function (res) { if (video.readyState >= 3) res(); else { video.addEventListener("canplay", res, { once: true }); video.addEventListener("error", res, { once: true }); } }));
     Promise.all(waits).then(boot); setTimeout(boot, 2600);
 
@@ -90,22 +90,17 @@
       var intro = booted ? (MOTION ? easeOut(clamp01((now - introStart) / 1800)) : 1) : 0;
       var P = Math.max(progress(), intro * 0.2); if (!MOTION) P = Math.max(progress(), 0.2);
       var px = (pointer.x - 0.5), py = (pointer.y - 0.5);
-      var pourIn = easeOut(seg(P, 0, 0.2)), pourOut = easeOut(seg(P, 0.42, 0.68));
-      L.sheet.style.transform = "translate3d(" + (px * -12) + "px," + (-100 * (1 - pourIn) + 110 * pourOut) + "%,0)";
-      L.sheet.style.opacity = 1 - seg(P, 0.5, 0.68);
-      L.mist.style.opacity = 0.34 * seg(P, 0.06, 0.26) * (1 - seg(P, 0.5, 0.7));
-      L.mist.style.transform = "translate3d(" + (px * -36 + Math.sin(now / 5000) * 28) + "px," + (py * -16) + "px,0) scale(1.1)";
-      L.bokeh.style.opacity = 0.55 * intro * (1 - seg(P, 0.78, 0.95));
-      L.bokeh.style.transform = "translate3d(" + (px * -22) + "px," + (py * -14 - 30 * P) + "px,0) scale(" + (1.04 + 0.14 * P) + ")";
-      var up = easeOut(seg(P, 0.28, 0.46)), away = seg(P, 0.58, 0.68);
-      L.glass.style.transform = "translate3d(" + (px * -18) + "px," + (60 - 60 * up + 40 * away) + "%,0) scale(" + (1 - 0.1 * away) + ")";
-      L.glass.style.opacity = up * (1 - away);
-      var scene = P < 0.3 ? 0 : P < 0.58 ? 1 : P < 0.84 ? 2 : 3;
+      var pourIn = easeOut(seg(P, 0, 0.2)), pourOut = easeOut(seg(P, 0.3, 0.55));
+      L.sheet.style.transform = "translate3d(" + (px * -6) + "px," + (-100 * (1 - pourIn) + 110 * pourOut) + "%,0)";
+      L.sheet.style.opacity = 1 - seg(P, 0.36, 0.55);
+      L.mist.style.opacity = 0.22 * seg(P, 0.08, 0.26) * (1 - seg(P, 0.4, 0.58));
+      L.mist.style.transform = "translate3d(" + (px * -16 + Math.sin(now / 6000) * 20) + "px," + (py * -8) + "px,0) scale(1.08)";
+      var scene = P < 0.36 ? 0 : P < 0.76 ? 1 : 2;
       if (scene !== lastScene) { lastScene = scene; copies.forEach(function (c, i) { c.setAttribute("data-on", String(i === scene && intro > 0.15)); }); }
       else if (intro > 0.15 && copies[scene].getAttribute("data-on") !== "true") copies[scene].setAttribute("data-on", "true");
-      var cf = Math.round(seg(P, 0.6, 0.8) * 40) / 40 + (P >= 0.88 ? 1 : 0);
-      if (cf !== lastCompass) { lastCompass = cf; compassScene.setAttribute("data-on", String(cf > 0 && P < 0.88)); if (cf > 0 && DATA && window.WA.drawCompass) window.WA.drawCompass(compass, DATA.slice(0, Math.round(DATA.length * Math.min(1, cf)))); }
-      var landing = P > 0.86; if (landing !== lastLanding) { lastLanding = landing; stage.setAttribute("data-landing", String(landing)); }
+      var cf = Math.round(seg(P, 0.42, 0.68) * 40) / 40 + (P >= 0.8 ? 1 : 0);
+      if (cf !== lastCompass) { lastCompass = cf; compassScene.setAttribute("data-on", String(cf > 0 && P < 0.8)); if (cf > 0 && DATA && window.WA.drawCompass) window.WA.drawCompass(compass, DATA.slice(0, Math.round(DATA.length * Math.min(1, cf)))); }
+      var landing = P > 0.8; if (landing !== lastLanding) { lastLanding = landing; stage.setAttribute("data-landing", String(landing)); }
       var hint = P < 0.03; if (hint !== lastHint) { lastHint = hint; stage.setAttribute("data-hint", hint ? "on" : "off"); }
       if (gl) gl.render(now, P, pointer, intro);
       requestAnimationFrame(frame);
@@ -142,6 +137,19 @@
     function set() { document.body.setAttribute("data-top", String(scrollY < 24)); }
     addEventListener("scroll", set, { passive: true }); set();
   }
+
+
+  /* Editorial content: the index of recent stories and, on demand, the bodies. Both come from the CMS export. */
+  var STORIES = null, ARTICLES = null;
+  var SECTION = { news: "News", features: "Feature", guides: "Guide", cocktails: "Cocktails", travel: "Travel", life: "Whisky Life" };
+  function when(d) { if (!d) return ""; var t = new Date(d + "T12:00:00"); return t.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + (t.getFullYear() !== new Date().getFullYear() ? ", " + t.getFullYear() : ""); }
+  function stories(cb) { if (STORIES) return cb(STORIES); fetch("stories.json").then(function (r) { return r.json(); }).then(function (d) { STORIES = d; cb(d); }); }
+  function articles(cb) { if (ARTICLES) return cb(ARTICLES); fetch("articles.json").then(function (r) { return r.json(); }).then(function (d) { ARTICLES = d; cb(d); }); }
+  function initials(name) { return (name || "WA").split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
+  function storyHref(st) { return "story.html#" + st.slug; }
+  function storyRow(st) { return '<a href="' + storyHref(st) + '">' + (st.hero ? '<img class="th" src="' + st.hero + '" alt="" loading="lazy">' : '<span class="tag">' + SECTION[st.sec] + '</span>') + '<span><span class="nm">' + st.title + '</span><span class="sub">' + (st.dek || SECTION[st.sec] + " · " + st.by) + '</span></span><span class="when">' + when(st.d) + "</span></a>"; }
+  function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
+  window.WA.stories = stories; window.WA.articles = articles; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
 
   /* Query understanding */
   var TYPES = [

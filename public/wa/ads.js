@@ -56,12 +56,12 @@
   /* Sponsored pages (2026-11-01): page-level key-values so Ad Manager can keep competing brands off paid content.
      sponsored = "yes" | "no" on every page; sponsor = the advertiser (lowercase, hyphenated) when the CMS names one.
      A story is sponsored when it is in sponsored.json (the story export's list, the same rule as the site's labels);
-     the 90+ Club page is a paid partner page. Ads wait for the answer, at most 1.5 seconds, so the first request carries it. */
-  function slugify(t) { return String(t || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40); }
+     the 90+ Club page is Pernod Ricard USA's partner page. Ads wait for the answer, at most 1.5 seconds, so the first request carries it. */
+  function slugify(t) { return String(t || "").replace(/['\u2019]/g, "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40); }
   function pageContext(cb) {
     var page = (location.pathname.split("/").pop() || "index.html").toLowerCase(), done = false;
     function finish(ctx) { if (done) return; done = true; window.WAAds = window.WAAds || {}; window.WAAds.context = ctx; cb(ctx); }
-    if (page === "ninety.html") return finish({ sponsored: "yes", sponsor: "90-plus-club" });
+    if (page === "ninety.html" || page === "club.html") return finish({ sponsored: "yes", sponsor: "pernod-ricard-usa" });   // every 90+ Club member brand is Pernod Ricard USA's
     if (page !== "story.html") return finish({ sponsored: "no" });
     var slug = "";
     try { slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase(); } catch (e) { slug = (location.hash || "").slice(1).toLowerCase(); }

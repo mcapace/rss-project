@@ -1648,3 +1648,7 @@ a.author p::after { content: " →"; color: var(--copper); }
 .story.lead h3 { min-height: calc(2.24em + 0.14em); }
 /* The rotator's kicker chip is a chip, not a one-line clip. */
 .front .rot-slide .tag { height: auto; line-height: 1.25; overflow: visible; white-space: nowrap; padding: 5px 11px 4px; margin-top: 2px; }
+/* Headlines a size down: a story title reads at 54px at most, section fronts at 72px. */
+.d1 { font-size: clamp(36px, 5vw, 72px); }
+.story-hero-head .d1, h1#title.d1 { font-size: clamp(30px, 3.5vw, 54px); line-height: 1.06; letter-spacing: -0.03em; max-width: 22ch; }
+.d2 { font-size: clamp(28px, 3.4vw, 46px); }

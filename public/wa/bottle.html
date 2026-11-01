@@ -176,6 +176,11 @@ WA.ready(function (recent) { WA.archive(function (data) {
     if (a > 0) return ["Neat, or over one large cube.", "At " + a + "% it is gentle enough to sip as it comes, and it stays itself over a single large cube."];
     return ["Neat first.", "Taste it as it comes before you decide on water or ice."];
   }
+  // The flavor compass, with a card for the bottle under the pointer.
+  function compass(r) {
+    var c = document.getElementById("compass"), res = WA.drawCompass(c, data.filter(function (x) { return x.d >= "2022" || x === r || (x.slug && x.slug === r.slug); }), r);
+    if (WA.canvasTips) WA.canvasTips(c, function () { return res.points; }, function (x) { var me = x === r || (x.slug && x.slug === r.slug); return "<strong>" + (me ? "This bottle · " : "") + x.s + " points</strong>" + (x.p ? " · " + fmt(x.p) : "") + "<br>" + x.n + '<span class="ctip-sub">' + x.c + "</span>"; }, function (x) { return x === r || !x.slug || x.slug === r.slug ? null : WA.bottleHref(x); });
+  }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
   function filmFor(entry) {
     if (!entry || !FILMS) return null;
@@ -248,7 +253,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var low = (r.f || r.t || "").toLowerCase(), found = WORDS.filter(function (w) { return low.indexOf(w) >= 0; });
     document.getElementById("descriptors").innerHTML = (found.length ? found : ["balanced"]).slice(0, 14).map(function (w, k) { return "<span" + (k < 3 ? ' class="hot"' : "") + ">" + w + "</span>"; }).join("");
     var S = serve(r); document.getElementById("serveBig").textContent = S[0]; document.getElementById("serveNote").textContent = S[1] + (/scotch/i.test(r.c) ? " A tulip glass keeps the aromas together." : /bourbon|rye/i.test(r.c) ? " A rocks glass is fine; a tulip glass shows more." : "");
-    WA.drawCompass(document.getElementById("compass"), data.filter(function (x) { return x.d >= "2022" || x === r; }), r);
+    compass(r);
     var same = function (x) { return x === r || (x.slug && x.slug === r.slug); }, peers = data.filter(function (x) { return x.c === r.c; }), below = peers.filter(function (x) { return x.s < r.s; }).length, pct = Math.round(below / Math.max(1, peers.filter(function (x) { return !same(x); }).length) * 100);
     var ctxNote = document.getElementById("ctxNote");
     if (peers.length) {
@@ -347,7 +352,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   }
   addEventListener("scroll", markNav, { passive: true }); markNav();
   if (window.ResizeObserver) new ResizeObserver(function () { markNav(); }).observe(document.body);
-  addEventListener("hashchange", show); addEventListener("resize", function () { if (cur) WA.drawCompass(document.getElementById("compass"), data.filter(function (x) { return x.d >= "2022" || x === cur; }), cur); });
+  addEventListener("hashchange", show); addEventListener("resize", function () { if (cur) compass(cur); });
   if (!/^t20-/.test(WA.hashSlug() || "")) show();
 }); });
 </script>

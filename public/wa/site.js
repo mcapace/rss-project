@@ -830,3 +830,40 @@ document.body.appendChild(waAds);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
+
+/* Canvas charts: hover a dot to see the bottle, click it to open the rating. On touch the first tap shows the card and a second tap on the same dot opens it. */
+WA.canvasTips = function (canvas, points, html, href) {
+  if (!canvas) return;
+  if (canvas.__tips) { canvas.__tips.points = points; canvas.__tips.hide(); return; }
+  var host = canvas.parentElement; if (getComputedStyle(host).position === "static") host.style.position = "relative";
+  var tip = document.createElement("div"), ring = document.createElement("i"), kind = "mouse";
+  tip.className = "ctip"; ring.className = "ctip-ring"; ring.setAttribute("aria-hidden", "true");
+  host.appendChild(ring); host.appendChild(tip);
+  var st = { points: points, cur: null };
+  function near(e) {
+    var b = canvas.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, best = null, bd = kind === "touch" ? 20 : 12;
+    (st.points() || []).forEach(function (p) { var d = Math.hypot(p.x - mx, p.y - my); if (d < bd) { bd = d; best = p; } });
+    return best;
+  }
+  function hide() { st.cur = null; tip.style.display = "none"; ring.style.display = "none"; canvas.style.cursor = ""; }
+  function show(p) {
+    if (!p) { hide(); return; }
+    st.cur = p; var ox = canvas.offsetLeft, oy = canvas.offsetTop;
+    tip.innerHTML = html(p.r) + (href(p.r) ? '<span class="ctip-go">' + (kind === "touch" ? "Tap again to open" : "Click to open") + "</span>" : "");
+    tip.style.display = "block"; ring.style.display = "block"; ring.style.left = (ox + p.x) + "px"; ring.style.top = (oy + p.y) + "px";
+    var tw = tip.offsetWidth, th = tip.offsetHeight, left = Math.max(4, Math.min(host.clientWidth - tw - 4, ox + p.x - tw / 2)), top = oy + p.y - th - 14;
+    if (top < 4) top = oy + p.y + 16;
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+    canvas.style.cursor = href(p.r) ? "pointer" : "default";
+  }
+  canvas.addEventListener("pointerdown", function (e) { kind = e.pointerType || "mouse"; });
+  canvas.addEventListener("pointermove", function (e) { if (e.pointerType === "touch") return; kind = "mouse"; show(near(e)); });
+  canvas.addEventListener("pointerleave", function (e) { if (e.pointerType !== "touch") hide(); });
+  canvas.addEventListener("click", function (e) {
+    var p = near(e); if (!p) { hide(); return; }
+    var url = href(p.r);
+    if (kind === "touch" && st.cur !== p) { show(p); return; }
+    if (url) location.href = url;
+  });
+  st.hide = hide; canvas.__tips = st;
+};

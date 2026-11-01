@@ -1,4 +1,4 @@
-import { Activity, Archive, BookOpen, CalendarDays, ClipboardCheck, FileInput, FileText, House, LayoutTemplate, LibraryBig, Newspaper, PenLine, Plus, Rss, Search, Star, type LucideIcon } from "lucide-react";
+import { Activity, Archive, BookOpen, CalendarDays, ClipboardCheck, FileInput, FileText, House, Images, LayoutTemplate, LibraryBig, Newspaper, PenLine, Plus, Rss, Search, Star, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -25,6 +25,7 @@ export const CONTENT_NAV: NavItem[] = [
   { href: "/cms/library?kind=rating", label: "Ratings", icon: Star, match: libraryWith("kind", "rating"), keywords: "tasting notes scores reviews" },
   { href: "/cms/library?kind=page", label: "Pages", icon: BookOpen, match: libraryWith("kind", "page"), keywords: "standalone pages about contact" },
   { href: "/cms/search", label: "Search & images", icon: Search, match: p => p === "/cms/search", keywords: "find images content keywords look style media" },
+  { href: "/cms/media", label: "Media", icon: Images, match: p => p === "/cms/media", keywords: "galleries morweb uploads files photos library s3 bottle shots hero images" },
 ];
 
 /** Where work waits. */

@@ -282,8 +282,8 @@ WA.ready(function (data) {
       front.querySelectorAll(".rot-dot").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
     }
     // The top stories rotate on their own unless the reader prefers reduced motion, pressed pause, or is pointing at or tabbed into the carousel.
-    var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches, paused = REDUCED, holding = false;
-    function arm() { clearInterval(timer); timer = null; front.setAttribute("data-paused", String(paused || holding)); if (paused || holding || five.length < 2) return; timer = setInterval(function () { if (!document.hidden) show(at + 1); }, STEP); }
+    var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches, paused = REDUCED, hovering = false, focused = false;
+    function arm() { clearInterval(timer); timer = null; var hold = hovering || focused; front.setAttribute("data-paused", String(paused || hold)); if (paused || hold || five.length < 2) return; timer = setInterval(function () { if (!document.hidden) show(at + 1); }, STEP); }
     function paintPause() { var b = front.querySelector(".rot-pause"); if (!b) return; b.setAttribute("aria-pressed", String(paused)); b.setAttribute("aria-label", paused ? "Play the top stories" : "Pause the top stories"); b.innerHTML = paused ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>'; }
     function build(list) {
       five = list.filter(Boolean).slice(0, 5); at = 0;
@@ -299,8 +299,9 @@ WA.ready(function (data) {
     });
     // Arrow keys move between stories from the dots; the carousel holds still while the pointer or focus is inside it.
     front.addEventListener("keydown", function (e) { if (!e.target.closest(".rot-dots") || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return; e.preventDefault(); show(at + (e.key === "ArrowRight" ? 1 : -1)); var d = front.querySelectorAll(".rot-dot")[at]; if (d) d.focus(); arm(); });
-    front.addEventListener("mouseenter", function () { holding = true; arm(); }); front.addEventListener("mouseleave", function () { holding = false; arm(); });
-    front.addEventListener("focusin", function () { holding = true; arm(); }); front.addEventListener("focusout", function (e) { if (!front.contains(e.relatedTarget)) { holding = false; arm(); } });
+    // Hover and keyboard focus are tracked apart: either one holds the carousel, and leaving with the mouse does not release a focused dot.
+    front.addEventListener("mouseenter", function () { hovering = true; arm(); }); front.addEventListener("mouseleave", function () { hovering = false; arm(); });
+    front.addEventListener("focusin", function () { focused = true; arm(); }); front.addEventListener("focusout", function (e) { if (!front.contains(e.relatedTarget)) { focused = false; arm(); } });
     (function () { var x0 = null; front.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true }); front.addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 48) { show(at + (dx < 0 ? 1 : -1)); arm(); } }, { passive: true }); })();
     build(news.slice(0, 5));
     fetch("/api/wa/front", { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {

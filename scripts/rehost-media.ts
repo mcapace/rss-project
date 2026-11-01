@@ -27,6 +27,17 @@ export const LEGACY_BASE: Record<string, string> = { wa: "https://whiskyadvocate
 export type LegacyImage = { raw: string; url: string; alt: string };
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif" };
 
+/** Legacy hosts sometimes label images application/octet-stream; the file's first bytes say what it is. */
+export function sniffImageType(bytes: Uint8Array): string | null {
+  const ascii = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes[0] === 0x89 && ascii(1, 4) === "PNG") return "image/png";
+  if (ascii(0, 4) === "GIF8") return "image/gif";
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  if (ascii(4, 8) === "ftyp" && /^avi[fs]$/.test(ascii(8, 12))) return "image/avif";
+  return null;
+}
+
 export function legacyImageUrls(html: string, hosts: string[], base?: string): string[] {
   return legacyImages(html, hosts, base).map(image => image.url);
 }
@@ -38,6 +49,7 @@ export function legacyImages(html: string, hosts: string[], base?: string): Lega
   for (const match of html.matchAll(IMG)) {
     const raw = match[1];
     const alt = (ALT.exec(match[0])?.[1] ?? "").trim();
+    if (raw.startsWith("/api/")) continue;
     try {
       const url = raw.startsWith("/") && !raw.startsWith("//") && base && hosts.includes(baseHost) ? new URL(raw, base) : new URL(raw);
       if ((url.protocol === "https:" || url.protocol === "http:") && hosts.includes(url.hostname.toLowerCase()) && !out.has(raw)) out.set(raw, { raw, url: url.toString(), alt });
@@ -50,9 +62,11 @@ export async function runRehost(args: string[], log: (line: string) => void = co
   const { values } = parseArgs({ args, options: {
     brand: { type: "string", default: "wa" }, hosts: { type: "string", default: "" }, limit: { type: "string", default: "200" },
     apply: { type: "boolean", default: false }, "development-target": { type: "string" }, help: { type: "boolean", default: false },
-    heroes: { type: "boolean", default: false },
+    heroes: { type: "boolean", default: false }, published: { type: "boolean", default: false },
+    "skip-renditions": { type: "boolean", default: false }, concurrency: { type: "string", default: "4" },
   }, strict: true });
-  if (values.help) { log("Usage: rehost-media --brand ws --hosts host1,host2 [--limit N] [--heroes] [--apply --development-target HOST]"); return; }
+  if (values.help) { log("Usage: rehost-media --brand ws --hosts host1,host2 [--limit N] [--heroes] [--published] [--skip-renditions] [--concurrency N] [--apply --development-target HOST]"); return; }
+  const concurrency = Math.min(32, Math.max(1, Number(values.concurrency) || 4));
   const brand = brandFlag(values.brand);
   const hosts = values.hosts.split(",").map(host => host.trim().toLowerCase()).filter(Boolean);
   if (!hosts.length) throw new Error("--hosts lists the legacy image hosts that may be fetched; nothing else is downloaded.");
@@ -89,7 +103,9 @@ export async function runRehost(args: string[], log: (line: string) => void = co
   while (rows.length < limit) {
     let page: Row[] | null = null;
     for (let attempt = 0; attempt < 4 && !page; attempt++) {
-      const { data, error } = await reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand).gt("id", after).order("id").limit(100);
+      let query = reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand).gt("id", after);
+      if (values.published) query = query.eq("publication_state", "published");
+      const { data, error } = await query.order("id").limit(100);
       if (!error) page = data as Row[]; else if (attempt === 3) throw new Error(`Could not read documents: ${error.message}`);
     }
     if (!page?.length) break;
@@ -116,15 +132,17 @@ export async function runRehost(args: string[], log: (line: string) => void = co
       try {
         const response = await fetch(url, { headers: { "User-Agent": "mshanken-cms-migration/1.0" } });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const type = (response.headers.get("content-type") ?? "").split(";")[0].trim();
-        if (!EXT[type]) throw new Error(`unsupported type ${type || "unknown"}`);
         const bytes = Buffer.from(await response.arrayBuffer());
+        const declared = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+        const type = EXT[declared] ? declared : sniffImageType(bytes) ?? declared;
+        if (!EXT[type]) throw new Error(`unsupported type ${type || "unknown"}`);
         if (bytes.length > 40 * 1024 * 1024) throw new Error("larger than 40 MB");
         const sha = createHash("sha256").update(bytes).digest("hex");
         const key = `cms/legacy/${brand}/${sha}.${EXT[type]}`;
         await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: type, CacheControl: "public, max-age=31536000, immutable" }));
         const renditions: Record<string, string> = {};
-        for (const width of RENDITION_WIDTHS) {
+        // /api/media renders sizes on demand from the original, so stored renditions are optional.
+        if (!values["skip-renditions"]) for (const width of RENDITION_WIDTHS) {
           for (const format of ["webp", "avif"] as const) {
             const rendition = await renderRendition(bytes, { width, format });
             const renditionKey = `cms/legacy/${brand}/${sha}-${width}.${format}`;
@@ -150,7 +168,8 @@ export async function runRehost(args: string[], log: (line: string) => void = co
       if (saveError) summary.failures.push(`${row.id}: ${saveError.message}`); else summary.bodies_rewritten += 1;
     }
   };
-  for (let i = 0; i < rows.length; i += 4) await Promise.all(rows.slice(i, i + 4).map(rehostOne));
+  let next = 0;
+  await Promise.all(Array.from({ length: concurrency }, async () => { while (next < rows.length) await rehostOne(rows[next++]); }));
   log(JSON.stringify({ ...summary, failures: summary.failures.slice(0, 100), failure_count: summary.failures.length }, null, 2));
 }
 

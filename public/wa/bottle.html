@@ -22,16 +22,17 @@
 <section class="band rating-top" id="overview" style="padding-top: 28px">
   <div class="crumbs" style="margin-bottom: 26px"><a href="finder.html">Ratings</a><span>›</span><a id="crumbCat" href="finder.html">Category</a><span>›</span><a id="crumbProd" href="producer.html">Producer</a><span>›</span><span id="crumbName">Bottle</span></div>
   <div class="bottle-hero">
-    <div class="hero-art"><img id="art" src="img/bottle-other.jpg" alt=""><div class="badge"><b id="badgeScore"></b><span>points</span></div></div>
+    <div class="hero-art"><div class="stage-light" aria-hidden="true"></div><img id="art" src="img/bottle-other.jpg" alt=""></div>
     <div>
       <span class="mono" id="kicker">Rating</span>
       <h1 class="d2" id="name" style="margin-top:10px; max-width: 20ch"></h1>
       <p class="byline" style="margin-top: 12px"><span id="tasterLine"></span><span id="when"></span><span id="issue"></span></p>
-      <div class="score-row"><div class="score-block"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div><span class="band-label" id="band"></span></div>
-      <p class="note" id="note"></p>
-      <div class="actions" style="margin-top: 22px"><a class="pill amber" id="storeBtn" hidden target="_blank" rel="noopener">Buy at the store</a><button type="button" class="pill" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button><a class="pill" href="industry.html">Sell sheet (trade)</a></div>
+      <div class="score-row verdict-strip"><div class="score-block"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div><div class="score-meta"><span class="band-label" id="band"></span><div class="scale" aria-hidden="true"><i id="scaleDot"></i></div><div class="scale-labels" aria-hidden="true"><span>80 Good</span><span>85 Very good</span><span>90 Outstanding</span><span>95 Classic</span></div><p class="score-rank" id="ctxTitle"></p></div></div>
+      <figure class="pull"><p class="note" id="note"></p><figcaption id="noteBy"></figcaption></figure>
+      <div class="actions" style="margin-top: 22px"><a class="pill amber" id="storeBtn" hidden target="_blank" rel="noopener">Buy at the store</a><button type="button" class="pill" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button></div>
       <div class="buy" id="buy" style="margin-top: 18px; display: none"></div>
       <dl class="facts" id="facts" style="margin-top: 22px"></dl>
+      <p class="trade-link"><a href="industry.html">For the trade: print a sell sheet for this bottle</a></p>
     </div>
   </div>
 </section>
@@ -43,7 +44,6 @@
       <a href="#overview">Overview</a>
       <a href="#tasting">Tasting</a>
       <a href="#filmBand" data-needs="filmBand">The film</a>
-      <a href="#context">Score</a>
       <a href="#similarBand">Try next</a>
       <a href="#producerBand" data-needs="producerBand">Same house</a>
       <a href="#issueBand" data-needs="issueBand">Same issue</a>
@@ -66,22 +66,14 @@
 </section>
 
 <section class="band" id="tasting">
-  <div class="band-head"><div><span class="mono">Tasting profile</span><h2 class="d2" style="margin-top:10px">Nose, palate, finish</h2></div></div>
-  <div class="profile" id="profile"></div>
-  <div class="tasting-row">
+  <div class="band-head"><div><span class="mono">In the glass</span><h2 class="d2" style="margin-top:10px">How it tastes, how to drink it, what it costs.</h2></div></div>
+  <div class="glass-grid">
     <div class="verdict compass-card"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other rating since 2022.</p></div>
-    <div class="verdict"><h3>Descriptors in the note</h3><div class="descriptors" id="descriptors" style="margin-top: 6px"></div></div>
+    <div class="verdict"><h3>What the taster found</h3><div class="descriptors" id="descriptors" style="margin-top: 6px"></div></div>
     <div class="verdict"><h3>How to drink it</h3><p class="big" id="serveBig"></p><p id="serveNote"></p></div>
+    <div class="verdict value-card"><div><h3>Value</h3><p class="big" id="valueBig"></p><p id="valueNote"></p></div><div><div class="price-ladder" id="ladder"></div><div class="price-ladder-labels"><span>under $40</span><span>$40–60</span><span>$60–100</span><span>$100–200</span><span>$200+</span></div><p id="ladderNote"></p></div></div>
   </div>
-</section>
-
-<section class="band" id="context">
-  <div class="band-head"><div><span class="mono">The score in context</span><h2 class="d2" style="margin-top:10px" id="ctxTitle"></h2></div></div>
-  <div class="two">
-    <div class="verdict"><h3>The Whisky Advocate scale</h3><div class="scale"><i id="scaleDot"></i></div><div class="scale-labels"><span>80 Good</span><span>85 Very good</span><span>90 Outstanding</span><span>95 Classic</span></div><p id="scaleNote"></p></div>
-    <div class="verdict"><h3>Value</h3><p class="big" id="valueBig"></p><p id="valueNote"></p></div>
-    <div class="verdict"><h3>Price against its category</h3><div class="price-ladder" id="ladder" style="margin-top: 8px"></div><div class="price-ladder-labels"><span>under $40</span><span>$40–60</span><span>$60–100</span><span>$100–200</span><span>$200+</span></div><p id="ladderNote"></p></div>
-  </div>
+  <p class="scale-note" id="scaleNote" hidden></p>
 </section>
 
 <div class="ad ad-leader" data-slot="wa_bottle_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 300 × 250 mobile</i></div>
@@ -95,15 +87,16 @@
   <div class="rail" id="fromProducer"></div>
 </section>
 
-<section class="band" id="issueBand">
-  <div class="band-head"><div><span class="mono">Rated alongside it</span><h2 class="d2" style="margin-top:10px" id="issueTitle"></h2></div></div>
-  <div class="dense" id="sameIssue"></div>
-</section>
-
-<section class="band" id="mentionsBand">
-  <div class="band-head"><div><span class="mono">In our stories</span><h2 class="d2" style="margin-top:10px">Where this bottle has appeared.</h2></div></div>
-  <div class="dense" id="mentions"></div>
-</section>
+<div class="band pair-band">
+  <section class="pair" id="issueBand">
+    <div class="band-head"><div><span class="mono">Rated alongside it</span><h2 class="d2" style="margin-top:10px" id="issueTitle"></h2></div></div>
+    <div class="dense" id="sameIssue"></div>
+  </section>
+  <section class="pair" id="mentionsBand">
+    <div class="band-head"><div><span class="mono">In our stories</span><h2 class="d2" style="margin-top:10px">Where this bottle has appeared.</h2></div></div>
+    <div class="dense" id="mentions"></div>
+  </section>
+</div>
 
 <section class="band" id="askBand">
   <div class="ask-inline">
@@ -176,14 +169,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var WORDS = ["vanilla", "caramel", "toffee", "honey", "butterscotch", "maple", "brown sugar", "oak", "cedar", "leather", "tobacco", "smoke", "peat", "brine", "sea salt", "iodine", "sherry", "raisin", "fig", "date", "prune", "dried fruit", "cherry", "plum", "apple", "pear", "peach", "apricot", "orange", "lemon", "citrus", "grapefruit", "chocolate", "cocoa", "coffee", "espresso", "nutmeg", "cinnamon", "clove", "ginger", "pepper", "chili", "spice", "mint", "eucalyptus", "heather", "floral", "rose", "grass", "hay", "cereal", "malt", "biscuit", "bread", "pastry", "cream", "butter", "nutty", "almond", "walnut", "hazelnut", "marzipan", "coconut", "tropical", "pineapple", "banana", "mango", "fudge", "licorice", "anise", "rye", "corn", "tannic", "oily", "waxy", "creamy", "dry", "sweet", "bitter", "warm", "long finish"];
   function band(s) { return s >= 95 ? ["Classic", "A great whisky. The panel reserves this for bottles it would put against anything."] : s >= 90 ? ["Outstanding", "A whisky of superior character and style, the kind the panel recommends without hesitation."] : s >= 85 ? ["Very good", "A whisky with special qualities. Worth seeking out at the right price."] : ["Good", "A solid, well made whisky. Buy it for what it does, not what it could be."]; }
   function sentences(t) { return (t || "").replace(/\s+/g, " ").match(/[^.!?]+[.!?]+/g) || [t]; }
-  function profile(full) {
-    var parts = { Nose: [], Palate: [], Finish: [] }, current = "Nose";
-    var bits = []; sentences(full).forEach(function (s) { s.split(/,?\s+(?=(?:with|and|leading to|before) (?:a|an|the) [a-z\- ]{0,20}finish\b)/i).forEach(function (b, i, all) { bits.push(i < all.length - 1 ? b.replace(/,?\s*$/, ".") : b.charAt(0).toUpperCase() + b.slice(1)); }); });
-    bits.forEach(function (s) { var l = s.toLowerCase(); if (/\b(finish|finishes|lingers|aftertaste|fades)\b/.test(l) && !/\bfinished (in|with)\b/.test(l)) current = "Finish"; else if (/\b(palate|mouth|sip|entry|mid-palate|tongue|texture|mouthfeel)\b/.test(l)) current = "Palate"; else if (/\b(nose|aroma|aromas|smell|scent)\b/.test(l)) current = "Nose"; parts[current].push(s.trim()); });
-    if (!parts.Palate.length && parts.Nose.length > 1) parts.Palate = parts.Nose.splice(Math.ceil(parts.Nose.length / 2));
-    if (!parts.Finish.length && parts.Palate.length > 1) parts.Finish = [parts.Palate.pop()];
-    return parts;
-  }
   function serve(r) {
     var a = r.a || 0;
     if (a >= 55) return ["Cask strength. Add water, slowly.", "At " + a + "% a teaspoon of water per dram opens the nose and tames the heat. Taste it neat first, then again after."];
@@ -223,7 +208,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     if (!hits.length && key.length >= 10) hits = STORIES.filter(function (st) { return (st.title + " " + st.dek).toLowerCase().indexOf(key) >= 0; });
     if (!hits.length) hits = STORIES.filter(function (st) { return (st.tags.join(" ") + " " + st.title).toLowerCase().indexOf(r.pr.toLowerCase()) >= 0; }).slice(0, 3);
     if (band) band.style.display = hits.length ? "" : "none";
-    el.innerHTML = hits.slice(0, 4).map(WA.storyRow).join("");
+    el.innerHTML = hits.slice(0, 5).map(WA.storyRow).join("");
     syncNav();
   }
   function syncNav() {
@@ -253,42 +238,41 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("tasterLine").innerHTML = r.by ? "Rated by <strong>" + r.by + "</strong>" : "Rated by <strong>the Whisky Advocate tasting panel</strong>";
     document.getElementById("when").textContent = r.d ? new Date(r.d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
     document.getElementById("issue").innerHTML = '<a href="' + WA.producerHref(r.pr) + '" style="color: var(--amber)">' + r.pr + "</a>";
-    document.getElementById("score").textContent = r.s; document.getElementById("badgeScore").textContent = r.s;
+    document.getElementById("score").textContent = r.s;
     document.getElementById("band").textContent = B[0] + " · " + r.s + " to " + (r.s >= 95 ? 100 : r.s >= 90 ? 94 : r.s >= 85 ? 89 : 84);
-    var sents = sentences(r.f || r.t || "The panel's note is being fetched."); document.getElementById("note").textContent = sents.slice(0, 2).join(" ");
+    document.getElementById("note").textContent = (r.f || r.t || "").trim() || "The note is on its way.";
+    document.getElementById("noteBy").textContent = [r.by || "The Whisky Advocate tasting panel", r.issue ? r.issue + " issue" : ""].filter(Boolean).join(", ");
     filmSlot(r);
     var art = document.getElementById("art"); art.alt = r.n; art.onerror = function () { art.onerror = null; art.src = WA.shot(r.c); }; art.src = WA.bottleSrc(r); document.querySelector(".hero-art").classList.add("photo");
     document.getElementById("facts").innerHTML = [["Price", fmt(r.p)], ["ABV", r.a ? r.a + "%" : "—"], ["Category", r.c], ["Producer", r.pr], ["Taster", r.by || "Tasting panel"], ["Issue", r.issue || "—"]].map(function (x) { return "<div><dt>" + x[0] + "</dt><dd>" + x[1] + "</dd></div>"; }).join("");
-    var P = profile(r.f || r.t);
-    document.getElementById("profile").innerHTML = ["Nose", "Palate", "Finish"].map(function (k) { return '<div class="part"><h3>' + k + "</h3><p>" + (P[k].join(" ") || "The panel's note does not separate this out.") + "</p></div>"; }).join("");
     var low = (r.f || r.t || "").toLowerCase(), found = WORDS.filter(function (w) { return low.indexOf(w) >= 0; });
     document.getElementById("descriptors").innerHTML = (found.length ? found : ["balanced"]).slice(0, 14).map(function (w, k) { return "<span" + (k < 3 ? ' class="hot"' : "") + ">" + w + "</span>"; }).join("");
     var S = serve(r); document.getElementById("serveBig").textContent = S[0]; document.getElementById("serveNote").textContent = S[1] + (/scotch/i.test(r.c) ? " A tulip glass keeps the aromas together." : /bourbon|rye/i.test(r.c) ? " A rocks glass is fine; a tulip glass shows more." : "");
     WA.drawCompass(document.getElementById("compass"), data.filter(function (x) { return x.d >= "2022" || x === r; }), r);
-    var peers = data.filter(function (x) { return x.c === r.c; }), below = peers.filter(function (x) { return x.s < r.s; }).length, pct = Math.round(below / Math.max(1, peers.length - 1) * 100);
+    var same = function (x) { return x === r || (x.slug && x.slug === r.slug); }, peers = data.filter(function (x) { return x.c === r.c; }), below = peers.filter(function (x) { return x.s < r.s; }).length, pct = Math.round(below / Math.max(1, peers.filter(function (x) { return !same(x); }).length) * 100);
     var ctxNote = document.getElementById("ctxNote");
     if (peers.length) {
-      document.getElementById("ctxTitle").textContent = r.s + " puts it ahead of " + pct + "% of every " + r.c.replace("/Tennessee Whiskey", "").toLowerCase() + " rating in the archive.";
+      document.getElementById("ctxTitle").textContent = pct >= 100 ? "The top score for any " + r.c.replace("/Tennessee Whiskey", "").toLowerCase() + " in the archive." : "Ahead of " + pct + "% of every " + r.c.replace("/Tennessee Whiskey", "").toLowerCase() + " rating in the archive.";
       if (ctxNote) ctxNote.textContent = peers.length + " " + r.c.toLowerCase() + " bottles rated since 2013, from " + Math.min.apply(null, peers.map(function (x) { return x.s; })) + " to " + Math.max.apply(null, peers.map(function (x) { return x.s; })) + " points.";
     } else {
-      document.getElementById("ctxTitle").textContent = B[0] + ". " + r.s + " points on the Whisky Advocate scale.";
+      document.getElementById("ctxTitle").textContent = "";
       if (ctxNote) ctxNote.textContent = "";
     }
     document.getElementById("scaleDot").style.left = ((r.s - 80) / 20 * 100) + "%"; document.getElementById("scaleNote").textContent = B[1];
-    var cheaperBetter = peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }), v = WA.value(r), frontier = r.p > 0 && data.filter(function (x) { return x.p > 0 && x.p <= r.p; }).every(function (x) { return x.s <= r.s; });
+    var cheaperBetter = peers.filter(function (x) { return !same(x) && x.p > 0 && x.p < r.p && x.s >= r.s; }), v = WA.value(r), frontier = r.p > 0 && data.filter(function (x) { return x.p > 0 && x.p <= r.p; }).every(function (x) { return x.s <= r.s; });
     document.getElementById("valueBig").textContent = frontier ? "Nothing scores higher for less." : v > 4 ? "Strong value." : v > 1 ? "Fair at the price." : "You are paying for the name.";
     document.getElementById("valueNote").textContent = (cheaperBetter.length ? cheaperBetter.length + " " + r.c.toLowerCase() + (cheaperBetter.length === 1 ? " bottle scores" : " bottles score") + " as high for less; the cheapest is " + cheaperBetter.sort(function (a, b) { return a.p - b.p; })[0].n + " at " + fmt(cheaperBetter[0].p) + "." : "No bottle in its category matches the score for less money.");
     var bands = [[0, 40], [40, 60], [60, 100], [100, 200], [200, 9999]], counts = bands.map(function (b) { return peers.filter(function (x) { return x.p > 0 && x.p >= b[0] && x.p < b[1]; }).length; }), max = Math.max.apply(null, counts.concat([1])), mine = bands.findIndex(function (b) { return r.p >= b[0] && r.p < b[1]; });
     document.getElementById("ladder").innerHTML = counts.map(function (c, k) { return '<i class="' + (k === mine ? "me" : "") + '" style="height:' + Math.max(6, c / max * 70) + 'px" title="' + c + ' bottles"></i>'; }).join("");
-    var inSet = peers.indexOf(r) >= 0, others = Math.max(0, (counts[mine] || 0) - (inSet ? 1 : 0));
+    var inSet = peers.some(same), others = Math.max(0, (counts[mine] || 0) - (inSet ? 1 : 0));
     document.getElementById("ladderNote").textContent = peers.length ? "At " + fmt(r.p) + " it sits in the " + ["under $40", "$40 to $60", "$60 to $100", "$100 to $200", "over $200"][mine] + " band with " + others + " other " + (others === 1 ? "bottle" : "bottles") + " in its category." : "Listed at " + fmt(r.p) + ".";
-    var sim = data.filter(function (x) { return x !== r && x.d >= "2021"; }).map(function (x) { var d = Math.abs(x.s - r.s) * 1.2 + (x.c === r.c ? 0 : 3) + Math.abs(Math.log(x.p / r.p)) * 2 + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))) * 0.6; }, 0); return { x: x, d: d }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; });
+    var sim = data.filter(function (x) { return !same(x) && x.d >= "2021"; }).map(function (x) { var d = Math.abs(x.s - r.s) * 1.2 + (x.c === r.c ? 0 : 3) + Math.abs(Math.log(x.p / r.p)) * 2 + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))) * 0.6; }, 0); return { x: x, d: d }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; });
     document.getElementById("similar").innerHTML = sim.map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(document.getElementById("similar"));
     (function () {
       var pool = [], seen = {}, byslug = {};
-      function add(x, how) { if (!x || x === r || seen[x.slug] || pool.length >= 22) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
+      function add(x, how) { if (!x || same(x) || seen[x.slug] || pool.length >= 22) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
       sim.slice(0, 10).forEach(function (x) { add(x, "closest by score, price and character"); });
-      data.filter(function (x) { return x.pr === r.pr && x !== r; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4).forEach(function (x) { add(x, "same house"); });
+      data.filter(function (x) { return x.pr === r.pr && !same(x); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4).forEach(function (x) { add(x, "same house"); });
       peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 4).forEach(function (x) { add(x, "scores as high for less"); });
       peers.filter(function (x) { return x.s > r.s && x.p > r.p; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3).forEach(function (x) { add(x, "a step up in the same style"); });
       if (!pool.length || !WA.recommend) return;
@@ -301,14 +285,14 @@ WA.ready(function (recent) { WA.archive(function (data) {
       });
     })();
     if (WA.setContext) WA.setContext({ kind: "bottle", title: r.n, summary: r.s + " points, " + fmt(r.p) + ", " + r.c + (r.pr ? ", by " + r.pr : ""), slugs: [r.slug].concat(sim.slice(0, 6).map(function (x) { return x.slug; })) });
-    var fromP = data.filter(function (x) { return x.pr === r.pr && x !== r; });
+    var fromP = data.filter(function (x) { return x.pr === r.pr && !same(x); });
     document.getElementById("producerBand").style.display = fromP.length ? "" : "none";
     document.getElementById("producerTitle").textContent = fromP.length + " more from " + r.pr + "."; document.getElementById("producerAll").href = WA.producerHref(r.pr);
     document.getElementById("fromProducer").innerHTML = fromP.sort(function (a, b) { return b.s - a.s; }).slice(0, 4).map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(document.getElementById("fromProducer"));
-    var same = data.filter(function (x) { return x.issue && x.issue === r.issue && x !== r; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6);
-    document.getElementById("issueBand").style.display = same.length && r.issue ? "" : "none";
+    var sameIssue = data.filter(function (x) { return x.issue && x.issue === r.issue && !same(x); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 5);
+    document.getElementById("issueBand").style.display = sameIssue.length && r.issue ? "" : "none";
     document.getElementById("issueTitle").textContent = "The " + r.issue + " issue.";
-    document.getElementById("sameIssue").innerHTML = same.map(function (x) { return '<a href="' + WA.bottleHref(data.indexOf(x)) + '"><span class="sc score-type">' + x.s + '</span><span><span class="nm">' + x.n + '</span><span class="sub">' + x.c + (x.by ? " · " + x.by : "") + '</span></span><span class="when">' + fmt(x.p) + "</span></a>"; }).join("");
+    document.getElementById("sameIssue").innerHTML = sameIssue.map(function (x) { return '<a href="' + WA.bottleHref(data.indexOf(x)) + '"><span class="sc score-type">' + x.s + '</span><span><span class="nm">' + x.n + '</span><span class="sub">' + x.c + (x.by ? " · " + x.by : "") + '</span></span><span class="when">' + fmt(x.p) + "</span></a>"; }).join("");
     mentions(r);
     document.getElementById("navScore").textContent = r.s;
     document.getElementById("navName").textContent = r.n.replace(/,\s*[\d.]+%$/, "");
@@ -332,7 +316,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   function localAsk(q) {
     var r = cur, l = q.toLowerCase(), text = "", picks = [];
     if (/worth|price|value|expensive|cheap/.test(l)) { text = "<p>" + document.getElementById("valueBig").textContent + " " + document.getElementById("valueNote").textContent + "</p><p>At " + fmt(r.p) + " and " + r.s + " points it sits " + (WA.value(r) > 2 ? "above" : "on") + " the value curve for recent " + r.c.toLowerCase() + ".</p>"; picks = data.filter(function (x) { return x.c === r.c && x.p < r.p && x.s >= r.s - 1; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4); }
-    else if (/similar|like this|less|alternative|instead/.test(l)) { picks = data.filter(function (x) { return x !== r && x.c === r.c && x.p <= r.p; }).map(function (x) { return { x: x, d: Math.abs(x.s - r.s) + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))); }, 0) }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; }); text = "<p>" + (picks.length ? "Closest in character and score at or below " + fmt(r.p) + ": <strong>" + picks[0].n + "</strong>, " + picks[0].s + " points at " + fmt(picks[0].p) + "." : "Nothing in its category comes close for less; the list beside this is the nearest.") + "</p>"; }
+    else if (/similar|like this|less|alternative|instead/.test(l)) { picks = data.filter(function (x) { return x !== r && x.slug !== r.slug && x.c === r.c && x.p <= r.p; }).map(function (x) { return { x: x, d: Math.abs(x.s - r.s) + ["smoky", "sweet", "rich", "light"].reduce(function (a, c) { return a + Math.abs(Math.min(3, WA.charScore(x, c)) - Math.min(3, WA.charScore(r, c))); }, 0) }; }).sort(function (a, b) { return a.d - b.d; }).slice(0, 4).map(function (s) { return s.x; }); text = "<p>" + (picks.length ? "Closest in character and score at or below " + fmt(r.p) + ": <strong>" + picks[0].n + "</strong>, " + picks[0].s + " points at " + fmt(picks[0].p) + "." : "Nothing in its category comes close for less; the list beside this is the nearest.") + "</p>"; }
     else if (/drink|serve|water|ice|neat|glass/.test(l)) { var S = serve(r); text = "<p>" + S[0] + " " + S[1] + "</p>"; picks = []; }
     else { var f = (r.f || r.t); text = "<p>" + (r.by || "The panel") + " wrote: &ldquo;" + f.slice(0, 260) + (f.length > 260 ? "…" : "") + "&rdquo;</p><p>In plain terms: " + (WA.charScore(r, "smoky") ? "there is smoke in it, " : "") + (WA.charScore(r, "sweet") ? "it leans sweet and fruited, " : "") + (WA.charScore(r, "rich") ? "it is full in the mouth, " : "") + (WA.charScore(r, "light") ? "it is on the lighter side, " : "") + "and the score says " + band(r.s)[0].toLowerCase() + ".</p>"; picks = []; }
     document.getElementById("answerFacets").innerHTML = '<span class="facet">' + r.n + "</span>";

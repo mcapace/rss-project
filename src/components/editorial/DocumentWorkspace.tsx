@@ -194,6 +194,14 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
   }, [document, update, updateMeta, setAssistantContext]);
 
   // Insert a stable media URL, never the five-minute presigned preview; the demo's placeholders are already stable.
+  // The gallery library (Morweb's galleries, kept in S3), searched by file name from the insert-image control.
+  const searchLibrary = useCallback(async (query: string, signal: AbortSignal): Promise<InsertableImage[]> => {
+    const page = await data.mediaFiles(brand, { q: query, status: "stored", limit: 24 }, signal);
+    return page.files.filter(file => file.public_url && /^image\//.test(file.mime)).map(file => ({
+      src: file.public_url!.startsWith("/") ? `${window.location.origin}${file.public_url}` : file.public_url!,
+      alt: file.alt || "", caption: file.file_name, preview: file.thumb ?? undefined,
+    }));
+  }, [data, brand]);
   const insertable = useMemo<InsertableImage[]>(() => (media.data ?? []).filter(item => item.preview_url).map(item => ({ src: demo || !document ? item.preview_url as string : `/api/media/${document.id}/${item.index}?w=1600`, preview: item.preview_url as string, alt: item.alt ?? "", caption: item.caption ?? "" })), [media.data, demo, document]);
   const performancePath = document?.publication_state === "published" ? (document.public_url ? (() => { try { return new URL(document.public_url).pathname; } catch { return null; } })() : document.slug ? `/${document.slug}` : null) : null;
   const documentBrand = document?.brand ?? brand;
@@ -279,7 +287,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           onChange={event => { update({ title: event.target.value }); event.target.style.height = "auto"; event.target.style.height = `${event.target.scrollHeight}px`; }} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
         <input className="ed-byline-input" style={{ marginTop: 8 }} value={draft.byline} placeholder="Byline" aria-label="Byline" maxLength={1000} onChange={event => update({ byline: event.target.value })} />
         {collab.ready
-          ? <BodyEditor key={`${document.id}:${collab.status === "off" ? document.revision : "live"}`} html={draft.body_html} onChange={(body_html, body_json) => update({ body_html, body_json: body_json as unknown as CmsJsonObject })} images={insertable} applyHtml={bodyReplaced} onHtmlApplied={bodyApplied}
+          ? <BodyEditor key={`${document.id}:${collab.status === "off" ? document.revision : "live"}`} html={draft.body_html} onChange={(body_html, body_json) => update({ body_html, body_json: body_json as unknown as CmsJsonObject })} images={insertable} searchLibrary={searchLibrary} applyHtml={bodyReplaced} onHtmlApplied={bodyApplied}
               collab={collab.status !== "off" ? { doc: collab.doc, provider: collab.provider, user: collab.user } : undefined} />
           : <div style={{ marginTop: 14 }}><SkeletonRows rows={4} /></div>}
         <p className="ed-editor-foot"><PenLine size={12} aria-hidden />{words.toLocaleString()} words · {readingMinutes(words)} min read · {CONTENT_TYPE_LABELS[document.kind].singular} · {SOURCE_SYSTEM_LABELS[document.source_system].short}</p>

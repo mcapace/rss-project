@@ -108,9 +108,29 @@
   function refreshExtra(holder) {
     googletag.cmd.push(function () { if (holder._spec.slot) googletag.pubads().refresh([holder._spec.slot]); });
   }
+  /* A grid's slot lands after whole rows: the cadence is rounded up to a multiple of the column count, so a five-column
+     grid gets a leaderboard every 15 cards, never two cards into a row. When a resize changes the column count the
+     lists are seated again. */
+  var seated = {};
+  function columnsOf(container) {
+    var cs = getComputedStyle(container);
+    if (cs.display !== "grid") return 1;
+    var tracks = cs.gridTemplateColumns.split(" ").filter(function (t) { return t && t !== "0px"; });
+    return Math.max(1, tracks.length);
+  }
+  var resizeTimer;
+  addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      Object.keys(seated).forEach(function (name) { var s = seated[name]; if (document.contains(s.container) && columnsOf(s.container) !== s.cols) WAAds.seat(s.container, s.every, name); });
+    }, 200);
+  });
   window.WAAds = {
     seat: function (container, every, name) {
       if (!container || !every) return;
+      var cols = columnsOf(container);
+      seated[name] = { container: container, every: every, cols: cols };
+      every = Math.ceil(every / cols) * cols;
       var pool = extras[name] || (extras[name] = []);
       pool.forEach(function (h) { if (h.parentNode) h.parentNode.removeChild(h); });
       Array.prototype.slice.call(container.querySelectorAll(".ad.ad-inline")).forEach(function (el) { if (pool.indexOf(el) < 0) el.parentNode.removeChild(el); });

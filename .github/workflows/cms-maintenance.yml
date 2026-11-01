@@ -1,6 +1,6 @@
 name: CMS maintenance
 
-# Runs the platform scripts (legacy image rehost, lead photographs, image
+# Runs the platform scripts (legacy image rehost, lead photographs, captions, image
 # descriptions, body normalization, redirect build, embeddings backfill, AI tags) against the content database with the same
 # secrets the print worker uses, so credentials never leave GitHub. Every
 # script is dry-run unless "apply" is ticked.
@@ -11,7 +11,7 @@ on:
         description: Which script to run
         required: true
         type: choice
-        options: [rehost, heroes, describe, bottles, normalize, redirects, embed, tags]
+        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags]
       brand:
         description: Publication (wa, ws, ca, mw)
         required: true
@@ -74,6 +74,7 @@ jobs:
           case "${{ inputs.task }}" in
             rehost)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}") ;;
             heroes)     script=scripts/rehost-media.ts;     extra=(--hosts "${{ inputs.hosts }}" --heroes) ;;
+            captions)   script=scripts/restore-captions.ts; extra=() ;;
             describe)   script=scripts/describe-media.ts;   extra=() ;;
             bottles)    script=scripts/bottle-images.ts;    extra=() ;;
             normalize)  script=scripts/normalize-bodies.ts; extra=(--only-missing) ;;

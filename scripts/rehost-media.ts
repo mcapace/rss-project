@@ -15,6 +15,7 @@
 import { createHash } from "node:crypto";
 import { parseArgs } from "node:util";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { figureCaptions, restoreBodyCaptions } from "../src/lib/cms/captions";
 import { detectFocalPoint, renderRendition, RENDITION_WIDTHS } from "../src/lib/media/renditions";
 import type { CmsJsonObject } from "../src/lib/cms/types";
 import { brandFlag, connectReader, connectTarget } from "./lib/target";
@@ -64,30 +65,50 @@ export async function runRehost(args: string[], log: (line: string) => void = co
 
   const base = LEGACY_BASE[brand];
   const baseAllowed = Boolean(base && hosts.includes(new URL(base).hostname.toLowerCase()));
-  // Only documents that still point at one of the legacy hosts, so repeated passes make progress.
-  // --heroes instead takes documents whose legacy lead photograph has not been attached yet.
-  const patterns = hosts.map(host => `%${host.replace(/[%_,()]/g, "")}%`);
-  if (baseAllowed) patterns.push("%/get/files/%", "%/files/galleries/%");
-  const query = reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand);
-  // The legacy-host scan runs in cms_rehost_backlog, which lifts the statement timeout for its own transaction.
-  const { data, error } = await (values.heroes
-    ? query.not("metadata->legacy_media->>thumb_file", "is", null).neq("metadata->legacy_media->>thumb_file", "").is("metadata->media", null).order("updated_at", { ascending: true }).limit(limit)
-    : reader.rpc("cms_rehost_backlog", { p_brand: brand, p_patterns: patterns, p_limit: limit }));
-  if (error) throw new Error(`Could not read documents: ${error.message}`);
-  const summary = { mode: writer ? "development-apply" : "dry-run", brand, heroes: values.heroes, documents: 0, images_found: 0, images_rehosted: 0, renditions: 0, bodies_rewritten: 0, failures: [] as string[] };
-
-  for (const row of (data ?? []) as { id: string; title: string; body_html: string; metadata: CmsJsonObject; revision: number }[]) {
-    const images = values.heroes ? [] : legacyImages(row.body_html, hosts, baseAllowed ? base : undefined);
-    const legacy = row.metadata.legacy_media && typeof row.metadata.legacy_media === "object" && !Array.isArray(row.metadata.legacy_media) ? row.metadata.legacy_media as CmsJsonObject : null;
+  const summary = { mode: writer ? "development-apply" : "dry-run", brand, heroes: values.heroes, scanned: 0, documents: 0, images_found: 0, images_rehosted: 0, renditions: 0, bodies_rewritten: 0, failures: [] as string[] };
+  type Row = { id: string; title: string; body_html: string; metadata: CmsJsonObject; revision: number };
+  const record = (value: unknown) => value && typeof value === "object" && !Array.isArray(value) ? value as CmsJsonObject : null;
+  // The lead photograph, when it still lives on a legacy host and no media record carries it yet.
+  const legacyLead = (row: Row): LegacyImage | null => {
+    const legacy = record(row.metadata.legacy_media);
     const heroRaw = typeof legacy?.thumb_file === "string" ? legacy.thumb_file : "";
-    let hero: LegacyImage | null = null;
-    if (heroRaw && baseAllowed && base) { try { const url = new URL(heroRaw, base); if (hosts.includes(url.hostname.toLowerCase())) hero = { raw: heroRaw, url: url.toString(), alt: row.title }; } catch { /* not a usable path */ } }
-    if (hero && !images.some(image => image.url === hero!.url)) images.push(hero);
-    if (!images.length) continue;
+    if (!heroRaw) return null;
+    try {
+      const url = heroRaw.startsWith("/") && base ? new URL(heroRaw, base) : new URL(heroRaw);
+      if (!hosts.includes(url.hostname.toLowerCase())) return null;
+      const media = Array.isArray(row.metadata.media) ? row.metadata.media as CmsJsonObject[] : [];
+      if (media.some(item => item.source_url === url.toString())) return null;
+      return { raw: heroRaw, url: url.toString(), alt: row.title };
+    } catch { return null; }
+  };
+  const pending = (row: Row) => values.heroes ? legacyLead(row) !== null : legacyImages(row.body_html ?? "", hosts, baseAllowed ? base : undefined).length > 0 || legacyLead(row) !== null;
+
+  // Walk the table by id in small pages and test bodies here: a single ilike over every body times out.
+  const rows: Row[] = [];
+  let after = "00000000-0000-0000-0000-000000000000";
+  while (rows.length < limit) {
+    let page: Row[] | null = null;
+    for (let attempt = 0; attempt < 4 && !page; attempt++) {
+      const { data, error } = await reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand).gt("id", after).order("id").limit(100);
+      if (!error) page = data as Row[]; else if (attempt === 3) throw new Error(`Could not read documents: ${error.message}`);
+    }
+    if (!page?.length) break;
+    after = page[page.length - 1].id;
+    summary.scanned += page.length;
+    rows.push(...page.filter(pending));
+  }
+
+  const rehostOne = async (row: Row) => {
+    const images = values.heroes ? [] : legacyImages(row.body_html ?? "", hosts, baseAllowed ? base : undefined);
+    const hero = legacyLead(row);
+    if (hero && !images.some(image => image.url === hero.url)) images.push(hero);
+    if (!images.length) return;
     summary.documents += 1; summary.images_found += images.length;
-    if (!writer || !s3 || !bucket) continue;
+    if (!writer || !s3 || !bucket) return;
     const media = Array.isArray(row.metadata.media) ? [...(row.metadata.media as CmsJsonObject[])] : [];
     const before = media.length;
+    const leadCaption = record(row.metadata.lead_image);
+    const bodyCaptions = [...figureCaptions(row.body_html ?? ""), ...restoreBodyCaptions(row.body_html ?? "").images];
     let html = row.body_html;
     for (const image of images) {
       const url = image.url;
@@ -114,7 +135,11 @@ export async function runRehost(args: string[], log: (line: string) => void = co
         }
         const focal = await detectFocalPoint(bytes);
         const isLead = hero !== null && image.url === hero.url;
-        const index = media.push({ s3_key: key, sha256: sha, file: new URL(url).pathname.split("/").pop() ?? sha, source_url: url, focal, renditions, caption: "", credit: "", alt: image.alt, ...(isLead ? { is_lead: true } : {}) }) - 1;
+        const text = isLead
+          ? { caption: typeof leadCaption?.caption === "string" ? leadCaption.caption : "", credit: typeof leadCaption?.credit === "string" ? leadCaption.credit : "" }
+          : bodyCaptions.find(found => found.src === image.raw) ?? { caption: "", credit: "" };
+        const leadTaken = media.some(item => item.is_lead === true);
+        const index = media.push({ s3_key: key, sha256: sha, file: new URL(url).pathname.split("/").pop() ?? sha, source_url: url, focal, renditions, caption: text.caption, credit: text.credit, alt: image.alt, ...(isLead && !leadTaken ? { is_lead: true } : {}) }) - 1;
         if (html.includes(image.raw)) html = html.split(image.raw).join(`/api/media/${row.id}/${index}?w=1600`);
         summary.images_rehosted += 1;
       } catch (failure) { summary.failures.push(`${row.id} ${url}: ${failure instanceof Error ? failure.message : "failed"}`); }
@@ -124,8 +149,9 @@ export async function runRehost(args: string[], log: (line: string) => void = co
       const { error: saveError } = await writer.rpc("cms_save_document", { p_document_id: row.id, p_expected_revision: row.revision, p_patch: patch, p_actor: "media-rehost" });
       if (saveError) summary.failures.push(`${row.id}: ${saveError.message}`); else summary.bodies_rewritten += 1;
     }
-  }
-  log(JSON.stringify(summary, null, 2));
+  };
+  for (let i = 0; i < rows.length; i += 4) await Promise.all(rows.slice(i, i + 4).map(rehostOne));
+  log(JSON.stringify({ ...summary, failures: summary.failures.slice(0, 100), failure_count: summary.failures.length }, null, 2));
 }
 
 if (/(?:^|[/\\])rehost-media\.(?:ts|js)$/.test(process.argv[1] ?? "")) {

@@ -4,7 +4,9 @@
   var fmt = function (n) { return n > 0 ? "$" + Math.round(n).toLocaleString() : "Price n/a"; };
   function charScore(r, c) { return c === "smoky" ? r.sm : c === "sweet" ? r.sw : c === "rich" ? r.ri : r.li; }
   function slugOf(r) { return (r.pr + " " + r.n).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
-  function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; return "bottle.html#" + (r && r.slug ? encodeURIComponent(r.slug) : x); }
+  // On the live site every story and rating has its own server-rendered page at /wa/<slug>; elsewhere (the artifact copy) the hash pages.
+  var PATHS = !!window.WA_PATHS || /^\/wa\//.test(location.pathname);
+  function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; var s = r && r.slug ? r.slug : (typeof x === "string" ? x : ""); if (PATHS && s && !/^t20-/i.test(s)) return "/wa/" + encodeURIComponent(s); return "bottle.html#" + (s ? encodeURIComponent(s) : x); }
   function producerHref(name) { return "producer.html#" + encodeURIComponent(name); }
   var value = function (r) { return r.s - 80 - Math.log((r.p > 0 ? r.p : 60) / 30) * 4; };
 
@@ -147,7 +149,7 @@
   function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); fetch("glossary.json").then(function (r) { return r.json(); }).then(function (d) { GLOSSARY = d; cb(d); }); }
   var SECTION_HREF = { news: "stories.html#news", features: "stories.html#features", guides: "guides.html", cocktails: "cocktails.html", travel: "travel.html", life: "stories.html#life" };
   function initials(name) { return (name || "WA").split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
-  function storyHref(st) { return "story.html#" + st.slug; }
+  function storyHref(st) { return (window.WA_PATHS || /^\/wa\//.test(location.pathname)) ? "/wa/" + encodeURIComponent(st.slug) : "story.html#" + st.slug; }
   function storyRow(st) { return '<a href="' + storyHref(st) + '">' + (st.hero ? '<img class="th" src="' + st.hero + '" alt="" loading="lazy">' : '<span class="tag">' + SECTION[st.sec] + '</span>') + '<span><span class="nm">' + st.title + '</span><span class="sub">' + (st.dek || SECTION[st.sec] + " · " + st.by) + '</span></span><span class="when">' + when(st.d) + "</span></a>"; }
   function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
   window.WA.stories = stories; window.WA.storyBySlug = storyBySlug; window.WA.storiesAll = function (cb) { stories(cb, { all: true }); }; window.WA.article = article; window.WA.glossary = glossary; window.WA.SECTION_HREF = SECTION_HREF; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
@@ -177,7 +179,9 @@
       note(slug, function (f) { var r = ARCHIVE && ARCHIVE.bySlug[slug.toLowerCase()]; if (r && !r.f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") + "…" : f; } if (p.hasAttribute("data-full")) p.textContent = !f ? "" : (f.length > 460 ? f.slice(0, 460).replace(/\s\S*$/, "") + "…" : f); else p.textContent = r && r.t ? r.t : (f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") + "…" : f); });
     });
   }
-  function hashSlug() { var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
+  function hashSlug() { if (window.WA_SLUG) return window.WA_SLUG; var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
+  // A hash URL (story.html#slug) on the live site becomes the item's own URL without a reload, so links, shares and bookmarks use it.
+  function cleanUrl(slug) { if (!PATHS || window.WA_SLUG || !slug || /^t20-/i.test(slug) || !history.replaceState) return; window.WA_SLUG = slug; try { history.replaceState(null, "", "/wa/" + encodeURIComponent(slug)); } catch (e) {} }
   function find(data, slug) { if (!slug) return null; if (data.bySlug) return data.bySlug[slug.toLowerCase()] || null; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = parseInt(slug, 10); return isNaN(n) ? null : data[n] || null; }
   var COCKTAILS = null, TOP20 = null;
   function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); fetch("cocktails.json").then(function (r) { return r.json(); }).then(function (d) { COCKTAILS = d; cb(d); }); }
@@ -204,7 +208,7 @@
   window.WA.amount = amount; window.WA.fmtAmount = fmtAmount;
   window.WA.producers = producers; window.WA.COUNTRY = COUNTRY;
   window.WA.cocktails = cocktails; window.WA.top20 = top20;
-  window.WA.archive = archive; window.WA.note = note; window.WA.fillNotes = fillNotes; window.WA.hashSlug = hashSlug; window.WA.find = find;
+  window.WA.PATHS = PATHS; window.WA.cleanUrl = cleanUrl; window.WA.archive = archive; window.WA.note = note; window.WA.fillNotes = fillNotes; window.WA.hashSlug = hashSlug; window.WA.find = find;
 
   /* Query understanding */
   var TYPES = [
@@ -785,11 +789,12 @@ document.body.appendChild(waAds);
   }
   function scan(all) {
     queued = false;
-    var links = document.querySelectorAll(all ? 'a[href*="story.html#"]' : 'a[href*="story.html#"]:not([data-spc])');
+    var links = document.querySelectorAll(all ? 'a[href*="story.html#"], a[href^="/wa/"]' : 'a[href*="story.html#"]:not([data-spc]), a[href^="/wa/"]:not([data-spc])');
     for (var i = 0; i < links.length; i++) {
       var a = links[i]; a.setAttribute("data-spc", "");
       if (a.matches(SKIP) || a.closest(SKIP)) continue;
-      var h = a.getAttribute("href"), slug = h.slice(h.indexOf("#") + 1);
+      var h = a.getAttribute("href"), slug = h.indexOf("story.html#") >= 0 ? h.slice(h.indexOf("#") + 1) : (/^\/wa\/[^/?#.]+$/.test(h) ? h.slice(4) : "");
+      if (!slug) continue;
       if (key(slug) in paid) place(a);
     }
   }

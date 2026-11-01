@@ -240,6 +240,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (!entry) return;
       r = asRating(entry);
     } else r = WA.find(data, slug) || recent.slice().sort(function (a, b) { return b.s - a.s; })[0];
+    if (r && !top && WA.cleanUrl && WA.find(data, slug)) WA.cleanUrl(r.slug);
     if (r.f == null) { WA.note(r.slug, function (f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") : f; show(); }); r.f = ""; return; }
     cur = r; var B = band(r.s);
     document.title = r.n + " · " + r.s + " points";

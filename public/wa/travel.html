@@ -29,7 +29,7 @@
 
 <div class="ad ad-leader" data-slot="wa_travel_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <section class="band" id="list">
-  <div class="band-head"><div><span class="mono" id="listKicker">Everywhere</span><h2 class="d2" style="margin-top:10px" id="listTitle"></h2></div><div class="suggest" id="what"><button type="button" data-what="" aria-pressed="true">Everything</button><button type="button" data-what="bars">Bars</button><button type="button" data-what="distillery">Distilleries to visit</button></div></div>
+  <div class="band-head filter-bar" id="listBar"><div><span class="mono" id="listKicker">Everywhere</span><h2 class="d2" style="margin-top:10px" id="listTitle"></h2></div><div class="suggest" id="what"><button type="button" data-what="" aria-pressed="true">Everything</button><button type="button" data-what="bars">Bars</button><button type="button" data-what="distillery">Distilleries to visit</button></div></div>
   <div class="picks3" id="picks"></div>
   <div class="dense" id="rows" style="margin-top: 14px"></div>
   <div class="more"><button type="button" class="pill" id="more">More stories</button></div>
@@ -63,6 +63,7 @@ WA.ready(function () {
     document.getElementById("places").addEventListener("click", function (e) { var b = e.target.closest(".place"); if (!b) return; var p = b.getAttribute("data-place"); state.place = state.place === p ? "" : p; state.limit = 20; list(); document.getElementById("list").scrollIntoView({ behavior: "smooth", block: "start" }); });
     document.getElementById("what").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.what = b.getAttribute("data-what"); state.limit = 20; list(); });
     document.getElementById("more").addEventListener("click", function () { state.limit += 20; list(); });
+    WA.stickyFilters(document.getElementById("listBar"));
     board(); list();
   });
 });

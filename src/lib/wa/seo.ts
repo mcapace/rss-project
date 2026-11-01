@@ -155,29 +155,60 @@ function publisher(origin: string) {
   return { "@type": "Organization", "@id": `${origin}${BASE}/#publisher`, name: PUBLISHER, url: `${origin}${BASE}/`, logo: { "@type": "ImageObject", url: `${origin}${BASE}/img/icon-192.png`, width: 192, height: 192 }, sameAs: ["https://www.instagram.com/whiskyadvocate/", "https://www.facebook.com/whiskyadvocate", "https://twitter.com/whiskyadvocate", "https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg"] };
 }
 
-function commonTags(o: { title: string; description: string; canonical: string; image: string; type: string; noindex: boolean; origin: string }): string {
+/** Search engines show about 155 characters of a description; the tag carries the SEO description cut to fit on a word. */
+export function metaDescription(text: string): string { return clip(text, 158); }
+
+function commonTags(o: { title: string; description: string; canonical: string; image: string; type: string; noindex: boolean; origin: string; socialTitle?: string; socialDescription?: string; imageAlt?: string; keywords?: string[] }): string {
+  const social = { title: o.socialTitle || o.title, description: o.socialDescription || o.description };
   const robots = o.noindex ? "noindex, follow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
   return [
-    `<meta name="description" content="${esc(o.description)}">`,
+    `<meta name="description" content="${esc(metaDescription(o.description))}">`,
+    o.keywords?.length ? `<meta name="keywords" content="${esc(o.keywords.join(", "))}">` : "",
     `<link rel="canonical" href="${esc(o.canonical)}">`,
     `<meta name="robots" content="${robots}">`,
     `<meta property="og:site_name" content="${PUBLISHER}">`,
     `<meta property="og:locale" content="en_US">`,
     `<meta property="og:type" content="${o.type}">`,
-    `<meta property="og:title" content="${esc(o.title)}">`,
-    `<meta property="og:description" content="${esc(o.description)}">`,
+    `<meta property="og:title" content="${esc(social.title)}">`,
+    `<meta property="og:description" content="${esc(social.description)}">`,
     `<meta property="og:url" content="${esc(o.canonical)}">`,
     o.image ? `<meta property="og:image" content="${esc(o.image)}">` : "",
+    o.image && o.imageAlt ? `<meta property="og:image:alt" content="${esc(o.imageAlt)}">` : "",
     `<meta name="twitter:card" content="${o.image ? "summary_large_image" : "summary"}">`,
     `<meta name="twitter:site" content="@whiskyadvocate">`,
-    `<meta name="twitter:title" content="${esc(o.title)}">`,
-    `<meta name="twitter:description" content="${esc(o.description)}">`,
+    `<meta name="twitter:title" content="${esc(social.title)}">`,
+    `<meta name="twitter:description" content="${esc(social.description)}">`,
     o.image ? `<meta name="twitter:image" content="${esc(o.image)}">` : "",
     `<link rel="alternate" type="application/rss+xml" title="${PUBLISHER}" href="${o.origin}${BASE}/feed.xml">`,
   ].filter(Boolean).join("\n");
 }
 
-export type StoryView = { slug: string; title: string; description: string; section: string; sectionLabel: string; authors: string[]; byline: string; published: string | null; modified: string | null; day: string | null; hero: string; tags: string[]; body: string; words: number; sponsored: boolean; sponsor: string; noindex: boolean; kind: string };
+export type StoryView = { slug: string; title: string; description: string; section: string; sectionLabel: string; authors: string[]; byline: string; published: string | null; modified: string | null; day: string | null; hero: string; tags: string[]; body: string; words: number; sponsored: boolean; sponsor: string; noindex: boolean; kind: string } & SeoFields;
+
+/**
+ * What the SEO pass (scripts/wa-seo-pass.ts) and editors write in metadata.seo, beyond title and description:
+ * the search title, social copy, keywords, an answer-first summary and key facts for AI answer engines (GEO),
+ * the people, places and brands the piece is about, and alt text for the lead picture.
+ */
+export type SeoFields = { seoTitle?: string; socialTitle?: string; socialDescription?: string; keywords?: string[]; summary?: string; keyFacts?: string[]; entities?: { name: string; type: string }[]; heroAlt?: string };
+
+const ENTITY_TYPES: Record<string, string> = { person: "Person", brand: "Brand", organization: "Organization", distillery: "Organization", company: "Organization", place: "Place", product: "Product", event: "Event" };
+
+export function seoFields(metadata: unknown): SeoFields {
+  const seo = obj(obj(metadata).seo);
+  const text = (value: unknown) => (typeof value === "string" ? plain(value) : "");
+  const entities = (Array.isArray(seo.entities) ? seo.entities : []).map(item => obj(item)).map(item => ({ name: text(item.name), type: ENTITY_TYPES[text(item.type).toLowerCase()] ?? "Thing" })).filter(item => item.name).slice(0, 12);
+  return {
+    seoTitle: text(seo.title) || undefined, socialTitle: text(seo.og_title) || undefined, socialDescription: text(seo.og_description) || undefined,
+    keywords: strs(seo.keywords).slice(0, 12), summary: text(seo.summary) || undefined, keyFacts: strs(seo.key_facts).map(plain).filter(Boolean).slice(0, 6),
+    entities, heroAlt: text(seo.image_alt) || undefined,
+  };
+}
+
+/** The page title: the search title with the publication when it fits in about 65 characters. */
+export function pageTitle(title: string, suffix = PUBLISHER): string {
+  return `${title} | ${suffix}`.length <= 68 ? `${title} | ${suffix}` : title;
+}
 
 export function storyView(doc: WaDoc, origin: string): StoryView {
   const meta = obj(doc.metadata);
@@ -190,7 +221,7 @@ export function storyView(doc: WaDoc, origin: string): StoryView {
   const description = clip(plain(String(seo.description || doc.excerpt || meta.ai_summary || "")) || text, 300);
   const sp = sponsorship(meta, doc.byline);
   const dates = docDates(doc);
-  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind };
+  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind, ...seoFields(meta) };
 }
 
 function longDate(day: string | null): string {
@@ -208,14 +239,17 @@ export function storyJsonLd(v: StoryView, origin: string): unknown[] {
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
     headline: clip(v.title, 110),
-    description: v.description,
+    description: metaDescription(v.description),
+    abstract: v.summary || undefined,
     image: v.hero ? [v.hero] : undefined,
     datePublished: v.published ?? undefined,
     dateModified: v.modified ?? v.published ?? undefined,
     author: v.authors.length ? v.authors.map(name => ({ "@type": "Person", name, url: `${origin}${BASE}/stories.html#by=${encodeURIComponent(name)}` })) : { "@type": "Organization", name: PUBLISHER, url: `${origin}${BASE}/` },
     publisher: publisher(origin),
     articleSection: v.sectionLabel,
-    keywords: v.tags.length ? v.tags.join(", ") : undefined,
+    keywords: [...new Set([...(v.keywords ?? []), ...v.tags])].join(", ") || undefined,
+    about: v.entities?.length ? v.entities.slice(0, 4).map(e => ({ "@type": e.type, name: e.name })) : undefined,
+    mentions: v.entities && v.entities.length > 4 ? v.entities.slice(4).map(e => ({ "@type": e.type, name: e.name })) : undefined,
     wordCount: v.words || undefined,
     inLanguage: "en-US",
     isAccessibleForFree: true,
@@ -231,8 +265,8 @@ export function storyJsonLd(v: StoryView, origin: string): unknown[] {
 
 export function renderStory(templateHtml: string, v: StoryView, origin: string): string {
   const canonical = `${origin}${BASE}/${v.slug}`;
-  let html = head(templateHtml, `${v.title} | ${PUBLISHER}`, [
-    commonTags({ title: v.title, description: v.description, canonical, image: v.hero, type: "article", noindex: v.noindex, origin }),
+  let html = head(templateHtml, pageTitle(v.seoTitle || v.title), [
+    commonTags({ title: v.seoTitle || v.title, description: v.description, canonical, image: v.hero, type: "article", noindex: v.noindex, origin, socialTitle: v.socialTitle || v.title, socialDescription: v.socialDescription, imageAlt: v.heroAlt, keywords: v.keywords }),
     v.published ? `<meta property="article:published_time" content="${esc(v.published)}">` : "",
     v.modified ? `<meta property="article:modified_time" content="${esc(v.modified)}">` : "",
     `<meta property="article:section" content="${esc(v.sectionLabel)}">`,
@@ -248,20 +282,20 @@ export function renderStory(templateHtml: string, v: StoryView, origin: string):
   const date = v.day ? `<time datetime="${esc(v.published ?? v.day)}">${esc(longDate(v.day))}</time>` : "";
   const who = v.sponsored ? `<span>${v.sponsor ? `Sponsored by <strong>${esc(v.sponsor)}</strong>` : "<strong>Sponsored content</strong>"}</span>` : v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${BASE}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
   html = fill(html, "byline", `${who}<span>${date}</span>${v.words ? `<span>${Math.max(1, Math.round(v.words / 230))} minute read</span>` : ""}`);
-  if (v.hero) html = html.replace(/<figure class="figure story-hero" id="hero" hidden><img src="" alt="">/, `<figure class="figure story-hero" id="hero"><img src="${esc(v.hero)}" alt="${esc(v.title)}" fetchpriority="high">`);
+  if (v.hero) html = html.replace(/<figure class="figure story-hero" id="hero" hidden><img src="" alt="">/, `<figure class="figure story-hero" id="hero"><img src="${esc(v.hero)}" alt="${esc(v.heroAlt || v.title)}" fetchpriority="high">`);
   const disclosure = v.sponsored ? `<p class="sp-note" role="note">This is paid content, produced with ${esc(v.sponsor || "an advertiser")}. It is not part of Whisky Advocate&rsquo;s editorial coverage, and it does not affect our ratings.</p>` : "";
   html = fill(html, "prose", disclosure + v.body);
   return boot(html, v.slug);
 }
 
-export type RatingView = { slug: string; name: string; score: number | null; price: number | null; category: string; brand: string; reviewer: string; issue: string; note: string; image: string; published: string | null; day: string | null; noindex: boolean };
+export type RatingView = { slug: string; name: string; score: number | null; price: number | null; category: string; brand: string; reviewer: string; issue: string; note: string; image: string; published: string | null; day: string | null; noindex: boolean; seoDescription?: string } & SeoFields;
 
 export function ratingView(doc: WaDoc, origin: string): RatingView {
   const meta = obj(doc.metadata);
   const r = obj(meta.rating);
   const score = Number(r.score);
   const price = Number(r.price);
-  return { slug: doc.slug, name: plain(doc.title), score: Number.isFinite(score) && score > 0 ? score : null, price: Number.isFinite(price) && price > 0 ? price : null, category: String(r.category || ""), brand: String(r.brand || r.producer || ""), reviewer: String(r.reviewer || doc.byline || ""), issue: String(r.issue || meta.issue_label || ""), note: plain(doc.body_html || doc.excerpt || ""), image: heroOf(doc, origin), published: docDates(doc).published, day: docDates(doc).day, noindex: isNoIndex(doc) };
+  return { slug: doc.slug, name: plain(doc.title), score: Number.isFinite(score) && score > 0 ? score : null, price: Number.isFinite(price) && price > 0 ? price : null, category: String(r.category || ""), brand: String(r.brand || r.producer || ""), reviewer: String(r.reviewer || doc.byline || ""), issue: String(r.issue || meta.issue_label || ""), note: plain(doc.body_html || doc.excerpt || ""), image: heroOf(doc, origin), published: docDates(doc).published, day: docDates(doc).day, noindex: isNoIndex(doc), seoDescription: typeof obj(meta.seo).description === "string" ? plain(String(obj(meta.seo).description)) || undefined : undefined, ...seoFields(meta) };
 }
 
 export function ratingJsonLd(v: RatingView, origin: string): unknown[] {
@@ -297,10 +331,10 @@ export function ratingJsonLd(v: RatingView, origin: string): unknown[] {
 
 export function renderRating(templateHtml: string, v: RatingView, origin: string): string {
   const canonical = `${origin}${BASE}/${v.slug}`;
-  const title = v.score ? `${v.name}: ${v.score} points` : v.name;
-  const description = clip([v.score ? `${v.name} scored ${v.score} points from Whisky Advocate` : v.name, v.category ? `${v.category}` : "", v.price ? `$${v.price}` : "", v.note].filter(Boolean).join(". ").replace(/\.\./g, "."), 300);
-  let html = head(templateHtml, `${title} | ${PUBLISHER} Rating`, [
-    commonTags({ title, description, canonical, image: v.image, type: "article", noindex: v.noindex, origin }),
+  const title = v.seoTitle || (v.score ? `${v.name}: ${v.score} points` : v.name);
+  const description = v.seoDescription || clip([v.score ? `${v.name} scored ${v.score} points from Whisky Advocate` : v.name, v.category ? `${v.category}` : "", v.price ? `$${v.price}` : "", v.note].filter(Boolean).join(". ").replace(/\.\./g, "."), 300);
+  let html = head(templateHtml, pageTitle(title, `${PUBLISHER} Rating`), [
+    commonTags({ title, description, canonical, image: v.image, type: "article", noindex: v.noindex, origin, imageAlt: v.heroAlt || (v.image ? `Bottle of ${v.name}` : undefined), keywords: v.keywords }),
     ...ratingJsonLd(v, origin).map(jsonLd),
   ].join("\n"));
   html = fill(html, "kicker", esc(["Rating", v.category].filter(Boolean).join(" · ")));

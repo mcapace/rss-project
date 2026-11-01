@@ -97,7 +97,8 @@ export function tidy(raw: Record<string, unknown>, fileName: string): Named {
   const str = (value: unknown) => (typeof value === "string" ? value.trim() : "");
   const fallback = slugify(fileName.replace(/\.[a-z0-9]{2,5}$/i, ""));
   const seo = slugify(str(raw.seo_slug)) || fallback || "whisky-advocate-file";
-  const alt = clip(str(raw.alt).replace(/^(an?\s+)?(image|photo|picture|photograph)\s+of\s+/i, ""), 125);
+  // Asked for 125 characters; a little longer is better than a sentence cut mid-phrase.
+  const alt = clip(str(raw.alt).replace(/^(an?\s+)?(image|photo|picture|photograph)\s+of\s+/i, ""), 160);
   const keywords = [...new Set((Array.isArray(raw.keywords) ? raw.keywords : []).map(k => clip(str(k).toLowerCase(), 40)).filter(Boolean))].slice(0, 10);
   return {
     seo_name: seo, seo_title: clip(str(raw.title), 70), seo_alt: alt ? alt[0].toUpperCase() + alt.slice(1) : "", seo_description: clip(str(raw.description), 300), keywords,
@@ -118,7 +119,7 @@ async function preview(bytes: Uint8Array): Promise<string | null> {
 
 export async function runMediaName(args: string[], log: (line: string) => void = console.log) {
   const { values } = parseArgs({ args, options: {
-    brand: { type: "string", default: "wa" }, limit: { type: "string", default: "300" }, concurrency: { type: "string", default: "4" },
+    brand: { type: "string", default: "wa" }, limit: { type: "string", default: "300" }, concurrency: { type: "string", default: "6" },
     gallery: { type: "string" }, redo: { type: "boolean", default: false }, "retry-failed": { type: "boolean", default: false }, preview: { type: "string" },
     apply: { type: "boolean", default: false }, "development-target": { type: "string" }, help: { type: "boolean", default: false },
   }, strict: true });

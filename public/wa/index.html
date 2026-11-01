@@ -8,7 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
@@ -120,6 +119,7 @@
       <div class="dense" id="scanList" style="margin-top: 16px; display: none"></div>
     </div>
     <div class="scan-stage">
+      <p class="mono">An example scan. Upload your own shelf photo for a real one, and check the label: AI matches can be wrong.</p>
       <div class="demo-phone" id="demoPhone" data-phase="0" aria-hidden="true">
         <i class="btn btn-mute"></i><i class="btn btn-vol1"></i><i class="btn btn-vol2"></i><i class="btn btn-power"></i>
         <div class="screen">
@@ -132,7 +132,7 @@
           <div class="shelf" id="scanShelf" style="display:none"></div>
           <div class="island"></div>
           <div class="status"><span>9:41</span><span class="status-right"><i class="sig"></i><i class="wifi"></i><i class="bat"></i></span></div>
-          <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Reading labels…</strong></div>
+          <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Example scan</strong></div>
         </div>
       </div>
       <div class="scan-chip chip-a" data-phase="3"><b>94</b><span>Best value on the shelf<br><em>$45 · 94 points</em></span></div>
@@ -163,6 +163,8 @@
 
 </div>
 <script src="site.js"></script>
+<script src="reader-core.js"></script>
+<script src="reader.js"></script>
 <script>
 WA.ready(function (data) {
   WA.scrollAnswer = function () { var st = document.getElementById("answer"); if (st) window.scrollTo({ top: st.getBoundingClientRect().top + window.scrollY - 120, behavior: "smooth" }); };
@@ -183,7 +185,7 @@ WA.ready(function (data) {
       document.getElementById("festNews").innerHTML = fest.map(function (st) { return '<a class="fest-story" href="' + WA.storyHref(st) + '"><span class="mono">' + WA.when(st.d) + "</span><strong>" + st.title + "</strong></a>"; }).join("");
     });
   })();
-  // The demo: a shelf is scanned on a loop until a real photo arrives.
+  // A labeled example until the reader submits a real photo.
   (function () {
     var phone = document.getElementById("demoPhone"), marks = document.getElementById("demoMarks"), capText = document.getElementById("demoCapText");
     var DEMO = [{ x: 0.05, y: 0.28, w: 0.17, h: 0.42, s: 92 }, { x: 0.22, y: 0.28, w: 0.15, h: 0.42, s: 88 }, { x: 0.37, y: 0.28, w: 0.16, h: 0.42, s: 94, best: true }, { x: 0.53, y: 0.28, w: 0.15, h: 0.42, s: 90 }, { x: 0.68, y: 0.28, w: 0.14, h: 0.42, s: 86 }, { x: 0.82, y: 0.28, w: 0.14, h: 0.42, s: 91 }];
@@ -207,6 +209,7 @@ WA.ready(function (data) {
         + '<div class="so-photo"><img id="soImg" alt="Your shelf"><div class="so-marks" id="soMarks"></div><div class="so-sweep"></div><div class="so-reading"><span style="--i:0">Reading…</span><span style="--i:1">Reading…</span><span style="--i:2">Reading…</span></div></div>'
         + '<div class="so-sheet"><div class="so-best" id="soBest" hidden></div><div class="dense" id="soList"></div><p class="so-note" id="soNote"></p><div class="so-actions"><button type="button" class="pill solid" id="soAgain">Scan another shelf</button><button type="button" class="pill" id="soDone">Done</button></div></div>';
       document.body.appendChild(ov);
+      WA.reader.dialog(ov, "Shelf scan", document.getElementById("scanFile"));
       function close() { ov.setAttribute("data-open", "false"); document.body.classList.remove("scan-open"); }
       document.getElementById("soClose").addEventListener("click", close); document.getElementById("soDone").addEventListener("click", close);
       document.getElementById("soAgain").addEventListener("click", function () { file.click(); });
@@ -278,16 +281,27 @@ WA.ready(function (data) {
       front.querySelectorAll(".rot-slide").forEach(function (el, k) { var on = k === at; el.classList.toggle("on", on); el.setAttribute("aria-hidden", String(!on)); el.tabIndex = on ? 0 : -1; });
       front.querySelectorAll(".rot-dot").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
     }
-    function arm() { clearInterval(timer); timer = setInterval(function () { if (!document.hidden) show(at + 1); }, STEP); }
+    // The top stories rotate on their own unless the reader prefers reduced motion, pressed pause, or is pointing at or tabbed into the carousel.
+    var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches, paused = REDUCED, hovering = false, focused = false;
+    function arm() { clearInterval(timer); timer = null; var hold = hovering || focused; front.setAttribute("data-paused", String(paused || hold)); if (paused || hold || five.length < 2) return; timer = setInterval(function () { if (!document.hidden) show(at + 1); }, STEP); }
+    function paintPause() { var b = front.querySelector(".rot-pause"); if (!b) return; b.setAttribute("aria-pressed", String(paused)); b.setAttribute("aria-label", paused ? "Play the top stories" : "Pause the top stories"); b.innerHTML = paused ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>'; }
     function build(list) {
       five = list.filter(Boolean).slice(0, 5); at = 0;
       if (!five.length) { front.innerHTML = ""; return; }
-      front.classList.add("rotator"); front.style.setProperty("--rot-ms", STEP + "ms");
+      front.setAttribute("role", "region"); front.setAttribute("aria-roledescription", "carousel"); front.setAttribute("aria-label", "Top stories"); front.classList.add("rotator"); front.style.setProperty("--rot-ms", STEP + "ms");
       var rest = news.filter(function (st) { return !five.some(function (f) { return f === st || f.id === st.id; }); }).slice(0, 8);
-      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '<div class="rot-dots" role="tablist" aria-label="Top stories">' + five.map(dot).join("") + '</div></div><div class="dense front-list">' + rest.map(WA.storyRow).join("") + "</div>";
-      show(0); arm();
+      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '<div class="rot-dots" role="group" aria-label="Choose a top story">' + five.map(dot).join("") + '<button type="button" class="rot-pause"></button></div></div><div class="dense front-list">' + rest.map(WA.storyRow).join("") + "</div>";
+      show(0); paintPause(); arm();
     }
-    front.addEventListener("click", function (e) { var b = e.target.closest(".rot-dot"); if (!b) return; show(+b.getAttribute("data-i")); arm(); });
+    front.addEventListener("click", function (e) {
+      if (e.target.closest(".rot-pause")) { paused = !paused; paintPause(); arm(); return; }
+      var b = e.target.closest(".rot-dot"); if (!b) return; show(+b.getAttribute("data-i")); arm();
+    });
+    // Arrow keys move between stories from the dots; the carousel holds still while the pointer or focus is inside it.
+    front.addEventListener("keydown", function (e) { if (!e.target.closest(".rot-dots") || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return; e.preventDefault(); show(at + (e.key === "ArrowRight" ? 1 : -1)); var d = front.querySelectorAll(".rot-dot")[at]; if (d) d.focus(); arm(); });
+    // Hover and keyboard focus are tracked apart: either one holds the carousel, and leaving with the mouse does not release a focused dot.
+    front.addEventListener("mouseenter", function () { hovering = true; arm(); }); front.addEventListener("mouseleave", function () { hovering = false; arm(); });
+    front.addEventListener("focusin", function () { focused = true; arm(); }); front.addEventListener("focusout", function (e) { if (!front.contains(e.relatedTarget)) { focused = false; arm(); } });
     (function () { var x0 = null; front.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true }); front.addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 48) { show(at + (dx < 0 ? 1 : -1)); arm(); } }, { passive: true }); })();
     build(news.slice(0, 5));
     fetch("/api/wa/front", { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {

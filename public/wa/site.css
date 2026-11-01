@@ -1952,6 +1952,90 @@ a.author p::after { content: " →"; color: var(--copper); }
   .glass-grid .compass-card, .glass-grid .value-card { grid-column: auto; }
 }
 
+/* Reader experience: responsive overrides preserve the editorial desktop layouts. */
+/* Contrast without changing the brand: the amber stays #c9731d for scores, large type, fills and icons; small amber text uses
+   --amber-text (4.7:1 on paper), and the muted grey is darkened just enough to read at 4.5:1 or better on the page colors. */
+:root { --ink-3: #776757; --amber-text: #a95612; }
+.ingredients li b, .term .def a, .replay button, .twin-on button, em.hi, .byline a[style*="--amber"], .ctip-go { color: var(--amber-text); }
+[hidden] { display: none !important; }
+/* Touch targets: 44px tall on touch screens, for the controls a finger aims at, not every button on the page. */
+@media (pointer: coarse) { .pill, .burger, .search-btn, .chips button, .suggest button, .sortrow button, .rot-pause { min-height: 44px; } }
+:focus-visible { outline: 3px solid #86420e; outline-offset: 3px; }
+.skip-link { position: fixed; top: -100px; left: 12px; z-index: 1000; padding: 12px; background: white; color: #17120d; }
+.skip-link:focus { top: 12px; }
+.reader-status, .reader-error { position: fixed; bottom: 16px; left: 16px; z-index: 1001; max-width: min(560px, calc(100vw - 32px)); padding: 16px; border: 2px solid var(--copper); border-radius: 12px; background: var(--paper-2); color: var(--ink); box-shadow: 0 8px 30px #0002; }
+.reader-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)); gap: 20px; margin-block: 28px; }
+.reader-card { padding: 24px; border: 1px solid var(--rule); border-radius: 18px; background: var(--paper-2); overflow-wrap: anywhere; }
+.reader-card h2 { font-size: 24px; line-height: 1.2; margin-bottom: 12px; }
+.reader-card .pill { margin-top: 16px; }
+.reader-search, .reader-preferences { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
+.reader-search label { width: 100%; }
+.reader-search input { flex: 1; min-width: 0; padding: 12px; font: inherit; }
+.reader-preferences label { display: flex; align-items: center; gap: 8px; }
+.reader-preferences p { width: 100%; font-size: 14px; }
+.reader-preferences select { padding: 10px; font: inherit; }
+.nl-fields, .nl-fields label, .nl-fields input, .nl-fields select { min-width: 0; max-width: 100%; }
+.nl-fields input, .nl-fields select { width: 100%; }
+.nl-fields input[type=checkbox] { width: auto; }
+.runway > *, .lead-pour > *, .shelf > * { min-width: 0; }
+.lead-shot { display: block; }
+.tray-body { overflow-x: auto; }
+.compare-open { position: fixed; bottom: 18px; left: 16px; z-index: 70; }
+.comparison-sheet { width: min(920px,calc(100vw - 24px)); max-height: 85dvh; padding: 24px; border: 1px solid var(--rule); border-radius: 20px; background: var(--paper); }
+.comparison-sheet::backdrop { background: #17120d99; }
+.comparison-sheet .reader-grid { grid-template-columns: repeat(auto-fit,minmax(min(100%,220px),1fr)); }
+.comparison-sheet dt { font-weight: 700; margin-top: 12px; }
+.comparison-sheet dd { margin-left: 0; }
+@media (min-width: 961px) {
+  .shelf { grid-template-columns: 148px minmax(0,1fr); }
+}
+@media (max-width: 900px) {
+  .mast { grid-template-columns: 44px minmax(0,1fr) auto; gap: 8px; padding: 8px 12px; }
+  .mast .wordmark { display: block; width: auto; min-width: 0; max-width: 180px; justify-self: center; }
+  .mast .wordmark img { width: 100%; height: auto; }
+  .mast .tools > a { display: none; }
+  .mast .tools .search-btn { width: 44px; padding: 10px; }
+  .mast .tools .search-btn span { display: none; }
+  .mast nav { display: none; }
+  .runway { grid-template-columns: minmax(0,1fr); gap: 20px; }
+  .runway-ad { position: static; order: 1; padding-top: 0; max-width: 100%; }
+  .shelf { grid-template-columns: minmax(0,1fr); }
+  .lead-pour { grid-template-columns: minmax(72px,110px) minmax(0,1fr); gap: 16px; padding: 18px; }
+  .lead-shot { width: 100%; height: auto; }
+  .lead-shot img { width: 100%; height: 180px; object-fit: contain; }
+  .lead-copy h2 { overflow-wrap: anywhere; font-size: clamp(22px,5vw,36px); }
+  .lead-copy p[data-note] { grid-column: 1 / -1; }
+  .start[style] { grid-template-columns: minmax(0,1fr) !important; }
+  .nl-fields { grid-template-columns: minmax(0,1fr); }
+  .nl-fields .wide { grid-column: auto; }
+  .rating-page .bottle-hero { grid-template-columns: minmax(0,1fr); }
+  .tray { display: none; }
+}
+@media (max-width: 400px) {
+  .lead-pour { grid-template-columns: minmax(0,1fr); }
+  .lead-shot img { height: 190px; }
+  .ad-mrec { max-width: 100%; min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .lead-pour { opacity: 1; transform: none; }
+}
+
+/* Shared self-hosted score font; no third-party font request. */
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+/* Discovery keeps each content type visible on the first results page. */
+.discovery-group { grid-column: 1 / -1; }
+.reader-card h3 { font-size: 24px; line-height: 1.2; margin-bottom: 12px; }
+
+/* Text links remain distinguishable without color; forms fit their grid track. */
+p a { text-decoration: underline; text-underline-offset: 3px; }
+.contact-grid > *, .club-form, .club-form label, .club-form input, .club-form textarea { min-width: 0; max-width: 100%; }
+.policy { overflow-wrap: anywhere; }
+.club-form { grid-template-columns: repeat(2,minmax(0,1fr)); }
+@media (max-width: 480px) { .club-form { grid-template-columns: minmax(0,1fr); } }
+
 /* Producer score history (2026-11-01): its own class, so the home page's step-list .timeline rules
    (max-content width, the vertical rail) no longer shrink it to half width. */
 .score-history { position: relative; border: 1px solid var(--glass-edge, var(--rule)); border-radius: 18px; padding: 16px 16px 8px; background: var(--glass, var(--paper-2)); backdrop-filter: blur(18px) saturate(1.25); -webkit-backdrop-filter: blur(18px) saturate(1.25); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow, none); }
@@ -1964,3 +2048,26 @@ a.author p::after { content: " →"; color: var(--copper); }
 .ctip-sub { display: block; margin-top: 3px; font-size: 11.5px; opacity: 0.68; }
 .ctip-go { display: block; margin-top: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; }
 .ctip-ring { position: absolute; z-index: 4; display: none; pointer-events: none; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid var(--ink); box-shadow: 0 0 0 3px rgba(255, 251, 244, 0.85); }
+
+/* Top stories carousel (2026-11-01): the pause button sits with the dots. */
+.rot-dots { align-items: center; }
+.rot-pause { display: inline-grid; place-items: center; width: 26px; height: 26px; min-height: 0; margin-left: 4px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 251, 244, 0.92); color: var(--ink); cursor: pointer; box-shadow: 0 2px 8px rgba(23, 18, 13, 0.18); }
+.rot-pause svg { width: 12px; height: 12px; }
+@media (pointer: coarse) { .rot-pause { width: 36px; height: 36px; min-height: 36px; } .rot-pause svg { width: 14px; height: 14px; } }
+
+/* Compact masthead, refined (2026-11-01): Menu, the logo and Search always; the other actions come back as the width allows,
+   instead of all of them hiding below 900px. Order of return: Subscribe, then Tools and Store, then the WhiskyFest pill. */
+@media (max-width: 900px) {
+  .mast .wordmark { max-width: 150px; }
+  .mast .tools { gap: 6px; }
+}
+@media (min-width: 481px) and (max-width: 900px) {
+  .mast .wordmark { max-width: 160px; }
+  .mast .tools > a.pill.solid { display: inline-flex; }
+}
+@media (min-width: 640px) and (max-width: 900px) {
+  .mast .tools > a.pill:not(.fest-pill):not(.shelf-link) { display: inline-flex; }
+}
+@media (min-width: 820px) and (max-width: 900px) {
+  .mast .tools > a.fest-pill { display: inline-flex; }
+}

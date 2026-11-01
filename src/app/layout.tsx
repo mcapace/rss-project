@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { THEME_BOOT_SCRIPT } from "@/lib/editorial/theme";
 import "./globals.css";
 import "@/components/editorial/editorial.css";
 
-const inter = Inter({
+const inter = localFont({
+  src: "../../public/fonts/inter.woff2",
+  weight: "100 900",
   variable: "--font-sans",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const jetbrainsMono = localFont({
+  src: "../../public/fonts/jetbrains-mono.woff2",
+  weight: "100 800",
   variable: "--font-mono",
-  subsets: ["latin"],
   display: "swap",
 });
 

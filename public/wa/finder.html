@@ -8,7 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body class="finder-page">
@@ -55,9 +54,9 @@
     <button type="button" class="rail-pill rail-explore" id="exploreToggle" aria-pressed="false"><span class="k">Explore</span><span class="v">maps</span></button>
     <div class="pop" data-for="type"><h3 class="mono">Type</h3><div class="chips" id="typeChips"></div></div>
     <div class="pop" data-for="brand"><h3 class="mono">Brand</h3><div class="search-line" style="min-height: 44px; padding-left: 14px"><input id="brandQ" type="text" placeholder="Macallan, Buffalo Trace…" aria-label="Find a brand" autocomplete="off"></div><div class="chips brand-list" id="brandChips"></div></div>
-    <div class="pop" data-for="price"><h3 class="mono">Price up to</h3><div class="ladder" id="priceLadder"><button type="button" data-price="40">$40</button><button type="button" data-price="60">$60</button><button type="button" data-price="100">$100</button><button type="button" data-price="200">$200</button><button type="button" data-price="400" aria-pressed="true">Any</button></div></div>
+    <div class="pop" data-for="price"><h3 class="mono">Price up to</h3><div class="ladder" id="priceLadder"><button type="button" data-price="40">$40</button><button type="button" data-price="60">$60</button><button type="button" data-price="100">$100</button><button type="button" data-price="200">$200</button><button type="button" data-price="0" aria-pressed="true">Any</button></div></div>
     <div class="pop" data-for="since"><h3 class="mono">Rated</h3><div class="ladder" id="sinceLadder"><button type="button" data-since="2025">2025+</button><button type="button" data-since="2022">2022+</button><button type="button" data-since="2018">2018+</button><button type="button" data-since="" aria-pressed="true">All</button></div></div>
-    <div class="pop" data-for="score"><h3 class="mono">Score band</h3><div class="ladder" id="scoreLadder"><button type="button" data-score="80" aria-pressed="true">All</button><button type="button" data-score="88">88+</button><button type="button" data-score="90">90+</button><button type="button" data-score="92">92+</button><button type="button" data-score="94">94+</button></div></div>
+    <div class="pop" data-for="score"><h3 class="mono">Score band</h3><div class="ladder" id="scoreLadder"><button type="button" data-score="0" aria-pressed="true">All</button><button type="button" data-score="88">88+</button><button type="button" data-score="90">90+</button><button type="button" data-score="92">92+</button><button type="button" data-score="94">94+</button></div></div>
     <div class="pop wide" data-for="taste"><h3 class="mono">Taste words</h3><div class="words" id="wordChips"></div></div>
     <div class="pop" data-for="char"><h3 class="mono">Character</h3><div class="chips" id="charChips"><button type="button" data-char="smoky" aria-pressed="false">Smoky</button><button type="button" data-char="sweet" aria-pressed="false">Sweet &amp; sherried</button><button type="button" data-char="rich" aria-pressed="false">Rich</button><button type="button" data-char="light" aria-pressed="false">Light</button></div></div>
     <div class="pop" data-for="twin"><h3 class="mono">Like this one</h3><div class="twin"><div class="search-line" style="min-height: 44px; padding-left: 14px"><input id="twinQ" type="text" placeholder="A bottle you love" aria-label="Find bottles like one you name" autocomplete="off"></div><div class="menu" id="twinMenu"></div></div><div id="twinOn"></div></div>
@@ -72,7 +71,7 @@
       <div class="map" data-map="flavor"><h3>Flavor compass <span>smoke to sweet, light to rich</span></h3><canvas id="flavorMap" aria-label="Flavor compass"></canvas><div class="tip" id="flavorTip"></div><p class="hint">Tap a quarter of the compass to filter by character. Strong dots scored 92 or more.</p></div>
     </div>
     <div class="results-head"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="score" aria-pressed="true">Top score</button><button type="button" data-sort="value" aria-pressed="false">Best value</button><button type="button" data-sort="price-asc" aria-pressed="false">Cheapest</button><button type="button" data-sort="new" aria-pressed="false">Newest</button><button type="button" data-sort="twin" aria-pressed="false" id="sortTwin" style="display:none">Closest</button></div></div>
-    <div class="lead-stage" id="lead"></div>
+    <div class="lead-stage" id="lead"><p role="status">Loading ratings…</p></div>
     <div class="runway">
       <div class="shelves" id="shelves"></div>
       <div class="runway-ad"><div class="ad ad-mrec" data-slot="wa_ratings_mrec_1" aria-label="Advertisement"><span>Advertisement</span><i>300 × 250 · 300 × 600 half page</i></div></div>
@@ -94,15 +93,49 @@
 <div class="tray" id="tray" data-open="false" aria-label="Compare"><div class="tray-head"><span id="trayCount">Compare</span><button type="button" id="trayClear">Clear</button></div><div class="tray-body" id="trayBody"></div></div>
 
 <script src="site.js"></script>
+<script src="reader-core.js"></script>
+<script src="reader.js"></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, charScore = WA.charScore, value = WA.value;
   var CATS = {}; data.forEach(function (r) { CATS[r.c] = (CATS[r.c] || 0) + 1; });
   var catList = Object.keys(CATS).sort(function (a, b) { return CATS[b] - CATS[a]; }).slice(0, 9);
   var Q0 = new URLSearchParams(location.search).get("q") || ""; if (Q0) { var ai = document.getElementById("askInput"); if (ai) ai.value = Q0; }
-  var state = { terms: WA.nameTerms(Q0), types: [], brands: [], price: 400, score: 80, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "", words: [], twin: null };
+  var state = { terms: WA.nameTerms(Q0), types: [], brands: [], price: 0, score: 0, chars: [], sort: "score", limit: 12, compare: [], lens: "", region: null, since: "", words: [], twin: null };
+  state.q = Q0;
+  var historyReady = false;
+  function persist() {
+    if (!historyReady) return;
+    var url = new URL(location.href);
+    var saved = Object.assign({}, state, { compare: state.compare.map(function (i) { return data[i].slug; }), twin: state.twin ? state.twin.slug : null });
+    url.searchParams.set('filters', JSON.stringify(saved));
+    if (state.q) url.searchParams.set('q', state.q); else url.searchParams.delete('q');
+    url.searchParams.delete('compare');
+    if (url.href !== location.href) history.pushState(null, '', url);
+  }
+  function restore() {
+    var params = new URLSearchParams(location.search), raw = params.get('filters');
+    setLens('');
+    state.q = params.get('q') || ''; state.terms = WA.nameTerms(state.q);
+    if (state.q) { var parsed = WA.understand(state.q); state.price = parsed.price || 0; state.score = parsed.score || 0; state.chars = parsed.chars; state.types = parsed.types.flatMap(function (x) { return x.cats; }); }
+    if (raw) try {
+      var saved = JSON.parse(raw);
+      ['types','brands','chars','terms'].forEach(function (k) { if (Array.isArray(saved[k]) && saved[k].every(function (v) { return typeof v === 'string'; })) state[k] = saved[k].slice(0,30); });
+      if (Array.isArray(saved.words)) state.words = saved.words.filter(function (x) { return Number.isInteger(x) && x >= 0 && x < WORDS.length; });
+      ['price','score'].forEach(function (k) { if (Number.isFinite(saved[k]) && saved[k] >= 0) state[k] = saved[k]; });
+      if (['score','value','price-asc','new','twin'].includes(saved.sort)) state.sort = saved.sort;
+      if (typeof saved.since === 'string') state.since = saved.since;
+      if (typeof saved.q === 'string') state.q = saved.q;
+      state.twin = typeof saved.twin === 'string' ? WA.find(data,saved.twin) : null;
+      if (saved.region && ['lo','hi','s0','s1'].every(function (k) { return Number.isFinite(saved.region[k]); })) state.region = saved.region;
+      state.compare = (Array.isArray(saved.compare) ? saved.compare : []).slice(0,3).map(function (slug) { return data.indexOf(WA.find(data,slug)); }).filter(function (i) { return i >= 0; });
+    } catch (e) { WA.reader.notice('Invalid saved filters. Showing the search defaults.'); }
+    if (params.get('compare')) state.compare = params.get('compare').split(',').slice(0,3).map(function (slug) { return data.indexOf(WA.find(data,slug)); }).filter(function (i) { return i >= 0; });
+    document.getElementById('askInput').value = state.q;
+  }
+  addEventListener('popstate', function () { historyReady = false; restore(); syncControls(); render(); renderTray(); historyReady = true; });
   var LENSES = { value: { sort: "value", score: 88 }, first: { price: 60, chars: ["light"], sort: "value" }, gift: { price: 100, score: 92 }, peat: { chars: ["smoky"], types: ["Single Malt Scotch"] }, winter: { chars: ["sweet", "rich"] }, cocktail: { types: ["Rye Whiskey"], price: 60 } };
-  function setLens(id) { state.types = []; state.brands = []; state.price = 400; state.score = 80; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = ""; state.words = []; state.twin = null; state.terms = []; state.lens = id || ""; var bq = document.getElementById("brandQ"); if (bq) bq.value = ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
+  function setLens(id) { state.types = []; state.brands = []; state.price = 0; state.score = 0; state.chars = []; state.sort = "score"; state.region = null; state.limit = 12; state.since = ""; state.words = []; state.twin = null; state.terms = []; state.q = ""; document.getElementById("askInput").value = ""; state.lens = id || ""; var bq = document.getElementById("brandQ"); if (bq) bq.value = ""; if (id && LENSES[id]) { var L = LENSES[id]; Object.keys(L).forEach(function (k) { state[k] = Array.isArray(L[k]) ? L[k].slice() : L[k]; }); } }
   document.getElementById("lenses").addEventListener("click", function (e) { var b = e.target.closest(".lens"); if (!b) return; var id = b.getAttribute("data-lens"); setLens(state.lens === id ? "" : id); syncControls(); render(); });
   var typeChips = document.getElementById("typeChips");
   typeChips.innerHTML = catList.map(function (c) { return '<button type="button" data-cat="' + c + '" aria-pressed="false">' + c.replace("/Tennessee Whiskey", "") + "</button>"; }).join("");
@@ -135,10 +168,10 @@ WA.ready(function (recent) { WA.archive(function (data) {
   document.getElementById("scoreLadder").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.score = +b.getAttribute("data-score"); state.region = null; state.lens = ""; syncControls(); render(); });
   document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); syncControls(); render(); });
   document.getElementById("clear").addEventListener("click", function () { setLens(""); syncControls(); render(); });
-  WA.onAsk = function (f) { if (!f) { state.terms = []; render(); return; }
+  WA.onAsk = function (f) { state.q = document.getElementById("askInput").value; if (!f) { state.terms = []; render(); return; }
     state.types = f.types.length ? f.types.reduce(function (a, t) { return a.concat(t.cats); }, []) : [];
-    state.price = f.price ? [40, 60, 100, 200, 400].filter(function (p) { return p >= f.price; })[0] || 400 : 400;
-    state.score = f.score ? [94, 92, 90, 88, 80].filter(function (s) { return s <= f.score; })[0] || 80 : 80;
+    state.price = f.price || 0;
+    state.score = f.score || 0;
     state.chars = f.chars.slice(); state.brands = []; state.lens = ""; state.region = null; state.limit = 12; state.terms = f.terms || []; if (state.terms.length) state.since = ""; var bq = document.getElementById("brandQ"); if (bq) bq.value = ""; syncControls(); render();
   };
   function syncControls() {
@@ -162,9 +195,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (state.twin && r === state.twin) return false;
       if (state.types.length && state.types.indexOf(r.c) < 0) return false;
       if (state.brands.length && state.brands.indexOf(r.pr) < 0) return false;
-      if (r.p > state.price || r.s < state.score) return false;
+      if (!WAReader.matches(r, state.price, state.score)) return false;
       if (!state.chars.every(function (c) { return charScore(r, c) > 0; })) return false;
-      if (state.region && !state.region(r)) return false;
+      if (state.region && !(r.p >= state.region.lo && r.p <= state.region.hi && r.s >= state.region.s0 && r.s <= state.region.s1)) return false;
       return true;
     });
     if (state.sort === "twin" && state.twin) { var T = state.twin; rows.sort(function (a, b) { return closeness(a, T) - closeness(b, T); }); }
@@ -177,9 +210,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var lead = document.getElementById("lead");
   var shelves = document.getElementById("shelves");
   var rail = document.getElementById("rail");
-  var SHELVES = [{ name: "Classic", range: "95 and above" }, { name: "Outstanding", range: "90 to 94" }, { name: "Very good", range: "85 to 89" }, { name: "Good", range: "80 to 84" }];
+  var SHELVES = [{ name: "Classic", range: "95 and above" }, { name: "Outstanding", range: "90 to 94" }, { name: "Very good", range: "85 to 89" }, { name: "Good", range: "80 to 84" }, { name: "Below 80", range: "All remaining scores" }];
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]; }); }
-  function shelfOf(score) { return score >= 95 ? 0 : score >= 90 ? 1 : score >= 85 ? 2 : 3; }
+  function shelfOf(score) { return score >= 95 ? 0 : score >= 90 ? 1 : score >= 85 ? 2 : score >= 80 ? 3 : 4; }
   function pourImg(r, lazy) {
     var src = WA.bottleSrc(r), fb = WA.shot(r.c);
     return '<img src="' + esc(src) + '" alt=""' + (lazy ? ' loading="lazy"' : "") + (r.img ? ' data-stock="' + esc(fb) + '" onerror="this.onerror=null;this.src=this.getAttribute(\'data-stock\')"' : "") + ">";
@@ -210,17 +243,17 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var set = function (k, v) { rail.querySelector('[data-v="' + k + '"]').textContent = v; rail.querySelector('[data-pop="' + k + '"]').setAttribute("data-on", String(v !== "Any" && v !== "All" && v !== "a bottle you love" && !(k === "since" && v === "2025+"))); };
     var t = pressed("typeChips"); set("type", t.length ? (t.length === 1 ? t[0] : t.length + " types") : "Any");
     set("brand", state.brands.length ? (state.brands.length === 1 ? state.brands[0] : state.brands.length + " brands") : "Any");
-    var p = pressed("priceLadder")[0] || "Any"; set("price", p === "Any" ? "Any" : "up to " + p);
+    var p = state.price ? fmt(state.price) : "Any"; set("price", p === "Any" ? "Any" : "up to " + p);
     set("since", pressed("sinceLadder")[0] || "All");
-    set("score", pressed("scoreLadder")[0] || "All");
+    set("score", state.score ? state.score + "+" : "All");
     var w = pressed("wordChips"); set("taste", w.length ? (w.length <= 2 ? w.join(", ") : w.length + " words") : "Any");
     var c = pressed("charChips"); set("char", c.length ? c.join(", ") : "Any");
     set("twin", state.twin ? state.twin.n : "a bottle you love");
   }
   function render() {
-    railSync();
+    persist(); railSync();
     var rows = current();
-    var active = state.types.length || state.brands.length || state.chars.length || state.price < 400 || state.score > 80 || state.region || state.since || state.words.length || state.twin;
+    var active = state.types.length || state.brands.length || state.chars.length || state.price > 0 || state.score > 0 || state.region || state.since || state.words.length || state.twin;
     document.getElementById("count").textContent = rows.length.toLocaleString() + " of " + data.length.toLocaleString() + " ratings" + (active ? " match" : "") + (state.terms.length ? " · “" + state.terms.join(" ") + "”" : "") + (state.region && state.region.label ? " · " + state.region.label : "");
     var shown = rows.slice(0, state.limit);
     lead.classList.remove("is-in");
@@ -228,7 +261,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       lead.innerHTML = '<p class="ratings-empty">Nothing in the archive matches. Clear a filter and the runway fills again.</p>';
       shelves.innerHTML = "";
     } else {
-      var groups = [[], [], [], []];
+      var groups = [[], [], [], [], []];
       rows.forEach(function (r) { groups[shelfOf(r.s)].push(r); });
       var top = shown[0], band = groups[shelfOf(top.s)], at = band.indexOf(top);
       if (at >= 0) band.splice(at, 1);
@@ -276,9 +309,17 @@ WA.ready(function (recent) { WA.archive(function (data) {
     e.preventDefault();
     card.click();
   });
+  var compareOpen = document.createElement('button'); compareOpen.className = 'pill solid compare-open'; compareOpen.hidden = true; compareOpen.textContent = 'Open comparison'; document.body.appendChild(compareOpen);
+  var sheet = document.createElement('dialog'); sheet.className = 'comparison-sheet'; sheet.setAttribute('aria-label','Compare bottles'); sheet.innerHTML = '<button class="pill" id="compareClose">Close comparison</button><h2>Compare bottles</h2><div class="reader-grid" id="compareCards"></div>'; document.body.appendChild(sheet);
+  compareOpen.onclick = function () { sheet.showModal(); };
+  sheet.querySelector('#compareClose').onclick = function () { sheet.close(); };
+  sheet.addEventListener('close', function () { compareOpen.focus(); });
+  sheet.addEventListener('click', function (e) { var b=e.target.closest('[data-remove]'); if (!b) return; state.compare=state.compare.filter(function (i) { return i !== Number(b.dataset.remove); }); render(); renderTray(); });
   function renderTray() {
     var tray = document.getElementById("tray"); var picks = state.compare.map(function (i) { return data[i]; });
     tray.setAttribute("data-open", String(picks.length > 0));
+    compareOpen.hidden = !picks.length; compareOpen.textContent = 'Compare ' + picks.length + ' bottles';
+    sheet.querySelector('#compareCards').innerHTML = picks.map(function (r) { return '<article class="reader-card"><h3><a href="'+WA.bottleHref(r)+'">'+esc(r.n)+'</a></h3><dl><dt>Score</dt><dd>'+r.s+'</dd><dt>Price</dt><dd>'+fmt(r.p)+'</dd><dt>Type</dt><dd>'+esc(r.c)+'</dd><dt>Character</dt><dd>'+['smoky','sweet','rich','light'].filter(function (c) { return charScore(r,c)>0; }).join(', ')+'</dd></dl><button class="pill" data-remove="'+data.indexOf(r)+'">Remove '+esc(r.n)+'</button></article>'; }).join('') || '<p>No bottles selected. Close comparison to choose more.</p>';
     document.getElementById("trayCount").textContent = "Compare · " + picks.length + " of 3";
     var rows = [["Bottle", function (r) { return '<a href="' + WA.bottleHref(data.indexOf(r)) + '">' + r.n + "</a>"; }], ["Score", function (r) { return '<span class="big score-type">' + r.s + "</span>"; }], ["Price", function (r) { return fmt(r.p); }], ["Type", function (r) { return r.c; }], ["Character", function (r) { return ["smoky", "sweet", "rich", "light"].filter(function (c) { return charScore(r, c) > 0; }).join(", ") || "—"; }]];
     document.getElementById("trayBody").innerHTML = rows.map(function (row) { return '<div class="k">' + row[0] + "</div>" + [0, 1, 2].map(function (i) { return "<div>" + (picks[i] ? row[1](picks[i]) : "") + "</div>"; }).join(""); }).join("");
@@ -297,6 +338,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     g.clearRect(0, 0, v.w, v.h); g.strokeStyle = rule; g.lineWidth = 1; g.font = "10.5px JetBrains Mono, monospace"; g.fillStyle = "#8b7b6a";
     [80, 84, 88, 92, 96].forEach(function (s) { g.beginPath(); g.moveTo(pad.l, yOf(s)); g.lineTo(v.w - pad.r, yOf(s)); g.stroke(); g.fillText(s, 6, yOf(s) + 4); });
     [25, 50, 100, 200, 400].forEach(function (p) { g.beginPath(); g.moveTo(xOf(p), pad.t); g.lineTo(xOf(p), v.h - pad.b); g.stroke(); g.fillText("$" + p, xOf(p) - 10, v.h - 8); });
+    rows = rows.filter(function (r) { return r.p > 0 && r.p <= 400 && r.s >= 80; });
     var sorted = rows.slice().sort(function (a, b) { return a.p - b.p; }), best = -1, frontier = [];
     sorted.forEach(function (r) { if (r.s > best) { best = r.s; frontier.push(r); } });
     g.strokeStyle = "rgba(23,18,13,0.35)"; g.setLineDash([3, 4]); g.beginPath(); frontier.forEach(function (r, i) { var x = xOf(r.p), y = yOf(r.s); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
@@ -322,7 +364,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var price = Math.exp(Math.log(17) + (mx - G.pad.l) / (G.w - G.pad.l - G.pad.r) * (Math.log(400) - Math.log(17)));
     var score = 80 + (1 - (my - G.pad.t) / (G.h - G.pad.t - G.pad.b)) * 16;
     var lo = price / 1.5, hi = price * 1.5, s0 = Math.floor(score) - 2, s1 = Math.floor(score) + 2;
-    state.region = function (r) { return r.p >= lo && r.p <= hi && r.s >= s0 && r.s <= s1; };
+    state.region = {lo:lo,hi:hi,s0:s0,s1:s1};
     state.region.label = fmt(lo) + " to " + fmt(hi) + ", " + s0 + " to " + s1 + " points"; state.lens = ""; state.limit = 12; syncControls(); render();
   });
   document.getElementById("flavorMap").addEventListener("click", function (e) {
@@ -336,7 +378,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
   addEventListener("hashchange", function () { var h = (location.hash || "").slice(1); if (LENSES[h]) { setLens(h); syncControls(); render(); } });
   var h = (location.hash || "").slice(1); if (LENSES[h]) setLens(h);
   if (h.indexOf("word=") === 0) { var wi = WORDS.indexOf(decodeURIComponent(h.slice(5))); if (wi >= 0) { state.words = [wi]; state.since = ""; } }
-  syncControls(); render();
+  restore();
+  if (!new URLSearchParams(location.search).has("filters") && LENSES[h]) setLens(h);
+  syncControls(); render(); renderTray(); historyReady = true;
 }); });
 </script>
 </body>

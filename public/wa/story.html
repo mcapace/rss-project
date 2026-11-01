@@ -91,17 +91,18 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, bySlug = data.bySlug;
   function embed(r) { return '<a class="embed" data-slug="' + (r.slug || "") + '" href="' + WA.bottleHref(r) + '" data-embed="' + r.slug + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="nt" data-note></span></span><span class="pr">' + fmt(r.p) + (r.by ? "<br><span style=\"font-family:var(--font); font-size:12px; color:var(--ink-3)\">" + r.by + "</span>" : "") + "</span></a>"; }
   function catOf(st) { var t = (st.tags.join(" ") + " " + st.title).toLowerCase(); if (/bourbon|kentucky/.test(t)) return "Bourbon/Tennessee Whiskey"; if (/\brye\b/.test(t)) return "Rye Whiskey"; if (/japan/.test(t)) return "Japanese Whisky"; if (/irish/.test(t)) return "Irish Single Malt"; if (/scotch|single malt|islay|speyside|macallan|bowmore|laphroaig/.test(t)) return "Single Malt Scotch"; return null; }
-  WA.storyBySlug(decodeURIComponent((location.hash || "").slice(1)), function (found, all) {
+  WA.storyBySlug((window.WA_SLUG || decodeURIComponent((location.hash || "").slice(1))), function (found, all) {
     var storyBySlug = {}; all.forEach(function (st) { storyBySlug[st.slug.toLowerCase()] = st; });
-    var slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
+    var slug = (window.WA_SLUG || decodeURIComponent((location.hash || "").slice(1))).toLowerCase();
     // A story the index has not been exported with yet (anything newer than the last export) comes straight from the CMS.
     var pre = null;
     function load(st) {
+      if (WA.cleanUrl) WA.cleanUrl(st.slug);
       // Sponsored stories get their own template: only the advertiser's bottles named in the text, no recommended stories, AI picks, Q&A, related links or tags.
       var SP = WA.isSponsored(st);
     (pre && pre.slug === st.slug ? function (f) { f(pre.body); } : function (f) { WA.article(st.slug, f); })(function (body) {
       var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p class=\"muted\">The full text of this story is still being brought over from the archive.</p>";
-      document.title = st.title + " · Whisky Advocate";
+      if (!window.WA_PATHS) document.title = st.title + " · Whisky Advocate";
       var sec = WA.SECTION[st.sec];
       document.getElementById("crumbs").innerHTML = '<a href="stories.html">Stories</a><span>›</span><a href="' + WA.SECTION_HREF[st.sec] + '">' + sec + "</a>" + (st.tags[0] ? "<span>›</span><span>" + st.tags[0] + "</span>" : "");
       document.getElementById("kicker").textContent = sec + (st.tags[0] ? " · " + st.tags[0] : "");
@@ -114,7 +115,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       holder.querySelectorAll("p > img").forEach(function (im) { var p = im.parentNode; var others = Array.prototype.filter.call(p.childNodes, function (n) { return n !== im && !(n.nodeType === 3 && !n.textContent.trim()) && !(n.nodeType === 1 && n.tagName === "BR" && false); }); if (!others.length) return; var pic = document.createElement("p"); pic.className = "pic"; p.parentNode.insertBefore(pic, p); pic.appendChild(im); var first = p.firstChild; while (first && first.nodeType === 1 && first.tagName === "BR") { p.removeChild(first); first = p.firstChild; } if (!p.textContent.trim() && !p.querySelector("img, iframe, video")) p.remove(); });
       // Pictures and links written as site-relative paths on the old site still live there.
       holder.querySelectorAll("img[src^=\"/\"], source[srcset^=\"/\"]").forEach(function (im) { var at = im.hasAttribute("src") ? "src" : "srcset"; var v = im.getAttribute(at); if (v.indexOf("//") !== 0 && v.indexOf("/api/") !== 0) im.setAttribute(at, "https://whiskyadvocate.com" + v); });
-      holder.querySelectorAll("a[href^=\"/\"]").forEach(function (a) { var v = a.getAttribute("href"); if (v.indexOf("//") !== 0) a.setAttribute("href", "https://whiskyadvocate.com" + v); });
+      holder.querySelectorAll("a[href^=\"/\"]").forEach(function (a) { var v = a.getAttribute("href"); if (v.indexOf("//") !== 0) a.setAttribute("href", WA.PATHS && /^\/[^/?#.]+$/.test(v) ? "/wa" + v : "https://whiskyadvocate.com" + v); });
       holder.querySelectorAll("a[href]").forEach(function (a) { var m = a.getAttribute("href").match(/^https?:\/\/(?:www\.)?whiskyadvocate\.com\/([^?#]+)/); if (!m) return; var k = m[1].replace(/\/$/, "").toLowerCase(); if (storyBySlug[k]) a.setAttribute("href", "story.html#" + storyBySlug[k].slug); else if (bySlug[k]) a.setAttribute("href", WA.bottleHref(bySlug[k])); });
       holder.querySelectorAll("img").forEach(function (im) { im.setAttribute("loading", "lazy"); im.addEventListener("load", function () { if (im.naturalHeight > im.naturalWidth * 1.15) im.classList.add("tall"); }); });
       var paras = holder.querySelectorAll("p"); if (paras[0] && paras[0].textContent.length > 120 && !paras[0].querySelector("img")) paras[0].classList.add("drop");
@@ -294,7 +295,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       else { document.title = "Story not found · Whisky Advocate"; var pr = document.getElementById("prose"); if (pr) pr.innerHTML = '<p>We could not find that story. <a href="stories.html">Browse the latest stories</a>.</p>'; var h = document.getElementById("title"); if (h) h.textContent = "That story is not here."; }
     }, function () { load(all[0]); });
   });
-  addEventListener("hashchange", function () { location.reload(); });
+  addEventListener("hashchange", function () { if (!window.WA_SLUG) location.reload(); });
   // Listen: the story read aloud in Whisky Advocate's own voice (ElevenLabs through the site's route), a paragraph at a time, with pause and resume; the browser's voice stands in when the route is not connected.
   (function () {
     var btn = document.getElementById("listen"), label = "Listen", queue = [], at = 0, playing = false, paused = false, useBrowser = false, audio = null, next = null, synth = window.speechSynthesis;

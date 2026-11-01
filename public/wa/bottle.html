@@ -240,9 +240,10 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (!entry) return;
       r = asRating(entry);
     } else r = WA.find(data, slug) || recent.slice().sort(function (a, b) { return b.s - a.s; })[0];
+    if (r && !top && WA.cleanUrl && WA.find(data, slug)) WA.cleanUrl(r.slug);
     if (r.f == null) { WA.note(r.slug, function (f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") : f; show(); }); r.f = ""; return; }
     cur = r; var B = band(r.s);
-    document.title = r.n + " · " + r.s + " points";
+    if (!window.WA_PATHS) document.title = r.n + " · " + r.s + " points";
     document.getElementById("crumbCat").textContent = r.c; document.getElementById("crumbName").textContent = r.n;
     var cp = document.getElementById("crumbProd"); cp.textContent = r.pr; cp.href = WA.producerHref(r.pr);
     document.getElementById("kicker").textContent = r.c + (r.issue ? " · " + r.issue + " issue" : "");
@@ -313,7 +314,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("buy").innerHTML = [["Astor Wines & Spirits", "0.8 mi", r.p * 0.98], ["Park Avenue Liquor", "1.4 mi", r.p * 1.04], ["Total Wine, Westbury", "9.2 mi", r.p * 0.95]].map(function (s) { return "<div><span>" + s[0] + '</span><span class="dist">' + s[1] + '</span><span class="pr">' + fmt(s[2]) + "</span></div>"; }).join("");
     document.getElementById("compareLink").href = "finder.html#" + (ART[r.c] === "rye" ? "cocktail" : ART[r.c] === "scotch" ? "peat" : "value");
     var ld = { "@context": "https://schema.org", "@type": "Review", "itemReviewed": { "@type": "Product", "name": r.n, "brand": r.pr, "category": r.c, "offers": { "@type": "Offer", "price": r.p, "priceCurrency": "USD" } }, "reviewRating": { "@type": "Rating", "ratingValue": r.s, "bestRating": 100 }, "author": { "@type": "Person", "name": r.by || "Whisky Advocate" }, "publisher": { "@type": "Organization", "name": "Whisky Advocate" }, "datePublished": r.d };
-    var s = document.getElementById("ld") || document.createElement("script"); s.id = "ld"; s.type = "application/ld+json"; s.textContent = JSON.stringify(ld); document.head.appendChild(s);
+    if (!window.WA_PATHS) { var s = document.getElementById("ld") || document.createElement("script"); s.id = "ld"; s.type = "application/ld+json"; s.textContent = JSON.stringify(ld); document.head.appendChild(s); }
     document.getElementById("buy").style.display = "none";
     scrollTo(0, 0);
   }

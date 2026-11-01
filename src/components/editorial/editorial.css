@@ -984,3 +984,32 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-site-search { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
 .ed-site-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; }
 .ed-site-pin { display: grid; gap: 8px; }
+
+/* Media: the Morweb gallery library (2026-11-01) */
+.ed-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.ed-gallery-card { display: grid; gap: 4px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.ed-gallery-card .ed-media-tile { aspect-ratio: 4 / 3; margin-bottom: 4px; transition: border-color 120ms, transform 160ms; }
+.ed-gallery-card:hover .ed-media-tile { border-color: var(--border-strong); transform: translateY(-1px); }
+.ed-gallery-card .title { font-size: 13.5px; font-weight: 600; }
+.ed-gallery-card .meta { color: var(--muted); font-size: 12px; }
+.ed-gallery-card:focus-visible, .ed-library-grid .ed-image-card:focus-visible { outline: 2px solid var(--foreground); outline-offset: 3px; border-radius: 8px; }
+.ed-library-grid .ed-image-card { padding: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit; }
+.ed-library-grid .ed-media-tile img { object-fit: contain; background: var(--surface); }
+.ed-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; }
+.ed-back:hover { color: var(--foreground); }
+.ed-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.ed-library-preview { display: grid; place-items: center; min-height: 200px; max-height: 420px; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.ed-library-preview img, .ed-library-preview video { max-width: 100%; max-height: 420px; object-fit: contain; }
+.ed-library-facts { display: grid; gap: 0; margin: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.ed-library-facts div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; padding: 9px 12px; border-top: 1px solid var(--border); font-size: 13px; }
+.ed-library-facts div:first-child { border-top: 0; }
+.ed-library-facts dt { color: var(--muted); }
+.ed-library-facts dd { margin: 0; overflow-wrap: anywhere; }
+.ed-library-facts small { color: var(--muted); }
+.ed-library-sub { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.ed-library-uses { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ed-library-uses li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; }
+.ed-library-uses a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-library-uses a:hover { text-decoration: underline; }
+.ed-library-none { margin: 0; color: var(--muted); font-size: 13px; }
+.ed-gallery-card { align-content: start; }

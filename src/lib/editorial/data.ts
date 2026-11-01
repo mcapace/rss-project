@@ -10,6 +10,7 @@ import type { AudienceReport, ConnectionStatus, PagePerformance } from "./analyt
 import { sampleAudience, samplePagePerformance } from "./analytics-sample";
 import { heuristicAnalysis } from "./seo-heuristics";
 import type { MediaVision, SearchDocumentHit, SearchKeywordHit, SearchMediaHit, SearchResponse, SearchScope } from "./search-types";
+import type { MediaFile, MediaFilePage, MediaGallery, MediaLibraryOverview } from "./media-library-types";
 import type { CatalogEntry, CatalogType, CollabState, NewsletterRequest, NewsletterSend, RatingFacets, RatingFilters, RatingHit, RatingSearchResponse, RealtimeGrant } from "./platform-types";
 import { matchScore, stripHtml } from "./helpers";
 
@@ -72,6 +73,9 @@ export interface EditorialData {
   media(id: string, signal?: AbortSignal): Promise<MediaItem[]>;
   listIssues(brand: CmsBrand | "all" | null, signal?: AbortSignal): Promise<PrintIssue[]>;
   inventory(brand: CmsBrand, signal?: AbortSignal): Promise<CmsMigrationInventory>;
+  /** The Morweb gallery library: galleries with counts, and pages of files with the stories that use them. */
+  mediaLibrary(brand: CmsBrand, signal?: AbortSignal): Promise<MediaLibraryOverview>;
+  mediaFiles(brand: CmsBrand, options: { gallery?: string | null; q?: string; status?: string; offset?: number; limit?: number }, signal?: AbortSignal): Promise<MediaFilePage>;
   signOut(): Promise<void>;
   /** Fires after any mutation so views can refresh. */
   subscribe(listener: () => void): () => void;
@@ -215,6 +219,14 @@ export function createLiveData(): EditorialData {
     async catalogLookup(brand, type, query, signal) {
       const result = await request<{ entries: CatalogEntry[] }>(`/api/cms/catalog?${new URLSearchParams({ brand, type, q: query })}`, { signal });
       return result.entries;
+    },
+    mediaLibrary(brand, signal) {
+      return request<MediaLibraryOverview>(`/api/cms/media/library?brand=${brand}`, { signal });
+    },
+    mediaFiles(brand, options, signal) {
+      const params = new URLSearchParams({ brand });
+      for (const [key, value] of Object.entries(options)) if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
+      return request<MediaFilePage>(`/api/cms/media/library/files?${params}`, { signal });
     },
     searchRatings(brand, filters, signal) {
       const params = new URLSearchParams();
@@ -466,6 +478,14 @@ export function createDemoData(storage: Storage | null = typeof window !== "unde
       await latency();
       return demoCatalog(store.documents, brand, type, query);
     },
+    async mediaLibrary() {
+      await latency();
+      return demoMediaLibrary();
+    },
+    async mediaFiles(_brand, options) {
+      await latency();
+      return demoMediaFiles(options);
+    },
     async searchRatings(brand, filters) {
       await latency();
       return demoRatings(store.documents, brand, filters);
@@ -626,4 +646,27 @@ export function demoSearch(documents: CmsDocument[], query: string, options: { b
   }
   const keywords = [...counts.values()].sort((a, b) => b.document_count - a.document_count || a.keyword.localeCompare(b.keyword)).slice(0, 30);
   return { query: query.trim(), documents: docs, media, keywords };
+}
+
+/* The demo gallery library: a few galleries and files drawn with the public site's own bottle photographs. */
+const DEMO_GALLERIES: MediaGallery[] = [
+  { id: "18986", name: "Bottle-Shots", title: "Bottle Shots", description: "", created_at: "2022-11-28 12:01:01", files: 6, stored: 5, pending: 1, failed: 0, bytes: 4_200_000, cover: "/wa/img/bottle-scotch.jpg" },
+  { id: "18980", name: "Hero-Images", title: "Hero Images", description: "", created_at: "2022-11-28 11:40:00", files: 3, stored: 3, pending: 0, failed: 0, bytes: 2_900_000, cover: "/wa/img/rickhouse.jpg" },
+  { id: "20104", name: "Cocktails", title: "Cocktails", description: "", created_at: "2024-03-06 09:12:00", files: 2, stored: 1, pending: 0, failed: 1, bytes: 610_000, cover: "/wa/img/shelf.jpg" },
+];
+const DEMO_FILES: MediaFile[] = [
+  ...["scotch", "bourbon", "rye", "irish", "japanese", "blended"].map((kind, i) => ({ gallery_id: "18986", gallery: "Bottle Shots", id: String(1700 + i), file_name: `Sample-${kind}-bottle_300.jpg`, title: "", alt: `A ${kind} bottle`, mime: "image/jpeg", width: 300, height: 300, bytes: 48_000 + i * 900, uploaded_at: `2023-0${(i % 9) + 1}-14 10:02:25`, source_url: `https://whiskyadvocate.com/get/files/image/galleries/Sample-${kind}-bottle_300.jpg`, status: (i === 5 ? "pending" : "stored") as MediaFile["status"], error: null, sha256: null, thumb: i === 5 ? null : `/wa/img/bottle-${kind}.jpg`, original: i === 5 ? null : `/wa/img/bottle-${kind}.jpg`, public_url: i === 5 ? null : `/wa/img/bottle-${kind}.jpg`, used_in: i < 2 ? [{ id: "demo-article-1", title: "Sample story that uses this bottle", state: "published" }] : [] })),
+  ...["rickhouse", "dusk", "sheet"].map((name, i) => ({ gallery_id: "18980", gallery: "Hero Images", id: String(1800 + i), file_name: `${name}-hero.jpg`, title: "", alt: "", mime: "image/jpeg", width: 1600, height: 900, bytes: 900_000 + i * 50_000, uploaded_at: "2022-12-01 08:00:00", source_url: `https://whiskyadvocate.com/get/files/image/galleries/${name}-hero.jpg`, status: "stored" as const, error: null, sha256: null, thumb: `/wa/img/${name}.jpg`, original: `/wa/img/${name}.jpg`, public_url: `/wa/img/${name}.jpg`, used_in: [] })),
+  { gallery_id: "20104", gallery: "Cocktails", id: "1900", file_name: "shelf-cocktail.jpg", title: "", alt: "", mime: "image/jpeg", width: 1200, height: 800, bytes: 300_000, uploaded_at: "2024-03-06 09:20:00", source_url: "https://whiskyadvocate.com/get/files/image/galleries/shelf-cocktail.jpg", status: "stored", error: null, sha256: null, thumb: "/wa/img/shelf.jpg", original: "/wa/img/shelf.jpg", public_url: "/wa/img/shelf.jpg", used_in: [] },
+  { gallery_id: "20104", gallery: "Cocktails", id: "1901", file_name: "missing-cocktail.mov", title: "", alt: "", mime: "video/quicktime", width: null, height: null, bytes: 310_000, uploaded_at: "2024-03-06 09:21:00", source_url: "https://whiskyadvocate.com/get/files/image/galleries/missing-cocktail.mov", status: "failed", error: "HTTP 404", sha256: null, thumb: null, original: null, public_url: null, used_in: [] },
+];
+export function demoMediaLibrary(): MediaLibraryOverview {
+  const totals = DEMO_GALLERIES.reduce((t, g) => ({ galleries: t.galleries + 1, files: t.files + g.files, stored: t.stored + g.stored, pending: t.pending + g.pending, failed: t.failed + g.failed, bytes: t.bytes + g.bytes }), { galleries: 0, files: 0, stored: 0, pending: 0, failed: 0, bytes: 0 });
+  return { galleries: DEMO_GALLERIES, totals };
+}
+export function demoMediaFiles(options: { gallery?: string | null; q?: string; status?: string; offset?: number; limit?: number }): MediaFilePage {
+  const q = (options.q ?? "").toLowerCase();
+  const all = DEMO_FILES.filter(f => (!options.gallery || f.gallery_id === options.gallery) && (!q || f.file_name.toLowerCase().includes(q)) && (!options.status || f.status === options.status));
+  const offset = options.offset ?? 0, limit = options.limit ?? 60;
+  return { files: all.slice(offset, offset + limit), total: all.length, offset, limit };
 }

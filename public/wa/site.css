@@ -1813,3 +1813,7 @@ a.author p::after { content: " →"; color: var(--copper); }
 .dense > .ad.ad-filled, .producers > .ad.ad-inline.ad-filled { margin: 0; width: auto; }
 .videos > .ad, .recipes > .ad.ad-inline { grid-column: 1 / -1; }
 .videos > .ad.ad-filled { margin: 6px auto; }
+
+/* Cocktails filters (2026-11-01): .facets was the old Ratings sidebar rail, sticky beside the results. On Cocktails it is a
+   full-width row above the grid, so sticking it pinned the chips under the mast with the cards scrolling through them. */
+.facets { position: static; top: auto; }

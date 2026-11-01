@@ -1013,3 +1013,9 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-library-uses a:hover { text-decoration: underline; }
 .ed-library-none { margin: 0; color: var(--muted); font-size: 13px; }
 .ed-gallery-card { align-content: start; }
+.ed-library-pick { flex-basis: 100%; display: grid; gap: 8px; }
+.ed-library-pick .ed-input { max-width: 480px; }
+.ed-library-results { display: flex; flex-wrap: wrap; gap: 8px; }
+.ed-library-results .ed-media-tile { width: 88px; height: 66px; aspect-ratio: auto; padding: 0; cursor: pointer; }
+.ed-library-results .ed-media-tile img { object-fit: contain; background: var(--surface); }
+.ed-library-note { color: var(--muted); font-size: 12.5px; }

@@ -18,7 +18,7 @@ import Superscript from "@tiptap/extension-superscript";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, ChevronDown, Code2, Eraser, Heading2, Heading3, Highlighter, ImagePlus, Italic, Link as LinkIcon, List, ListOrdered, Minus, MoreHorizontal, Quote, Redo2, SquareCode, Strikethrough, Subscript as SubIcon, Superscript as SupIcon, Table as TableIcon, Type, Underline, Undo2, Video, Lock } from "lucide-react";
-import { useDismiss } from "./hooks";
+import { useDebounced, useDismiss } from "./hooks";
 import { Notice } from "./ui";
 
 /* ------------------------------------------------------------------ */
@@ -141,6 +141,8 @@ type Props = {
   onHtmlApplied?: () => void;
   /** Images attached to the document, offered by the insert-image control. */
   images?: InsertableImage[];
+  /** Searches the gallery library (Morweb's galleries, kept in S3) by file name for the insert-image control. */
+  searchLibrary?: (query: string, signal: AbortSignal) => Promise<InsertableImage[]>;
   /** Called when the editor is ready so the page can wire actions (for example inserting an FAQ). */
   onReady?: (editor: Editor | null) => void;
 };
@@ -150,9 +152,21 @@ type Props = {
  * tables, images and video embeds; anything TipTap cannot represent switches to a
  * lossless HTML view so imported markup is never silently dropped.
  */
-export function BodyEditor({ html, onChange, readOnly = false, images = [], onReady, collab, applyHtml = false, onHtmlApplied }: Props) {
+export function BodyEditor({ html, onChange, readOnly = false, images = [], searchLibrary, onReady, collab, applyHtml = false, onHtmlApplied }: Props) {
   const [sourceMode, setSourceMode] = useState(false);
   const [panel, setPanel] = useState<"" | "link" | "video" | "image">("");
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [library, setLibrary] = useState<{ q: string; items: InsertableImage[]; error?: string } | null>(null);
+  const libraryTerm = useDebounced(libraryQuery.trim(), 300);
+  useEffect(() => {
+    if (!searchLibrary || panel !== "image" || libraryTerm.length < 2) return;
+    const controller = new AbortController();
+    searchLibrary(libraryTerm, controller.signal).then(
+      items => setLibrary({ q: libraryTerm, items }),
+      error => { if (!controller.signal.aborted) setLibrary({ q: libraryTerm, items: [], error: error instanceof Error ? error.message : "The library could not be searched." }); },
+    );
+    return () => controller.abort();
+  }, [libraryTerm, panel, searchLibrary]);
   const [field, setField] = useState("");
   const [fieldError, setFieldError] = useState("");
   const [warning, setWarning] = useState("");
@@ -340,6 +354,17 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], onRe
           {/* eslint-disable-next-line @next/next/no-img-element -- Presigned preview. */}
           <img src={image.preview ?? image.src} alt={image.alt} />
         </button>)}
+      </div>}
+      {panel === "image" && searchLibrary && <div className="ed-library-pick">
+        <input className="ed-input" aria-label="Search the gallery library" placeholder="Or search the gallery library by file name…" value={libraryQuery}
+          onChange={event => setLibraryQuery(event.target.value)} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
+        {libraryTerm.length >= 2 && (library?.q !== libraryTerm ? <span className="ed-library-note">Searching…</span>
+          : library.error ? <span className="ed-library-note" role="alert">{library.error}</span>
+          : library.items.length ? <div className="ed-library-results">{library.items.map(image => <button key={image.src} type="button" className="ed-media-tile" title={image.caption || "Insert this image"} onClick={() => { chain().setImage({ src: image.src, alt: image.alt }).run(); setPanel(""); setLibraryQuery(""); }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Library preview. */}
+            <img src={image.preview ?? image.src} alt={image.alt} />
+          </button>)}</div>
+          : <span className="ed-library-note">No library files match “{libraryTerm}”.</span>)}
       </div>}
     </form>}
     <div className="ed-prose" style={{ marginTop: 14 }}>

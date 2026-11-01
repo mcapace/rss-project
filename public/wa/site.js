@@ -640,3 +640,32 @@ document.body.appendChild(waAds);
     else if (a.classList.contains("mention")) WA.track("mention_click", { to: a.getAttribute("href") });
   }, true);
 })();
+
+/* Sticky filter bars (2026-11-01): WA.stickyFilters(bar) pins a filter row under the mast once you scroll past it.
+   The bar needs class "filter-bar"; a sentinel is inserted before it, and the bar gets "stuck" while pinned. Choosing a
+   filter while stuck scrolls back to the top of the results so the new list is in view. Static on phones (CSS). */
+(function () {
+  window.WA = window.WA || {};
+  WA.stickyFilters = function (bar) {
+    if (!bar) return;
+    var mast = document.querySelector(".mast");
+    function mastH() { return mast ? mast.offsetHeight : 64; }
+    function setVar() { document.documentElement.style.setProperty("--mast-h", mastH() + "px"); }
+    setVar(); addEventListener("resize", setVar);
+    var sentinel = document.createElement("div");
+    sentinel.setAttribute("aria-hidden", "true");
+    bar.parentNode.insertBefore(sentinel, bar);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        bar.classList.toggle("stuck", !entries[0].isIntersecting && entries[0].boundingClientRect.top < 0);
+      }, { rootMargin: "-" + (mastH() + 1) + "px 0px 0px 0px", threshold: 0 }).observe(sentinel);
+    }
+    bar.addEventListener("click", function (e) {
+      if (!e.target.closest("button") || !bar.classList.contains("stuck") || getComputedStyle(bar).position !== "sticky") return;
+      requestAnimationFrame(function () {
+        var top = sentinel.getBoundingClientRect().top + scrollY - mastH();
+        scrollTo({ top: top, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      });
+    });
+  };
+})();

@@ -78,7 +78,7 @@ export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery:
         <div className="ed-kpi"><span className="ed-kpi-label">Galleries</span><strong>{totals.galleries.toLocaleString()}</strong><small>From Morweb</small></div>
         <div className="ed-kpi"><span className="ed-kpi-label">Files</span><strong>{totals.files.toLocaleString()}</strong><small>{size(totals.bytes)}</small></div>
         <div className="ed-kpi"><span className="ed-kpi-label">In S3</span><strong>{totals.stored.toLocaleString()}</strong><small>{Math.round((totals.stored / totals.files) * 100)}% copied</small></div>
-        <div className="ed-kpi"><span className="ed-kpi-label">Still to copy</span><strong>{(totals.pending + totals.failed).toLocaleString()}</strong><small>{totals.failed ? `${totals.failed.toLocaleString()} could not be fetched` : "Copying from Morweb"}</small></div>
+        <div className="ed-kpi"><span className="ed-kpi-label">Still to copy</span><strong>{(totals.pending + totals.failed).toLocaleString()}</strong><small>{totals.failed ? `${totals.failed.toLocaleString()} could not be fetched` : totals.pending ? "Copying from Morweb" : "Every file is in S3"}</small></div>
       </div>
     </Card>}
 

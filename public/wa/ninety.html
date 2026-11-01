@@ -61,8 +61,7 @@
 
 <script src="site.js"></script>
 <script>
-WA.ready(function () {
-  var DATA = WA.data();
+WA.ready(function () { WA.archive(function (DATA) {
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function group(c) { c = (c || "").toLowerCase(); return /scotch/.test(c) ? "scotch" : /irish/.test(c) ? "irish" : /bourbon|tennessee|rye|american/.test(c) ? "american" : "other"; }
   var GROUPS = [["", "All"], ["scotch", "Scotch"], ["irish", "Irish"], ["american", "American"]];
@@ -84,13 +83,15 @@ WA.ready(function () {
     function card(x) {
       if (x.r) return WA.bottleCard(x.r);
       var m = x.m;
-      return '<article class="bottle has-img"><a class="thumb" href="' + esc(m.href) + '"><img src="' + esc(m.img) + '" alt=""></a><div class="top"><div class="score score-type">' + m.s + '<small>points</small></div><div class="cat">' + esc(m.c) + '</div></div><div><h3><a href="' + esc(m.href) + '">' + esc(m.n) + '</a></h3></div><div class="foot"><span>' + esc(m.p) + "</span></div></article>";
+      return '<article class="bottle has-img"><a class="thumb" href="club.html#' + encodeURIComponent(m.id) + '"><img src="' + esc(m.img) + '" alt=""></a><div class="top"><div class="score score-type">' + m.s + '<small>points</small></div><div class="cat">' + esc(m.c) + '</div></div><div><h3><a href="club.html#' + encodeURIComponent(m.id) + '">' + esc(m.n) + '</a></h3></div><div class="foot"><span>' + esc(m.p) + "</span></div></article>";
     }
     function renderMembers() {
       var list = members.filter(function (x) { return !state.g || group(x.m.c) === state.g; });
       document.getElementById("memberGrid").innerHTML = list.map(card).join("");
       document.getElementById("membersTitle").textContent = list.length + " bottles that scored 90 or higher" + (state.g ? ", " + GROUPS.filter(function (g) { return g[0] === state.g; })[0][1] : "") + ".";
       document.querySelectorAll("#groups button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-g") === state.g)); });
+      // Every card opens the bottle's 90+ Club page (the club's own page for it, as on the old site).
+      document.querySelectorAll("#memberGrid article").forEach(function (a, i) { var x = list[i]; if (!x) return; a.querySelectorAll('a[href^="bottle.html"], a.thumb').forEach(function (l) { l.href = "club.html#" + encodeURIComponent(x.m.id); }); });
       if (WA.decorateBuy) WA.decorateBuy(document.getElementById("memberGrid"));
       if (WA.fillNotes) WA.fillNotes(document.getElementById("memberGrid"));
     }
@@ -110,11 +111,11 @@ WA.ready(function () {
     });
     // Top-shelf spirits: not rated by Whisky Advocate, so no score.
     document.getElementById("spiritsIntro").textContent = N.spiritsIntro || "";
-    document.getElementById("spiritGrid").innerHTML = N.spirits.map(function (s) { var name = s.n.replace(/,\s*[\d.]+\s*[%$]\s*$/, ""); return '<a class="spirit-card" href="' + esc(s.href) + '" target="_blank" rel="noopener"><span class="pic"><img src="' + esc(s.img) + '" alt="" loading="lazy"></span><span class="tag">' + esc(s.c) + (s.p ? " · " + esc(s.p) : "") + "</span><strong>" + esc(name) + "</strong></a>"; }).join("");
+    document.getElementById("spiritGrid").innerHTML = N.spirits.map(function (s) { var name = s.n.replace(/,\s*[\d.]+\s*[%$]\s*$/, ""); return '<a class="spirit-card" href="club.html#' + encodeURIComponent(s.id) + '"><span class="pic"><img src="' + esc(s.img) + '" alt="" loading="lazy"></span><span class="tag">' + esc(s.c) + (s.p ? " · " + esc(s.p) : "") + "</span><strong>" + esc(name) + "</strong></a>"; }).join("");
     document.title = "90+ Club · Whisky Advocate";
     if (WA.setContext) WA.setContext({ kind: "page", title: "the 90+ Club" });
   });
-});
+}); });
 </script>
 </body>
 </html>

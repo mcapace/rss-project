@@ -61,7 +61,7 @@
   function pageContext(cb) {
     var page = (location.pathname.split("/").pop() || "index.html").toLowerCase(), done = false;
     function finish(ctx) { if (done) return; done = true; window.WAAds = window.WAAds || {}; window.WAAds.context = ctx; cb(ctx); }
-    if (page === "ninety.html") return finish({ sponsored: "yes", sponsor: "pernod-ricard-usa" });   // every 90+ Club member brand is Pernod Ricard USA's
+    if (page === "ninety.html" || page === "club.html") return finish({ sponsored: "yes", sponsor: "pernod-ricard-usa" });   // every 90+ Club member brand is Pernod Ricard USA's
     if (page !== "story.html") return finish({ sponsored: "no" });
     var slug = "";
     try { slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase(); } catch (e) { slug = (location.hash || "").slice(1).toLowerCase(); }

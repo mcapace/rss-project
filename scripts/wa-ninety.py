@@ -47,6 +47,25 @@ def match(it):
     r = by_name.get(norm(it["n"]))
     return r["slug"] if r else ""
 
+# Each item's own page on the old site: the note (the review for members, the brand's copy for spirits), issue, reviewer.
+def details(it):
+    try:
+        pg = urllib.request.urlopen(urllib.request.Request(it["href"], headers={"User-Agent": "Mozilla/5.0"}), timeout=30).read().decode("utf-8", "ignore")
+    except Exception:
+        return
+    stats = re.search(r'class="postDetailsStats">\s*<p>(.*?)</p>', pg, re.S)
+    st = text(stats.group(1)) if stats else ""
+    for key, field in (("Issue", "issue"), ("Reviewer", "reviewer")):
+        m = re.search(key + r":\s*([^●]+)", st)
+        if m: it[field] = m.group(1).strip()
+    body = re.search(r'class="postDetailsContent">(.*?)</div>', pg, re.S)
+    if body: it["desc"] = text(body.group(1))
+    pic = re.search(r'<img class="postImg" src="([^"]+)"', pg)
+    if pic and not it.get("img"): it["img"] = absu(pic.group(1))
+for it in items:
+    it["id"] = it["href"].rsplit("/", 1)[-1]
+    details(it)
+
 members, spirits = [], []
 for it in items:
     if it["s"]:
@@ -70,6 +89,6 @@ for t in st_heads:
 out = {"source": BASE + "/90plus", "intro": intro, "video": video, "members": members, "stories": stories, "spirits": spirits,
        "spiritsIntro": text((re.search(r"Top-Shelf Spirits.*?<p[^>]*>(.*?)</p>", page, re.S) or [None, ""])[1])}
 json.dump(out, open(f"{WEB}/ninety.json", "w"), ensure_ascii=False, indent=1)
-print(json.dumps({"members": len(members), "matched": sum(1 for m in members if m["slug"]), "spirits": len(spirits), "stories": len(stories), "video": bool(video), "title": video and video["title"]}))
+print(json.dumps({"with_notes": sum(1 for x in items if x.get("desc")), "members": len(members), "matched": sum(1 for m in members if m["slug"]), "spirits": len(spirits), "stories": len(stories), "video": bool(video), "title": video and video["title"]}))
 for m in members:
     if not m["slug"]: print("  unmatched:", m["n"])

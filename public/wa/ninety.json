@@ -15,6 +15,10 @@
    "p": "$350",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Midleton2024.png",
    "shop": "",
+   "id": "Midleton-Very-Rare-Vintage-2024-40",
+   "issue": "Summer 2024",
+   "reviewer": "Jonny McCormick",
+   "desc": "Aromas of tantalizing citrus peels, rich vanilla toffee, zested lime, dried flowers, sliced pear, and hints of coffee, cinnamon, and nutmeg. The pot still spices are well integrated but play quite subtly in this vintage. The palate offers a light tropical fruitiness, plus nectarine, grape, papaya, citrus zest, spun sugar, vanilla, and American oak characteristics of honey, nutmeg, and toasted oak. A shift in flavor on the finish offers refreshment and zingy fruitiness akin to the 2018 vintage.",
    "slug": "Midleton-Very-Rare-Vintage-2024-40"
   },
   {
@@ -25,6 +29,10 @@
    "p": "$240",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Midleton2026.png",
    "shop": "",
+   "id": "Midleton-Very-Rare-Vintage-2026-40",
+   "issue": "Summer 2026",
+   "reviewer": "Jonny McCormick",
+   "desc": "The nose opens with abundant sweetness and fruitiness, as caramel, vanilla, butterscotch, and toasted oak meet sliced kiwi, tangy citrus zest, fragrant grain, apricot, flowers, and fine spices. On the palate, creamy butterscotch, vanilla frosting, and green melon glide into cinnamon powder, ginger root, and mocha. A sumptuous mouth-coating finish of vanilla and gentle spices evokes vintage 2015, delivering a sweeter, creamier experience than others in recent years.",
    "slug": "Midleton-Very-Rare-Vintage-2026-40"
   },
   {
@@ -35,6 +43,10 @@
    "p": "$70",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/ChivasRegal-Leclerc.png",
    "shop": "",
+   "id": "Chivas-Regal-16-year-old-Charles-Leclerc-40",
+   "issue": "Fall 2026",
+   "reviewer": "Jonny McCormick",
+   "desc": "Using Longmorn as the key malt, this 16-component blend was inspired by the Ferrari driver’s F1 racing number. The nose offers red apples, thick marmalade peels, peppercorn, strawberry sorbet, summer red berries, and toasted oak. The palate brings toffee, malt, dried fruits, red cherry, ginger root, cinnamon, pineapple, and grapefruit peel, concluding with a bitter- sweet citrus finish.",
    "slug": "Chivas-Regal-16-year-old-Charles-Leclerc-40"
   },
   {
@@ -45,6 +57,10 @@
    "p": "$87",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/PR_Landing_page-Aberlour12.png",
    "shop": "https://store.whiskyadvocate.com/products/aberlour-12-year-old-40?_pos=3&amp;_sid=47763373c&amp;_ss=r",
+   "id": "Aberlour-12-year-old-40-Spring-2024",
+   "issue": "Summer 2025",
+   "reviewer": "David Fleming",
+   "desc": "Forest floor, dried leaves, and some light char on the nose, with hints of charcoal, drying oak tannins, and emerging notes of vanilla and banana. A sweet and lightly spiced palate, with a bit of minerality, peach, apricot, and honeyed fruits. Very full and flavorful on the finish, with a light sweetness of brown sugar, dark chocolate, and chile powder. It’s a bit light overall at 40%, but very well put together and delicious.",
    "slug": "Aberlour-12-year-old-40-Spring-2024"
   },
   {
@@ -55,6 +71,10 @@
    "p": "$85",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Jefferesons-90b.png",
    "shop": "https://store.whiskyadvocate.com/products/jeffersons-ocean-aged-at-sea-bourbon",
+   "id": "Jeffersons-Ocean-Aged-at-Sea-Blend-of-Straight-Bourbons-Voyage-28-45",
+   "issue": "Summer 2025",
+   "reviewer": "David Fleming",
+   "desc": "This Jefferson’s ship-aged bourbon sailed around the world, setting off from Savannah and making ports of call in Panama, New Zealand, Australia, Shanghai, Japan, the North Pacific, Baltimore, Europe, and back to Savannah. The nose offers vanilla, coconut, and balanced musty oak. Orange fruit flavors lead on a palate of cooked fruits, with accents of coconut, honey, cinnamon, raisin cake, and oak, followed by a pleasantly long and spicy finish.",
    "slug": "Jeffersons-Ocean-Aged-at-Sea-Blend-of-Straight-Bourbons-Voyage-28-45"
   },
   {
@@ -65,6 +85,10 @@
    "p": "$55",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/PR_Landing_page-Glen.png",
    "shop": "https://store.whiskyadvocate.com/products/the-glenlivet-single-malt-scotch-whisky-14-year-old?_pos=3&amp;_sid=facd81f7d&amp;_ss=r",
+   "id": "Glenlivet-14-year-old-Cognac-Cask-Selection-40",
+   "issue": "Winter 2019",
+   "reviewer": "Gavin Smith",
+   "desc": "This U.S.-exclusive release was initially aged in first-fill American oak sherry casks before a period of finishing in cognac casks. Spicy red wine notes on the notably aromatic nose, with vanilla and light cinnamon. Good texture in the mouth, sweet, and very approachable, with tangerines, toffee, dates, sultanas, and milk chocolate. Liqueur chocolates in the smooth, lengthy finish. Not overly complex, but robust and extremely drinkable.",
    "slug": "Glenlivet-14-year-old-Cognac-Cask-Selection-40"
   },
   {
@@ -75,6 +99,10 @@
    "p": "$70",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/PR_Landing_page-Chivas18.png",
    "shop": "https://store.whiskyadvocate.com/products/chivas-regal-blended-scotch-whisky-18-year-old?_pos=3&amp;_sid=fdd124121&amp;_ss=r",
+   "id": "Chivas-Regal-18-year-old-40",
+   "issue": "Spring 2016",
+   "reviewer": "Jonny McCormick",
+   "desc": "It rarely gets better than this. Vanilla, almond slice, toffee, pencil shavings, sweet oak, and mild wood spices on the nose. Effortlessly smooth and delicate, this warms up gradually, with malt, dark fudge, leather, raisin, and tobacco notes before the wood spices, oak, and chocolate take center stage, ending with a warm, lengthy finish. This must be master blender Colin Scott's most preciously guarded recipe. The man's a genius!",
    "slug": "Chivas-Regal-18-year-old-40"
   },
   {
@@ -85,6 +113,10 @@
    "p": "$440",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Longmorn.png",
    "shop": "",
+   "id": "Longmorn-22-year-old-2024-Release-54-5",
+   "issue": "Summer 2024",
+   "reviewer": "Shane English",
+   "desc": "One of two rare releases this year from the Speyside distllery that’s mainly a suppllier for blends. This one is a reward for patience: After 22 years in oak, it takes its time rising from the glass, with a nose that’s reticent at first. The wait is worth it and, after a moment or two it unfolds with candied hazelnuts and chocolate-covered almonds supported by pear tart, limoncello, and a chorus of orchard fruit. The palate is fruity and bright, with the fruit flavors resting atop oak and the proof providing excellent viscosity.",
    "slug": "Longmorn-22-year-old-2024-Release-54-5"
   },
   {
@@ -95,6 +127,10 @@
    "p": "$60",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/RedBreast.png",
    "shop": "https://store.whiskyadvocate.com/products/redbreast-12-year-old",
+   "id": "Redbreast-12-year-old-40",
+   "issue": "Winter 2010",
+   "reviewer": "John Hansell",
+   "desc": "Very elegant, complex, and stylish. Honeyed and silky in texture, with toffee, toasted marshmallow, nougat, maple syrup, banana bread, and a hint of toasted coconut. Bright fruit and golden raisin blend in nicely with the layers of sweetness. Impeccable balance and very approachable. Classic Irish whiskey! (Value Pick)",
    "slug": "Redbreast-12-year-old-40"
   },
   {
@@ -105,6 +141,10 @@
    "p": "$69",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Chivas.png",
    "shop": "https://store.whiskyadvocate.com/products/chivas-regal-xv-40",
+   "id": "Chivas-Regal-XV-40",
+   "issue": "Winter 2018",
+   "reviewer": "Jonny McCormick",
+   "desc": "Marmalade, almond, and cinnamon buns, this is a grand interpretation of rich and dry fruit, with an extra layer of lush fruit from the cognac cask. It is thoroughly integrated and the cognac is respectful of the scotch. The palate is luxurious with rich, dark fruits and toffee, velvety smooth, with the cognac fruit encircling the blend, and wood spice on the finish. The perfect dram for frosty winter nights.",
    "slug": "Chivas-Regal-XV-40"
   },
   {
@@ -115,6 +155,10 @@
    "p": "$37",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/JamesonBlackBarrel.png",
    "shop": "https://store.whiskyadvocate.com/products/jameson-black-barrel-1?_pos=1&amp;_psq=jameson&amp;_ss=e&amp;_v=1.0",
+   "id": "Jameson-Black-Barrel-40",
+   "issue": "",
+   "reviewer": "",
+   "desc": "Sumptuously rich and intense whiskey emerges from these double-charred casks; a seduction of butterscotch, treacle, toasted nuts, scorched coconut, raisin, and vanilla essence. Secure in its deep-centered sweetness, it revels in caramelized sugar, dark vanilla, pecan nut slice, crème brûlée, peppery spice, and fleshy fruits gloomily submerged in sticky, umber syrups. Memorable for its long, satisfying, toasted aftertaste, heavy on the vanilla and raisins.",
    "slug": "Jameson-Black-Barrel-40"
   },
   {
@@ -125,6 +169,10 @@
    "p": "$50",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/PR_Landing_page-GS2.png",
    "shop": "https://store.whiskyadvocate.com/products/green-spot-irish-whiskey?_pos=1&amp;_sid=b059434b6&amp;_ss=r",
+   "id": "Green-Spot-40",
+   "issue": "Summer 2014",
+   "reviewer": "Jonny McCormick",
+   "desc": "Roll out the red carpet, because Green Spot is coming to town. Baked apple, spiced sultanas, lush green lawns, and ripe green fruits greet the nose. It's oily, smothering, and luxuriantly juicy, with a depth of character that tips over the back of the tongue like nectar. That mélange of light vanilla, butterscotch, and creamy rice pudding sprinkled with nutmeg is heavenly. If this doesn't persuade you to fall in love with Irish pot still whiskey, then nothing will.",
    "slug": "Green-Spot-40"
   },
   {
@@ -135,6 +183,10 @@
    "p": "$55",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/SmoothAmbler.png",
    "shop": "https://store.whiskyadvocate.com/products/smooth-ambler-contradiction-straight-bourbon-whiskey",
+   "id": "Smooth-Ambler-Contradiction-Bourbon-50",
+   "issue": "Winter 2017",
+   "reviewer": "Jeffery Lindenmuth",
+   "desc": "Generously oaked, with toasty oak drive delivering brown spices and earthy dried apple on the nose. The palate pours sweet and rich, with warm corn porridge underscored with dark molasses and maple flavors. There is a lot to like here, from the boiled peanuts to a spiced palate, as the young, house-made whiskey imparts its verve to the 9 year old Indiana bourbon.",
    "slug": "Smooth-Ambler-Contradiction-Bourbon-50"
   },
   {
@@ -145,6 +197,10 @@
    "p": "$45",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Glenlivet.png",
    "shop": "",
+   "id": "Glenlivet-Founder-s-Reserve-55-6",
+   "issue": "",
+   "reviewer": "",
+   "desc": "A special bottling to celebrate a major distillery expansion in 2010. So nice to see this whisky bottled at cask strength and not chill-filtered. Silky smooth, velvety texture. Creamy sweet foundation of vanilla fudge and caramel-coated almond. Plenty of fruit, too (golden raisin, honeyed peach, ripe nectarine, hint of banana bread). Richly textured, good weight (but not cloying), and the flavors combine seamlessly. A celebratory whisky indeed.",
    "slug": "Glenlivet-Founder-s-Reserve-55-6"
   },
   {
@@ -155,6 +211,10 @@
    "p": "$90",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Aberlour.png",
    "shop": "https://store.whiskyadvocate.com/products/aberlour-abunadh",
+   "id": "Aberlour-A-bunadh-Alba-Cask-Strength-Batch-N001-57-1",
+   "issue": "Winter 2019",
+   "reviewer": "Susannah Skiver Barton",
+   "desc": "The yin to Aberlour A'bunadh's yang, this cask-strength single malt is matured entirely in bourbon casks rather than sherry. The result is a bracingly pure whisky with deceptive simplicity; its flavors are clean and its structure precise, but it's far from boring. The nose recalls black-and-white cookies, vanilla-frosted yellow cake, and shortbread with caramel topping, along with honeysuckle, jasmine, and coconut cream. Mouth-coating and full, it has flavors of poached pear, malt balls, nougat, lemon curd, toasted coconut, and hints of spice. Vanilla, chocolate, and nut flavors are almost endless on the finish. Add water, or don't: this is delicious either way. Number 5 in the 2019 Top 20",
    "slug": "Aberlour-A-bunadh-Alba-Cask-Strength-Batch-N001-57-1"
   },
   {
@@ -165,6 +225,10 @@
    "p": "$70",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/RabbitHole.png",
    "shop": "https://store.whiskyadvocate.com/products/rabbit-hole-heigold-kentucky-straight-bourbon-whiskey",
+   "id": "Rabbit-Hole-Heigold-Kentucky-Straight-Bourbon-47-5",
+   "issue": "Winter 2019",
+   "reviewer": "Susannah Skiver Barton",
+   "desc": "Aromas of root beer, cooked cherries, candied orange, licorice, cloves, iced tea, spearmint, marshmallow Peeps, and a hint of varnish. The palate is chewy and full, with flavors tumbling over each other in a rush: orange, cinnamon, clove, licorice, horehound, oak, almonds, vanilla cream, and a bit of herbaceousness. It finishes dry, with bright fruit, cedary oak, cinnamon, and almonds.",
    "slug": "Rabbit-Hole-Heigold-Kentucky-Straight-Bourbon-47-5"
   },
   {
@@ -175,6 +239,10 @@
    "p": "$150",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/RoyalSalute.png",
    "shop": "",
+   "id": "Royal-Salute-21-year-old-Polo-Estancia-Edition-40",
+   "issue": "Winter 2021",
+   "reviewer": "Jonny McCormick",
+   "desc": "Paying homage to Argentina as the home of polo, the malbec cask finish produces an inviting, fruity whisky kept in check by a whip-crack of spices. Aromas of dried cranberry, red grape, black currant, rum and raisin, milk chocolate, fresh walnut, creamy toffee, peppercorn, and roasted coriander seed. Dark fruits are injected with sweet, spicy, peppery elements before mellowing with dark toffee, vanilla pod, and plain chocolate.",
    "slug": "Royal-Salute-21-year-old-Polo-Estancia-Edition-40"
   },
   {
@@ -185,6 +253,10 @@
    "p": "$86",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/PR_Landing_page-PedroXimenez.png",
    "shop": "https://store.whiskyadvocate.com/products/redbreast-irish-single-pot-still-whiskey-px-sherry-cask-edition",
+   "id": "Redbreast-Pedro-Xim-nez-Edition-46",
+   "issue": "Winter 2021",
+   "reviewer": "Jonny McCormick",
+   "desc": "This first limited release in the Iberian Series deploys a 12 to 22 month PX finish to great effect. Deeply fruity with red cherry, damson, dried vine fruits, soft licorice, nutmeg, cooking chocolate, and golden fleshed plums on the nose. An exceptional Redbreast with more finesse than Redbreast Lustau: beautiful oily pot still texture with succulent raspberry, red currant, plum, cherry, and black tea flavors, with control shifting later to the spices.",
    "slug": "Redbreast-Pedro-Xim-nez-Edition-46"
   },
   {
@@ -195,6 +267,10 @@
    "p": "$250",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Midleton.png",
    "shop": "https://store.whiskyadvocate.com/products/midleton-very-rare",
+   "id": "Midleton-Very-Rare-Vintage-2023-40",
+   "issue": "Summer 2023",
+   "reviewer": "Jonny McCormick",
+   "desc": "Toffee up front, with vanilla, green apple, pot still spice, milk chocolate, peppercorn, ground ginger, and aromatic hints of coffee. To taste, a bounty of toffee, chocolate, espresso, tobacco, vanilla pod, and burnt sugar notes, with coriander seed and fennel spices, then burnt orange and more coffee before a delicious creaminess spills over. The integration of chocolate and coffee notes really elevates this vintage as a particularly fine whiskey.",
    "slug": "Midleton-Very-Rare-Vintage-2023-40"
   },
   {
@@ -205,6 +281,10 @@
    "p": "$160",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/RoyalSalute-Jodhpur.png",
    "shop": "",
+   "id": "Royal-Salute-21-year-old-The-Jodhpur-Edition-40",
+   "issue": "Fall 2023",
+   "reviewer": "Jonny McCormick",
+   "desc": "A virgin oak finish helps conjure up the spirit of Jodhpur, India, the birthplace of modern polo, with a nose that transports you to the spice market with heady aromas of turmeric, cumin, cardamom, clove, sea salt, mixed peel, and pencil shavings. Light on the palate, with citrus and summer berries, then robust pepperiness with clove, cinnamon, and toasted oak before concluding with flavors of brown sugar and Whoppers.",
    "slug": "Royal-Salute-21-year-old-The-Jodhpur-Edition-40"
   }
  ],
@@ -224,7 +304,9 @@
    "c": "Tequila",
    "p": "$60",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Codigo-Reposado.png",
-   "shop": ""
+   "shop": "",
+   "id": "Codigo-1530-Reposado-40",
+   "desc": "Carefully rested for six months in Napa Valley Cabernet French White Oak wine barrels. The Reposado features the brightness of ripe agave with some of the warm, smoky undertones often found in whiskey, like vanilla, oak, and caramel. Complex, delightful flavors make the Código 1530 Reposado a flexible spirit. Savor on the rocks or in the indulgent cocktail of your choice."
   },
   {
    "n": "Codigo 1530 Rosa, 40%",
@@ -233,7 +315,9 @@
    "c": "Tequila",
    "p": "$50",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Codigo-Rosa.png",
-   "shop": "https://store.whiskyadvocate.com/products/codigo-1530-rosa-tequila"
+   "shop": "https://store.whiskyadvocate.com/products/codigo-1530-rosa-tequila",
+   "id": "Codigo-Tequila-Rosa-40",
+   "desc": "A unique fusion of tequila and wine sensibilities, aged in un-charred Napa Cabernet French White Oak barrels. Its pink hue hints at its complex palate - floral notes blend seamlessly with agave sweetness and hints of deep fruit notes with a bright and floral finish. A versatile choice for both sipping on the rocks and cocktails."
   },
   {
    "n": "Codigo 1530 Blanco, 40%",
@@ -242,7 +326,9 @@
    "c": "Tequila",
    "p": "$50",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Codigo-Blanco.png",
-   "shop": "https://store.whiskyadvocate.com/products/codigo-1530-blanco-tequila"
+   "shop": "https://store.whiskyadvocate.com/products/codigo-1530-blanco-tequila",
+   "id": "Codigo-Tequila-Blanco-40",
+   "desc": "A family recipe perfected over generations, with hand-selected fully-matured agave, to ensure a better-tasting, smoother tequila. This tequila never touches a barrel so that the rich flavor of agave can be appreciated. With a nose of sweet citrus and mint, and a palate featuring crisp, clean notes of agave and white pepper, it offers a smooth finish that's perfect for sipping or mixing."
   },
   {
    "n": "Avion Reserva 44, 40%",
@@ -251,7 +337,9 @@
    "c": "Tequila",
    "p": "$150",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/AvionReserva44.png",
-   "shop": "https://store.whiskyadvocate.com/products/avion-reserva-44-extra-anejo-tequila"
+   "shop": "https://store.whiskyadvocate.com/products/avion-reserva-44-extra-anejo-tequila",
+   "id": "Avion-Reserva-44-40",
+   "desc": "Aged for an impressive 44 months, this tequila is a masterclass in complexity. With a nose of dried fruits and toasted oak, the palate reveals layers of caramel, ripe plum, and a touch of spice. The finish is long and warming, a testament to its extended aging process."
   },
   {
    "n": "Olmeca Altos Plata, 40$",
@@ -260,7 +348,9 @@
    "c": "Tequila",
    "p": "$35",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/AltosPlta.png",
-   "shop": "https://store.whiskyadvocate.com/products/olmeca-altos-plata-tequila"
+   "shop": "https://store.whiskyadvocate.com/products/olmeca-altos-plata-tequila",
+   "id": "Olmeca-Altos-Plata-40S",
+   "desc": "Crafted from 100% blue agave, this tequila is a celebration of its Jalisco origins. The nose is filled with sweet, citrusy notes, while the palate offers a blend of agave sweetness and a slight peppery kick. Versatile and vibrant, it's a go-to for tequila-based cocktails."
   },
   {
    "n": "Del Maguey Vida Clásico, 40%",
@@ -269,7 +359,9 @@
    "c": "Mezcal",
    "p": "$38",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/DelMaguey.png",
-   "shop": "https://store.whiskyadvocate.com/products/del-maguey-vida-clasico-40"
+   "shop": "https://store.whiskyadvocate.com/products/del-maguey-vida-clasico-40",
+   "id": "Del-Maguey-Vida-Cl-sico",
+   "desc": "This mezcal offers a smoky aroma with a hint of earthiness, capturing the essence of its agave origins. The palate is complex, featuring notes of dried herbs, citrus, and a touch of caramel. The finish is long and smoky, making it a perfect choice for those looking to explore the depths of mezcal."
   },
   {
    "n": "Martell Blue Swift, 40%",
@@ -278,7 +370,9 @@
    "c": "Cognac",
    "p": "$60",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/MartellBlueSwift2.png",
-   "shop": "https://store.whiskyadvocate.com/products/martell-blue-swift"
+   "shop": "https://store.whiskyadvocate.com/products/martell-blue-swift",
+   "id": "Martell-Blue-Swift",
+   "desc": "A groundbreaking fusion of VSOP Cognac and Bourbon casks. Its copper hue with golden highlights sets the stage for a complex aroma featuring gourmet notes of banana, caramelized pear, and a dash of vanilla and spices. The palate delivers ginger, candied fruit, and the unmistakable toasted oak from the bourbon casks. This spirit captures Martell's signature candied fruit and plum notes, enriched by the aromatic tones absorbed from the bourbon cask."
   },
   {
    "n": "Martell Cordon Bleu, 40%",
@@ -287,7 +381,9 @@
    "c": "Cognac",
    "p": "$200",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/MartellCodron.png",
-   "shop": "https://store.whiskyadvocate.com/products/martell-cordon-bleu"
+   "shop": "https://store.whiskyadvocate.com/products/martell-cordon-bleu",
+   "id": "Martell-Cordon-Bleu",
+   "desc": "An international symbol of excellence, Martell Cordon Bleu is a legendary cognac with a rich tapestry of flavors. Its deep, golden copper color is a prelude to its vibrant aromas, where orchard fruits where candied plum harmonize with roasted notes of mocha coffee and toasted almonds. Flavors of spicy fruit notes, further enhanced by the mellow complexity of its eaux-de-vie from the Borderies region. The finish is impressively long, marked by fruit and spices."
   },
   {
    "n": "Monkey 47, 47%",
@@ -296,7 +392,9 @@
    "c": "Gin",
    "p": "$55",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/Monkey47.png",
-   "shop": "https://store.whiskyadvocate.com/products/monkey-47-schwarzwald-dry-gin-375ml"
+   "shop": "https://store.whiskyadvocate.com/products/monkey-47-schwarzwald-dry-gin-375ml",
+   "id": "Monkey-47",
+   "desc": "A harmonious blend of 47 exotic and regional botanicals, crafted with German distilling expertise. Infused with lingonberries and blended with local natural spring water, its profile ranges from piney juniper to delicate florals. This gin offers a complex yet balanced flavor journey."
   },
   {
    "n": "Jefferson's Very Small Batch Bourbon",
@@ -305,7 +403,9 @@
    "c": "Bourbon",
    "p": "$40",
    "img": "https://whiskyadvocate.com/get/files/image/galleries/PR_Landing_page-Jeffersons2-0001.png",
-   "shop": "https://store.whiskyadvocate.com/products/jeffersons-very-small-batch-bourbon?_pos=3&amp;_psq=jefferso&amp;_ss=e&amp;_v=1.0"
+   "shop": "https://store.whiskyadvocate.com/products/jeffersons-very-small-batch-bourbon?_pos=3&amp;_psq=jefferso&amp;_ss=e&amp;_v=1.0",
+   "id": "Jefferson-s-Very-Small-Batch-Bourbon",
+   "desc": "Each very small batch of this very special bottling starts with Jefferson’s base bourbon. Three different hand-selected straight bourbons are chosen for the blend to create a drink that is approachable enough for the whiskey novice, yet complex enough for the connoisseur."
   }
  ],
  "spiritsIntro": "Sipping them neat, on the rocks or in deliciously balanced cocktails. You’ll find quality in every bottle."

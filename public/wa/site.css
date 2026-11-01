@@ -1821,9 +1821,11 @@ a.author p::after { content: " →"; color: var(--copper); }
 /* Cocktails filter bar (2026-11-01): sticks under the mast once scrolled past, on paper, compact: headings and
    unchosen cabinet chips hidden so it stays one or two rows. Static on phones, where the rows would eat the screen. */
 .ck-facets { position: sticky; top: var(--mast-h, 64px); z-index: 30; display: grid; gap: 18px; margin: 0 calc(-1 * var(--gutter)) 26px; padding: 2px var(--gutter) 12px; background: var(--paper); }
-.ck-facets.stuck { gap: 8px; padding: 10px var(--gutter) 10px; box-shadow: 0 10px 24px -18px rgba(40, 30, 10, 0.35); }
-.ck-facets.stuck h3 { display: none; }
-.ck-facets.stuck .suggest { margin-top: 0; }
-.ck-facets.stuck .cabinet button:not([aria-pressed="true"]) { display: none; }
-.ck-facets.stuck > div:has(.cabinet):not(:has(button[aria-pressed="true"])) { display: none; }
+@media (min-width: 701px) {
+  .ck-facets.stuck { gap: 8px; padding: 10px var(--gutter) 10px; box-shadow: 0 10px 24px -18px rgba(40, 30, 10, 0.35); }
+  .ck-facets.stuck h3 { display: none; }
+  .ck-facets.stuck .suggest { margin-top: 0; }
+  .ck-facets.stuck .cabinet button:not([aria-pressed="true"]) { display: none; }
+  .ck-facets.stuck > div:has(.cabinet):not(:has(button[aria-pressed="true"])) { display: none; }
+}
 @media (max-width: 700px) { .ck-facets { position: static; } }

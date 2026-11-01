@@ -137,7 +137,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
     }
     var best = -1; g.strokeStyle = "rgba(201,115,29,0.5)"; g.setLineDash([3, 4]); g.beginPath();
     dated.forEach(function (r, i) { if (r.s > best) best = r.s; var x = xOf(r, i), yy = yOf(best); if (i) g.lineTo(x, yy); else g.moveTo(x, yy); }); g.stroke(); g.setLineDash([]);
-    dated.forEach(function (r, i) { g.beginPath(); g.arc(xOf(r, i), yOf(r.s), 5, 0, Math.PI * 2); g.fillStyle = r.s >= 92 ? "#c9731d" : "rgba(201,115,29,0.45)"; g.fill(); });
+    var pts = dated.map(function (r, i) { var x = xOf(r, i), yy = yOf(r.s); g.beginPath(); g.arc(x, yy, 5, 0, Math.PI * 2); g.fillStyle = r.s >= 92 ? "#c9731d" : "rgba(201,115,29,0.45)"; g.fill(); return { x: x, y: yy, r: r }; });
+    if (WA.canvasTips) WA.canvasTips(c, function () { return pts; }, function (r) { return "<strong>" + r.s + " points</strong>" + (r.p ? " · " + WA.fmt(r.p) : "") + "<br>" + r.n + '<span class="ctip-sub">' + (r.d ? new Date(r.d).toLocaleDateString("en-US", { month: "long", year: "numeric" }) + " · " : "") + r.c + "</span>"; }, function (r) { return r.slug ? WA.bottleHref(r) : null; });
   }
   addEventListener("hashchange", show); addEventListener("resize", show); show();
 }); });

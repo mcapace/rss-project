@@ -94,8 +94,10 @@ WA.ready(function (recent) { WA.archive(function (data) {
   WA.storyBySlug(decodeURIComponent((location.hash || "").slice(1)), function (found, all) {
     var storyBySlug = {}; all.forEach(function (st) { storyBySlug[st.slug.toLowerCase()] = st; });
     var slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
-    var st = found || all[0]; if (!found) history.replaceState(null, "", "#" + st.slug);
-    WA.article(st.slug, function (body) {
+    // A story the index has not been exported with yet (anything newer than the last export) comes straight from the CMS.
+    var pre = null;
+    function load(st) {
+    (pre && pre.slug === st.slug ? function (f) { f(pre.body); } : function (f) { WA.article(st.slug, f); })(function (body) {
       var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p class=\"muted\">The full text of this story is still being brought over from the archive.</p>";
       document.title = st.title + " · Whisky Advocate";
       var sec = WA.SECTION[st.sec];
@@ -265,6 +267,12 @@ WA.ready(function (recent) { WA.archive(function (data) {
       function onScroll() { var doc = document.documentElement, p = scrollY / (doc.scrollHeight - innerHeight); document.getElementById("progress").style.width = Math.min(100, Math.max(0, p * 100)) + "%"; var current = 0; hs.forEach(function (h, k) { if (h.getBoundingClientRect().top < 120) current = k + 1; }); links.forEach(function (a, k) { a.setAttribute("aria-current", String(k === current)); }); }
       addEventListener("scroll", onScroll, { passive: true }); onScroll(); scrollTo(0, 0);
     });
+    }
+    if (found) load(found);
+    else fetch("/api/wa/story?slug=" + encodeURIComponent(slug), { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (j && j.story && j.story.slug) { var s2 = j.story; s2.tags = s2.tags || []; s2.refs = s2.refs || []; all.unshift(s2); storyBySlug[s2.slug.toLowerCase()] = s2; pre = { slug: s2.slug, body: j.body || "" }; load(s2); }
+      else { document.title = "Story not found · Whisky Advocate"; var pr = document.getElementById("prose"); if (pr) pr.innerHTML = '<p>We could not find that story. <a href="stories.html">Browse the latest stories</a>.</p>'; var h = document.getElementById("title"); if (h) h.textContent = "That story is not here."; }
+    }, function () { load(all[0]); });
   });
   addEventListener("hashchange", function () { location.reload(); });
   // Listen: the story read aloud in Whisky Advocate's own voice (ElevenLabs through the site's route), a paragraph at a time, with pause and resume; the browser's voice stands in when the route is not connected.

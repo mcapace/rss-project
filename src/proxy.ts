@@ -1,24 +1,27 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { connectedCmsEnabled } from "@/lib/cms/runtime-config";
+import { connectedCmsEnabled, deliveryEnabled } from "@/lib/cms/runtime-config";
+import { resolveRedirect } from "@/lib/cms/redirects-server";
 
 /** Paths the application itself serves; anything else is a candidate legacy URL for the redirect engine. */
 const APP_PREFIXES = ["/cms", "/admin", "/reader", "/login", "/api", "/_next", "/brands-cms", "/share", "/wa"];
 const redirectCache = new Map<string, { target: string | null; status: number; until: number }>();
 
-/** Ask the redirect engine about a legacy path, remembering answers briefly per instance. */
+/**
+ * Ask the redirect engine about a legacy path, remembering answers briefly per instance. The proxy runs on Node.js,
+ * so it reads the redirect map directly: calling /api/redirects/resolve over HTTP from here failed (deployment
+ * protection on previews, and the self-request did not complete in production), so every legacy URL fell through to 404.
+ */
 async function lookupRedirect(request: NextRequest): Promise<{ target: string | null; status: number } | null> {
   const path = request.nextUrl.pathname;
   const cached = redirectCache.get(path);
   if (cached && cached.until > Date.now()) return cached.status === 404 ? null : cached;
+  if (!deliveryEnabled()) return null;
   try {
-    const url = new URL("/api/redirects/resolve", request.nextUrl.origin);
-    url.searchParams.set("path", path);
-    url.searchParams.set("host", request.nextUrl.hostname);
-    const response = await fetch(url, { headers: { accept: "application/json" }, next: { revalidate: 300 } });
-    const data = await response.json() as { target: string | null; status: number; unavailable?: boolean };
-    if (!data.unavailable) redirectCache.set(path, { target: data.target, status: data.status, until: Date.now() + 300_000 });
-    return data.status === 404 ? null : { target: data.target, status: data.status };
+    const hit = await resolveRedirect(path, request.nextUrl.hostname);
+    const data = hit ? { target: hit.target, status: hit.status } : { target: null, status: 404 };
+    redirectCache.set(path, { ...data, until: Date.now() + 300_000 });
+    return data.status === 404 ? null : data;
   } catch { return null; }
 }
 

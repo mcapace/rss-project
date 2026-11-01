@@ -30,7 +30,7 @@
 
 <section class="band">
   <div class="band-head"><div><span class="mono">Score history</span><h2 class="d2" style="margin-top:10px">How the house has rated, bottle by bottle.</h2></div></div>
-  <div class="timeline"><canvas id="timeline" aria-label="Scores over time"></canvas></div>
+  <div class="score-history"><canvas id="timeline" aria-label="Scores over time"></canvas></div>
 </section>
 
 <section class="band">
@@ -112,17 +112,31 @@ WA.ready(function (recent) { WA.archive(function (data) {
     scrollTo(0, 0);
   }
   function drawTimeline(rows) {
-    var c = document.getElementById("timeline"), v = WA.setupCanvas(c), g = v.g, pad = { l: 34, r: 16, t: 12, b: 26 }, rule = "rgba(23,18,13,0.1)";
-    var dated = rows.filter(function (r) { return r.d; }); if (!dated.length) dated = rows;
+    var c = document.getElementById("timeline"), v = WA.setupCanvas(c), g = v.g, pad = { l: 40, r: 22, t: 16, b: 34 }, rule = "rgba(23,18,13,0.1)";
+    if (v.w < 40) return;
+    var dated = rows.filter(function (r) { return r.d; }).slice().sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; }); if (!dated.length) dated = rows.slice();
     var t0 = dated[0].d ? new Date(dated[0].d).getTime() : 0, t1 = dated[dated.length - 1].d ? new Date(dated[dated.length - 1].d).getTime() : 1; if (t1 <= t0) t1 = t0 + 1;
-    var xOf = function (r, i) { return pad.l + (r.d ? (new Date(r.d).getTime() - t0) / (t1 - t0) : i / Math.max(1, dated.length - 1)) * (v.w - pad.l - pad.r); };
-    var yOf = function (s) { return pad.t + (1 - (s - 80) / 16) * (v.h - pad.t - pad.b); };
-    g.clearRect(0, 0, v.w, v.h); g.strokeStyle = rule; g.font = "10.5px JetBrains Mono, monospace"; g.fillStyle = "#8b7b6a";
-    [80, 84, 88, 92, 96].forEach(function (s) { g.beginPath(); g.moveTo(pad.l, yOf(s)); g.lineTo(v.w - pad.r, yOf(s)); g.stroke(); g.fillText(s, 6, yOf(s) + 4); });
-    var years = {}; dated.forEach(function (r, i) { if (r.d) { var y = r.d.slice(0, 4); if (!years[y]) { years[y] = xOf(r, i); } } });
-    Object.keys(years).forEach(function (y) { g.fillText(y, years[y], v.h - 8); });
+    // The score axis fits the house: 80 to 96 by default, widened in steps of four to take a 97 or a score under 80.
+    var hi = 96, lo = 80; dated.forEach(function (r) { if (r.s > hi) hi = Math.min(100, Math.ceil(r.s / 4) * 4); if (r.s < lo) lo = Math.floor(r.s / 4) * 4; });
+    var xAt = function (t) { return pad.l + (t - t0) / (t1 - t0) * (v.w - pad.l - pad.r); };
+    var xOf = function (r, i) { return r.d ? xAt(new Date(r.d).getTime()) : pad.l + i / Math.max(1, dated.length - 1) * (v.w - pad.l - pad.r); };
+    var yOf = function (s) { return pad.t + (1 - (s - lo) / (hi - lo)) * (v.h - pad.t - pad.b); };
+    g.clearRect(0, 0, v.w, v.h); g.strokeStyle = rule; g.lineWidth = 1; g.font = "10.5px JetBrains Mono, monospace"; g.fillStyle = "#8b7b6a"; g.textBaseline = "middle";
+    for (var s = lo; s <= hi; s += 4) { g.beginPath(); g.moveTo(pad.l, yOf(s)); g.lineTo(v.w - pad.r, yOf(s)); g.stroke(); g.fillText(s, 6, yOf(s)); }
+    // Years are marked where each year begins, and a label is skipped when it would touch the one before it.
+    if (dated[0].d) {
+      var y0 = new Date(t0).getFullYear(), y1 = new Date(t1).getFullYear(), last = -1e9; g.textBaseline = "alphabetic";
+      for (var y = y0; y <= y1; y++) {
+        var x = Math.max(pad.l, xAt(new Date(y, 0, 1).getTime())), label = String(y), tw = g.measureText(label).width;
+        if (x - last < tw + 14) continue;
+        var tx = Math.min(x, v.w - pad.r - tw);
+        if (tx - last < tw + 14) continue;
+        g.beginPath(); g.moveTo(x, v.h - pad.b); g.lineTo(x, v.h - pad.b + 5); g.stroke();
+        g.fillText(label, tx, v.h - 10); last = tx;
+      }
+    }
     var best = -1; g.strokeStyle = "rgba(201,115,29,0.5)"; g.setLineDash([3, 4]); g.beginPath();
-    dated.forEach(function (r, i) { if (r.s > best) best = r.s; var x = xOf(r, i), y = yOf(best); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
+    dated.forEach(function (r, i) { if (r.s > best) best = r.s; var x = xOf(r, i), yy = yOf(best); if (i) g.lineTo(x, yy); else g.moveTo(x, yy); }); g.stroke(); g.setLineDash([]);
     dated.forEach(function (r, i) { g.beginPath(); g.arc(xOf(r, i), yOf(r.s), 5, 0, Math.PI * 2); g.fillStyle = r.s >= 92 ? "#c9731d" : "rgba(201,115,29,0.45)"; g.fill(); });
   }
   addEventListener("hashchange", show); addEventListener("resize", show); show();

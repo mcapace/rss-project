@@ -2100,3 +2100,6 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
   #homeStories .story.lead p, #homeStories .story.side p { max-width: 62ch; }
 }
 .rp-card.glass { background: #fffbf5; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Shelf scan (2026-11-01): the example-scan note sits under the Scan button, not over the phone. */
+.scan-note { margin: 12px 0 0; max-width: 46ch; font-size: 13px; line-height: 1.5; color: var(--ink-3); }

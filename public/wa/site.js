@@ -408,9 +408,12 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
   /* Flavor compass drawing, reused on the finder and the bottle page */
   function setupCanvas(c) { var d = Math.min(devicePixelRatio || 1, 2); var w = c.clientWidth, h = c.clientHeight; c.width = w * d; c.height = h * d; var g = c.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); return { g: g, w: w, h: h }; }
   function compassPoint(r, cx, cy, rad) {
-    var hash = 0; for (var i = 0; i < r.n.length; i++) hash = (hash * 31 + r.n.charCodeAt(i)) % 1000;
+    var hash = 0; for (var i = 0; i < r.n.length; i++) hash = (hash * 31 + r.n.charCodeAt(i)) % 100003;
     var sx = (Math.min(4, r.sw) - Math.min(4, r.sm)) / 4, sy = (Math.min(4, r.ri) - Math.min(4, r.li)) / 4;
-    var dx = sx * rad * 0.8 + ((hash % 17) - 8) * 1.6, dy = sy * rad * 0.8 + ((hash % 13) - 6) * 1.6, len = Math.hypot(dx, dy), lim = rad - 7;
+    // The scores sit on a square grid; the square is mapped onto the disc so its corners reach the rim instead of piling against it,
+    // and each bottle is scattered inside a small circle around its grid point.
+    var ux = sx * Math.sqrt(1 - sy * sy / 2), uy = sy * Math.sqrt(1 - sx * sx / 2), a = (hash % 360) * Math.PI / 180, j = Math.sqrt((Math.floor(hash / 360) % 100) / 100) * rad * 0.1;
+    var dx = ux * rad * 0.76 + Math.cos(a) * j, dy = uy * rad * 0.76 + Math.sin(a) * j, len = Math.hypot(dx, dy), lim = rad - 8;
     if (len > lim) { dx *= lim / len; dy *= lim / len; }   // every bottle stays inside the compass
     return { x: cx + dx, y: cy + dy };
   }
@@ -421,10 +424,19 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
   function legend(el, rows) { if (!el) return; var seen = {}; rows.forEach(function (r) { seen[family(r.c)[0]] = (seen[family(r.c)[0]] || 0) + 1; }); el.innerHTML = FAMILIES.filter(function (f) { return seen[f[0]]; }).map(function (f) { return '<span><i style="background:' + f[2] + '"></i>' + f[0] + "</span>"; }).join(""); }
   function drawCompass(canvas, rows, highlight) {
     var f = setupCanvas(canvas), h = f.g, cx = f.w / 2, cy = f.h / 2, rad = Math.min(f.w, f.h) / 2 - 18, rule = "rgba(23,18,13,0.1)";
+    if (rad <= 0) return { points: [], cx: cx, cy: cy, rad: 0 };   // a hidden canvas has no size yet
     h.clearRect(0, 0, f.w, f.h); h.strokeStyle = rule; h.beginPath(); h.arc(cx, cy, rad, 0, Math.PI * 2); h.stroke(); h.beginPath(); h.arc(cx, cy, rad / 2, 0, Math.PI * 2); h.stroke();
     h.beginPath(); h.moveTo(cx - rad, cy); h.lineTo(cx + rad, cy); h.moveTo(cx, cy - rad); h.lineTo(cx, cy + rad); h.stroke();
-    h.fillStyle = "#8b7b6a"; h.font = "10.5px JetBrains Mono, monospace"; h.fillText("SMOKY", cx - rad - 2, cy - 6); h.fillText("SWEET", cx + rad - 40, cy - 6); h.fillText("LIGHT", cx + 4, cy - rad + 12); h.fillText("RICH", cx + 4, cy + rad - 4);
     var pts = rows.map(function (r) { var p = compassPoint(r, cx, cy, rad); h.beginPath(); h.arc(p.x, p.y, 2.4, 0, Math.PI * 2); h.fillStyle = r === highlight ? "transparent" : dot(r, r.s >= 92 ? 0.85 : 0.28); h.fill(); return { x: p.x, y: p.y, r: r }; });
+    // The axis labels go on last, on a paper backing, so the dots never cover them.
+    h.font = "10.5px JetBrains Mono, monospace"; h.textBaseline = "middle";
+    [["SMOKY", cx - rad - 6, cy, "right"], ["SWEET", cx + rad + 6, cy, "left"], ["LIGHT", cx, cy - rad - 8, "center"], ["RICH", cx, cy + rad + 8, "center"]].forEach(function (l) {
+      var tw = h.measureText(l[0]).width, x0 = l[3] === "right" ? l[1] - tw : l[3] === "center" ? l[1] - tw / 2 : l[1];
+      x0 = Math.max(2, Math.min(f.w - tw - 2, x0));
+      h.fillStyle = "rgba(255, 251, 244, 0.92)"; h.fillRect(x0 - 4, l[2] - 8, tw + 8, 16);
+      h.fillStyle = "#8b7b6a"; h.textAlign = "left"; h.fillText(l[0], x0, l[2]);
+    });
+    h.textBaseline = "alphabetic";
     if (highlight) { var hp = compassPoint(highlight, cx, cy, rad); h.beginPath(); h.arc(hp.x, hp.y, 7, 0, Math.PI * 2); h.fillStyle = "#17120d"; h.fill(); h.beginPath(); h.arc(hp.x, hp.y, 11, 0, Math.PI * 2); h.strokeStyle = "#c9731d"; h.lineWidth = 1.5; h.stroke(); }
     return { points: pts, cx: cx, cy: cy, rad: rad };
   }

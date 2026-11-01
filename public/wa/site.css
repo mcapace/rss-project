@@ -1852,3 +1852,20 @@ a.author p::after { content: " →"; color: var(--copper); }
 .sp-chip { display: inline-flex; align-items: center; margin-right: 8px; padding: 2px 8px; border: 1px solid rgba(26, 20, 12, 0.18); border-radius: 999px; background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; line-height: 1.5; text-transform: uppercase; vertical-align: 1px; white-space: nowrap; }
 .nm > .sp-chip, h3 > .sp-chip, strong > .sp-chip { font-size: 9.5px; vertical-align: 2px; }
 .sp-note { max-width: 62ch; margin-top: 14px; padding: 10px 14px; border-left: 3px solid var(--copper); border-radius: 0 10px 10px 0; background: var(--paper-2); color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
+
+/* 90+ Club (ninety.html): the partner program page. */
+.ninety-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+@media (max-width: 960px) { .ninety-head { grid-template-columns: 1fr; } }
+.ninety-film { margin: 0; }
+.ninety-film .top20-play { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 18px; overflow: hidden; background: #000; cursor: pointer; }
+.ninety-film .top20-play img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ninety-film figcaption { margin-top: 10px; color: var(--ink-2); font-size: 13px; }
+.ninety-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 14px; align-items: stretch; }
+.spirit-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1100px) { .spirit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .spirit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.spirit-card { display: grid; gap: 8px; align-content: start; padding: 14px; border: 1px solid var(--rule-2); border-radius: 18px; background: var(--paper-2); color: inherit; text-decoration: none; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.spirit-card:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -22px rgba(40, 30, 10, 0.45); }
+.spirit-card .pic { display: grid; place-items: center; aspect-ratio: 3 / 4; border-radius: 12px; background: var(--paper); overflow: hidden; }
+.spirit-card .pic img { max-width: 78%; max-height: 92%; object-fit: contain; mix-blend-mode: multiply; }
+.spirit-card strong { font-size: 15px; font-weight: 500; line-height: 1.3; }

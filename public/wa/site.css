@@ -1664,3 +1664,7 @@ a.author p::after { content: " →"; color: var(--copper); }
 .ask-band .suggest { justify-content: center; margin-top: 8px; }
 @media (max-width: 700px) { .ask-band { padding-top: 12px; } .ask-band .suggest { display: none; } }
 @media (prefers-reduced-motion: reduce) { .mast .mast-pour video { display: none; } }
+/* Three suggestions on one row, never a fourth beneath. */
+.ask-band .suggest { flex-wrap: nowrap; overflow: hidden; }
+.ask-band .suggest > *:nth-child(n+4) { display: none; }
+@media (max-width: 1100px) { .ask-band .suggest > *:nth-child(n+3) { display: none; } }

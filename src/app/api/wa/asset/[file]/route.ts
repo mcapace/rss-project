@@ -1,4 +1,5 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { getS3Client } from "@/lib/s3";
 import { renderRendition, type RenditionFormat } from "@/lib/media/renditions";
@@ -12,13 +13,23 @@ const FORMATS = new Set<RenditionFormat>(["webp", "avif", "jpeg", "png"]);
  * A legacy Whisky Advocate image re-hosted for the static site's own data (cocktails, Top 20, video,
  * 90+ Club), served from its content-addressed copy (cms/legacy/wa/<sha256>.<ext>, written by
  * scripts/wa-rehost-static.ts). `?w=` resizes and `?format=` converts, like /api/media. A PDF a story
- * links to (scripts/wa-rewrite-legacy-links.ts) is served as stored.
+ * links to (scripts/wa-rewrite-legacy-links.ts) is served as stored. A video (a Morweb gallery clip a story
+ * plays) redirects to a short-lived signed S3 address, so the browser streams and seeks from S3 directly.
  */
 export async function GET(request: Request, context: { params: Promise<{ file: string }> }) {
-  const { file } = await context.params;
-  if (!/^[a-f0-9]{64}\.(jpg|png|gif|webp|avif|pdf)$/.test(file)) return new NextResponse(null, { status: 404 });
+  // The address may lead with the file's web name (riegers-holiday-edition-bottle-<sha256>.jpg); only the hash and extension pick the file.
+  const named = /^(?:[a-z0-9]+(?:-[a-z0-9]+)*-)?([a-f0-9]{64}\.(?:jpg|png|gif|webp|avif|pdf|mp4|mov|m4v|webm))$/.exec((await context.params).file);
+  if (!named) return new NextResponse(null, { status: 404 });
+  const file = named[1];
   const bucket = process.env.S3_BUCKET;
   if (!bucket) return new NextResponse(null, { status: 503 });
+  const video = /\.(mp4|mov|m4v|webm)$/.exec(file);
+  if (video) {
+    // QuickTime clips from the old galleries are H.264; served as MP4 every browser plays them.
+    const type = video[1] === "webm" ? "video/webm" : "video/mp4";
+    const signed = await getSignedUrl(getS3Client(), new GetObjectCommand({ Bucket: bucket, Key: `cms/legacy/wa/${file}`, ResponseContentType: type, ResponseCacheControl: "public, max-age=86400" }), { expiresIn: 6 * 3600 });
+    return new Response(null, { status: 302, headers: { Location: signed, "Cache-Control": "public, max-age=3600, s-maxage=3600" } });
+  }
   if (file.endsWith(".pdf")) {
     try {
       const object = await getS3Client().send(new GetObjectCommand({ Bucket: bucket, Key: `cms/legacy/wa/${file}` }));

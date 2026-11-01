@@ -432,7 +432,9 @@ export function createDemoData(storage: Storage | null = typeof window !== "unde
     subscribe: listener => emitter.subscribe(listener),
     async search(query, options = {}) {
       await latency();
-      return demoSearch(store.documents, query, options);
+      const result = demoSearch(store.documents, query, options);
+      const images = !options.scope || options.scope === "all" || options.scope === "media";
+      return images && query.trim() ? { ...result, library: demoMediaFiles({ q: query.trim(), status: "stored", limit: 12 }).files.map(file => ({ ...file, brand: "wa" as const, rank: 1 })) } : result;
     },
     async analyze(document) {
       await new Promise(resolve => setTimeout(resolve, 700));
@@ -654,19 +656,34 @@ const DEMO_GALLERIES: MediaGallery[] = [
   { id: "18980", name: "Hero-Images", title: "Hero Images", description: "", created_at: "2022-11-28 11:40:00", files: 3, stored: 3, pending: 0, failed: 0, bytes: 2_900_000, cover: "/wa/img/rickhouse.jpg" },
   { id: "20104", name: "Cocktails", title: "Cocktails", description: "", created_at: "2024-03-06 09:12:00", files: 2, stored: 1, pending: 0, failed: 1, bytes: 610_000, cover: "/wa/img/shelf.jpg" },
 ];
-const DEMO_FILES: MediaFile[] = [
+type DemoFile = Omit<MediaFile, "seo_name" | "seo_title" | "seo_alt" | "seo_description" | "keywords" | "kind" | "brand_name" | "product">;
+const DEMO_SOURCE: DemoFile[] = [
   ...["scotch", "bourbon", "rye", "irish", "japanese", "blended"].map((kind, i) => ({ gallery_id: "18986", gallery: "Bottle Shots", id: String(1700 + i), file_name: `Sample-${kind}-bottle_300.jpg`, title: "", alt: `A ${kind} bottle`, mime: "image/jpeg", width: 300, height: 300, bytes: 48_000 + i * 900, uploaded_at: `2023-0${(i % 9) + 1}-14 10:02:25`, source_url: `https://whiskyadvocate.com/get/files/image/galleries/Sample-${kind}-bottle_300.jpg`, status: (i === 5 ? "pending" : "stored") as MediaFile["status"], error: null, sha256: null, thumb: i === 5 ? null : `/wa/img/bottle-${kind}.jpg`, original: i === 5 ? null : `/wa/img/bottle-${kind}.jpg`, public_url: i === 5 ? null : `/wa/img/bottle-${kind}.jpg`, used_in: i < 2 ? [{ id: "demo-article-1", title: "Sample story that uses this bottle", state: "published" }] : [] })),
   ...["rickhouse", "dusk", "sheet"].map((name, i) => ({ gallery_id: "18980", gallery: "Hero Images", id: String(1800 + i), file_name: `${name}-hero.jpg`, title: "", alt: "", mime: "image/jpeg", width: 1600, height: 900, bytes: 900_000 + i * 50_000, uploaded_at: "2022-12-01 08:00:00", source_url: `https://whiskyadvocate.com/get/files/image/galleries/${name}-hero.jpg`, status: "stored" as const, error: null, sha256: null, thumb: `/wa/img/${name}.jpg`, original: `/wa/img/${name}.jpg`, public_url: `/wa/img/${name}.jpg`, used_in: [] })),
   { gallery_id: "20104", gallery: "Cocktails", id: "1900", file_name: "shelf-cocktail.jpg", title: "", alt: "", mime: "image/jpeg", width: 1200, height: 800, bytes: 300_000, uploaded_at: "2024-03-06 09:20:00", source_url: "https://whiskyadvocate.com/get/files/image/galleries/shelf-cocktail.jpg", status: "stored", error: null, sha256: null, thumb: "/wa/img/shelf.jpg", original: "/wa/img/shelf.jpg", public_url: "/wa/img/shelf.jpg", used_in: [] },
   { gallery_id: "20104", gallery: "Cocktails", id: "1901", file_name: "missing-cocktail.mov", title: "", alt: "", mime: "video/quicktime", width: null, height: null, bytes: 310_000, uploaded_at: "2024-03-06 09:21:00", source_url: "https://whiskyadvocate.com/get/files/image/galleries/missing-cocktail.mov", status: "failed", error: "HTTP 404", sha256: null, thumb: null, original: null, public_url: null, used_in: [] },
 ];
+/** Demo web names, in the shape scripts/wa-media-name.ts writes: the bottles named, the rest left for the script. */
+const DEMO_FILES: MediaFile[] = DEMO_SOURCE.map(file => {
+  const kind = /^Sample-(\w+)-bottle/.exec(file.file_name)?.[1];
+  const named = kind && file.status === "stored";
+  return { ...file,
+    seo_name: named ? `${kind}-whisky-bottle-studio-shot` : null,
+    seo_title: named ? `${kind[0].toUpperCase()}${kind.slice(1)} whisky bottle, studio shot` : null,
+    seo_alt: named ? `A bottle of ${kind} whisky photographed on a plain white background.` : null,
+    seo_description: named ? `Studio bottle shot of a ${kind} whisky, used in Whisky Advocate buying guides.` : null,
+    keywords: named ? [`${kind} whisky`, "whisky bottle", "bottle shot"] : [],
+    kind: named ? "bottle" : null, brand_name: null, product: null,
+  };
+});
 export function demoMediaLibrary(): MediaLibraryOverview {
   const totals = DEMO_GALLERIES.reduce((t, g) => ({ galleries: t.galleries + 1, files: t.files + g.files, stored: t.stored + g.stored, pending: t.pending + g.pending, failed: t.failed + g.failed, bytes: t.bytes + g.bytes }), { galleries: 0, files: 0, stored: 0, pending: 0, failed: 0, bytes: 0 });
   return { galleries: DEMO_GALLERIES, totals };
 }
 export function demoMediaFiles(options: { gallery?: string | null; q?: string; status?: string; offset?: number; limit?: number }): MediaFilePage {
   const q = (options.q ?? "").toLowerCase();
-  const all = DEMO_FILES.filter(f => (!options.gallery || f.gallery_id === options.gallery) && (!q || f.file_name.toLowerCase().includes(q)) && (!options.status || f.status === options.status));
+  const words = (f: MediaFile) => [f.file_name, f.seo_name ?? "", f.seo_title ?? "", f.seo_alt ?? "", f.alt, ...f.keywords].join(" ").toLowerCase().replace(/-/g, " ");
+  const all = DEMO_FILES.filter(f => (!options.gallery || f.gallery_id === options.gallery) && (!q || q.split(/\s+/).every(word => words(f).includes(word))) && (!options.status || f.status === options.status));
   const offset = options.offset ?? 0, limit = options.limit ?? 60;
   return { files: all.slice(offset, offset + limit), total: all.length, offset, limit };
 }

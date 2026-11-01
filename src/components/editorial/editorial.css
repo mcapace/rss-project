@@ -1019,3 +1019,8 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-library-results .ed-media-tile { width: 88px; height: 66px; aspect-ratio: auto; padding: 0; cursor: pointer; }
 .ed-library-results .ed-media-tile img { object-fit: contain; background: var(--surface); }
 .ed-library-note { color: var(--muted); font-size: 12.5px; }
+
+/* Gallery library: web names and keywords (scripts/wa-media-name.ts) */
+.ed-library-facts code { font-size: 12px; background: var(--surface); padding: 1px 5px; border-radius: 5px; }
+.ed-library-keywords { display: flex; flex-wrap: wrap; gap: 5px; }
+.ed-library-keywords .ed-keyword { cursor: default; }

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, ExternalLink, Film, FileImage, Images, Search as SearchIcon, X } from "lucide-react";
-import type { MediaFile, MediaGallery } from "@/lib/editorial/media-library-types";
+import { ArrowLeft, Copy, Download, ExternalLink, Film, FileImage, Images, Search as SearchIcon, X } from "lucide-react";
+import { webFileName, type MediaFile, type MediaGallery } from "@/lib/editorial/media-library-types";
 import { useEditorial } from "./EditorialProvider";
 import { useAsync, useDebounced } from "./hooks";
 import { PlainImage } from "./SearchPage";
@@ -27,12 +27,13 @@ const statusLabel: Record<MediaFile["status"], string> = { stored: "In S3", pend
 const statusTone: Record<MediaFile["status"], string> = { stored: "published", pending: "queued", failed: "failed" };
 
 /** The Morweb gallery library: every gallery and file, with its S3 copy and the stories that use it. */
-export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery: string | null; initialQuery: string }) {
+export function MediaLibrary({ initialGallery, initialQuery, initialFile = null }: { initialGallery: string | null; initialQuery: string; initialFile?: string | null }) {
   const { brand, data, href, demo, toast } = useEditorial();
   const [gallery, setGallery] = useState<string | null>(initialGallery);
   const [query, setQuery] = useState(initialQuery);
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [selected, setSelected] = useState<MediaFile | null>(null);
+  // Undefined until the editor picks or closes a file; until then a linked file (?file=) opens by itself.
+  const [picked, setSelected] = useState<MediaFile | null | undefined>(undefined);
   const q = useDebounced(query.trim(), 250);
   const browsing = !gallery && !q;
   // The page belongs to the filters it was chosen under; a new gallery, search, status or publication starts at the first page.
@@ -50,6 +51,7 @@ export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery:
 
   const overview = useAsync(`media-library:${brand}`, signal => data.mediaLibrary(brand, signal));
   const files = useAsync(`media-files:${brand}:${gallery ?? ""}:${q}:${status}:${offset}`, signal => data.mediaFiles(brand, { gallery, q, status: status === "all" ? "" : status, offset, limit: PAGE }, signal), { enabled: !browsing });
+  const selected: MediaFile | null = picked !== undefined ? picked : initialFile ? files.data?.files.find(file => file.id === initialFile) ?? null : null;
   const current: MediaGallery | null = useMemo(() => overview.data?.galleries.find(g => g.id === gallery) ?? null, [overview.data, gallery]);
   const totals = overview.data?.totals;
 
@@ -59,11 +61,11 @@ export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery:
   }
 
   return <>
-    <PageHeader icon={Images} title="Media" lede="The Morweb gallery library: every gallery and every uploaded file, kept in our S3 bucket, with the stories that use each one.">
+    <PageHeader icon={Images} title="Media" lede="The Morweb gallery library: every gallery and every uploaded file, kept in our S3 bucket, with its web name, alt text and the stories that use it.">
       <div className="ed-toolbar">
         <div className="ed-search ed-search-hero" style={{ flex: "1 1 320px" }}>
           <SearchIcon size={18} aria-hidden />
-          <input className="ed-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search every file by name…" aria-label="Search files by name" />
+          <input className="ed-input" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search every file by name, subject, brand or keyword…" aria-label="Search files" />
           {query && <button type="button" className="ed-icon-button small" aria-label="Clear search" onClick={() => setQuery("")}><X size={13} aria-hidden /></button>}
         </div>
         {!browsing && <Segmented label="Copy status" value={status} onChange={setStatus} options={[{ id: "all", label: "All" }, { id: "stored", label: "In S3" }, { id: "pending", label: "Copying" }, { id: "failed", label: "Not copied" }]} />}
@@ -105,13 +107,13 @@ export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery:
       {files.error && <Notice tone="error">{files.error}</Notice>}
       {files.loading && !files.data ? <SkeletonRows rows={6} /> : files.data?.files.length ? <>
         <div className="ed-image-grid ed-library-grid">
-          {files.data.files.map(file => <button key={`${file.gallery_id}:${file.id}`} type="button" className="ed-image-card" onClick={() => setSelected(file)} title={file.file_name}>
+          {files.data.files.map(file => <button key={`${file.gallery_id}:${file.id}`} type="button" className="ed-image-card" onClick={() => setSelected(file)} title={file.seo_alt || file.file_name}>
             <span className="ed-media-tile">
-              {file.thumb ? <PlainImage src={file.thumb} alt={file.alt || ""} /> : <span className="ed-media-placeholder">{/^video\//.test(file.mime) ? <Film size={22} aria-hidden /> : <FileImage size={22} aria-hidden />}</span>}
+              {file.thumb ? <PlainImage src={file.thumb} alt={file.seo_alt || file.alt || ""} /> : <span className="ed-media-placeholder">{/^video\//.test(file.mime) ? <Film size={22} aria-hidden /> : <FileImage size={22} aria-hidden />}</span>}
               {file.status !== "stored" && <span>{statusLabel[file.status]}</span>}
             </span>
-            <span className="title">{file.file_name}</span>
-            <span className="meta">{[file.width && file.height ? `${file.width}×${file.height}` : null, size(file.bytes), file.used_in.length ? `${file.used_in.length} ${file.used_in.length === 1 ? "story" : "stories"}` : null, !gallery ? file.gallery : null].filter(Boolean).join(" · ")}</span>
+            <span className="title">{file.seo_title || file.file_name}</span>
+            <span className="meta">{[file.seo_title ? file.file_name : null, file.width && file.height ? `${file.width}×${file.height}` : null, size(file.bytes), file.used_in.length ? `${file.used_in.length} ${file.used_in.length === 1 ? "story" : "stories"}` : null, !gallery ? file.gallery : null].filter(Boolean).join(" · ")}</span>
           </button>)}
         </div>
         {files.data.total > PAGE && <div className="ed-pager">
@@ -122,10 +124,12 @@ export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery:
       </> : <Empty icon={Images} title="No files here" text={q ? "No file names match. Try part of the name." : "This gallery has no files with that status."} />}
     </Card>}
 
-    <SidePanel open={!!selected} onClose={() => setSelected(null)} title={selected?.file_name ?? "File"}
+    <SidePanel open={!!selected} onClose={() => setSelected(null)} title={selected ? selected.seo_title || selected.file_name : "File"}
       footer={selected && <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {selected.original && <a className="ed-button" href={selected.original} target="_blank" rel="noopener"><ExternalLink size={14} aria-hidden />Open original</a>}
+        {selected.original && <a className="ed-button" href={`${selected.original}&download=1`} download={webFileName(selected)}><Download size={14} aria-hidden />Download</a>}
         {selected.public_url && <Button icon={Copy} onClick={() => copy(selected.public_url!, "Site address")}>Copy site address</Button>}
+        {(selected.seo_alt || selected.alt) && <Button icon={Copy} variant="subtle" onClick={() => copy(selected.seo_alt || selected.alt, "Alt text")}>Copy alt text</Button>}
         <Button icon={Copy} variant="subtle" onClick={() => copy(selected.source_url, "Morweb address")}>Copy Morweb address</Button>
       </div>}>
       {selected && <div className="ed-stack">
@@ -135,13 +139,19 @@ export function MediaLibrary({ initialGallery, initialQuery }: { initialGallery:
             : <span className="ed-media-placeholder"><FileImage size={28} aria-hidden /></span>}
         </div>
         <dl className="ed-library-facts">
+          <div><dt>Web name</dt><dd>{selected.seo_name ? <code>{webFileName(selected)}</code> : <span className="ed-library-none">Not named yet</span>}</dd></div>
+          <div><dt>Original name</dt><dd>{selected.file_name}</dd></div>
+          {selected.seo_alt && <div><dt>Alt text</dt><dd>{selected.seo_alt}</dd></div>}
+          {selected.seo_description && <div><dt>Description</dt><dd>{selected.seo_description}</dd></div>}
+          {(selected.kind || selected.brand_name || selected.product) && <div><dt>Shows</dt><dd>{[selected.kind, selected.brand_name, selected.product].filter(Boolean).join(" · ")}</dd></div>}
+          {selected.keywords.length > 0 && <div><dt>Keywords</dt><dd><span className="ed-library-keywords">{selected.keywords.map(word => <span key={word} className="ed-keyword">{word}</span>)}</span></dd></div>}
           <div><dt>Status</dt><dd><Pill tone={statusTone[selected.status]}>{statusLabel[selected.status]}</Pill>{selected.error ? <small> {selected.error}</small> : null}</dd></div>
           <div><dt>Gallery</dt><dd>{selected.gallery ?? current?.title ?? selected.gallery_id}</dd></div>
           <div><dt>Type</dt><dd>{selected.mime || "—"}</dd></div>
           <div><dt>Dimensions</dt><dd>{selected.width && selected.height ? `${selected.width} × ${selected.height}` : "—"}</dd></div>
           <div><dt>Size</dt><dd>{size(selected.bytes)}</dd></div>
           <div><dt>Uploaded</dt><dd>{day(selected.uploaded_at)}</dd></div>
-          {selected.alt && <div><dt>Alt text</dt><dd>{selected.alt}</dd></div>}
+          {selected.alt && selected.alt !== selected.seo_alt && <div><dt>Morweb alt</dt><dd>{selected.alt}</dd></div>}
         </dl>
         <div>
           <h3 className="ed-library-sub">Used in</h3>

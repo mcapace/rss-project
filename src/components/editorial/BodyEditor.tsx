@@ -141,7 +141,7 @@ type Props = {
   onHtmlApplied?: () => void;
   /** Images attached to the document, offered by the insert-image control. */
   images?: InsertableImage[];
-  /** Searches the gallery library (Morweb's galleries, kept in S3) by file name for the insert-image control. */
+  /** Searches the gallery library (Morweb's galleries, kept in S3) by web name, alt text, keywords or file name for the insert-image control. */
   searchLibrary?: (query: string, signal: AbortSignal) => Promise<InsertableImage[]>;
   /** Called when the editor is ready so the page can wire actions (for example inserting an FAQ). */
   onReady?: (editor: Editor | null) => void;
@@ -356,7 +356,7 @@ export function BodyEditor({ html, onChange, readOnly = false, images = [], sear
         </button>)}
       </div>}
       {panel === "image" && searchLibrary && <div className="ed-library-pick">
-        <input className="ed-input" aria-label="Search the gallery library" placeholder="Or search the gallery library by file name…" value={libraryQuery}
+        <input className="ed-input" aria-label="Search the gallery library" placeholder="Or search the gallery library by name, subject or brand…" value={libraryQuery}
           onChange={event => setLibraryQuery(event.target.value)} onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }} />
         {libraryTerm.length >= 2 && (library?.q !== libraryTerm ? <span className="ed-library-note">Searching…</span>
           : library.error ? <span className="ed-library-note" role="alert">{library.error}</span>

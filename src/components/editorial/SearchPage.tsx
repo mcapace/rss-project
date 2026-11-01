@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, ImageIcon, Search as SearchIcon, Sparkles, Tag as TagIcon, X } from "lucide-react";
+import { FileImage, FileText, ImageIcon, Images, Search as SearchIcon, Sparkles, Tag as TagIcon, X } from "lucide-react";
 import { CONTENT_TYPE_LABELS } from "@/lib/cms/organization";
 import { BRAND_NAMES, relativeTime } from "@/lib/editorial/helpers";
 import type { SearchMediaHit, SearchResponse, SearchScope } from "@/lib/editorial/search-types";
@@ -57,14 +57,14 @@ export function SearchPage({ initialQuery, initialScope }: { initialQuery: strin
   const setupError = result.error && /set up|migration/i.test(result.error);
 
   return <>
-    <PageHeader icon={SearchIcon} title="Search" lede="Titles, body text, bylines, tags, captions and image descriptions. Describe an image by its look when you do not know the file name.">
+    <PageHeader icon={SearchIcon} title="Search" lede="Titles, body text, bylines, tags, captions, image descriptions and the whole gallery library. Describe an image by its look when you do not know the file name.">
       <div className="ed-toolbar">
         <div className="ed-search ed-search-hero" style={{ flex: "1 1 320px" }}>
           <SearchIcon size={18} aria-hidden />
           <input className="ed-input" autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Search content, images and keywords…" aria-label="Search" />
           {query && <button type="button" className="ed-icon-button small" aria-label="Clear search" onClick={() => setQuery("")}><X size={13} aria-hidden /></button>}
         </div>
-        <Segmented label="Scope" value={scope} onChange={setScope} options={SCOPES.map(item => ({ ...item, count: response ? (item.id === "documents" ? response.documents.length : item.id === "media" ? response.media.length : item.id === "keywords" ? response.keywords.length : undefined) : undefined }))} />
+        <Segmented label="Scope" value={scope} onChange={setScope} options={SCOPES.map(item => ({ ...item, count: response ? (item.id === "documents" ? response.documents.length : item.id === "media" ? response.media.length + (response.library?.length ?? 0) : item.id === "keywords" ? response.keywords.length : undefined) : undefined }))} />
         <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--muted)" }}><input type="checkbox" className="ed-checkbox" checked={allBrands} onChange={event => setAllBrands(event.target.checked)} />All publications</label>
       </div>
     </PageHeader>
@@ -90,6 +90,20 @@ export function SearchPage({ initialQuery, initialScope }: { initialQuery: strin
             </Link>;
           })}
         </div> : <p style={{ fontSize: 13, color: "var(--muted)" }}>No images match. Images without an AI description are only found by caption and file name; open a story&rsquo;s Media tab and choose “Describe with AI”.</p>}
+      </Card>}
+
+      {(scope === "all" || scope === "media") && <Card>
+        <div className="ed-section-head">
+          <div><h2 className="ed-section-title">Gallery library <span style={{ color: "var(--muted)", fontWeight: 400 }}>· {response.library?.length ?? 0}</span></h2><p>Every file from the Morweb galleries, kept in S3, matched by its web name, alt text, keywords or original file name.</p></div>
+          <Link className="ed-button" href={href("/cms/media", debounced.trim() ? { q: debounced.trim() } : undefined)}><Images size={14} aria-hidden />Open Media</Link>
+        </div>
+        {response.library?.length ? <div className="ed-image-grid ed-library-grid">
+          {response.library.map(file => <Link key={`${file.brand}:${file.gallery_id}:${file.id}`} href={href("/cms/media", { gallery: file.gallery_id, q: file.file_name, file: file.id })} className="ed-image-card" title={file.seo_alt || file.file_name}>
+            <span className="ed-media-tile">{file.thumb ? <PlainImage src={file.thumb} alt={file.seo_alt || file.alt || ""} /> : <span className="ed-media-placeholder"><FileImage size={22} aria-hidden /></span>}</span>
+            <span className="title">{file.seo_title || file.file_name}</span>
+            <span className="meta">{[file.gallery, file.seo_title ? file.file_name : null, allBrands ? BRAND_NAMES[file.brand] : null].filter(Boolean).join(" · ")}</span>
+          </Link>)}
+        </div> : <p style={{ fontSize: 13, color: "var(--muted)" }}>No library files match “{response.query}”.</p>}
       </Card>}
 
       {(scope === "all" || scope === "documents") && <Card>

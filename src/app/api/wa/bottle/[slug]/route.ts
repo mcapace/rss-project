@@ -1,20 +1,18 @@
 import { HeadObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
-import { cmsDb } from "@/lib/cms/db";
-
 export const runtime = "nodejs";
 export const maxDuration = 15;
 
 /**
  * The standard bottle shot for a rating (public/bottles/<brand>/<slug>.webp,
  * written by scripts/bottle-images.ts). When one exists the request is sent on
- * to a signed S3 link for it (nothing streams through the function); until a
- * rating has one, it goes to the legacy photograph so the page never shows a
- * hole. Every S3 call has a short deadline so a slow bucket can only ever cost
- * a few seconds, never a hung image.
+ * to a signed S3 link for it (nothing streams through the function); a rating
+ * without one answers 404 and the page hides the picture. Every S3 call has a
+ * short deadline so a slow bucket can only ever cost a few seconds, never a
+ * hung image.
  */
-const BASE: Record<string, string> = { wa: "https://whiskyadvocate.com" };
+const BRANDS = new Set(["wa"]);
 const S3_DEADLINE_MS = 4000;
 let client: S3Client | null = null;
 
@@ -37,7 +35,7 @@ function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
 export async function GET(request: Request, context: { params: Promise<{ slug: string }> }) {
   const { slug } = await context.params;
   const brand = (new URL(request.url).searchParams.get("brand") ?? "wa").toLowerCase();
-  if (!/^[A-Za-z0-9._-]{1,200}$/.test(slug) || !BASE[brand]) return new NextResponse(null, { status: 404 });
+  if (!/^[A-Za-z0-9._-]{1,200}$/.test(slug) || !BRANDS.has(brand)) return new NextResponse(null, { status: 404 });
   const bucket = process.env.S3_BUCKET;
   if (bucket) {
     const key = `public/bottles/${brand}/${slug}.webp`;
@@ -52,10 +50,5 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
       if (name !== "NotFound" && !/NotFound|NoSuchKey|404/.test(message)) console.warn(`[wa/bottle] ${slug}: ${name} ${message} after ${Date.now() - started} ms`);
     }
   }
-  try {
-    const { data } = await cmsDb().from("cms_documents").select("metadata").eq("brand", brand).eq("slug", slug).eq("kind", "rating").limit(1).maybeSingle();
-    const legacy = (data?.metadata as { legacy_media?: { thumb_file?: string } } | null)?.legacy_media?.thumb_file;
-    if (legacy) return NextResponse.redirect(legacy.startsWith("http") ? legacy : new URL(legacy, BASE[brand]).toString(), { status: 302, headers: { "Cache-Control": "public, max-age=300, s-maxage=300" } });
-  } catch { /* no database: nothing to send on to */ }
-  return new NextResponse(null, { status: 404 });
+  return new NextResponse(null, { status: 404, headers: { "Cache-Control": "public, max-age=300, s-maxage=3600" } });
 }

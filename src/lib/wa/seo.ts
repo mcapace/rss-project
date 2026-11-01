@@ -2,6 +2,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { cmsDb } from "@/lib/cms/db";
+import { leadImagePath } from "@/lib/cms/lead-image";
 import { sponsorship } from "@/lib/cms/sponsored";
 
 /**
@@ -16,7 +17,6 @@ import { sponsorship } from "@/lib/cms/sponsored";
 
 export const PUBLISHER = "Whisky Advocate";
 export const BASE = "/wa";
-const LEGACY_ORIGIN = "https://whiskyadvocate.com";
 const SECTION: Record<string, string> = { News: "news", Features: "features", Insights: "features", "Whisky Life": "life", Travel: "travel", Cocktails: "cocktails", Guides: "guides" };
 const SECTION_LABEL: Record<string, string> = { news: "News", features: "Features", life: "Whisky Life", travel: "Travel", cocktails: "Cocktails", guides: "Guides" };
 
@@ -43,13 +43,6 @@ function plain(html: string): string {
   return html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#0?39;|&rsquo;|&lsquo;/g, "'").replace(/&ldquo;|&rdquo;|&quot;/g, '"').replace(/&mdash;|&ndash;/g, ", ").replace(/&[a-z]+;/g, " ").replace(/\s+/g, " ").trim();
 }
 function clip(text: string, max: number): string { return text.length <= max ? text : text.slice(0, max - 1).replace(/\s+\S*$/, "") + "…"; }
-function absUrl(src: string | null | undefined): string {
-  if (!src) return "";
-  if (/^https?:\/\//i.test(src)) return src.replace(/^http:\/\//i, "https://");
-  if (src.startsWith("//")) return "https:" + src;
-  return LEGACY_ORIGIN + (src.startsWith("/") ? src : "/" + src);
-}
-
 type Meta = Record<string, unknown>;
 export type WaDoc = { id: string; kind: string; slug: string; title: string; byline: string | null; excerpt: string | null; body_html: string | null; metadata: Meta | null; published_at: string | null; updated_at: string | null };
 
@@ -68,7 +61,7 @@ export async function loadDoc(slug: string): Promise<WaDoc | null> {
  * Every published document of the given kinds, newest first, a page at a time (PostgREST caps a request at 1,000
  * rows). Only the metadata the sitemaps and feed read is selected, not whole documents.
  */
-const LITE = "slug,kind,title,byline,excerpt,published_at,updated_at,legacy_dates:metadata->legacy_dates,legacy_media:metadata->legacy_media,lead_image:metadata->lead_image,sponsored:metadata->sponsored,tags:metadata->tags,seo:metadata->seo,legacy_seo:metadata->legacy_seo,ai_summary:metadata->>ai_summary,categories:metadata->categories";
+const LITE = "id,slug,kind,title,byline,excerpt,published_at,updated_at,legacy_dates:metadata->legacy_dates,legacy_media:metadata->legacy_media,lead_image:metadata->lead_image,sponsored:metadata->sponsored,tags:metadata->tags,seo:metadata->seo,legacy_seo:metadata->legacy_seo,ai_summary:metadata->>ai_summary,categories:metadata->categories";
 export async function listDocs(kinds: string[], limit = 60000, order: "newest" | "id" = "newest"): Promise<WaDoc[]> {
   const out: WaDoc[] = [];
   for (let from = 0; from < limit; from += 1000) {
@@ -79,7 +72,7 @@ export async function listDocs(kinds: string[], limit = 60000, order: "newest" |
     if (error) throw new Error(error.message);
     for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
       const { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories, ...rest } = row;
-      out.push({ ...(rest as unknown as WaDoc), body_html: null, id: "", metadata: { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories } as Meta });
+      out.push({ ...(rest as unknown as WaDoc), body_html: null, metadata: { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories } as Meta });
     }
     if (!data || data.length < 1000) break;
   }
@@ -111,12 +104,12 @@ export function docDates(doc: Pick<WaDoc, "metadata" | "published_at" | "updated
   return { published, modified: modified && published && modified < published ? published : modified, day };
 }
 
-export function heroOf(doc: Pick<WaDoc, "metadata">): string {
+/** The lead picture's absolute URL on this site: a rating's bottle shot, else the story's re-hosted lead. Never a legacy host. */
+export function heroOf(doc: Pick<WaDoc, "metadata" | "id" | "kind" | "slug">, origin: string): string {
   const meta = obj(doc.metadata);
-  const lead = obj(meta.lead_image);
-  const media = obj(meta.legacy_media);
-  const first = Array.isArray(meta.media) ? obj(meta.media[0]) : {};
-  return absUrl((lead.url as string) || (first.url as string) || (first.src as string) || (media.thumb_file as string) || "");
+  if (doc.kind === "rating") return obj(meta.legacy_media).thumb_file ? `${origin}/api/wa/bottle/${encodeURIComponent(doc.slug)}` : "";
+  const path = leadImagePath(doc.id, meta);
+  return path ? origin + path : "";
 }
 
 export function isNoIndex(doc: Pick<WaDoc, "metadata">): boolean {
@@ -128,14 +121,12 @@ function authorsOf(byline: string | null): string[] {
   return (byline || "").split(/\s*,\s*|\s+and\s+|\s*&\s*/).map(s => s.trim()).filter(s => s && !/sponsor/i.test(s));
 }
 
-/** The body as the site shows it: no scripts, legacy pictures on the old host, old internal links to our own pages. */
+/** The body as the site shows it: no scripts, and an old bare-slug link (/Some-Story) goes to that page on this site. */
 function cleanBody(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/\s(on[a-z]+)=("[^"]*"|'[^']*')/gi, "")
-    .replace(/(<(?:img|source)\b[^>]*?\s(?:src|srcset)=")(\/(?!\/)[^"]*)"/gi, (_m, a: string, v: string) => `${a}${LEGACY_ORIGIN}${v}"`)
-    .replace(/(<a\b[^>]*?\shref=")\/(?!\/)([^"/?#]+)"/gi, (_m, a: string, v: string) => (/\.[a-z0-9]{2,4}$/i.test(v) ? `${a}${LEGACY_ORIGIN}/${v}"` : `${a}${BASE}/${v}"`))
-    .replace(/(<a\b[^>]*?\shref=")\/(?!\/)([^"]*)"/gi, (_m, a: string, v: string) => `${a}${LEGACY_ORIGIN}/${v}"`);
+    .replace(/(<a\b[^>]*?\shref=")\/(?!\/)([^"/?#.]+)"/gi, (_m, a: string, v: string) => `${a}${BASE}/${v}"`);
 }
 
 /** Put inner HTML into the first element carrying id="<id>" (which the template leaves empty). */
@@ -188,7 +179,7 @@ function commonTags(o: { title: string; description: string; canonical: string; 
 
 export type StoryView = { slug: string; title: string; description: string; section: string; sectionLabel: string; authors: string[]; byline: string; published: string | null; modified: string | null; day: string | null; hero: string; tags: string[]; body: string; words: number; sponsored: boolean; sponsor: string; noindex: boolean; kind: string };
 
-export function storyView(doc: WaDoc): StoryView {
+export function storyView(doc: WaDoc, origin: string): StoryView {
   const meta = obj(doc.metadata);
   const seo = obj(meta.seo);
   const cats = strs(meta.categories);
@@ -199,7 +190,7 @@ export function storyView(doc: WaDoc): StoryView {
   const description = clip(plain(String(seo.description || doc.excerpt || meta.ai_summary || "")) || text, 300);
   const sp = sponsorship(meta, doc.byline);
   const dates = docDates(doc);
-  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind };
+  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind };
 }
 
 function longDate(day: string | null): string {
@@ -265,12 +256,12 @@ export function renderStory(templateHtml: string, v: StoryView, origin: string):
 
 export type RatingView = { slug: string; name: string; score: number | null; price: number | null; category: string; brand: string; reviewer: string; issue: string; note: string; image: string; published: string | null; day: string | null; noindex: boolean };
 
-export function ratingView(doc: WaDoc): RatingView {
+export function ratingView(doc: WaDoc, origin: string): RatingView {
   const meta = obj(doc.metadata);
   const r = obj(meta.rating);
   const score = Number(r.score);
   const price = Number(r.price);
-  return { slug: doc.slug, name: plain(doc.title), score: Number.isFinite(score) && score > 0 ? score : null, price: Number.isFinite(price) && price > 0 ? price : null, category: String(r.category || ""), brand: String(r.brand || r.producer || ""), reviewer: String(r.reviewer || doc.byline || ""), issue: String(r.issue || meta.issue_label || ""), note: plain(doc.body_html || doc.excerpt || ""), image: heroOf(doc), published: docDates(doc).published, day: docDates(doc).day, noindex: isNoIndex(doc) };
+  return { slug: doc.slug, name: plain(doc.title), score: Number.isFinite(score) && score > 0 ? score : null, price: Number.isFinite(price) && price > 0 ? price : null, category: String(r.category || ""), brand: String(r.brand || r.producer || ""), reviewer: String(r.reviewer || doc.byline || ""), issue: String(r.issue || meta.issue_label || ""), note: plain(doc.body_html || doc.excerpt || ""), image: heroOf(doc, origin), published: docDates(doc).published, day: docDates(doc).day, noindex: isNoIndex(doc) };
 }
 
 export function ratingJsonLd(v: RatingView, origin: string): unknown[] {

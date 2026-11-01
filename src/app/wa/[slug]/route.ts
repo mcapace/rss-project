@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: s
   if (doc.slug !== slug) return NextResponse.redirect(new URL(`${BASE}/${encodeURIComponent(doc.slug)}`, request.url), 301);
 
   if (doc.kind === "rating") {
-    return new NextResponse(renderRating(await template("bottle.html"), ratingView(doc), origin), { headers: { ...HTML, "Cache-Control": CACHE } });
+    return new NextResponse(renderRating(await template("bottle.html"), ratingView(doc, origin), origin), { headers: { ...HTML, "Cache-Control": CACHE } });
   }
   if (doc.kind === "product_review") {
     // The 90+ Club's spirits: their page on the new site.
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: s
     return NextResponse.redirect(new URL(`${BASE}/guides.html#glossaryBand`, request.url), 301);
   }
   if (PAGE_KINDS.has(doc.kind)) {
-    return new NextResponse(renderStory(await template("story.html"), storyView(doc), origin), { headers: { ...HTML, "Cache-Control": CACHE } });
+    return new NextResponse(renderStory(await template("story.html"), storyView(doc, origin), origin), { headers: { ...HTML, "Cache-Control": CACHE } });
   }
   return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=300" } });
 }

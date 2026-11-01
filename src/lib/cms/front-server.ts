@@ -1,6 +1,7 @@
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { CmsError } from "@/lib/cms/access";
 import type { CmsBrand } from "@/lib/cms/types";
+import { leadImagePath } from "./lead-image";
 import { sponsorship } from "./sponsored";
 
 /**
@@ -24,12 +25,7 @@ function story(row: DocRow): FrontStory {
   const dates = (meta.legacy_dates && typeof meta.legacy_dates === "object" ? meta.legacy_dates : {}) as Record<string, unknown>;
   const date = typeof dates.published_date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.published_date) ? dates.published_date.slice(0, 10) : typeof dates.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.date) ? dates.date.slice(0, 10) : null;
   const cats = Array.isArray(meta.categories) ? meta.categories.filter((c): c is string => typeof c === "string") : [];
-  // The lead picture: the first media item the CMS holds, else the legacy thumbnail path made absolute.
-  const media = Array.isArray(meta.media) ? (meta.media as Record<string, unknown>[]) : [];
-  const first = media.find(m => m && typeof m === "object" && (typeof m.url === "string" || typeof m.src === "string"));
-  const legacyMedia = (meta.legacy_media && typeof meta.legacy_media === "object" ? meta.legacy_media : {}) as Record<string, unknown>;
-  const thumb = typeof legacyMedia.thumb_file === "string" ? legacyMedia.thumb_file : typeof legacyMedia.banner === "string" ? legacyMedia.banner : "";
-  const hero = first ? String(first.url || first.src) : thumb ? (thumb.startsWith("/") ? "https://whiskyadvocate.com" + thumb : thumb) : null;
+  const hero = leadImagePath(row.id, meta);
   const sp = sponsorship(meta, row.byline);
   return { id: row.id, slug: row.slug, title: row.title, byline: row.byline, excerpt: row.excerpt, section: cats[0] || "", date, published: row.publication_state === "published", hero, sponsored: sp.on, sponsor: sp.by };
 }

@@ -25,7 +25,7 @@ export function urlEntry(loc: string, lastmod: string | null, extra = ""): strin
 
 export function storyEntry(origin: string, d: WaDoc): string {
   const dates = docDates(d);
-  const hero = heroOf(d);
+  const hero = heroOf(d, origin);
   return urlEntry(`${origin}${BASE}/${encodeURIComponent(d.slug)}`, dates.modified ?? dates.published, hero ? `<image:image><image:loc>${xmlEsc(hero)}</image:loc></image:image>` : "");
 }
 
@@ -38,7 +38,7 @@ export const NEWS_NS = ` xmlns:news="http://www.google.com/schemas/sitemap-news/
 /** Google News: editorial stories from the last two days, with the publication named Whisky Advocate. Paid content is left out. */
 export function newsEntry(origin: string, d: WaDoc): string {
   const dates = docDates(d);
-  const hero = heroOf(d);
+  const hero = heroOf(d, origin);
   return `<url><loc>${xmlEsc(`${origin}${BASE}/${encodeURIComponent(d.slug)}`)}</loc><news:news><news:publication><news:name>${PUBLISHER}</news:name><news:language>en</news:language></news:publication><news:publication_date>${xmlEsc(dates.published ?? "")}</news:publication_date><news:title>${xmlEsc(d.title)}</news:title></news:news>${hero ? `<image:image><image:loc>${xmlEsc(hero)}</image:loc></image:image>` : ""}</url>`;
 }
 

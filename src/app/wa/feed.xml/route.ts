@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       const seo = (meta.seo && typeof meta.seo === "object" ? meta.seo : {}) as Record<string, unknown>;
       const summary = String(seo.description || d.excerpt || meta.ai_summary || "").replace(/<[^>]+>/g, "").trim();
       const cats = sectionLabels(meta.categories);
-      const hero = heroOf(d);
+      const hero = heroOf(d, origin);
       return `<item><title>${xmlEsc(d.title)}</title><link>${xmlEsc(link)}</link><guid isPermaLink="true">${xmlEsc(link)}</guid><pubDate>${rfc822(docDates(d).published)}</pubDate>${d.byline ? `<dc:creator>${xmlEsc(d.byline)}</dc:creator>` : ""}${cats.map(c => `<category>${xmlEsc(c)}</category>`).join("")}<description>${xmlEsc(summary)}</description>${hero ? `<media:content url="${xmlEsc(hero)}" medium="image"/>` : ""}</item>`;
     });
     const body = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>${PUBLISHER}</title><link>${origin}${BASE}/</link><atom:link href="${origin}${BASE}/feed.xml" rel="self" type="application/rss+xml"/><description>Whisky ratings, news, guides and stories from ${PUBLISHER}.</description><language>en-us</language><lastBuildDate>${new Date().toUTCString()}</lastBuildDate>\n${items.join("\n")}\n</channel></rss>\n`;

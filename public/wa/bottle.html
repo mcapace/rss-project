@@ -303,7 +303,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("navName").textContent = r.n.replace(/,\s*[\d.]+%$/, "");
     syncNav();
     document.getElementById("buy").innerHTML = [["Astor Wines & Spirits", "0.8 mi", r.p * 0.98], ["Park Avenue Liquor", "1.4 mi", r.p * 1.04], ["Total Wine, Westbury", "9.2 mi", r.p * 0.95]].map(function (s) { return "<div><span>" + s[0] + '</span><span class="dist">' + s[1] + '</span><span class="pr">' + fmt(s[2]) + "</span></div>"; }).join("");
-    document.getElementById("compareLink").href = "finder.html#" + (ART[r.c] === "rye" ? "cocktail" : ART[r.c] === "scotch" ? "peat" : "value");
     var ld = { "@context": "https://schema.org", "@type": "Review", "itemReviewed": { "@type": "Product", "name": r.n, "brand": r.pr, "category": r.c, "offers": { "@type": "Offer", "price": r.p, "priceCurrency": "USD" } }, "reviewRating": { "@type": "Rating", "ratingValue": r.s, "bestRating": 100 }, "author": { "@type": "Person", "name": r.by || "Whisky Advocate" }, "publisher": { "@type": "Organization", "name": "Whisky Advocate" }, "datePublished": r.d };
     if (!window.WA_PATHS) { var s = document.getElementById("ld") || document.createElement("script"); s.id = "ld"; s.type = "application/ld+json"; s.textContent = JSON.stringify(ld); document.head.appendChild(s); }
     document.getElementById("buy").style.display = "none";

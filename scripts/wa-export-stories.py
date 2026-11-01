@@ -27,7 +27,7 @@ else:
         page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'sponsored' as sponsored, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
           metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner,
           metadata->'lead_image' as lead, (select min(i.n - 1) from jsonb_array_elements(case when jsonb_typeof(metadata->'media') = 'array' then metadata->'media' else '[]'::jsonb end) with ordinality as i(m, n) where i.m->>'is_lead' = 'true') as lead_index
-          from cms_documents where brand='wa' and kind='article' and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
+          from cms_documents where brand='wa' and kind in ('article','legacy_record') and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
         rows += page; off += 120; print("fetched", len(rows), file=sys.stderr)
         if len(page) < 120: break
     if CACHE: json.dump(rows, open(CACHE, "w"))

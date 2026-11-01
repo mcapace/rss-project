@@ -58,7 +58,7 @@ WA.ready(function () {
       if (state.sort === "simple") out.sort(function (a, b) { return a.ingredients.length - b.ingredients.length; }); else if (state.sort === "name") out.sort(function (a, b) { return a.name.localeCompare(b.name); });
       return out;
     }
-    function card(r) { return '<a class="recipe-card" href="/wa/recipes/' + encodeURIComponent(r.slug) + '"><img src="' + r.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + (r.spirit === "other" ? "cocktail" : r.spirit) + " · " + r.ingredients.length + ' ingredients</span><h3>' + r.name + '</h3><p class="ing">' + r.ingredients.slice(0, 3).map(function (i) { var a = WA.amount(i); return (a ? a.rest : i).replace(/,?\s*for garnish.*$/i, ""); }).join(", ") + (r.ingredients.length > 3 ? ", …" : "") + '</p><p class="who">' + (r.credit ? r.credit.split(",")[0] : r.storyTitle) + "</p></div></a>"; }
+    function card(r) { return '<a class="recipe-card" href="' + WA.recipeHref(r.slug) + '"><img src="' + r.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + (r.spirit === "other" ? "cocktail" : r.spirit) + " · " + r.ingredients.length + ' ingredients</span><h3>' + r.name + '</h3><p class="ing">' + r.ingredients.slice(0, 3).map(function (i) { var a = WA.amount(i); return (a ? a.rest : i).replace(/,?\s*for garnish.*$/i, ""); }).join(", ") + (r.ingredients.length > 3 ? ", …" : "") + '</p><p class="who">' + (r.credit ? r.credit.split(",")[0] : r.storyTitle) + "</p></div></a>"; }
     function seatAd() {
       var grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]');
       if (!ad) return;

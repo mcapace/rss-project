@@ -19,10 +19,12 @@
   // On the live site every story and rating has its own server-rendered page at /wa/<slug>; elsewhere (the artifact copy) the hash pages.
   var PATHS = !!window.WA_PATHS || /^\/wa\//.test(location.pathname);
   function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; var s = r && r.slug ? r.slug : (typeof x === "string" ? x : ""); if (PATHS && s && !/^t20-/i.test(s)) return "/wa/" + encodeURIComponent(s); return "bottle.html#" + (s ? encodeURIComponent(s) : x); }
-  function producerHref(name) { return "/wa/producers/" + encodeURIComponent(name); }
+  function producerHref(name) { return PATHS ? "/wa/producers/" + encodeURIComponent(name) : "producer.html#" + encodeURIComponent(name); }
+  // Recipes have their own server-rendered pages on the live site; elsewhere (the artifact copy) the hash page.
+  function recipeHref(slug) { return PATHS ? "/wa/recipes/" + encodeURIComponent(slug) : "cocktail.html#" + encodeURIComponent(slug); }
   var value = function (r) { return r.s - 80 - Math.log((r.p > 0 ? r.p : 60) / 30) * 4; };
 
-  window.WA = { data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, value: value, slugOf: slugOf };
+  window.WA = { data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, recipeHref: recipeHref, value: value, slugOf: slugOf };
 
   // Names that reached the archive with HTML entities ("Jacob&#039;s Pardon") read as text everywhere.
   var ENT = document.createElement("textarea");
@@ -36,7 +38,7 @@
 
   /* Entrance, home only: a quiet loader, then a layered scene with a WebGL whisky field under it.
      The scene plays itself in for the first moments and then belongs to the scroll. */
-  var MOTION = !matchMedia("(prefers-reduced-motion: reduce)").matches && !(navigator.connection && navigator.connection.saveData) && innerWidth > 600;
+  var MOTION = !matchMedia("(prefers-reduced-motion: reduce)").matches && !(navigator.connection && navigator.connection.saveData);
   function clamp01(x) { return Math.min(1, Math.max(0, x)); }
   function seg(p, a, b) { return clamp01((p - a) / (b - a)); }
   function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
@@ -290,6 +292,13 @@
       var reach = (!named && !f.price && r.p) ? (r.p > 1000 ? 5 : r.p > 400 ? 3 : r.p > 200 ? 1 : 0) : 0;
       return { r: r, rank: r.s + fit * 1.5 + ns * 6 + (r.d ? (+r.d.slice(0, 4) - 2013) * 0.15 : 0) - reach };
     }).filter(Boolean);
+    // A typed name that matches nothing exactly still finds its nearest spellings, inside the asked budget, score and style.
+    if (named && !out.length) { out = rows.map(function (r) {
+      if (f.price && (!(r.p > 0) || r.p > f.price)) return null;
+      if (f.score && r.s < f.score) return null;
+      if (f.types.length && !f.types.some(function (t) { return t.cats.indexOf(r.c) >= 0; })) return null;
+      var best = 0; named.forEach(function (t) { best += termHit(t, r); }); return best ? { r: r, rank: r.s + best * 6 } : null;
+    }).filter(Boolean); }
     return out.sort(function (a, b) { return b.rank - a.rank || a.r.p - b.r.p; }).map(function (x) { return x.r; });
   }
   function facetLabels(f) {
@@ -576,12 +585,12 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
     }
     if (cocktails) {
       var cs = cocktails.filter(function (c) { return (c.name || c.title || "").toLowerCase().indexOf(low) >= 0; }).slice(0, 4);
-      if (cs.length) groups.push({ title: "Cocktails", items: cs.map(function (c) { return '<a href="/wa/recipes/' + encodeURIComponent(c.slug || c.id || "") + '"><span class="ct-only">' + mark(c.name || c.title, [low]) + "</span></a>"; }) });
+      if (cs.length) groups.push({ title: "Cocktails", items: cs.map(function (c) { return '<a href="' + WA.recipeHref(c.slug || c.id || "") + '"><span class="ct-only">' + mark(c.name || c.title, [low]) + "</span></a>"; }) });
     }
     results.innerHTML = groups.length ? groups.map(function (g) { return '<section><h4 class="mono">' + g.title + (g.more ? ' <a href="' + g.more + '">All</a>' : "") + "</h4>" + g.items.join("") + "</section>"; }).join("") : '<p class="muted">No suggestions yet. Press Enter to search all content for “' + esc(q) + '”.</p>';
   }
   input.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(function () { run(input.value); }, 90); });
-  document.getElementById("waSearchForm").addEventListener("submit", function (e) { e.preventDefault(); location.href = "/wa/search.html?q=" + encodeURIComponent(input.value.trim()); });
+  document.getElementById("waSearchForm").addEventListener("submit", function (e) { e.preventDefault(); location.href = "search.html?q=" + encodeURIComponent(input.value.trim()); });
   WA.openSearch = function () { open(true); };
 })();
 

@@ -115,7 +115,7 @@ WA.ready(function () {
     })();
     var more = all.filter(function (x) { return x !== r && x.spirit === r.spirit; }).slice(0, 4);
     document.getElementById("moreTitle").textContent = "More " + (r.spirit === "other" ? "" : r.spirit + " ") + "drinks from the archive.";
-    document.getElementById("more").innerHTML = more.map(function (x) { return '<a class="recipe-card" href="/wa/recipes/' + encodeURIComponent(x.slug) + '"><img src="' + x.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + x.ingredients.length + ' ingredients</span><h3>' + x.name + '</h3><p class="who">' + (x.credit ? x.credit.split(",")[0] : x.storyTitle) + "</p></div></a>"; }).join("");
+    document.getElementById("more").innerHTML = more.map(function (x) { return '<a class="recipe-card" href="' + WA.recipeHref(x.slug) + '"><img src="' + x.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + x.ingredients.length + ' ingredients</span><h3>' + x.name + '</h3><p class="who">' + (x.credit ? x.credit.split(",")[0] : x.storyTitle) + "</p></div></a>"; }).join("");
 
     document.getElementById("share").addEventListener("click", function () { var b = this; try { navigator.clipboard.writeText(location.href).then(function () { b.textContent = "Link copied"; }, function () { b.textContent = "Copy the address bar"; }); } catch (e) { b.textContent = "Copy the address bar"; } });
     addEventListener("hashchange", function () { location.reload(); });

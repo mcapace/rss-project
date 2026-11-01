@@ -1953,9 +1953,13 @@ a.author p::after { content: " →"; color: var(--copper); }
 }
 
 /* Reader experience: responsive overrides preserve the editorial desktop layouts. */
-:root { --ink-3: #6d5c4d; --amber: #a95612; }
+/* Contrast without changing the brand: the amber stays #c9731d for scores, large type, fills and icons; small amber text uses
+   --amber-text (4.7:1 on paper), and the muted grey is darkened just enough to read at 4.5:1 or better on the page colors. */
+:root { --ink-3: #776757; --amber-text: #a95612; }
+.ingredients li b, .term .def a, .replay button, .twin-on button, em.hi, .byline a[style*="--amber"], .ctip-go { color: var(--amber-text); }
 [hidden] { display: none !important; }
-.pill, button, .burger, .search-btn { min-height: 44px; }
+/* Touch targets: 44px tall on touch screens, for the controls a finger aims at, not every button on the page. */
+@media (pointer: coarse) { .pill, .burger, .search-btn, .chips button, .suggest button, .sortrow button, .rot-pause { min-height: 44px; } }
 :focus-visible { outline: 3px solid #86420e; outline-offset: 3px; }
 .skip-link { position: fixed; top: -100px; left: 12px; z-index: 1000; padding: 12px; background: white; color: #17120d; }
 .skip-link:focus { top: 12px; }
@@ -2019,7 +2023,7 @@ a.author p::after { content: " →"; color: var(--copper); }
 }
 
 /* Shared self-hosted score font; no third-party font request. */
-@font-face { font-family: "JetBrains Mono"; src: url("/fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
 
 /* Discovery keeps each content type visible on the first results page. */
 .discovery-group { grid-column: 1 / -1; }
@@ -2044,3 +2048,26 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
 .ctip-sub { display: block; margin-top: 3px; font-size: 11.5px; opacity: 0.68; }
 .ctip-go { display: block; margin-top: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; }
 .ctip-ring { position: absolute; z-index: 4; display: none; pointer-events: none; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid var(--ink); box-shadow: 0 0 0 3px rgba(255, 251, 244, 0.85); }
+
+/* Top stories carousel (2026-11-01): the pause button sits with the dots. */
+.rot-dots { align-items: center; }
+.rot-pause { display: inline-grid; place-items: center; width: 26px; height: 26px; min-height: 0; margin-left: 4px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 251, 244, 0.92); color: var(--ink); cursor: pointer; box-shadow: 0 2px 8px rgba(23, 18, 13, 0.18); }
+.rot-pause svg { width: 12px; height: 12px; }
+@media (pointer: coarse) { .rot-pause { width: 36px; height: 36px; min-height: 36px; } .rot-pause svg { width: 14px; height: 14px; } }
+
+/* Compact masthead, refined (2026-11-01): Menu, the logo and Search always; the other actions come back as the width allows,
+   instead of all of them hiding below 900px. Order of return: Subscribe, then Tools and Store, then the WhiskyFest pill. */
+@media (max-width: 900px) {
+  .mast .wordmark { max-width: 150px; }
+  .mast .tools { gap: 6px; }
+}
+@media (min-width: 481px) and (max-width: 900px) {
+  .mast .wordmark { max-width: 160px; }
+  .mast .tools > a.pill.solid { display: inline-flex; }
+}
+@media (min-width: 640px) and (max-width: 900px) {
+  .mast .tools > a.pill:not(.fest-pill):not(.shelf-link) { display: inline-flex; }
+}
+@media (min-width: 820px) and (max-width: 900px) {
+  .mast .tools > a.fest-pill { display: inline-flex; }
+}

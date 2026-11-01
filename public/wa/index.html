@@ -119,7 +119,7 @@
       <div class="dense" id="scanList" style="margin-top: 16px; display: none"></div>
     </div>
     <div class="scan-stage">
-      <p class="mono">Illustrative demo — upload your photo for a real scan. AI matches can be wrong; check the label.</p>
+      <p class="mono">An example scan. Upload your own shelf photo for a real one, and check the label: AI matches can be wrong.</p>
       <div class="demo-phone" id="demoPhone" data-phase="0" aria-hidden="true">
         <i class="btn btn-mute"></i><i class="btn btn-vol1"></i><i class="btn btn-vol2"></i><i class="btn btn-power"></i>
         <div class="screen">
@@ -281,16 +281,26 @@ WA.ready(function (data) {
       front.querySelectorAll(".rot-slide").forEach(function (el, k) { var on = k === at; el.classList.toggle("on", on); el.setAttribute("aria-hidden", String(!on)); el.tabIndex = on ? 0 : -1; });
       front.querySelectorAll(".rot-dot").forEach(function (el, k) { el.setAttribute("aria-current", String(k === at)); var bar = el.querySelector(".rot-bar"); if (k === at && bar) { bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = ""; } });
     }
-    function arm() { clearInterval(timer); }
+    // The top stories rotate on their own unless the reader prefers reduced motion, pressed pause, or is pointing at or tabbed into the carousel.
+    var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches, paused = REDUCED, holding = false;
+    function arm() { clearInterval(timer); timer = null; front.setAttribute("data-paused", String(paused || holding)); if (paused || holding || five.length < 2) return; timer = setInterval(function () { if (!document.hidden) show(at + 1); }, STEP); }
+    function paintPause() { var b = front.querySelector(".rot-pause"); if (!b) return; b.setAttribute("aria-pressed", String(paused)); b.setAttribute("aria-label", paused ? "Play the top stories" : "Pause the top stories"); b.innerHTML = paused ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>'; }
     function build(list) {
       five = list.filter(Boolean).slice(0, 5); at = 0;
       if (!five.length) { front.innerHTML = ""; return; }
       front.setAttribute("role", "region"); front.setAttribute("aria-roledescription", "carousel"); front.setAttribute("aria-label", "Top stories"); front.classList.add("rotator"); front.style.setProperty("--rot-ms", STEP + "ms");
       var rest = news.filter(function (st) { return !five.some(function (f) { return f === st || f.id === st.id; }); }).slice(0, 8);
-      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '<div class="rot-dots" role="group" aria-label="Choose a top story">' + five.map(dot).join("") + '</div></div><div class="dense front-list">' + rest.map(WA.storyRow).join("") + "</div>";
-      show(0); arm();
+      front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '<div class="rot-dots" role="group" aria-label="Choose a top story">' + five.map(dot).join("") + '<button type="button" class="rot-pause"></button></div></div><div class="dense front-list">' + rest.map(WA.storyRow).join("") + "</div>";
+      show(0); paintPause(); arm();
     }
-    front.addEventListener("click", function (e) { var b = e.target.closest(".rot-dot"); if (!b) return; show(+b.getAttribute("data-i")); arm(); });
+    front.addEventListener("click", function (e) {
+      if (e.target.closest(".rot-pause")) { paused = !paused; paintPause(); arm(); return; }
+      var b = e.target.closest(".rot-dot"); if (!b) return; show(+b.getAttribute("data-i")); arm();
+    });
+    // Arrow keys move between stories from the dots; the carousel holds still while the pointer or focus is inside it.
+    front.addEventListener("keydown", function (e) { if (!e.target.closest(".rot-dots") || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return; e.preventDefault(); show(at + (e.key === "ArrowRight" ? 1 : -1)); var d = front.querySelectorAll(".rot-dot")[at]; if (d) d.focus(); arm(); });
+    front.addEventListener("mouseenter", function () { holding = true; arm(); }); front.addEventListener("mouseleave", function () { holding = false; arm(); });
+    front.addEventListener("focusin", function () { holding = true; arm(); }); front.addEventListener("focusout", function (e) { if (!front.contains(e.relatedTarget)) { holding = false; arm(); } });
     (function () { var x0 = null; front.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true }); front.addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 48) { show(at + (dx < 0 ? 1 : -1)); arm(); } }, { passive: true }); })();
     build(news.slice(0, 5));
     fetch("/api/wa/front", { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {

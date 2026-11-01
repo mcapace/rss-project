@@ -18,8 +18,8 @@
   var storeButton = document.getElementById('storeBtn'); if (storeButton) { var commerceNote = document.createElement('p'); commerceNote.className = 'muted'; commerceNote.textContent = 'Confirm current price and availability with the retailer.'; storeButton.closest('.actions').after(commerceNote); }
   WA.reader = { notice: notice, pantry: function () { return state.pantry.slice(); }, setPantry: function (items) { return change(function (s) { s.pantry = items; }, 'Pantry saved on this device.'); } };
   var tools = document.querySelector('.mast .tools');
-  if (tools) { var link = document.createElement('a'); link.className = 'pill shelf-link'; link.href = '/wa/shelf.html'; link.textContent = 'My Shelf'; tools.appendChild(link); }
-  document.querySelectorAll('#waMenu .menu-group').forEach(function (group, i) { if (!i) { var a = document.createElement('a'); a.href = '/wa/shelf.html'; a.textContent = 'My Shelf'; group.appendChild(a); } });
+  if (tools) { var link = document.createElement('a'); link.className = 'pill shelf-link'; link.href = 'shelf.html'; link.textContent = 'My Shelf'; tools.appendChild(link); }
+  document.querySelectorAll('#waMenu .menu-group').forEach(function (group, i) { if (!i) { var a = document.createElement('a'); a.href = 'shelf.html'; a.textContent = 'My Shelf'; group.appendChild(a); } });
   WA.bindSave = function (button, item) {
     function paint() { var saved = state.shelf.some(function (x) { return x.kind === item.kind && x.slug === item.slug; }); button.textContent = saved ? 'Remove from My Shelf' : 'Save to My Shelf'; button.setAttribute('aria-pressed', String(saved)); }
     button.onclick = function () {
@@ -36,7 +36,7 @@
     if (!state.shelf.length) { root.innerHTML = '<p>Your shelf is empty. Save a bottle, story or recipe to find it here.</p><a class="pill" href="finder.html">Explore ratings</a>'; return; }
     state.shelf.forEach(function (item) {
       var card = document.createElement('article'); card.className = 'reader-card';
-      var a = document.createElement('a'); a.textContent = item.title; a.href = item.kind === 'recipe' ? '/wa/recipes/' + encodeURIComponent(item.slug) : /^t20-/.test(item.slug) ? '/wa/bottle.html#' + encodeURIComponent(item.slug) : '/wa/' + encodeURIComponent(item.slug);
+      var a = document.createElement('a'); a.textContent = item.title; a.href = item.kind === 'recipe' ? WA.recipeHref(item.slug) : item.kind === 'story' ? WA.storyHref({ slug: item.slug }) : WA.bottleHref(item.slug);
       var h = document.createElement('h2'); h.appendChild(a); card.appendChild(h);
       var kind = document.createElement('p'); kind.textContent = item.kind; card.appendChild(kind);
       var b = document.createElement('button'); b.className = 'pill'; card.appendChild(b); WA.bindSave(b, item); root.appendChild(card);

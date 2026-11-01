@@ -3,7 +3,7 @@
   var input = document.getElementById('discoveryQuery'), results = document.getElementById('discoveryResults'), status = document.getElementById('discoveryStatus'), more = document.getElementById('discoveryMore');
   var index = [], limit = 40, ready = false, esc = WAReader.escape;
   input.value = new URLSearchParams(location.search).get('q') || '';
-  function get(file) { return fetch('/wa/' + file, {signal: AbortSignal.timeout(15000)}).then(function (r) { if (!r.ok) throw Error(file); return r.json(); }); }
+  function get(file) { return fetch(file, {signal: AbortSignal.timeout(15000)}).then(function (r) { if (!r.ok) throw Error(file); return r.json(); }); }
   function render() {
     if (!ready) return;
     var query = input.value.trim(), words = query.toLowerCase().split(/\s+/).filter(Boolean), intent = WA.understand(query);
@@ -18,10 +18,10 @@
     status.textContent = 'Loading the search index…';
     Promise.all([get('ratings.json'),get('stories.json'),get('stories-archive.json'),get('cocktails.json')]).then(function (sets) {
       index = []; var producers = {}, seen = {};
-      sets[0].rows.forEach(function (row) { var r = {}; sets[0].cols.forEach(function (c,i) { r[c]=row[i]; }); producers[r.pr]=true; index.push({kind:'Bottle',title:r.n,href:'/wa/'+encodeURIComponent(r.slug),rating:r,description:r.s+' points · '+WA.fmt(r.p),hay:(r.n+' '+r.pr+' '+r.c).toLowerCase()}); });
-      sets[1].concat(sets[2]).forEach(function (s) { if (seen[s.slug]) return; seen[s.slug]=true; index.push({kind:'Story',title:s.title,href:'/wa/'+encodeURIComponent(s.slug),description:s.dek,hay:(s.title+' '+s.dek+' '+(s.tags||[]).join(' ')).toLowerCase()}); });
-      sets[3].forEach(function (r) { index.push({kind:'Recipe',title:r.name,href:'/wa/recipes/'+encodeURIComponent(r.slug),description:r.ingredients.join(', '),hay:(r.name+' '+r.ingredients.join(' ')).toLowerCase()}); });
-      Object.keys(producers).filter(function (n) { return n && n !== 'Unknown producer'; }).forEach(function (name) { index.push({kind:'Producer',title:name,href:'/wa/producers/'+encodeURIComponent(name),hay:name.toLowerCase()}); });
+      sets[0].rows.forEach(function (row) { var r = {}; sets[0].cols.forEach(function (c,i) { r[c]=row[i]; }); producers[r.pr]=true; index.push({kind:'Bottle',title:r.n,href:WA.bottleHref(r.slug),rating:r,description:r.s+' points · '+WA.fmt(r.p),hay:(r.n+' '+r.pr+' '+r.c).toLowerCase()}); });
+      sets[1].concat(sets[2]).forEach(function (s) { if (seen[s.slug]) return; seen[s.slug]=true; index.push({kind:'Story',title:s.title,href:WA.storyHref(s),description:s.dek,hay:(s.title+' '+s.dek+' '+(s.tags||[]).join(' ')).toLowerCase()}); });
+      sets[3].forEach(function (r) { index.push({kind:'Recipe',title:r.name,href:WA.recipeHref(r.slug),description:r.ingredients.join(', '),hay:(r.name+' '+r.ingredients.join(' ')).toLowerCase()}); });
+      Object.keys(producers).filter(function (n) { return n && n !== 'Unknown producer'; }).forEach(function (name) { index.push({kind:'Producer',title:name,href:WA.producerHref(name),hay:name.toLowerCase()}); });
       ready=true; render();
     }).catch(function () { status.textContent='The search index could not load. Your query is preserved.'; results.innerHTML='<button class="pill" id="discoveryRetry">Retry search</button>'; document.getElementById('discoveryRetry').onclick=load; });
   }

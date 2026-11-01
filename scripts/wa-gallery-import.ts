@@ -38,14 +38,40 @@ export function fetchUrl(sourceUrl: string): string {
 }
 function decodeURIComponentSafe(value: string) { try { return decodeURIComponent(value); } catch { return value; } }
 
-async function download(url: string): Promise<{ bytes: Buffer; type: string }> {
-  const response = await fetch(fetchUrl(url), { redirect: "follow", signal: AbortSignal.timeout(120_000), headers: { "User-Agent": "WhiskyAdvocate-CMS-migration/1.0" } });
+const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
+
+/** The network reason behind Node's bare "fetch failed" (DNS, reset, TLS, timeout). */
+export function reasonOf(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const cause = (error as Error & { cause?: { code?: string; message?: string } }).cause;
+  return cause ? `${error.message} (${cause.code || cause.message || "unknown cause"})` : error.message;
+}
+
+async function fetchOnce(url: string): Promise<{ bytes: Buffer; type: string }> {
+  const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(120_000), headers: { "User-Agent": UA, Accept: "image/*,video/*,*/*;q=0.8" } });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const type = (response.headers.get("content-type") || "").split(";")[0].trim();
   if (/^text\/html/i.test(type)) throw new Error("text/html instead of a file");
   const bytes = Buffer.from(await response.arrayBuffer());
   if (!bytes.length) throw new Error("empty response");
   return { bytes, type };
+}
+
+/** Three tries per address with a growing pause, then the www host; a 404 is final. */
+async function download(url: string): Promise<{ bytes: Buffer; type: string }> {
+  const primary = fetchUrl(url), alternate = primary.replace("://whiskyadvocate.com/", "://www.whiskyadvocate.com/");
+  let last: unknown = null;
+  for (const address of primary === alternate ? [primary] : [primary, alternate]) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try { return await fetchOnce(address); }
+      catch (error) {
+        last = error;
+        if (error instanceof Error && /HTTP 404|HTTP 410/.test(error.message)) throw error;
+        await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
+      }
+    }
+  }
+  throw new Error(reasonOf(last));
 }
 
 export async function runGalleryImport(args: string[], log: (line: string) => void = console.log) {
@@ -71,7 +97,7 @@ export async function runGalleryImport(args: string[], log: (line: string) => vo
     // A dry run checks that the first few files can be fetched and writes nothing.
     for (const row of rows.slice(0, 5)) {
       try { const { bytes, type } = await download(row.source_url); summary.bytes += bytes.length; log(`ok ${row.file_name} ${type} ${bytes.length}B`); }
-      catch (e) { summary.failures.push(`${row.file_name}: ${e instanceof Error ? e.message : e}`); }
+      catch (e) { summary.failures.push(`${row.file_name}: ${reasonOf(e)}`); }
     }
     log(JSON.stringify(summary, null, 2));
     return summary;
@@ -94,7 +120,7 @@ export async function runGalleryImport(args: string[], log: (line: string) => vo
       if (updateError) throw new Error(`catalog update: ${updateError.message}`);
       summary.stored++; summary.bytes += bytes.length;
     } catch (e) {
-      const reason = (e instanceof Error ? e.message : String(e)).slice(0, 300);
+      const reason = reasonOf(e).slice(0, 300);
       summary.failed++; if (summary.failures.length < 40) summary.failures.push(`${row.file_name}: ${reason}`);
       await writer!.from("cms_media_files").update({ status: "failed", error: reason }).match(match);
     }

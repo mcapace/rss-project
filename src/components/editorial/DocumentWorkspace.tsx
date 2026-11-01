@@ -199,7 +199,7 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
     const page = await data.mediaFiles(brand, { q: query, status: "stored", limit: 24 }, signal);
     return page.files.filter(file => file.public_url && /^image\//.test(file.mime)).map(file => ({
       src: file.public_url!.startsWith("/") ? `${window.location.origin}${file.public_url}` : file.public_url!,
-      alt: file.alt || "", caption: file.file_name, preview: file.thumb ?? undefined,
+      alt: file.seo_alt || file.alt || "", caption: file.seo_title || file.file_name, preview: file.thumb ?? undefined,
     }));
   }, [data, brand]);
   const insertable = useMemo<InsertableImage[]>(() => (media.data ?? []).filter(item => item.preview_url).map(item => ({ src: demo || !document ? item.preview_url as string : `/api/media/${document.id}/${item.index}?w=1600`, preview: item.preview_url as string, alt: item.alt ?? "", caption: item.caption ?? "" })), [media.data, demo, document]);

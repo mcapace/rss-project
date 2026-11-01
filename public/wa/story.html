@@ -102,7 +102,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var SP = WA.isSponsored(st);
     (pre && pre.slug === st.slug ? function (f) { f(pre.body); } : function (f) { WA.article(st.slug, f); })(function (body) {
       var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p class=\"muted\">The full text of this story is still being brought over from the archive.</p>";
-      document.title = st.title + " · Whisky Advocate";
+      if (!window.WA_PATHS) document.title = st.title + " · Whisky Advocate";
       var sec = WA.SECTION[st.sec];
       document.getElementById("crumbs").innerHTML = '<a href="stories.html">Stories</a><span>›</span><a href="' + WA.SECTION_HREF[st.sec] + '">' + sec + "</a>" + (st.tags[0] ? "<span>›</span><span>" + st.tags[0] + "</span>" : "");
       document.getElementById("kicker").textContent = sec + (st.tags[0] ? " · " + st.tags[0] : "");

@@ -26,6 +26,12 @@ export function siteOrigin(request: Request): string {
   return configured || new URL(request.url).origin;
 }
 
+/** The site's real sections among a story's CMS categories (which also hold "Homepage Slider", "Migration" and the like). */
+export function sectionLabels(categories: unknown): string[] {
+  const cats = Array.isArray(categories) ? categories.filter((c): c is string => typeof c === "string") : [];
+  return [...new Set(cats.map(c => SECTION[c]).filter(Boolean).map(s => SECTION_LABEL[s]))];
+}
+
 export function esc(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 }
@@ -63,11 +69,13 @@ export async function loadDoc(slug: string): Promise<WaDoc | null> {
  * rows). Only the metadata the sitemaps and feed read is selected, not whole documents.
  */
 const LITE = "slug,kind,title,byline,excerpt,published_at,updated_at,legacy_dates:metadata->legacy_dates,legacy_media:metadata->legacy_media,lead_image:metadata->lead_image,sponsored:metadata->sponsored,tags:metadata->tags,seo:metadata->seo,legacy_seo:metadata->legacy_seo,ai_summary:metadata->>ai_summary,categories:metadata->categories";
-export async function listDocs(kinds: string[], limit = 60000): Promise<WaDoc[]> {
+export async function listDocs(kinds: string[], limit = 60000, order: "newest" | "id" = "newest"): Promise<WaDoc[]> {
   const out: WaDoc[] = [];
   for (let from = 0; from < limit; from += 1000) {
-    const { data, error } = await cmsDb().from("cms_documents").select(LITE).eq("brand", "wa").eq("publication_state", "published").in("kind", kinds).not("slug", "is", null)
-      .order("metadata->legacy_dates->>published_date", { ascending: false, nullsFirst: false }).order("id").range(from, Math.min(from + 999, limit - 1));
+    // Newest-first sorts on a JSON field with no index: fine for the feed's 200 rows, too slow for a whole sitemap, which pages by id.
+    let query = cmsDb().from("cms_documents").select(LITE).eq("brand", "wa").eq("publication_state", "published").in("kind", kinds).not("slug", "is", null);
+    query = order === "newest" ? query.order("metadata->legacy_dates->>published_date", { ascending: false, nullsFirst: false }).order("id") : query.order("id");
+    const { data, error } = await query.range(from, Math.min(from + 999, limit - 1));
     if (error) throw new Error(error.message);
     for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
       const { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories, ...rest } = row;
@@ -185,7 +193,7 @@ export function storyView(doc: WaDoc): StoryView {
   const seo = obj(meta.seo);
   const cats = strs(meta.categories);
   const tags = strs(meta.ai_tags).length ? strs(meta.ai_tags) : strs(meta.tags).filter(t => !cats.includes(t) && !/^[a-z0-9_]+$/.test(t));
-  const section = SECTION[cats[0] ?? ""] ?? (doc.kind === "article" ? "news" : "features");
+  const section = cats.map(c => SECTION[c]).find(Boolean) ?? (doc.kind === "article" ? "news" : "features");
   const body = cleanBody(doc.body_html || "");
   const text = plain(body);
   const description = clip(plain(String(seo.description || doc.excerpt || meta.ai_summary || "")) || text, 300);

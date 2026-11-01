@@ -2,7 +2,7 @@ import { BASE, docDates, siteOrigin } from "@/lib/wa/seo";
 import { HOURLY, XML, ratingDocs, urlEntry, urlset } from "@/lib/wa/feeds";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /** Every published rating at its /wa/<slug> URL. */
 export async function GET(request: Request) {

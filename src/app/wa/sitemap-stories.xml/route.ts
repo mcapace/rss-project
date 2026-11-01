@@ -2,7 +2,7 @@ import { siteOrigin } from "@/lib/wa/seo";
 import { HOURLY, IMAGE_NS, XML, storyDocs, storyEntry, urlset } from "@/lib/wa/feeds";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 /** Every published story and page at its /wa/<slug> URL, with its lead picture. */
 export async function GET(request: Request) {

@@ -1,4 +1,4 @@
-import { BASE, PUBLISHER, docDates, heroOf, siteOrigin, xmlEsc } from "@/lib/wa/seo";
+import { BASE, PUBLISHER, docDates, heroOf, sectionLabels, siteOrigin, xmlEsc } from "@/lib/wa/seo";
 import { isSponsored, listDocsForNews, rfc822 } from "@/lib/wa/feeds";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       const meta = d.metadata as Record<string, unknown>;
       const seo = (meta.seo && typeof meta.seo === "object" ? meta.seo : {}) as Record<string, unknown>;
       const summary = String(seo.description || d.excerpt || meta.ai_summary || "").replace(/<[^>]+>/g, "").trim();
-      const cats = Array.isArray(meta.categories) ? (meta.categories as unknown[]).filter((c): c is string => typeof c === "string") : [];
+      const cats = sectionLabels(meta.categories);
       const hero = heroOf(d);
       return `<item><title>${xmlEsc(d.title)}</title><link>${xmlEsc(link)}</link><guid isPermaLink="true">${xmlEsc(link)}</guid><pubDate>${rfc822(docDates(d).published)}</pubDate>${d.byline ? `<dc:creator>${xmlEsc(d.byline)}</dc:creator>` : ""}${cats.map(c => `<category>${xmlEsc(c)}</category>`).join("")}<description>${xmlEsc(summary)}</description>${hero ? `<media:content url="${xmlEsc(hero)}" medium="image"/>` : ""}</item>`;
     });

@@ -16,8 +16,8 @@ export const SECTION_PAGES = ["", "stories.html", "stories.html#news", "finder.h
 export const indexable = (d: WaDoc) => !isNoIndex(d);
 export const isSponsored = (d: WaDoc) => sponsorship(d.metadata, d.byline).on;
 
-export async function storyDocs(limit?: number): Promise<WaDoc[]> { return (await listDocs(STORY_KINDS, limit)).filter(indexable); }
-export async function ratingDocs(): Promise<WaDoc[]> { return (await listDocs(["rating"])).filter(indexable); }
+export async function storyDocs(): Promise<WaDoc[]> { return (await listDocs(STORY_KINDS, 60000, "id")).filter(indexable); }
+export async function ratingDocs(): Promise<WaDoc[]> { return (await listDocs(["rating"], 60000, "id")).filter(indexable); }
 
 export function urlEntry(loc: string, lastmod: string | null, extra = ""): string {
   return `<url><loc>${xmlEsc(loc)}</loc>${lastmod ? `<lastmod>${xmlEsc(lastmod)}</lastmod>` : ""}${extra}</url>`;

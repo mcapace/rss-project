@@ -718,7 +718,7 @@ document.body.appendChild(waAds);
   WA.watchPosters = function (root) { if (!seen) return; (root || document).querySelectorAll(".frame:not(.playing), .top20-play:not(.playing)").forEach(function (b) { if (jwId(embedOf(b))) seen.observe(b); }); };
   function iframe(box, src) { box.innerHTML = '<iframe src="' + src + (src.indexOf("?") >= 0 ? "&" : "?") + (ytId(src) ? "autoplay=1&playsinline=1" : "autostart=true") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video"></iframe>'; }
   function pickMp4(list, box) {
-    var want = Math.min(1080, Math.ceil((box.offsetWidth || 960) * 9 / 16 * (window.devicePixelRatio || 1)));
+    var want = Math.max(720, Math.min(1080, Math.ceil((box.offsetWidth || 960) * 9 / 16 * (window.devicePixelRatio || 1))));
     var fit = list.filter(function (x) { return x.height >= want; })[0];
     return (fit || list[list.length - 1]).file;
   }
@@ -736,9 +736,11 @@ document.body.appendChild(waAds);
       v.controls = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; if (poster) v.poster = poster;
       box.appendChild(v);
       var go = function (url) { v.src = url; var p = v.play(); if (p && p.catch) p.catch(function () {}); };
-      if (v.canPlayType("application/vnd.apple.mpegurl")) { go("https://cdn.jwplayer.com/manifests/" + id + ".m3u8"); return; }
+      // A full-quality MP4 first: the adaptive HLS stream opens on its lowest rendition and looks grainy for a few
+      // seconds. HLS only when the MP4 list is not in yet and the browser plays HLS (keeps the click on Safari).
       var entry = jwSources(id);
       if (entry.mp4 && entry.mp4.length) { go(pickMp4(entry.mp4, box)); return; }
+      if (v.canPlayType("application/vnd.apple.mpegurl")) { go("https://cdn.jwplayer.com/manifests/" + id + ".m3u8"); return; }
       entry.then(function (list) { if (list.length) go(pickMp4(list, box)); else { box.innerHTML = ""; iframe(box, src); } });
       return;
     }

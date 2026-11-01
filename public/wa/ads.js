@@ -78,4 +78,50 @@
     googletag.enableServices();
     slots.forEach(function (slot) { googletag.display(slot.id); });
   });
+
+  /* Interstitial leaderboards between batches of a list (2026-11-01). A list page calls
+     WAAds.seat(container, every, name) after it renders: one leaderboard is seated after every
+     `every` items that have more items below them, so each "More" reveals another slot. Each holder
+     gets its own GPT slot (div-id-for-midleaderboard2, 3, ... with pos mid2, mid3, ...), defined once;
+     re-rendering a list rebuilds its nodes, so a holder that is seated again is refreshed. */
+  var extras = {}, extraN = 2;
+  function makeHolder(name, n) {
+    var el = document.createElement("div");
+    el.className = "ad ad-leader ad-inline";
+    el.setAttribute("data-slot", "wa_" + name + "_leader_" + n);
+    el.setAttribute("aria-label", "Advertisement");
+    el.innerHTML = "<span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i>";
+    return el;
+  }
+  function defineExtra(holder) {
+    var n = extraN++;
+    var spec = { id: "div-id-for-midleaderboard" + n, pos: "mid" + n, map: "leader", sizes: [[970, 90], [728, 90], [468, 60], [320, 50]], el: holder };
+    var box = document.createElement("div");
+    box.id = spec.id;
+    holder.appendChild(box);
+    holder._spec = spec;
+    googletag.cmd.push(function () {
+      spec.slot = googletag.defineSlot(path, spec.sizes, spec.id).defineSizeMapping(mapping(spec.map)).addService(googletag.pubads()).setTargeting("pos", spec.pos);
+      googletag.display(spec.id);
+    });
+  }
+  function refreshExtra(holder) {
+    googletag.cmd.push(function () { if (holder._spec.slot) googletag.pubads().refresh([holder._spec.slot]); });
+  }
+  window.WAAds = {
+    seat: function (container, every, name) {
+      if (!container || !every) return;
+      var pool = extras[name] || (extras[name] = []);
+      pool.forEach(function (h) { if (h.parentNode) h.parentNode.removeChild(h); });
+      Array.prototype.slice.call(container.querySelectorAll(".ad.ad-inline")).forEach(function (el) { if (pool.indexOf(el) < 0) el.parentNode.removeChild(el); });
+      var items = Array.prototype.filter.call(container.children, function (c) { return !c.classList.contains("ad"); });
+      var k = 0;
+      for (var i = every; i < items.length; i += every, k++) {
+        var h = pool[k];
+        if (!h) { h = makeHolder(name, k + 2); pool.push(h); }
+        container.insertBefore(h, items[i]);
+        if (h._spec) refreshExtra(h); else defineExtra(h);
+      }
+    }
+  };
 })();

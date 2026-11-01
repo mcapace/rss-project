@@ -57,7 +57,7 @@ WA.ready(function (data) {
       rows = all.filter(function (s) { return by ? (s.by || "").toLowerCase() === by : tag ? (s.tags || []).concat([s.title, s.q || ""]).join(" ").toLowerCase().indexOf(tag) >= 0 : sec === "all" || s.sec === sec; });
       if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").textContent = by ? "Stories by " + decodeURIComponent(sec.slice(3)) : tag ? decodeURIComponent(sec.slice(4)) : (TITLE[sec] || "Stories"); var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : ""; }
       var next = rows.slice(3 + shown, 3 + shown + 30); shown += next.length;
-      document.getElementById("list").innerHTML += next.map(WA.storyRow).join("");
+      document.getElementById("list").innerHTML += next.map(WA.storyRow).join(""); if (window.WAAds) WAAds.seat(document.getElementById("list"), 12, "stories");
       document.getElementById("more").style.display = 3 + shown < rows.length ? "" : "none";
       document.querySelectorAll("#sections button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sec") === sec)); });
     }

@@ -54,6 +54,7 @@ WA.ready(function () { WA.archive(function (data) {
     list.innerHTML = rs.slice(0, state.limit).map(function (p) { return '<a href="' + WA.producerHref(p.name) + '"><span class="sc score-type">' + p.best + '</span><span><span class="nm">' + p.name + '</span><span class="sub">' + p.n + (p.n === 1 ? " rating" : " ratings") + " · " + p.cat.replace("/Tennessee Whiskey", "") + " · average " + p.avg.toFixed(1) + '</span></span><span class="when">' + p.country + "</span></a>"; }).join("");
     var rowsEl = list.querySelectorAll("a"), at = Math.min(8, rowsEl.length);
     if (ad && rowsEl.length > at) list.insertBefore(ad, rowsEl[at]);
+    if (window.WAAds) WAAds.seat(list, 20, "producers");
     document.getElementById("more").style.display = rs.length > state.limit ? "" : "none";
     document.querySelectorAll("#countries button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-country") === state.country)); });
     document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); });

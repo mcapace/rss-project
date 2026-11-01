@@ -70,7 +70,7 @@ WA.ready(function () {
       var k = KINDS.filter(function (x) { return x[0] === state.kind; })[0], rows = G.filter(function (s) { return s.kind === state.kind; });
       document.getElementById("shelfKicker").textContent = k[1]; document.getElementById("shelfTitle").textContent = k[2];
       document.getElementById("shelfPicks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + k[1] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join("");
-      document.getElementById("shelfList").innerHTML = rows.slice(3, 3 + state.limit).map(WA.storyRow).join("");
+      document.getElementById("shelfList").innerHTML = rows.slice(3, 3 + state.limit).map(WA.storyRow).join(""); if (window.WAAds) WAAds.seat(document.getElementById("shelfList"), 10, "guides");
       document.getElementById("more").style.display = rows.length > 3 + state.limit ? "" : "none";
       document.querySelectorAll("#kinds button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-kind") === state.kind)); });
     }

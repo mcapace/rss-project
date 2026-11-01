@@ -1,11 +1,14 @@
 import { BASE, PUBLISHER, siteOrigin } from "@/lib/wa/seo";
 import { isSponsored, listDocsForNews } from "@/lib/wa/feeds";
 
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
+
 export const runtime = "nodejs";
 export const maxDuration = 20;
 
 /** llms.txt: a plain map of the site for AI assistants, with the newest stories. */
 export async function GET(request: Request) {
+  if (!deliveryEnabled()) return new Response("Not available on preview deployments.", { status: 503, headers: { "Cache-Control": "no-store" } });
   const origin = siteOrigin(request);
   const site = `${origin}${BASE}`;
   let recent: string[] = [];

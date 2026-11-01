@@ -1,11 +1,14 @@
 import { BASE, docDates, siteOrigin } from "@/lib/wa/seo";
 import { HOURLY, XML, ratingDocs, urlEntry, urlset } from "@/lib/wa/feeds";
 
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /** Every published rating at its /wa/<slug> URL. */
 export async function GET(request: Request) {
+  if (!deliveryEnabled()) return new Response("Not available on preview deployments.", { status: 503, headers: { "Cache-Control": "no-store" } });
   const origin = siteOrigin(request);
   try {
     const docs = await ratingDocs();

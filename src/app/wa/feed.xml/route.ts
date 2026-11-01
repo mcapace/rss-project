@@ -1,11 +1,14 @@
 import { BASE, PUBLISHER, docDates, heroOf, sectionLabels, siteOrigin, xmlEsc } from "@/lib/wa/seo";
 import { isSponsored, listDocsForNews, rfc822 } from "@/lib/wa/feeds";
 
+import { deliveryEnabled } from "@/lib/cms/runtime-config";
+
 export const runtime = "nodejs";
 export const maxDuration = 20;
 
 /** RSS 2.0: the 50 newest editorial stories, with summary, author, section and lead picture. */
 export async function GET(request: Request) {
+  if (!deliveryEnabled()) return new Response("Not available on preview deployments.", { status: 503, headers: { "Cache-Control": "no-store" } });
   const origin = siteOrigin(request);
   try {
     const docs = (await listDocsForNews()).filter(d => !isSponsored(d)).slice(0, 50);

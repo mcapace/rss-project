@@ -11,7 +11,7 @@ on:
         description: Which script to run
         required: true
         type: choice
-        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags, galleries, names, names-preview, names-retry, seo, seo-preview]
+        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags, galleries, names, names-preview, names-retry, seo, seo-preview, seo-fix]
       brand:
         description: Publication (wa, ws, ca, mw)
         required: true
@@ -94,6 +94,7 @@ jobs:
             names-retry) script=scripts/wa-media-name.ts;   extra=(--retry-failed) ;;
             seo)        script=scripts/wa-seo-pass.ts;      extra=() ;;
             seo-preview) script=scripts/wa-seo-pass.ts;     extra=(--kind article --preview 8) ;;
+            seo-fix)    script=scripts/wa-seo-pass.ts;      extra=(--fix) ;;
             *) echo "Unknown task"; exit 1 ;;
           esac
           apply=()

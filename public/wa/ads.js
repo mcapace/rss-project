@@ -53,11 +53,35 @@
     return builder.addSize([1024, 0], [[300, 600], [300, 250]]).addSize([768, 0], [300, 250]).addSize([330, 0], [300, 250]).build();
   }
 
-  googletag.cmd.push(function () {
+  /* Sponsored pages (2026-11-01): page-level key-values so Ad Manager can keep competing brands off paid content.
+     sponsored = "yes" | "no" on every page; sponsor = the advertiser (lowercase, hyphenated) when the CMS names one.
+     A story is sponsored when it is in sponsored.json (the story export's list, the same rule as the site's labels);
+     the 90+ Club page is a paid partner page. Ads wait for the answer, at most 1.5 seconds, so the first request carries it. */
+  function slugify(t) { return String(t || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40); }
+  function pageContext(cb) {
+    var page = (location.pathname.split("/").pop() || "index.html").toLowerCase(), done = false;
+    function finish(ctx) { if (done) return; done = true; window.WAAds = window.WAAds || {}; window.WAAds.context = ctx; cb(ctx); }
+    if (page === "ninety.html") return finish({ sponsored: "yes", sponsor: "90-plus-club" });
+    if (page !== "story.html") return finish({ sponsored: "no" });
+    var slug = "";
+    try { slug = decodeURIComponent((location.hash || "").slice(1)).toLowerCase(); } catch (e) { slug = (location.hash || "").slice(1).toLowerCase(); }
+    if (!slug) return finish({ sponsored: "no" });
+    setTimeout(function () { finish({ sponsored: "no" }); }, 1500);
+    fetch("sponsored.json").then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
+      var hit = (list || []).filter(function (x) { return String(x.slug || "").toLowerCase() === slug; })[0];
+      finish(hit ? (hit.by ? { sponsored: "yes", sponsor: slugify(hit.by) } : { sponsored: "yes" }) : { sponsored: "no" });
+    }).catch(function () { finish({ sponsored: "no" }); });
+  }
+  var ready = false, pending = [];
+  function whenReady(fn) { if (ready) googletag.cmd.push(fn); else pending.push(fn); }
+
+  pageContext(function (ctx) { googletag.cmd.push(function () {
     slots.forEach(function (slot) {
       googletag.defineSlot(path, slot.sizes, slot.id).defineSizeMapping(mapping(slot.map)).addService(googletag.pubads()).setTargeting("pos", slot.pos);
     });
     if (home) googletag.pubads().setTargeting("s1", "homepage");
+    googletag.pubads().setTargeting("sponsored", ctx.sponsored);
+    if (ctx.sponsor) googletag.pubads().setTargeting("sponsor", ctx.sponsor);
     googletag.pubads().setTargeting("test", "");
     googletag.pubads().enableSingleRequest();
     googletag.pubads().collapseEmptyDivs();
@@ -77,7 +101,8 @@
     });
     googletag.enableServices();
     slots.forEach(function (slot) { googletag.display(slot.id); });
-  });
+    ready = true; pending.splice(0).forEach(function (fn) { googletag.cmd.push(fn); });
+  }); });
 
   /* Interstitial leaderboards between batches of a list (2026-11-01). A list page calls
      WAAds.seat(container, every, name) after it renders: one leaderboard is seated after every
@@ -100,13 +125,13 @@
     box.id = spec.id;
     holder.appendChild(box);
     holder._spec = spec;
-    googletag.cmd.push(function () {
+    whenReady(function () {
       spec.slot = googletag.defineSlot(path, spec.sizes, spec.id).defineSizeMapping(mapping(spec.map)).addService(googletag.pubads()).setTargeting("pos", spec.pos);
       googletag.display(spec.id);
     });
   }
   function refreshExtra(holder) {
-    googletag.cmd.push(function () { if (holder._spec.slot) googletag.pubads().refresh([holder._spec.slot]); });
+    whenReady(function () { if (holder._spec.slot) googletag.pubads().refresh([holder._spec.slot]); });
   }
   /* A grid's slot lands after whole rows: the cadence is rounded up to a multiple of the column count, so a five-column
      grid gets a leaderboard every 15 cards, never two cards into a row. When a resize changes the column count the
@@ -126,6 +151,7 @@
     }, 200);
   });
   window.WAAds = {
+    context: window.WAAds && window.WAAds.context,
     seat: function (container, every, name) {
       if (!container || !every) return;
       var cols = columnsOf(container);

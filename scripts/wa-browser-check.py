@@ -24,17 +24,17 @@ async def main():
    await page.locator(button).click();await page.reload(wait_until='domcontentloaded');await page.locator(button).filter(has_text='Remove from My Shelf').wait_for()
    report['journeys'].append(kind+' save survives reload')
   await goto('/wa/shelf.html');assert await page.locator('#readerShelf article').count()==3
-  await page.locator('#readerShelf button').first.click();assert await page.locator('#readerShelf article').count()==2
+  await page.locator('#readerShelf .shelf-remove').first.click();assert await page.locator('#readerShelf article').count()==2
   await page.get_by_role('button',name='Undo',exact=True).click();assert await page.locator('#readerShelf article').count()==3
   report['journeys'].append('Shelf removal and undo')
   await goto('/wa/finder.html');await page.locator('#count').filter(has_text=f"{len(ratings['rows']):,} of {len(ratings['rows']):,}").wait_for()
-  await page.locator('[data-pop="price"]').click();await page.locator('[data-price="60"]').click();await page.locator('[data-pop="price"]').click()
+  await page.locator('[data-pop="price"]').click();await page.locator('[data-price="60"]').click();await page.locator('#filterDone').click()
   url=page.url;await page.reload(wait_until='domcontentloaded');await page.locator('#count').wait_for();assert page.url==url
   await page.locator('[data-sort="price-asc"]').click();await page.go_back(wait_until='domcontentloaded');assert await page.locator('[data-sort="score"]').get_attribute('aria-pressed')=='true'
-  await page.locator('#lead button[data-i]').click();await page.locator('.compare-open').click();assert await page.locator('dialog').is_visible()
-  await page.locator('[data-remove]').click();assert 'No bottles selected' in await page.locator('dialog').inner_text()
+  await page.locator('#lead button[data-i]').click();await page.locator('.compare-open').click();assert await page.locator('dialog.comparison-sheet').is_visible()
+  await page.locator('[data-remove]').click();assert 'No bottles selected' in await page.locator('dialog.comparison-sheet').inner_text()
   await page.get_by_role('button',name='Close comparison').click();report['journeys'].append('Filter refresh/history and comparison removal')
-  await goto('/wa/cocktails.html');await page.locator('[data-cab="rye"]').click();await page.reload(wait_until='domcontentloaded');await page.locator('[data-cab="rye"][aria-pressed="true"]').wait_for();report['journeys'].append('Pantry survives reload')
+  await goto('/wa/cocktails.html');await page.locator('.pantry-editor summary').click();await page.locator('[data-cab="rye"]').click();await page.reload(wait_until='domcontentloaded');await page.locator('.pantry-editor summary').click();await page.locator('[data-cab="rye"][aria-pressed="true"]').wait_for();report['journeys'].append('Pantry survives reload')
   await goto('/wa/search.html?q=apple');await page.locator('#discoveryStatus').filter(has_text='results for').wait_for();assert await page.locator('#discoveryResults').get_by_text('Recipe',exact=True).count()>0
   await page.locator('.search-btn').click();await page.locator('#waSearchInput').fill('apple');await page.locator('#waSearchInput').press('Enter');await page.wait_for_url('**/search.html?q=apple');report['journeys'].append('Search Enter preserves unified query')
   for path in ['/wa/bottle.html#invalid-slug','/wa/cocktail.html#invalid-slug']:
@@ -51,18 +51,20 @@ async def main():
   await goto('/wa/'+slug);await page.locator('#save').filter(has_text='Remove from My Shelf').wait_for()
   await page.evaluate("() => { Storage.prototype.setItem=function(){throw new DOMException('full','QuotaExceededError')}; }")
   await page.locator('#save').click();assert 'Could not save' in await page.locator('.reader-status').inner_text();assert 'Remove' in await page.locator('#save').inner_text();report['journeys'].append('Storage failure preserves saved state')
-  pages=[x.name for x in Path('/workspace/rss-project/public/wa').glob('*.html') if x.name not in ['bottle.html','story.html','cocktail.html']]+[slug,story,'recipes/'+recipe]
-  for width in [320,360,768,1440,1920]:
+  pages=[x.name for x in Path(ROOT/'public/wa').glob('*.html') if x.name not in ['bottle.html','story.html','cocktail.html']]+[slug,story,'recipes/'+recipe]
+  for width in [320,390,834,1440,1920]:
    await page.set_viewport_size({'width':width,'height':900})
    for name in pages:
     await goto('/wa/'+name)
     dimensions=await page.evaluate('({width:innerWidth,scroll:document.documentElement.scrollWidth})')
     report['layouts'].append({'page':name,**dimensions})
    print('width completed',width,flush=True)
-  for name in ['finder.html','tools.html','newsletter.html','shelf.html','search.html',slug,story,'recipes/'+recipe]:
-   await goto('/wa/'+name);await page.add_script_tag(path=AXE)
-   findings=await page.evaluate("async()=> (await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({html:n.html,summary:n.failureSummary}))}))")
-   report['axe'].append({'page':name,'violations':findings})
+  for width in [390,1440]:
+   await page.set_viewport_size({'width':width,'height':900})
+   for name in ['finder.html','tools.html','newsletter.html','shelf.html','search.html',slug,story,'recipes/'+recipe]:
+    await goto('/wa/'+name);await page.add_script_tag(path=AXE)
+    findings=await page.evaluate("async()=> (await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}})).violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>({html:n.html,summary:n.failureSummary}))}))")
+    report['axe'].append({'page':name,'width':width,'violations':findings})
   (ARTIFACTS/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps({'journeys':report['journeys'],'overflow':[r for r in report['layouts'] if r['scroll']>r['width']],'axe':[(r['page'],[(v['id'],len(v['nodes'])) for v in r['violations']]) for r in report['axe']],'errors':errors},indent=2))
   await browser.close()
   assert not errors, errors

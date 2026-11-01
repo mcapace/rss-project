@@ -23,10 +23,10 @@
 <section class="band ninety-hero" style="padding-top: 28px">
   <div class="ninety-head">
     <div>
-      <span class="tag" id="ninetyKicker">Partner program</span>
+      <span class="tag" id="ninetyKicker">Partner program · Pernod Ricard USA</span>
       <h1 class="d1" style="margin-top: 12px">90+ Club</h1>
       <p class="lede" style="margin-top: 18px; max-width: 58ch" id="intro"></p>
-      <p class="sp-note" role="note">The 90+ Club is a paid partner program: the brands on this page pay to be featured here. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
+      <p class="sp-note" role="note">Sponsored by Pernod Ricard USA. The 90+ Club is a paid partner program: Pernod Ricard USA pays to feature its brands on this page. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
     </div>
     <figure class="ninety-film" id="film" hidden></figure>
   </div>
@@ -67,7 +67,7 @@ WA.ready(function () { WA.archive(function (DATA) {
   var GROUPS = [["", "All"], ["scotch", "Scotch"], ["irish", "Irish"], ["american", "American"]];
   fetch("ninety.json").then(function (r) { return r.json(); }).then(function (N) {
     document.getElementById("intro").textContent = N.intro || "";
-    document.getElementById("ninetyKicker").innerHTML = WA.sponsorChip() + "Partner program";
+    document.getElementById("ninetyKicker").innerHTML = WA.sponsorChip() + "Partner program · Pernod Ricard USA";
     if (N.video) {
       var film = document.getElementById("film");
       film.innerHTML = '<button type="button" class="top20-play" data-embed="' + esc(N.video.embed) + '" aria-label="Play ' + esc(N.video.title) + '"><img src="' + esc(N.video.poster) + '" alt=""><span class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span></button><figcaption>' + esc(N.video.title) + "</figcaption>";

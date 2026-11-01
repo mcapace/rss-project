@@ -1807,3 +1807,9 @@ a.author p::after { content: " →"; color: var(--copper); }
 .mast .mast-pour video, .mast .mast-pour img { object-position: center; filter: saturate(1.05) brightness(1.1); }
 .mast::after { background: linear-gradient(180deg, rgba(247,243,236,0.5), rgba(247,243,236,0.6)); }
 .ad-above, .ad-above.ad-billboard, .ad-above.ad-filled { margin-bottom: 14px; }
+
+/* Interstitial leaderboards between batches on the list pages (2026-11-01): seated by WAAds.seat in ads.js. */
+.dense > .ad, .producers > .ad.ad-inline { background: var(--paper-2); padding: 14px 8px; }
+.dense > .ad.ad-filled, .producers > .ad.ad-inline.ad-filled { margin: 0; width: auto; }
+.videos > .ad, .recipes > .ad.ad-inline { grid-column: 1 / -1; }
+.videos > .ad.ad-filled { margin: 6px auto; }

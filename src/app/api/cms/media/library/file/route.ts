@@ -3,6 +3,7 @@ import { CmsError } from "@/lib/cms/access";
 import { requireCmsUser } from "@/lib/cms/auth-server";
 import { cmsFailure } from "@/lib/cms/http";
 import { assertLibraryKey } from "@/lib/cms/media-library-server";
+import { webFileName } from "@/lib/editorial/media-library-types";
 import { brandValue } from "@/lib/cms/validation";
 import { renderRendition } from "@/lib/media/renditions";
 import { getS3Client } from "@/lib/s3";
@@ -12,7 +13,8 @@ export const maxDuration = 30;
 
 /**
  * A stored library file for signed-in editors: `?w=` returns a WebP preview of an image
- * (TIFFs included); without it the original streams as stored, named for download.
+ * (TIFFs included); without it the original streams as stored, under its web name when it has one
+ * (`?download=1` saves it instead of opening it).
  */
 export async function GET(request: Request) {
   try {
@@ -32,7 +34,8 @@ export async function GET(request: Request) {
       const rendition = await renderRendition(bytes, { width, format: "webp" });
       return new Response(new Uint8Array(rendition.body), { headers: { "Content-Type": rendition.contentType, "Cache-Control": "private, max-age=86400" } });
     }
-    const name = file.file_name.replace(/["\\\r\n]/g, "_");
-    return new Response(new Uint8Array(bytes), { headers: { "Content-Type": file.mime || object.ContentType || "application/octet-stream", "Content-Disposition": `inline; filename="${name}"`, "Cache-Control": "private, max-age=86400" } });
+    const name = webFileName(file).replace(/["\\\r\n]/g, "_");
+    const disposition = params.get("download") === "1" ? "attachment" : "inline";
+    return new Response(new Uint8Array(bytes), { headers: { "Content-Type": file.mime || object.ContentType || "application/octet-stream", "Content-Disposition": `${disposition}; filename="${name}"`, "Cache-Control": "private, max-age=86400" } });
   } catch (error) { return cmsFailure(error); }
 }

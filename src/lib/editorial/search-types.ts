@@ -1,4 +1,5 @@
 import type { CmsBrand, CmsDocumentKind, CmsJsonObject, CmsPublicationState, CmsSourceSystem } from "@/lib/cms/types";
+import type { MediaFile } from "./media-library-types";
 
 export type SearchDocumentHit = {
   id: string; brand: CmsBrand; kind: CmsDocumentKind; source_system: CmsSourceSystem; title: string; byline: string; excerpt: string;
@@ -31,5 +32,8 @@ export type SearchMediaHit = {
 
 export type SearchKeywordHit = { keyword: string; kind: "tag" | "category" | "section"; document_count: number };
 
-export type SearchResponse = { query: string; documents: SearchDocumentHit[]; media: SearchMediaHit[]; keywords: SearchKeywordHit[]; /** True when pgvector matches were blended in. */ semantic?: boolean };
+/** A file from the gallery library (Morweb's galleries, kept in S3), matched by its web name, alt text, keywords or original file name. */
+export type SearchLibraryHit = MediaFile & { brand: CmsBrand; rank: number };
+
+export type SearchResponse = { query: string; documents: SearchDocumentHit[]; media: SearchMediaHit[]; keywords: SearchKeywordHit[]; library?: SearchLibraryHit[]; /** True when pgvector matches were blended in. */ semantic?: boolean };
 export type SearchScope = "all" | "documents" | "media" | "keywords" | "ratings";

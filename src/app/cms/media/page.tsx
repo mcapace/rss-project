@@ -4,5 +4,6 @@ export default async function CmsMediaPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   const gallery = typeof params.gallery === "string" && params.gallery ? params.gallery : null;
   const q = typeof params.q === "string" ? params.q : "";
-  return <MediaLibrary key={`${gallery ?? ""}:${q}`} initialGallery={gallery} initialQuery={q} />;
+  const file = typeof params.file === "string" && params.file ? params.file : null;
+  return <MediaLibrary key={`${gallery ?? ""}:${q}:${file ?? ""}`} initialGallery={gallery} initialQuery={q} initialFile={file} />;
 }

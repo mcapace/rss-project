@@ -4,6 +4,7 @@ import { requireCmsUser } from "@/lib/cms/auth-server";
 import { assertBrand, CmsError } from "@/lib/cms/access";
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { cmsFailure, cmsJson } from "@/lib/cms/http";
+import { searchLibraryFiles } from "@/lib/cms/media-library-server";
 import { CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES, type CmsBrand } from "@/lib/cms/types";
 import { getS3Client } from "@/lib/s3";
 import { reciprocalRankFusion } from "@/lib/editorial/rank";
@@ -12,7 +13,7 @@ import { embeddingsConfigured, semanticMatches } from "@/lib/editorial/server/em
 
 const SCOPES = new Set(["all", "documents", "media", "keywords"]);
 
-/** Unified search over documents, attached images and keywords for the publications a user may see. */
+/** Unified search over documents, attached images, the gallery library and keywords for the publications a user may see. */
 export async function GET(request: Request) {
   try {
     const user = await requireCmsUser();
@@ -27,14 +28,16 @@ export async function GET(request: Request) {
     const state = url.searchParams.get("state");
     if (state && !(CMS_PUBLICATION_STATES as readonly string[]).includes(state)) throw new CmsError(422, "Unknown publication state.", "validation_failed");
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? 20) || 20));
-    if (!q && scope !== "keywords") return cmsJson({ query: q, documents: [], media: [], keywords: [] } satisfies SearchResponse);
+    if (!q && scope !== "keywords") return cmsJson({ query: q, documents: [], media: [], keywords: [], library: [] } satisfies SearchResponse);
 
     const db = cmsDb();
     const wants = (name: string) => scope === "all" || scope === name;
-    const [documents, media, keywords] = await Promise.all([
+    const [documents, media, keywords, library] = await Promise.all([
       wants("documents") ? db.rpc("cms_search_documents", { p_brands: brands, p_query: q, p_kind: kind, p_state: state, p_limit: limit }) : Promise.resolve({ data: [], error: null }),
       wants("media") ? db.rpc("cms_search_media", { p_brands: brands, p_query: q, p_limit: Math.min(60, limit * 2) }) : Promise.resolve({ data: [], error: null }),
       wants("keywords") ? db.rpc("cms_search_keywords", { p_brands: brands, p_query: q, p_limit: 30 }) : Promise.resolve({ data: [], error: null }),
+      // The gallery library rides with the image scope: a file found there can be dropped into any story.
+      wants("media") && q ? searchLibraryFiles(brands, q, Math.min(60, limit * 2)).catch(() => []) : Promise.resolve([]),
     ]);
     for (const result of [documents, media, keywords]) {
       if (result.error) {
@@ -92,6 +95,6 @@ export async function GET(request: Request) {
       return { ...hit, preview_url };
     }));
 
-    return cmsJson({ query: q, documents: documentHits, media: signed, keywords: keywords.data ?? [], semantic } satisfies SearchResponse);
+    return cmsJson({ query: q, documents: documentHits, media: signed, keywords: keywords.data ?? [], library, semantic } satisfies SearchResponse);
   } catch (error) { return cmsFailure(error); }
 }

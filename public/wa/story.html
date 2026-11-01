@@ -108,7 +108,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       document.getElementById("kicker").textContent = sec + (st.tags[0] ? " · " + st.tags[0] : "");
       document.getElementById("title").textContent = st.title;
       var dek = document.getElementById("dek"); if (st.dek) dek.textContent = st.dek; else dek.remove();
-      if (st.hero) { var h = document.getElementById("hero"); h.hidden = false; h.querySelector("img").src = st.hero; h.querySelector("img").alt = st.title; var fc = h.querySelector("figcaption"); fc.textContent = st.cap || ""; if (st.credit) { var cr = document.createElement("span"); cr.className = "credit"; if (!st.cap) cr.style.marginLeft = "0"; cr.textContent = st.credit; fc.appendChild(cr); } if (!st.cap && !st.credit) fc.remove(); }
+      if (st.hero) { var h = document.getElementById("hero"); h.hidden = false; h.querySelector("img").onerror = function () { h.hidden = true; }; h.querySelector("img").src = st.hero; h.querySelector("img").alt = st.title; var fc = h.querySelector("figcaption"); fc.textContent = st.cap || ""; if (st.credit) { var cr = document.createElement("span"); cr.className = "credit"; if (!st.cap) cr.style.marginLeft = "0"; cr.textContent = st.credit; fc.appendChild(cr); } if (!st.cap && !st.credit) fc.remove(); }
       // The body: links to other stories and to rated bottles stay inside the site.
       var holder = document.createElement("div"); holder.innerHTML = bodies[st.slug];
       // A picture the old CMS dropped at the start of a paragraph stands on its own line, so every story reads the same way: picture, room, text.

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { JSDOM } from "jsdom";
 import { esc } from "./seo";
 vi.mock("server-only",()=>({}));
 import { exportedPage, recipePage, producerPage } from "./exported-content";
@@ -13,7 +12,7 @@ describe("public exports in disconnected previews",()=>{
     expect(html).toContain('window.WA_SLUG=');
     expect(html).toContain('"@type":"Product"');
     expect(html).toContain(`https://preview.example/wa/${slug}`);
-    expect(new JSDOM(html!).window.document.querySelector("#name")?.textContent).toBe(data.rows[0][data.cols.indexOf("n")]);
+    expect(html?.match(/id="name"[^>]*>([^<]*)</)?.[1]).toBe(esc(data.rows[0][data.cols.indexOf("n")]));
   });
   it("returns real story text and canonical metadata",async()=>{
     const story=JSON.parse(readFileSync("public/wa/stories.json","utf8"))[0];

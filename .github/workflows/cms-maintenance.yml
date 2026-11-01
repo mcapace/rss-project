@@ -1,7 +1,7 @@
 name: CMS maintenance
 
 # Runs the platform scripts (legacy image rehost, lead photographs, captions, image
-# descriptions, body normalization, redirect build, embeddings backfill, AI tags, the Morweb gallery library copy, gallery web names) against the content database with the same
+# descriptions, body normalization, redirect build, embeddings backfill, AI tags, the Morweb gallery library copy, gallery web names, the SEO/GEO pass) against the content database with the same
 # secrets the print worker uses, so credentials never leave GitHub. Every
 # script is dry-run unless "apply" is ticked.
 on:
@@ -11,7 +11,7 @@ on:
         description: Which script to run
         required: true
         type: choice
-        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags, galleries, names, names-preview, names-retry]
+        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags, galleries, names, names-preview, names-retry, seo, seo-preview]
       brand:
         description: Publication (wa, ws, ca, mw)
         required: true
@@ -85,6 +85,8 @@ jobs:
             names)      script=scripts/wa-media-name.ts;    extra=() ;;
             names-preview) script=scripts/wa-media-name.ts; extra=(--preview 12) ;;
             names-retry) script=scripts/wa-media-name.ts;   extra=(--retry-failed) ;;
+            seo)        script=scripts/wa-seo-pass.ts;      extra=() ;;
+            seo-preview) script=scripts/wa-seo-pass.ts;     extra=(--kind article --preview 8) ;;
             *) echo "Unknown task"; exit 1 ;;
           esac
           apply=()

@@ -86,14 +86,13 @@ WA.ready(function () { WA.top20(function (T) { Promise.all([fetch("videos.json")
     var rows = T.filter(function (e) { return e.year === state.year; }).sort(function (a, b) { return a.rank - b.rank; });
     document.getElementById("films").hidden = true;
     document.getElementById("list").innerHTML = rows.map(function (e) { return card(e, match(e)); }).join("");
+    if (WA.watchPosters) WA.watchPosters(document.getElementById("list"));
     document.querySelectorAll("#years button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-year") === state.year)); });
     document.title = "Top 20 Whiskies of " + state.year + " · Whisky Advocate";
   }
   document.getElementById("list").addEventListener("click", function (e) {
     var f = e.target.closest(".top20-play"); if (!f || f.classList.contains("playing")) return;
-    var src = f.getAttribute("data-embed");
-    f.classList.add("playing");
-    f.innerHTML = '<iframe src="' + src + (src.indexOf("youtube") >= 0 ? "?autoplay=1" : "") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video"></iframe>';
+    WA.playEmbed(f);
   });
   document.getElementById("years").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.year = +b.getAttribute("data-year"); history.replaceState(null, "", "#" + state.year); render(); });
   var h = +(location.hash || "").slice(1); if (years.indexOf(h) >= 0) state.year = h;

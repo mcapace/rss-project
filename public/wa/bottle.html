@@ -212,6 +212,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("filmEssay").textContent = story.length > 560 ? story.slice(0, 560).replace(/\s\S*$/, "") + "…" : story;
     document.getElementById("filmLink").href = "top20.html#" + film.year;
     box.innerHTML = '<button type="button" class="top20-play" data-embed="' + esc(film.v.embed) + '" aria-label="Play the film"><img src="' + esc(film.v.poster || film.v.hero) + '" alt=""><span class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span></button>';
+    if (WA.watchPosters) WA.watchPosters(box);
     syncNav();
   }
   function mentions(r) {
@@ -318,9 +319,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   }
   document.getElementById("film").addEventListener("click", function (e) {
     var f = e.target.closest(".top20-play"); if (!f || f.classList.contains("playing")) return;
-    var src = f.getAttribute("data-embed");
-    f.classList.add("playing");
-    f.innerHTML = '<iframe src="' + src + (src.indexOf("youtube") >= 0 ? "?autoplay=1" : "") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video"></iframe>';
+    WA.playEmbed(f);
   });
   document.getElementById("save").addEventListener("click", function () { this.textContent = "Saved to my shelf"; this.setAttribute("aria-pressed", "true"); });
   WA.shop(function () { var p = WA.productFor(cur && cur.slug); var sb = document.getElementById("storeBtn"); if (p) { sb.href = WA.buyHref(p); sb.textContent = p.p ? "Buy at the store · $" + Math.round(p.p) : "Buy at the store"; sb.hidden = false; } });

@@ -27,6 +27,14 @@ export const LEGACY_BASE: Record<string, string> = { wa: "https://whiskyadvocate
 export type LegacyImage = { raw: string; url: string; alt: string };
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif" };
 
+const ENTITIES: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", ndash: "–", mdash: "—", eacute: "é", egrave: "è", aacute: "á", agrave: "à", iacute: "í", oacute: "ó", uacute: "ú", ntilde: "ñ", ccedil: "ç", uuml: "ü", ouml: "ö", auml: "ä", aelig: "æ", plusmn: "±", Theta: "Θ" };
+/** Old bodies store file names with HTML entities (Father&rsquo;s), which the legacy host only serves decoded. */
+export function decodeEntities(value: string): string {
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name: string) => name[0] === "#"
+    ? String.fromCodePoint(name[1].toLowerCase() === "x" ? parseInt(name.slice(2), 16) : Number(name.slice(1)))
+    : ENTITIES[name] ?? whole);
+}
+
 /** Legacy hosts sometimes label images application/octet-stream; the file's first bytes say what it is. */
 export function sniffImageType(bytes: Uint8Array): string | null {
   const ascii = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
@@ -50,8 +58,10 @@ export function legacyImages(html: string, hosts: string[], base?: string): Lega
     const raw = match[1];
     const alt = (ALT.exec(match[0])?.[1] ?? "").trim();
     if (raw.startsWith("/api/")) continue;
+    const src = decodeEntities(raw);
     try {
-      const url = raw.startsWith("/") && !raw.startsWith("//") && base && hosts.includes(baseHost) ? new URL(raw, base) : new URL(raw);
+      const url = src.startsWith("/") && !src.startsWith("//") && base && hosts.includes(baseHost) ? new URL(src, base) : new URL(src);
+      if (url.pathname.startsWith("/api/media/")) continue;
       if ((url.protocol === "https:" || url.protocol === "http:") && hosts.includes(url.hostname.toLowerCase()) && !out.has(raw)) out.set(raw, { raw, url: url.toString(), alt });
     } catch { /* invalid: not a legacy image */ }
   }

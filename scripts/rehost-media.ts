@@ -27,6 +27,17 @@ export const LEGACY_BASE: Record<string, string> = { wa: "https://whiskyadvocate
 export type LegacyImage = { raw: string; url: string; alt: string };
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif" };
 
+/** Legacy hosts sometimes label images application/octet-stream; the file's first bytes say what it is. */
+export function sniffImageType(bytes: Uint8Array): string | null {
+  const ascii = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (bytes[0] === 0x89 && ascii(1, 4) === "PNG") return "image/png";
+  if (ascii(0, 4) === "GIF8") return "image/gif";
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  if (ascii(4, 8) === "ftyp" && /^avi[fs]$/.test(ascii(8, 12))) return "image/avif";
+  return null;
+}
+
 export function legacyImageUrls(html: string, hosts: string[], base?: string): string[] {
   return legacyImages(html, hosts, base).map(image => image.url);
 }
@@ -121,9 +132,10 @@ export async function runRehost(args: string[], log: (line: string) => void = co
       try {
         const response = await fetch(url, { headers: { "User-Agent": "mshanken-cms-migration/1.0" } });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const type = (response.headers.get("content-type") ?? "").split(";")[0].trim();
-        if (!EXT[type]) throw new Error(`unsupported type ${type || "unknown"}`);
         const bytes = Buffer.from(await response.arrayBuffer());
+        const declared = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+        const type = EXT[declared] ? declared : sniffImageType(bytes) ?? declared;
+        if (!EXT[type]) throw new Error(`unsupported type ${type || "unknown"}`);
         if (bytes.length > 40 * 1024 * 1024) throw new Error("larger than 40 MB");
         const sha = createHash("sha256").update(bytes).digest("hex");
         const key = `cms/legacy/${brand}/${sha}.${EXT[type]}`;

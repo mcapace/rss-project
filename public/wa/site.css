@@ -1646,3 +1646,5 @@ a.author p::after { content: " →"; color: var(--copper); }
 .story h3, .pick-card h3, .recipe-card h3, .video-card h3 { padding-bottom: 0.12em; margin-bottom: -0.12em; }
 .front .rot-slide h3 { line-height: 1.12; padding-bottom: 0.14em; margin-bottom: -0.1em; }
 .story.lead h3 { min-height: calc(2.24em + 0.14em); }
+/* The rotator's kicker chip is a chip, not a one-line clip. */
+.front .rot-slide .tag { height: auto; line-height: 1.25; overflow: visible; white-space: nowrap; padding: 5px 11px 4px; margin-top: 2px; }

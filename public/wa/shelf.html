@@ -19,7 +19,10 @@
   <div class="tools"><a class="pill" href="tools.html" aria-current="page">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<main class="band"><h1 class="d1">My Shelf</h1><p class="lede">Bottles, stories and recipes saved on this device. Account sync is not connected. Clearing browser data removes your shelf.</p><div id="readerShelf" class="reader-grid"></div></main>
+<main class="band shelf-page"><span class="mono">Your collection</span><h1 class="d1">My Shelf</h1><p class="lede">The bottles you own, the ones to try next, and the stories and recipes worth keeping.</p>
+<div id="shelfControls" class="shelf-controls"><label>Search your saves<input id="shelfQuery" type="search" placeholder="A bottle, recipe or note"></label><label>Collection<select id="shelfKind"><option value="all">Everything</option><option value="owned">Bottles I own</option><option value="want">Bottles to try</option><option value="story">Stories</option><option value="recipe">Recipes</option></select></label><label>Sort<select id="shelfOrder"><option value="recent">Recently saved</option><option value="name">Name A to Z</option></select></label></div>
+<p id="shelfCount" role="status"></p><div id="readerShelf" class="reader-grid"></div><button class="pill" id="shelfMore" type="button" hidden>Show 24 more</button>
+<aside class="shelf-backup"><div><h2>Keep a copy</h2><p>Saved in this browser. Export a backup before clearing browser data, or import it on another device. Imports keep existing items and notes.</p></div><div class="actions"><button type="button" class="pill" id="shelfExport">Export Shelf</button><label class="pill shelf-import">Import Shelf<input type="file" accept=".json,application/json" id="shelfImport"></label></div></aside></main>
 
 <section class="nl-band" aria-label="Newsletters">
   <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>

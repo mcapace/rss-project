@@ -20,6 +20,21 @@ describe("reader persistence and honest rating filters", () => {
     const setItem=vi.fn(()=>{throw Error("quota");});
     expect(()=>reader.write({setItem},reader.empty())).toThrow("quota");
   });
+  it("merges an exported shelf without replacing notes or other local state", () => {
+    const current = {...reader.empty(), shelf:[{kind:"bottle",slug:"ardbeg",title:"Ardbeg",status:"owned",notes:"Peaty",savedAt:1}], pantry:["rye"], preferences:{size:"1.3"}};
+    const incoming = {version:1,shelf:[{kind:"bottle",slug:"ardbeg",title:"Ardbeg",notes:"Different note"},{kind:"recipe",slug:"sour",title:"Whiskey Sour",notes:"Try with bourbon",savedAt:2}]};
+    const next = reader.importShelf(JSON.stringify(incoming),current);
+    expect(next.shelf).toHaveLength(2);
+    expect(next.shelf[0]).toEqual(current.shelf[0]);
+    expect(next.shelf[1].notes).toBe("Try with bourbon");
+    expect(next.pantry).toEqual(["rye"]);
+    expect(next.preferences).toEqual({size:"1.3"});
+    expect(current.shelf).toHaveLength(1);
+    expect(reader.importShelf(JSON.stringify(incoming), next).shelf).toHaveLength(2);
+  });
+  it("rejects a malformed or oversized import atomically", () => {
+    for (const text of ['bad', JSON.stringify({version:2,shelf:[]}), JSON.stringify({version:1,shelf:[{kind:"bottle",slug:"ok",title:"Valid"},{kind:"script",slug:"bad",title:"Bad"}]}), ' '.repeat(2000001)]) expect(()=>reader.importShelf(text,reader.empty())).toThrow();
+  });
   it("Any price and All scores include costly, low-scoring and unpriced entries", () => {
     for (const r of [{p:12000,s:97},{p:15,s:65},{p:0,s:90}]) expect(reader.matches(r,0,0)).toBe(true);
   });

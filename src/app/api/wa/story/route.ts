@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
+import { sponsorship } from "@/lib/cms/sponsored";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
     const legacyMedia = (meta.legacy_media && typeof meta.legacy_media === "object" ? meta.legacy_media : {}) as Record<string, unknown>;
     const thumb = typeof legacyMedia.thumb_file === "string" ? legacyMedia.thumb_file : "";
     const seo = (meta.seo && typeof meta.seo === "object" ? meta.seo : {}) as Record<string, unknown>;
-    const story = { id: data.id, slug: data.slug, title: data.title, by: data.byline, d: date, sec: SECTION[cats[0]] || "news", hero: thumb ? (thumb.startsWith("/") ? "https://whiskyadvocate.com" + thumb : thumb) : "", dek: typeof seo.description === "string" && seo.description ? seo.description : data.excerpt, tags, refs: [], min: String(Math.max(1, Math.round(String(data.body_html || "").replace(/<[^>]+>/g, " ").split(/\s+/).length / 230))) };
+    const story = { id: data.id, slug: data.slug, title: data.title, by: data.byline, d: date, sec: SECTION[cats[0]] || "news", hero: thumb ? (thumb.startsWith("/") ? "https://whiskyadvocate.com" + thumb : thumb) : "", dek: typeof seo.description === "string" && seo.description ? seo.description : data.excerpt, tags, refs: [], ...(() => { const sp = sponsorship(meta, data.byline); return sp.on ? { sp: 1, ...(sp.by ? { spBy: sp.by } : {}) } : {}; })(), min: String(Math.max(1, Math.round(String(data.body_html || "").replace(/<[^>]+>/g, " ").split(/\s+/).length / 230))) };
     return NextResponse.json({ story, body: data.body_html || "" }, { headers: { ...CORS, "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } });
   } catch (error) {
     console.error("[wa/story]", error instanceof Error ? error.message : error);

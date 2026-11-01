@@ -20,7 +20,7 @@ if CACHE and os.path.exists(CACHE): rows = json.load(open(CACHE))
 else:
     rows = []; off = 0
     while True:
-        page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
+        page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'sponsored' as sponsored, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
           metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner
           from cms_documents where brand='wa' and kind='article' and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
         rows += page; off += 120; print("fetched", len(rows), file=sys.stderr)
@@ -80,6 +80,19 @@ for r in rows:
     if q: entry["q"] = q
     extra = LEGACY.get(slug)
     if extra: entry.update(extra)
+    # Paid content (src/lib/cms/sponsored.ts has the same rule): the editor's flag wins, else the legacy byline or tag.
+    spf = r.get("sponsored")
+    if isinstance(spf, str):
+        try: spf = json.loads(spf)
+        except Exception: spf = None
+    if isinstance(spf, dict) and isinstance(spf.get("on"), bool):
+        sp_on, sp_by = spf["on"], (spf.get("by") or "").strip()
+    else:
+        sp_on = bool(re.search(r"sponsor", r["byline"] or "", re.I)) or any(isinstance(t, str) and t.strip().lower() in ("sponsored content", "sponsored") for t in (r["tags"] or []))
+        sp_by = ""
+    if sp_on:
+        entry["sp"] = 1
+        if sp_by: entry["spBy"] = sp_by
     if sec == "guides" and "kind" not in entry: entry["kind"] = kind_of(entry["tags"])
     if sec == "travel" and "region" not in entry:
         rg = region_of(entry["tags"], entry["title"])
@@ -95,4 +108,6 @@ RECENT_FROM = (datetime.date.today() - datetime.timedelta(days=640)).isoformat()
 recent = [s for s in stories if s["d"] >= RECENT_FROM]; archive = [s for s in stories if s["d"] < RECENT_FROM]
 json.dump(recent, open(f"{WEB}/stories.json", "w"), ensure_ascii=False)
 json.dump(archive, open(f"{WEB}/stories-archive.json", "w"), ensure_ascii=False)
+# The paid stories, recent and archive, so every page can label them without loading the archive.
+json.dump([{"slug": s["slug"], **({"by": s["spBy"]} if s.get("spBy") else {})} for s in stories if s.get("sp")], open(f"{WEB}/sponsored.json", "w"), ensure_ascii=False)
 print(json.dumps({"stories": len(stories), "recent": len(recent), "archive": len(archive), "bodies": sum(len(v) for v in shards.values()), "no_date": missing_date, "sections": Counter(s["sec"] for s in stories), "oldest": stories[-1]["d"], "newest": stories[0]["d"]}, default=dict), file=sys.stderr)

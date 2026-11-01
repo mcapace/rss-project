@@ -12,7 +12,7 @@
   load();
   function change(update, message) {
     if (!readable) { notice('Storage is unavailable. Enable browser storage and reload to save.'); return false; }
-    try { var before = core.read(localStorage), next = JSON.parse(JSON.stringify(before)); update(next); core.write(localStorage, next); state = next; notice(message); document.dispatchEvent(new Event('wa:shelf')); return true; }
+    try { var before = core.read(localStorage), next = JSON.parse(JSON.stringify(before)); update(next); core.write(localStorage, next); state = next; if (message) notice(message); document.dispatchEvent(new Event('wa:shelf')); return true; }
     catch (e) { notice('Could not save. Browser storage may be full or disabled. Your last saved items are unchanged.'); return false; }
   }
   var storeButton = document.getElementById('storeBtn'); if (storeButton) { var commerceNote = document.createElement('p'); commerceNote.className = 'muted'; commerceNote.textContent = 'Confirm current price and availability with the retailer.'; storeButton.closest('.actions').after(commerceNote); }
@@ -97,11 +97,32 @@
   /* Reading preferences are local and never imply an account or paid audio service. */
   var article = document.getElementById('prose');
   if (article) {
-    var preferences = document.createElement('div'); preferences.className = 'reader-preferences';
-    preferences.innerHTML = '<label>Text size <select id="readingSize"><option value="1">Standard</option><option value="1.15">Large</option><option value="1.3">Larger</option></select></label><label>Audio speed <select id="readingRate"><option value="0.8">0.8×</option><option value="1">1×</option><option value="1.2">1.2×</option></select></label><p>Preferences stay on this device. Browser narration depends on available voices.</p>';
-    article.before(preferences);
-    var size = preferences.querySelector('#readingSize'), rate = preferences.querySelector('#readingRate'); size.value = state.preferences.size || '1'; rate.value = state.preferences.rate || '1';
-    function apply() { article.style.fontSize = (18 * Number(size.value)) + 'px'; WA.readingRate = Number(rate.value); }
-    preferences.onchange = function () { apply(); change(function (s) { s.preferences = { size:size.value, rate:rate.value }; }, 'Reading preferences saved.'); }; apply();
+    // An "Aa" pill in the story's action row opens a small card: text size and listening speed, as segmented choices.
+    var SIZES = [['1', 'Standard'], ['1.15', 'Large'], ['1.3', 'Larger']], RATES = [['0.8', '0.8×'], ['1', '1×'], ['1.2', '1.2×']];
+    var current = { size: String(state.preferences.size || '1'), rate: String(state.preferences.rate || '1') };
+    var wrap = document.createElement('div'); wrap.className = 'reader-preferences';
+    wrap.innerHTML = '<button type="button" class="pill rp-toggle" aria-expanded="false" aria-controls="rpCard" aria-label="Reading settings"><span aria-hidden="true">Aa</span></button>'
+      + '<div class="rp-card glass" id="rpCard" role="group" aria-label="Reading settings" hidden>'
+      + '<div class="rp-row"><span class="rp-label">Text size</span><div class="rp-seg" role="radiogroup" aria-label="Text size">' + SIZES.map(function (o, i) { return '<button type="button" role="radio" data-size="' + o[0] + '" aria-label="' + o[1] + '" style="font-size:' + (13 + i * 3) + 'px">A</button>'; }).join('') + '</div></div>'
+      + '<div class="rp-row"><span class="rp-label">Listening speed</span><div class="rp-seg" role="radiogroup" aria-label="Listening speed">' + RATES.map(function (o) { return '<button type="button" role="radio" data-rate="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</div></div>'
+      + '<p class="rp-note">Saved on this device.</p></div>';
+    var row = document.querySelector('.story-head .actions, #listen') ; row = row && (row.classList && row.classList.contains('actions') ? row : row.parentElement);
+    if (row) row.appendChild(wrap); else article.before(wrap);
+    var toggle = wrap.querySelector('.rp-toggle'), card = wrap.querySelector('.rp-card');
+    function paint() {
+      wrap.querySelectorAll('[data-size]').forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-size') === current.size)); });
+      wrap.querySelectorAll('[data-rate]').forEach(function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-rate') === current.rate)); });
+    }
+    function apply() { article.style.fontSize = (18 * Number(current.size)) + 'px'; WA.readingRate = Number(current.rate); paint(); }
+    function open(on) { card.hidden = !on; toggle.setAttribute('aria-expanded', String(on)); }
+    toggle.addEventListener('click', function () { open(card.hidden); });
+    document.addEventListener('click', function (e) { if (!card.hidden && !wrap.contains(e.target)) open(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !card.hidden) { open(false); toggle.focus(); } });
+    card.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-size],[data-rate]'); if (!b) return;
+      if (b.hasAttribute('data-size')) current.size = b.getAttribute('data-size'); else current.rate = b.getAttribute('data-rate');
+      apply(); change(function (s) { s.preferences = { size: current.size, rate: current.rate }; }, ''); // the card itself says the settings stay on this device
+    });
+    apply();
   }
 })();

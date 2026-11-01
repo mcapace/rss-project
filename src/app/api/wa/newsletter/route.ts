@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   const source = String(body.source ?? "site").slice(0, 60);
 
   if (!process.env.BRAZE_REST_ENDPOINT || !brazeKey()) {
-    return NextResponse.json({ error: "Sign-up is not connected yet: the site needs BRAZE_REST_ENDPOINT and BRAZE_REST_API_KEY. Until then, use the sign-up page at winespectator.com/newsletter/whiskyadvocate.", fallback: "https://www.winespectator.com/newsletter/whiskyadvocate" }, { status: 503, headers: CORS });
+    return NextResponse.json({ error: "Newsletter sign-up is temporarily unavailable. Please use the linked sign-up page.", fallback: "https://www.winespectator.com/newsletter/whiskyadvocate" }, { status: 503, headers: CORS });
   }
 
   try {

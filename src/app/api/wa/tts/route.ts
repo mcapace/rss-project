@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (limited(ip)) return NextResponse.json({ error: "Too many requests from this connection." }, { status: 429, headers: CORS });
   const key = process.env.ELEVENLABS_API_KEY;
-  if (!key) return NextResponse.json({ error: "Reading aloud is not connected yet: the site needs ELEVENLABS_API_KEY." }, { status: 503, headers: CORS });
+  if (!key) return NextResponse.json({ error: "Recorded narration is unavailable. You can use your browser’s voice when supported." }, { status: 503, headers: CORS });
   let body: { text?: string };
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Send JSON." }, { status: 400, headers: CORS }); }
   const text = String(body.text ?? "").replace(/\s+/g, " ").trim().slice(0, 2500);

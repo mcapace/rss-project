@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { deliveryEnabled } from "@/lib/cms/runtime-config";
+import { exportedPage } from "@/lib/wa/exported-content";
 import { BASE, loadDoc, notFoundPage, ratingView, renderRating, renderStory, siteOrigin, storyView, template } from "@/lib/wa/seo";
 
 export const runtime = "nodejs";
@@ -20,7 +21,10 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: s
   try { slug = decodeURIComponent(raw); } catch { /* keep as given */ }
   const origin = siteOrigin(request);
   // Previews do not read the production CMS (the platform's rule for public delivery): the static page shows the item.
-  if (!deliveryEnabled()) return NextResponse.redirect(new URL(`${BASE}/story.html#${encodeURIComponent(slug)}`, request.url), 307);
+  if (!deliveryEnabled() || !(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+    const html = await exportedPage(slug, origin);
+    return new NextResponse(html || notFoundPage(origin, slug), { status: html ? 200 : 404, headers: { ...HTML, "Cache-Control": CACHE } });
+  }
   if (!slug || slug.length > 300 || /[\s<>"]/.test(slug)) return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=300" } });
 
   let doc;

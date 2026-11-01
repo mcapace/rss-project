@@ -66,12 +66,13 @@ export async function runRehost(args: string[], log: (line: string) => void = co
   const baseAllowed = Boolean(base && hosts.includes(new URL(base).hostname.toLowerCase()));
   // Only documents that still point at one of the legacy hosts, so repeated passes make progress.
   // --heroes instead takes documents whose legacy lead photograph has not been attached yet.
-  const patterns = hosts.map(host => `body_html.ilike.%${host.replace(/[%_,()]/g, "")}%`);
-  if (baseAllowed) patterns.push("body_html.ilike.%/get/files/%", "body_html.ilike.%/files/galleries/%");
+  const patterns = hosts.map(host => `%${host.replace(/[%_,()]/g, "")}%`);
+  if (baseAllowed) patterns.push("%/get/files/%", "%/files/galleries/%");
   const query = reader.from("cms_documents").select("id,title,body_html,metadata,revision").eq("brand", brand);
+  // The legacy-host scan runs in cms_rehost_backlog, which lifts the statement timeout for its own transaction.
   const { data, error } = await (values.heroes
-    ? query.not("metadata->legacy_media->>thumb_file", "is", null).neq("metadata->legacy_media->>thumb_file", "").is("metadata->media", null)
-    : query.or(patterns.join(","))).order("updated_at", { ascending: true }).limit(limit);
+    ? query.not("metadata->legacy_media->>thumb_file", "is", null).neq("metadata->legacy_media->>thumb_file", "").is("metadata->media", null).order("updated_at", { ascending: true }).limit(limit)
+    : reader.rpc("cms_rehost_backlog", { p_brand: brand, p_patterns: patterns, p_limit: limit }));
   if (error) throw new Error(`Could not read documents: ${error.message}`);
   const summary = { mode: writer ? "development-apply" : "dry-run", brand, heroes: values.heroes, documents: 0, images_found: 0, images_rehosted: 0, renditions: 0, bodies_rewritten: 0, failures: [] as string[] };
 

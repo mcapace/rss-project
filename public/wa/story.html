@@ -97,6 +97,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
     // A story the index has not been exported with yet (anything newer than the last export) comes straight from the CMS.
     var pre = null;
     function load(st) {
+      // Sponsored stories get their own template: only the advertiser's bottles named in the text, no recommended stories, AI picks, Q&A, related links or tags.
+      var SP = WA.isSponsored(st);
     (pre && pre.slug === st.slug ? function (f) { f(pre.body); } : function (f) { WA.article(st.slug, f); })(function (body) {
       var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p class=\"muted\">The full text of this story is still being brought over from the archive.</p>";
       document.title = st.title + " · Whisky Advocate";
@@ -120,12 +122,12 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var text = holder.textContent.toLowerCase(), picks = st.refs.map(function (sl) { return bySlug[sl.toLowerCase()]; }).filter(Boolean);
       data.forEach(function (r) { if (picks.length >= 6 || picks.indexOf(r) >= 0 || r.d < "2019") return; var key = r.n.split(",")[0].replace(/\s*\(.*$/, "").trim().toLowerCase(); if (key.length >= 10 && text.indexOf(key) >= 0) picks.push(r); });
       var mentioned = picks.length > 0, cat = catOf(st), brand = null;
-      if (!mentioned) {
+      if (!mentioned && !SP) {
         // The brand the story is about: a tag or a title word that names a producer or begins a bottle's name.
         var names = st.tags.concat(st.title.split(/[:,]| and /)).map(function (t) { return String(t).trim(); }).filter(function (t) { return t.length >= 4 && !/^(bourbon|rye|scotch|whisky|whiskey|tequila|new releases|news|features|insights|magazine|travel|cocktails?|recipes?|reviews|ratings)$/i.test(t); });
         names.some(function (t) { var k = t.toLowerCase(), hits = data.filter(function (r) { return r.pr && r.pr.toLowerCase() === k || r.n.toLowerCase().indexOf(k + " ") === 0; }); if (hits.length) { brand = t; picks = hits.sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 3); return true; } return false; });
       }
-      if (!mentioned && !brand && cat) picks = data.filter(function (r) { return r.c === cat && r.d >= "2025"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
+      if (!mentioned && !brand && cat && !SP) picks = data.filter(function (r) { return r.c === cat && r.d >= "2025"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3);
       var ps = Array.prototype.filter.call(holder.querySelectorAll("p"), function (p) { return p.textContent.length > 200; });
       if (mentioned) { [2, 6].forEach(function (at, k) { if (picks[k] && ps[at]) ps[at].insertAdjacentHTML("afterend", embed(picks[k])); }); }
       var heads = Array.prototype.filter.call(holder.querySelectorAll("h2, h3"), function (h) { if (h.textContent.trim()) return true; h.remove(); return false; }); heads.forEach(function (h, k) { h.id = "s" + (k + 1); });
@@ -158,6 +160,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
         document.getElementById("byline").innerHTML = '<span>' + (who ? "Sponsored by <strong>" + who + "</strong>" : "<strong>Sponsored content</strong>") + '</span><span>' + new Date(st.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + "</span>" + (st.min ? "<span>" + st.min + " minute read</span>" : "");
         document.getElementById("byline").insertAdjacentHTML("afterend", '<p class="sp-note" role="note">This is paid content, produced with ' + (who ? who : "an advertiser") + '. It is not part of Whisky Advocate&rsquo;s editorial coverage, and it does not affect our ratings.</p>');
         var card = prose.querySelector("a.author"); if (card) card.remove();
+        Array.prototype.forEach.call(prose.querySelectorAll(".signup, .suggest a[href^=\"stories.html#tag=\"]"), function (el) { var box = el.closest(".signup") || el.closest("div[style]"); if (box && prose.contains(box)) box.remove(); });
+        var open = document.querySelector('.margin a.pill[href="finder.html"]'); if (open) open.remove();
       }
       if (window.__storyListenLabel) window.__storyListenLabel("Listen" + (st.min ? " · " + st.min + " min" : "")); else document.getElementById("listen").textContent = "Listen" + (st.min ? " · " + st.min + " min" : "");
       // Table of contents from the story's own headings.
@@ -181,15 +185,18 @@ WA.ready(function (recent) { WA.archive(function (data) {
         var pool = [], seen = {}, byslug = {};
         function add(r, how) { if (!r || seen[r.slug] || pool.length >= 24) return; seen[r.slug] = true; byslug[r.slug] = r; pool.push({ r: r, how: how }); }
         picks.forEach(function (r) { add(r, mentioned ? "named in the text" : brand ? "same house" : "same style"); });
+        if (!SP) {
         if (brand) data.filter(function (r) { return r.pr && r.pr.toLowerCase() === brand.toLowerCase() || r.n.toLowerCase().indexOf(brand.toLowerCase() + " ") === 0; }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 6).forEach(function (r) { add(r, "same house"); });
         picks.forEach(function (r) { if (r.pr) data.filter(function (x) { return x.pr === r.pr && x !== r; }).sort(function (a, b) { return a.d < b.d ? 1 : -1; }).slice(0, 2).forEach(function (x) { add(x, "same house as a bottle named"); }); });
         if (cat) { data.filter(function (r) { return r.c === cat && r.d >= "2024"; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 6).forEach(function (r) { add(r, "same style, top rated"); }); data.filter(function (r) { return r.c === cat && r.p > 0 && r.p <= 70 && r.s >= 88 && r.d >= "2023"; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 4).forEach(function (r) { add(r, "same style, value"); }); }
+        }
         var rows = pool.map(function (x) { return x.r; });
-      if (WA.setContext) WA.setContext({ kind: "story", title: st.title, summary: ((st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ")).slice(0, 500), slugs: rows.slice(0, 8).map(function (x) { return x.slug; }) });
+      if (!SP && WA.setContext) WA.setContext({ kind: "story", title: st.title, summary: ((st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ")).slice(0, 500), slugs: rows.slice(0, 8).map(function (x) { return x.slug; }) });
       // Ask about this story: the question goes to the assistant with the story and its bottles, not to the archive search.
         (function () {
           var form = document.getElementById("askForm"), input = document.getElementById("askInput"), suggest = document.getElementById("suggest"), answer = document.getElementById("answer");
           if (!form || !input) return;
+          if (SP) { ["askBand", "askJump"].forEach(function (id) { var el = document.getElementById(id); if (el) el.remove(); }); return; }
           var jump = document.getElementById("askJump"); if (jump) jump.addEventListener("click", function () { var box = document.querySelector(".ask-inline"); if (box) { var y = box.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: "smooth" }); setTimeout(function () { input.focus(); }, 500); } });
           var turns = [], context = "The story \"" + st.title + "\" (" + (st.by ? "by " + st.by + ", " : "") + WA.when(st.d) + "): " + ((st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ")).slice(0, 900);
           function pickCard(r) { return '<a class="pick" href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="pr">' + fmt(r.p) + " · " + r.c + "</span></span></a>"; }
@@ -212,7 +219,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
           suggest.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; input.value = b.textContent; askStory(b.textContent); });
           var clear = answer.querySelector(".answer-clear"); if (clear) clear.addEventListener("click", function () { turns = []; }, true);
         })();
-      if (!pool.length) return;
+      if (!pool.length || SP) return;
         WA.withNotes(rows, function (notes) {
           var summary = (st.dek || "") + " " + holder.textContent.replace(/\s+/g, " ").slice(0, 1800);
           WA.recommend({ kind: "story", slug: st.slug, title: st.title, summary: summary, candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {
@@ -231,7 +238,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
         });
       })();
       prose.querySelectorAll(".embed[data-embed]").forEach(function (e) { WA.note(e.getAttribute("data-embed"), function (f) { e.querySelector(".nt").textContent = f.slice(0, 150).replace(/\s\S*$/, "") + "…"; }); });
-      document.getElementById("suggest").innerHTML = [cat ? "Best " + cat.split("/")[0].toLowerCase() + " under $80" : "Best whisky under $80 rated 90 or higher", "Something like the bottles in this story", "What should I drink tonight?"].map(function (q) { return '<button type="button">' + q + "</button>"; }).join("");
+      if (document.getElementById("suggest")) document.getElementById("suggest").innerHTML = [cat ? "Best " + cat.split("/")[0].toLowerCase() + " under $80" : "Best whisky under $80 rated 90 or higher", "Something like the bottles in this story", "What should I drink tonight?"].map(function (q) { return '<button type="button">' + q + "</button>"; }).join("");
+      if (SP) { var nx = document.getElementById("next"); if (nx) nx.closest("section").remove(); }
+      if (!SP) {
       // Read next: the stories closest to this one (shared tags, the same producers, the same words in the title), newest first among ties.
       var STOPW = /^(the|and|for|with|from|that|this|new|whisky|whiskies|whiskey|year|old|best|how|what|why|your|our|are|its|into|about|of|in|on|to|a|an|is)$/i;
       function words(t) { return (t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(function (w) { return w.length > 3 && !STOPW.test(w); }); }
@@ -270,6 +279,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
           while ((node = walker.nextNode())) { var at = node.data.toLowerCase().indexOf(n.toLowerCase()); if (at < 0) continue; var before = at === 0 ? " " : node.data[at - 1], after = node.data[at + n.length] || " "; if (/[a-z0-9]/i.test(before) || /[a-z0-9]/i.test(after)) continue; var a = document.createElement("a"); a.href = WA.producerHref(n); a.className = "mention producer"; a.textContent = node.data.substr(at, n.length); var rest = node.splitText(at); rest.data = rest.data.substr(n.length); node.parentNode.insertBefore(a, rest); done += 1; break; }
         });
       })();
+      }
       // Reading progress and the live table of contents.
       var links = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
       function onScroll() { var doc = document.documentElement, p = scrollY / (doc.scrollHeight - innerHeight); document.getElementById("progress").style.width = Math.min(100, Math.max(0, p * 100)) + "%"; var current = 0; hs.forEach(function (h, k) { if (h.getBoundingClientRect().top < 120) current = k + 1; }); links.forEach(function (a, k) { a.setAttribute("aria-current", String(k === current)); }); }

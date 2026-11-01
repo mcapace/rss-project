@@ -113,6 +113,14 @@
     new MutationObserver(function () { items = [].slice.call(document.querySelectorAll(".story.has-img img, .pick-card img, .place img, .story-hero img, .recipe-card img, .recipe .art img")); run(); }).observe(document.body, { childList: true, subtree: true });
   }
 
+  /* The pour runs in the mast: the whisky video as a faint layer under the glass, on every page. Reduced motion gets the still. */
+  function mastPour() {
+    var mast = document.querySelector(".mast"); if (!mast || mast.querySelector(".mast-pour")) return;
+    var wrap = document.createElement("div"); wrap.className = "mast-pour"; wrap.setAttribute("aria-hidden", "true");
+    if (MOTION) { var v = document.createElement("video"); v.muted = true; v.autoplay = true; v.loop = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "metadata"; v.poster = "img/sheet.jpg"; var src = document.createElement("source"); src.src = "pour-land.mp4"; src.type = "video/mp4"; v.appendChild(src); wrap.appendChild(v); var pl = v.play && v.play(); if (pl && pl.catch) pl.catch(function () {}); }
+    else { var im = document.createElement("img"); im.src = "img/sheet.jpg"; im.alt = ""; wrap.appendChild(im); }
+    mast.insertBefore(wrap, mast.firstChild);
+  }
   function mastState() {
     function set() { document.body.setAttribute("data-top", String(scrollY < 24)); }
     addEventListener("scroll", set, { passive: true }); set();
@@ -422,7 +430,7 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
   window.WA.hashIndex = function () { var h = (location.hash || "").replace("#", ""); var i = parseInt(h, 10); return isNaN(i) ? null : i; };
   window.WA.hashName = function () { var h = (location.hash || "").replace("#", ""); return h ? decodeURIComponent(h) : null; };
 
-  window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastState(); ambient(); parallax(); cb(d); }); };
+  window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastPour(); mastState(); ambient(); parallax(); cb(d); }); };
 })();
 
 /* Newsletter sign-up: every form on the site posts to the site's own route, which writes to Braze. */

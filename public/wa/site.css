@@ -1652,3 +1652,15 @@ a.author p::after { content: " →"; color: var(--copper); }
 .d1 { font-size: clamp(36px, 5vw, 72px); }
 .story-hero-head .d1, h1#title.d1 { font-size: clamp(30px, 3.5vw, 54px); line-height: 1.06; letter-spacing: -0.03em; max-width: 22ch; }
 .d2 { font-size: clamp(28px, 3.4vw, 46px); }
+
+/* The pour in the mast: a faint whisky layer under the glass; the ask bar is a slim strip under it; no opener. */
+.mast { overflow: hidden; }
+.mast > * { position: relative; z-index: 1; }
+.mast .mast-pour { position: absolute; inset: 0; z-index: 0; opacity: 0.42; pointer-events: none; }
+.mast .mast-pour video, .mast .mast-pour img { width: 100%; height: 100%; object-fit: cover; object-position: center 58%; display: block; filter: saturate(1.1); }
+.mast::after { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, rgba(247,243,236,0.35), rgba(247,243,236,0.55)); pointer-events: none; }
+.ask-band { padding: 16px var(--gutter) 4px; display: grid; justify-items: center; }
+.ask-band .ask { width: min(100%, 820px); }
+.ask-band .suggest { justify-content: center; margin-top: 8px; }
+@media (max-width: 700px) { .ask-band { padding-top: 12px; } .ask-band .suggest { display: none; } }
+@media (prefers-reduced-motion: reduce) { .mast .mast-pour video { display: none; } }

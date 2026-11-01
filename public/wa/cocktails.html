@@ -23,8 +23,7 @@
 <section class="band" style="padding-top: 28px">
   <div class="chan-head"><h1 class="d1">Cocktails</h1></div>
   <div class="search-line" style="margin-bottom: 18px"><svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg><input id="q" type="text" placeholder="A drink name, or an ingredient: Manhattan, Aperol, egg white" aria-label="Search recipes"></div>
-  <div id="facetSentinel" aria-hidden="true"></div>
-  <div class="facets ck-facets" id="facetBar">
+  <div class="facets filter-bar ck-facets" id="facetBar">
     <div><h3 class="mono" style="margin-bottom: 8px">The whisky</h3><div class="suggest" id="spirits"><button type="button" data-spirit="" aria-pressed="true">Any</button><button type="button" data-spirit="bourbon">Bourbon</button><button type="button" data-spirit="rye">Rye</button><button type="button" data-spirit="scotch">Scotch</button><button type="button" data-spirit="irish">Irish</button><button type="button" data-spirit="japanese">Japanese</button><button type="button" data-spirit="other">Something else</button></div></div>
     <div><h3 class="mono" style="margin-bottom: 8px">In your cabinet <span style="text-transform:none; letter-spacing:0; color: var(--ink-3)">· tap what you have, we keep only the drinks you can make with it</span></h3><div class="cabinet" id="cabinet"></div></div>
   </div>
@@ -72,14 +71,8 @@ WA.ready(function () {
     }
     function render() { var rs = rows(), grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]'); if (ad && ad.parentNode === grid) grid.parentNode.insertBefore(ad, grid.nextSibling); document.getElementById("count").textContent = rs.length + " of " + all.length + " drinks" + (state.cab.length ? " you can make" : ""); grid.innerHTML = rs.slice(0, state.limit).map(card).join(""); seatAd(); if (window.WAAds) WAAds.seat(grid, 12, "cocktails"); document.getElementById("more").style.display = rs.length > state.limit ? "" : "none"; document.querySelectorAll("#spirits button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-spirit") === state.spirit)); }); document.querySelectorAll("#cabinet button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.cab.indexOf(b.getAttribute("data-cab")) >= 0)); }); document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); }); }
     addEventListener("resize", seatAd);
-    /* The filters stay with you: the bar sticks under the mast once you scroll past it, in a compact form (headings and unchosen cabinet chips hidden). */
-    (function () {
-      var bar = document.getElementById("facetBar"), sentinel = document.getElementById("facetSentinel"), mast = document.querySelector(".mast");
-      function mastH() { document.documentElement.style.setProperty("--mast-h", (mast ? mast.offsetHeight : 64) + "px"); }
-      mastH(); addEventListener("resize", mastH);
-      if (!("IntersectionObserver" in window)) return;
-      new IntersectionObserver(function (entries) { bar.classList.toggle("stuck", !entries[0].isIntersecting && entries[0].boundingClientRect.top < 0); }, { rootMargin: "-" + ((mast ? mast.offsetHeight : 64) + 1) + "px 0px 0px 0px", threshold: 0 }).observe(sentinel);
-    })();
+    /* The filters stay with you: a compact sticky bar once you scroll past them (WA.stickyFilters in site.js). */
+    WA.stickyFilters(document.getElementById("facetBar"));
     document.getElementById("spirits").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.spirit = b.getAttribute("data-spirit"); state.limit = 24; render(); });
     document.getElementById("cabinet").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var k = b.getAttribute("data-cab"), i = state.cab.indexOf(k); if (i >= 0) state.cab.splice(i, 1); else state.cab.push(k); state.limit = 24; render(); });
     document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); render(); });

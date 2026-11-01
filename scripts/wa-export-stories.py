@@ -6,6 +6,10 @@ import json, re, sys, os, html, datetime, urllib.request
 from collections import Counter, defaultdict
 REF = "itludqxofwurjwtbgkcl"; WEB = sys.argv[1] if len(sys.argv) > 1 else "/tmp/ga/web"
 def q(sql):
+    if os.environ.get("WA_EXPORT_VIA_CLI"):
+        import subprocess
+        out = subprocess.run(["supabase", "db", "query", "--linked", "--project-ref", REF, "-o", "json", sql], capture_output=True, text=True, check=True).stdout
+        return json.loads(out[out.index("{"):])["rows"]
     req = urllib.request.Request(f"https://api.supabase.com/v1/projects/{REF}/database/query", data=json.dumps({"query": sql}).encode(), headers={"Content-Type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=120) as r: return json.loads(r.read())
 def shard(slug):
@@ -21,7 +25,8 @@ else:
     rows = []; off = 0
     while True:
         page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'sponsored' as sponsored, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
-          metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner
+          metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner,
+          metadata->'lead_image' as lead, (select min(i.n - 1) from jsonb_array_elements(case when jsonb_typeof(metadata->'media') = 'array' then metadata->'media' else '[]'::jsonb end) with ordinality as i(m, n) where i.m->>'is_lead' = 'true') as lead_index
           from cms_documents where brand='wa' and kind='article' and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
         rows += page; off += 120; print("fetched", len(rows), file=sys.stderr)
         if len(page) < 120: break
@@ -69,13 +74,16 @@ for r in rows:
     first = text(next(iter(re.findall(r"<p[^>]*>(.*?)</p>", body, re.S)), ""))
     dek = (r["seo"] or r["excerpt"] or o.get("dek") or first)[:320].strip()
     thumb = r["thumb"] or r["banner"] or ""
-    hero = o.get("hero") or (("https://whiskyadvocate.com" + thumb) if thumb.startswith("/") else thumb)
+    hero = f"/api/media/{r['id']}/{r['lead_index']}?w=1600" if r.get("lead_index") is not None else (o.get("hero") or (("https://whiskyadvocate.com" + thumb) if thumb.startswith("/") else thumb))
+    lead = r.get("lead") or {}
     refs = sorted({m.group(1).rstrip("/") for m in re.finditer(r'href="https?://(?:www\.)?whiskyadvocate\.com/([^"?#]+)', body) if m.group(1).rstrip("/").lower() in rating_slugs})
     d = (r["d"] or "")[:10]
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d): d = o.get("d") or ""; missing_date += 1 if not d else 0
     ai = r.get("ai_tags") or []
     if ai: tags = list(dict.fromkeys(list(ai) + [t for t in tags if t not in ai]))[:14]
     entry = {"id": r["id"], "title": r["title"], "slug": slug, "by": r["byline"] or o.get("by") or "", "d": d, "sec": sec, "tags": tags or o.get("tags") or [], "hero": hero, "dek": dek, "min": str(max(1, round(words / 230))) if words else o.get("min"), "refs": refs or o.get("refs") or []}
+    if (lead.get("caption") or "").strip(): entry["cap"] = lead["caption"].strip()
+    if (lead.get("credit") or "").strip(): entry["credit"] = lead["credit"].strip()
     q = " ".join(filter(None, [r.get("ai_summary") or "", " ".join(r.get("ai_search") or [])])).strip()
     if q: entry["q"] = q
     extra = LEGACY.get(slug)

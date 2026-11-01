@@ -752,3 +752,52 @@ document.body.appendChild(waAds);
     iframe(box, src);
   };
 })();
+
+/* Sponsored content (2026-11-01). Paid stories carry "sp" in the story index (the export reads the editor's flag in the
+   CMS, else the legacy "Sponsored Content" byline or tag), and sponsored.json lists every one, archive included.
+   WA.isSponsored(story) answers for one story; the labeler puts a "Sponsored" chip on every link to a paid story
+   anywhere on the page (feed rows, cards, picks, the rotator, search, recommendations, video cards), including links
+   rendered later, so no feed can show one unlabeled. Inline links inside story text are left alone. */
+(function () {
+  window.WA = window.WA || {};
+  var paid = {}, ready = false, queued = false;
+  function key(slug) { try { return decodeURIComponent(String(slug || "")).toLowerCase(); } catch (e) { return String(slug || "").toLowerCase(); } }
+  WA.markSponsored = function (slug, by) { if (!slug) return; var k = key(slug); if (!(k in paid) || by) { paid[k] = by || paid[k] || ""; queue(true); } };
+  WA.sponsorOf = function (slug) { return paid[key(slug)] || ""; };
+  WA.isSponsored = function (st) {
+    if (!st) return false;
+    if (st.sp) return true;
+    if (key(st.slug) in paid) return true;
+    return /sponsor/i.test(st.by || "") || (st.tags || []).some(function (t) { return /^\s*sponsored( content)?\s*$/i.test(t); });
+  };
+  WA.sponsorChip = function () { return '<span class="sp-chip">Sponsored</span>'; };
+  var SKIP = ".prose p, .prose li, .prose blockquote, .prose h2, .prose h3, .crumbs, nav, footer, #waMenu, .toc";
+  function place(a) {
+    var host = a.closest(".video-card") || a;
+    if (host.querySelector(".sp-chip")) return;
+    var t = host.querySelector(".tag, .ct, .mono");
+    if (t && /^\s*sponsored/i.test(t.textContent)) return;
+    var at = t || host.querySelector("h3, .nm, strong, .ct-only") || a;
+    at.insertAdjacentHTML("afterbegin", WA.sponsorChip());
+    host.classList.add("is-sponsored");
+  }
+  function scan(all) {
+    queued = false;
+    var links = document.querySelectorAll(all ? 'a[href*="story.html#"]' : 'a[href*="story.html#"]:not([data-spc])');
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i]; a.setAttribute("data-spc", "");
+      if (a.matches(SKIP) || a.closest(SKIP)) continue;
+      var h = a.getAttribute("href"), slug = h.slice(h.indexOf("#") + 1);
+      if (key(slug) in paid) place(a);
+    }
+  }
+  function queue(all) { if (!ready) return; if (all) scan(true); else if (!queued) { queued = true; requestAnimationFrame(function () { scan(false); }); } }
+  function start() {
+    ready = true;
+    if (WA.stories) WA.stories(function (list) { (list || []).forEach(function (st) { if (st.sp) paid[key(st.slug)] = st.spBy || paid[key(st.slug)] || ""; }); scan(true); });
+    fetch("sponsored.json").then(function (r) { return r.ok ? r.json() : []; }).then(function (list) { (list || []).forEach(function (x) { paid[key(x.slug)] = x.by || paid[key(x.slug)] || ""; }); scan(true); }).catch(function () {});
+    new MutationObserver(function () { queue(false); }).observe(document.body, { childList: true, subtree: true });
+    scan(true);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();

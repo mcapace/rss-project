@@ -27,16 +27,20 @@
   <div class="stat-row" id="stats" style="margin-top: 28px"></div>
 </section>
 
-<section class="band">
-  <div class="band-head"><div><span class="mono">Score history</span><h2 class="d2" style="margin-top:10px">How the house has rated, bottle by bottle.</h2></div></div>
-  <div class="score-history"><canvas id="timeline" aria-label="Scores over time"></canvas></div>
-</section>
 
-<section class="band">
+<section class="band producer-portfolio">
   <div id="housePicks" hidden style="margin-bottom: 34px"><div class="band-head"><div><span class="mono">Where to start</span><h2 class="d2" style="margin-top:10px">The bottles to know the house by.</h2><p class="rec-line"></p></div></div><div class="rail"></div></div>
   <div class="band-head"><div><span class="mono">Portfolio</span><h2 class="d2" style="margin-top:10px">Every bottle we have rated.</h2></div><a class="pill" href="industry.html">Export as sell sheet</a></div>
+  <div class="portfolio-controls"><label>Sort reviews <select id="portfolioSort"><option value="score">Highest score</option><option value="new">Newest review</option><option value="price">Lowest price</option></select></label><label>Budget <select id="portfolioBudget"><option value="0">Any price</option><option value="60">Up to $60</option><option value="100">Up to $100</option><option value="200">Up to $200</option></select></label><p id="portfolioCount" role="status"></p></div>
   <div class="rail" id="bottles"></div>
 </section>
+
+<section class="band producer-history">
+<details id="historyDetails"><summary class="pill">Explore score history</summary>
+  <div class="band-head"><div><span class="mono">Score history</span><h2 class="d2" style="margin-top:10px">How the house has rated, bottle by bottle.</h2></div></div>
+  <div class="score-history"><canvas id="timeline" aria-label="Scores over time"></canvas></div>
+<div id="historyTable"></div>
+</details></section>
 
 <div class="ad ad-leader" data-slot="wa_producer_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <section class="band" id="storiesBand">
@@ -52,6 +56,12 @@
 <section class="band">
   <div class="band-head"><div><span class="mono">Other houses</span><h2 class="d2" style="margin-top:10px">Producers with the most ratings in the archive.</h2></div></div>
   <div class="dense" id="others"></div>
+</section>
+
+<section class="band buying-guide-band" id="buyingGuides" aria-labelledby="buyingGuidesTitle">
+  <div class="band-head"><div><span class="mono">The buying guide</span><h2 class="d2" id="buyingGuidesTitle">Find your next good bottle.</h2><p class="muted">Independent reviews. Useful advice. A place to start.</p></div><a class="pill" href="guides.html">Explore all guides</a></div>
+  <div class="buying-paths"><a href="finder.html#value"><span class="mono">Spend well</span><strong>Best value</strong><span>Highly rated for the price <i aria-hidden="true">↗</i></span></a><a href="finder.html#first"><span class="mono">Start here</span><strong>Your first bottle</strong><span>Approachable picks under $60 <i aria-hidden="true">↗</i></span></a><a href="finder.html#gift"><span class="mono">Give something good</span><strong>A gift under $100</strong><span>Rated 92 points or higher <i aria-hidden="true">↗</i></span></a><a href="finder.html#cocktail"><span class="mono">Make a drink</span><strong>Rye for cocktails</strong><span>Explore bottles for mixing <i aria-hidden="true">↗</i></span></a></div>
+  <div class="guide-stories editorial-grid" hidden></div>
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
@@ -92,8 +102,17 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("lede").textContent = (WA.COUNTRY[mainCat] || "") + (WA.COUNTRY[mainCat] ? ". " : "") + rows.length + (rows.length === 1 ? " rating" : " ratings") + (rows[0].d ? " since " + rows[0].d.slice(0, 4) : "") + ", mostly " + mainCat.toLowerCase() + ". The panel's highest mark is " + best.s + " for " + best.n + ".";
     var prices = rows.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; });
     document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], [WA.fmt(prices[0]) + (prices.length > 1 ? " to " + WA.fmt(prices[prices.length - 1]) : ""), "price range"], [Object.keys(cats).length, Object.keys(cats).length === 1 ? "category" : "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
-    var shownRows = rows.slice().sort(function (a, b) { return b.s - a.s; }); document.getElementById("bottles").innerHTML = shownRows.slice(0, 24).map(function (r) { return WA.bottleCard(r); }).join("") + (shownRows.length > 24 ? '<div class="more" style="grid-column: 1 / -1"><button type="button" class="pill" id="moreBottles">All ' + shownRows.length + " bottles</button></div>" : ""); WA.fillNotes(document.getElementById("bottles")); var mb = document.getElementById("moreBottles"); if (mb) mb.addEventListener("click", function () { document.getElementById("bottles").innerHTML = shownRows.map(function (r) { return WA.bottleCard(r); }).join(""); WA.fillNotes(document.getElementById("bottles")); });
-    drawTimeline(rows);
+    var shownRows = rows.slice().sort(function (a,b) { return b.s-a.s; }), portfolioLimit = 12;
+    function portfolio() {
+      var budget=Number(document.getElementById('portfolioBudget').value), sort=document.getElementById('portfolioSort').value;
+      var filtered=rows.filter(function(r){return !budget||(r.p>0&&r.p<=budget);}).sort(function(a,b){return sort==='new'?(b.d||'').localeCompare(a.d||''):sort==='price'?(a.p||1e9)-(b.p||1e9):b.s-a.s;});
+      document.getElementById('portfolioCount').textContent=filtered.length+' reviews';
+      document.getElementById('bottles').innerHTML=filtered.slice(0,portfolioLimit).map(WA.bottleCard).join('')+(filtered.length>portfolioLimit?'<div class="more"><button class="pill" id="moreBottles">Show more reviews</button></div>':'')+(!filtered.length?'<p>No reviews within that budget. Try Any price.</p>':'');
+      WA.fillNotes(document.getElementById('bottles')); var more=document.getElementById('moreBottles'); if(more)more.onclick=function(){portfolioLimit+=12;portfolio();};
+    }
+    ['portfolioSort','portfolioBudget'].forEach(function(id){document.getElementById(id).onchange=function(){portfolioLimit=12;portfolio();};});portfolio();
+    var details=document.getElementById('historyDetails');details.ontoggle=function(){if(details.open)drawTimeline(rows);};
+    document.getElementById('historyTable').innerHTML='<table class="history-table"><caption>Published scores by review date</caption><thead><tr><th scope="col">Bottle</th><th scope="col">Score</th><th scope="col">Date</th></tr></thead><tbody>'+rows.slice().sort(function(a,b){return (b.d||'').localeCompare(a.d||'');}).map(function(r){return '<tr><th scope="row"><a href="'+WA.bottleHref(r)+'">'+WAReader.escape(r.n)+'</a></th><td>'+r.s+'</td><td>'+WAReader.escape(r.d||'Not recorded')+'</td></tr>';}).join('')+'</tbody></table>';
     (function () {
       var host = document.getElementById("housePicks"); if (!host || !WA.recommend) return; host.hidden = true;
       var pool = [], seen = {}, byslug = {};
@@ -145,5 +164,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
   addEventListener("hashchange", show); addEventListener("resize", show); show();
 }); });
 </script>
+<script src="editorial.js"></script>
 </body>
 </html>

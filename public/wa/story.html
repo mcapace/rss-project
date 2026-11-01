@@ -70,7 +70,13 @@
 
 <section class="band">
   <div class="band-head"><div><span class="mono">Read next</span><h2 class="d2" style="margin-top:10px" id="nextTitle">More from this section.</h2></div></div>
-  <div class="dense" id="next"></div>
+  <div class="editorial-grid related-stories" id="next"></div>
+</section>
+
+<section class="band buying-guide-band" id="buyingGuides" aria-labelledby="buyingGuidesTitle">
+  <div class="band-head"><div><span class="mono">The buying guide</span><h2 class="d2" id="buyingGuidesTitle">Find your next good bottle.</h2><p class="muted">Independent reviews. Useful advice. A place to start.</p></div><a class="pill" href="guides.html">Explore all guides</a></div>
+  <div class="buying-paths"><a href="finder.html#value"><span class="mono">Spend well</span><strong>Best value</strong><span>Highly rated for the price <i aria-hidden="true">↗</i></span></a><a href="finder.html#first"><span class="mono">Start here</span><strong>Your first bottle</strong><span>Approachable picks under $60 <i aria-hidden="true">↗</i></span></a><a href="finder.html#gift"><span class="mono">Give something good</span><strong>A gift under $100</strong><span>Rated 92 points or higher <i aria-hidden="true">↗</i></span></a><a href="finder.html#cocktail"><span class="mono">Make a drink</span><strong>Rye for cocktails</strong><span>Explore bottles for mixing <i aria-hidden="true">↗</i></span></a></div>
+  <div class="guide-stories editorial-grid" hidden></div>
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
@@ -102,7 +108,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (WA.cleanUrl) WA.cleanUrl(st.slug);
       WA.bindSave(document.getElementById("saveStory"), {kind:"story",slug:st.slug,title:st.title});
       // Sponsored stories get their own template: only the advertiser's bottles named in the text, no recommended stories, AI picks, Q&A, related links or tags.
-      var SP = WA.isSponsored(st);
+      var SP = WA.isSponsored(st); if (SP) { var buying = document.getElementById("buyingGuides"); if (buying) buying.remove(); }
     (pre && pre.slug === st.slug ? function (f) { f(pre.body); } : function (f) { WA.article(st.slug, f); })(function (body) {
       var bodies = {}; bodies[st.slug] = body || "<p>" + (st.dek || "") + "</p><p class=\"muted\">The full text of this story is still being brought over from the archive.</p>";
       if (!window.WA_PATHS) document.title = st.title + " · Whisky Advocate";
@@ -158,7 +164,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       WA.shop(function () { prose.querySelectorAll(".embed[data-slug]").forEach(function (em) { var p = WA.productFor(em.getAttribute("data-slug")); if (p) em.querySelector(".pr").insertAdjacentHTML("afterend", WA.buyChip(p)); }); });
       // Author, tags, sign-up.
       var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;
-      prose.insertAdjacentHTML("beforeend", '<a class="author" style="margin-top: 2.4em" href="stories.html#by=' + encodeURIComponent(st.by) + '"><span class="avatar" aria-hidden="true">' + WA.initials(st.by) + '</span><div><h3>' + st.by + '</h3><p>' + (more ? more + " more stories in the archive. Read them all." : "Whisky Advocate contributor.") + '</p></div></a>' + (st.tags.length ? '<div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px">' + st.tags.map(function (t) { return '<a href="stories.html#tag=' + encodeURIComponent(t) + '">' + t + "</a>"; }).join("") + "</div></div>" : "") + '<div class="signup" style="margin-top: 2em"><div><h3>Get stories like this on Fridays</h3><p>Whisky Weekend: the week\'s releases and reads from the editors.</p></div><a class="pill solid" href="newsletter.html#weekend">Sign up</a></div>');
+      prose.insertAdjacentHTML("beforeend", '<a class="author" style="margin-top: 2.4em" href="stories.html#by=' + encodeURIComponent(st.by) + '"><span class="avatar" aria-hidden="true">' + WA.initials(st.by) + '</span><div><h3>' + st.by + '</h3><p>' + (more ? more + " more stories in the archive. Read them all." : "Whisky Advocate contributor.") + '</p></div></a>' + (st.tags.length ? '<div style="margin-top: 1.8em"><span class="mono">Tagged</span><div class="suggest" style="margin-top: 8px">' + st.tags.map(function (t) { return '<a href="stories.html#tag=' + encodeURIComponent(t) + '">' + t + "</a>"; }).join("") + "</div></div>" : ""));
       document.getElementById("byline").innerHTML = '<span class="avatar sm" aria-hidden="true">' + WA.initials(st.by) + '</span><span>By <a href="stories.html#by=' + encodeURIComponent(st.by) + '"><strong>' + st.by + '</strong></a></span><span>' + new Date(st.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + "</span>" + (st.min ? "<span>" + st.min + " minute read</span>" : "") + (mentioned ? "<span>" + picks.length + " bottle" + (picks.length > 1 ? "s" : "") + " mentioned</span>" : "");
       // Paid content: say so in the kicker, the byline and a disclosure under it; no author card for "Sponsored Content".
       if (WA.isSponsored(st)) {
@@ -265,7 +271,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var next = scored.slice(0, 4).map(function (o) { return o.x; });
       if (next.length < 4) all.filter(function (x) { return x.sec === st.sec && x !== st && next.indexOf(x) < 0; }).slice(0, 4 - next.length).forEach(function (x) { next.push(x); });
       document.getElementById("nextTitle").textContent = scored.length && scored[0].sc >= 3 ? "If you liked this one." : "More from " + (st.sec === "life" ? "Whisky Life" : sec + (sec.slice(-1) === "s" ? "" : "s")) + ".";
-      document.getElementById("next").innerHTML = next.map(WA.storyRow).join("");
+      document.getElementById("next").innerHTML = next.map(function (x) { return WA.editorialCard(x, x.sec === st.sec ? "More in " + (WA.SECTION[x.sec] || "this section") : "Related reading"); }).join("");
       // Stories like this one by meaning, once the archive is embedded: the semantic list replaces the tag match.
       var byId = {}; all.forEach(function (x) { byId[x.id] = x; byId[x.slug.toLowerCase()] = x; });
       fetch("/api/wa/similar?slug=" + encodeURIComponent(st.slug), { headers: { Accept: "application/json" } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -273,7 +279,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
         var sim = j.stories.map(function (m) { return byId[m.id] || byId[(m.slug || "").toLowerCase()]; }).filter(function (x) { return x && x !== st; }).slice(0, 4);
         if (sim.length < 3) return;
         document.getElementById("nextTitle").textContent = "If you liked this one.";
-        document.getElementById("next").innerHTML = sim.map(WA.storyRow).join("");
+        document.getElementById("next").innerHTML = sim.map(function (x) { return WA.editorialCard(x, "Related reading"); }).join("");
       }).catch(function () {});
       // One related story inside the body, after the fourth long paragraph, when it is a close match.
       if (scored.length && scored[0].sc >= 3) { var rel = scored[0].x, ps2 = Array.prototype.filter.call(prose.querySelectorAll("p"), function (p) { return p.textContent.length > 200 && !p.closest(".embed"); }); var anchorP = ps2[Math.min(3, ps2.length - 1)]; if (anchorP && !rel.hero) rel.hero = ""; if (anchorP) anchorP.insertAdjacentHTML("afterend", '<a class="related-inline" href="' + WA.storyHref(rel) + '">' + (rel.hero ? '<img src="' + rel.hero + '" alt="" loading="lazy">' : "") + '<span><span class="mono">Related · ' + WA.SECTION[rel.sec] + "</span><strong>" + rel.title + "</strong>" + (rel.dek ? "<em>" + rel.dek.slice(0, 120).replace(/\s\S*$/, "") + (rel.dek.length > 120 ? "…" : "") + "</em>" : "") + "</span></a>"); }
@@ -336,5 +342,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
   document.getElementById("share").addEventListener("click", function () { var b = this; try { navigator.clipboard.writeText(location.href).then(function () { b.textContent = "Link copied"; }, function () { b.textContent = "Copy the address bar"; }); } catch (e) { b.textContent = "Copy the address bar"; } });
 }); });
 </script>
+<script src="editorial.js"></script>
 </body>
 </html>

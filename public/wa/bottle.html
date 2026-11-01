@@ -23,15 +23,15 @@
   <div class="crumbs" style="margin-bottom: 26px"><a href="finder.html">Ratings</a><span>›</span><a id="crumbCat" href="finder.html">Category</a><span>›</span><a id="crumbProd" href="producer.html">Producer</a><span>›</span><span id="crumbName">Bottle</span></div>
   <div class="bottle-hero">
     <div class="hero-art"><div class="stage-light" aria-hidden="true"></div><img id="art" src="img/bottle-other.jpg" alt=""></div>
-    <div>
+    <div class="bottle-summary">
       <span class="mono" id="kicker">Rating</span>
-      <h1 class="d2" id="name" style="margin-top:10px; max-width: 20ch"></h1>
+      <div class="bottle-heading"><h1 class="d2" id="name" style="margin-top:10px; max-width: 20ch"></h1></div>
       <p class="byline" style="margin-top: 12px"><span id="tasterLine"></span><span id="when"></span><span id="issue"></span></p>
       <div class="score-row verdict-strip"><div class="score-block"><span class="big score-type" id="score"></span><span class="of">points<br>of 100</span></div><div class="score-meta"><span class="band-label" id="band"></span><div class="scale" aria-hidden="true"><i id="scaleDot"></i></div><div class="scale-labels" aria-hidden="true"><span>80 Good</span><span>85 Very good</span><span>90 Outstanding</span><span>95 Classic</span></div><p class="score-rank" id="ctxTitle"></p></div></div>
-      <figure class="pull"><p class="note" id="note"></p><figcaption id="noteBy"></figcaption></figure>
       <div class="actions" style="margin-top: 22px"><a class="pill amber" id="storeBtn" hidden target="_blank" rel="noopener">Buy at the store</a><button type="button" class="pill" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button></div>
       <div class="buy" id="buy" style="margin-top: 18px; display: none"></div>
       <dl class="facts" id="facts" style="margin-top: 22px"></dl>
+      <figure class="pull"><p class="note" id="note"></p><figcaption id="noteBy"></figcaption></figure>
       <p class="trade-link"><a href="industry.html">For the trade: print a sell sheet for this bottle</a></p>
     </div>
   </div>
@@ -111,6 +111,12 @@
       <div class="answer" id="answer" aria-live="polite"><div class="answer-head" id="answerFacets"></div><div class="answer-body"><div class="answer-text" id="answerText"></div><div class="answer-picks" id="answerPicks"></div></div></div>
     </div>
   </div>
+</section>
+
+<section class="band buying-guide-band" id="buyingGuides" aria-labelledby="buyingGuidesTitle">
+  <div class="band-head"><div><span class="mono">The buying guide</span><h2 class="d2" id="buyingGuidesTitle">Find your next good bottle.</h2><p class="muted">Independent reviews. Useful advice. A place to start.</p></div><a class="pill" href="guides.html">Explore all guides</a></div>
+  <div class="buying-paths"><a href="finder.html#value"><span class="mono">Spend well</span><strong>Best value</strong><span>Highly rated for the price <i aria-hidden="true">↗</i></span></a><a href="finder.html#first"><span class="mono">Start here</span><strong>Your first bottle</strong><span>Approachable picks under $60 <i aria-hidden="true">↗</i></span></a><a href="finder.html#gift"><span class="mono">Give something good</span><strong>A gift under $100</strong><span>Rated 92 points or higher <i aria-hidden="true">↗</i></span></a><a href="finder.html#cocktail"><span class="mono">Make a drink</span><strong>Rye for cocktails</strong><span>Explore bottles for mixing <i aria-hidden="true">↗</i></span></a></div>
+  <div class="guide-stories editorial-grid" hidden></div>
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
@@ -243,7 +249,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("name").textContent = r.n;
     document.getElementById("tasterLine").innerHTML = r.by ? "Rated by <strong>" + r.by + "</strong>" : "Rated by <strong>the Whisky Advocate tasting panel</strong>";
     document.getElementById("when").textContent = r.d ? new Date(r.d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
-    document.getElementById("issue").innerHTML = '<a href="' + WA.producerHref(r.pr) + '" style="color: var(--amber)">' + r.pr + "</a>";
+    document.getElementById("issue").innerHTML = '<a href="' + WA.producerHref(r.pr) + '" class="producer-link">' + r.pr + "</a>";
     document.getElementById("score").textContent = r.s;
     document.getElementById("band").textContent = B[0] + " · " + r.s + " to " + (r.s >= 95 ? 100 : r.s >= 90 ? 94 : r.s >= 85 ? 89 : 84);
     document.getElementById("note").textContent = (r.f || r.t || "").trim() || "The note is on its way.";
@@ -356,5 +362,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
   if (!/^t20-/.test(WA.hashSlug() || "")) show();
 }); });
 </script>
+<script src="editorial.js"></script>
 </body>
 </html>

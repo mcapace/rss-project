@@ -20,13 +20,14 @@
   <div class="tools"><a class="pill fest-pill" href="#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="ask-band" aria-label="Ask Whisky Advocate">
+<h1 class="visually-hidden">Whisky Advocate: ratings, stories and discoveries</h1>
+<section class="ask-band" aria-label="Find a whisky">
       <div class="ask">
         <form id="askForm" autocomplete="off">
           <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z"/></svg>
-          <input id="askInput" type="text" placeholder="A sherried Speyside under $90 for a winter night" aria-label="Ask anything about whisky">
+          <input id="askInput" type="text" placeholder="A sherried Speyside under $90 for a winter night" aria-label="Describe the whisky you want">
           <button type="button" class="mic" aria-label="Ask by voice" title="Ask by voice"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-          <button type="submit" class="go">Ask</button>
+          <button type="submit" class="go">Find</button>
         </form>
         <div class="suggest" id="suggest">
           <button type="button">Best bourbon under $60 rated 90 or higher</button>
@@ -148,6 +149,12 @@
     <div class="panel"><h3>Release calendar</h3><p class="muted">What is coming, what just dropped, and what we rated this week, by category and market.</p></div>
     <div class="panel"><h3>Sell-sheet exports</h3><p class="muted">A rating becomes a shelf talker or a one-page sell sheet in the house typography, ready for print.</p></div>
   </div>
+</section>
+
+<section class="band buying-guide-band" id="buyingGuides" aria-labelledby="buyingGuidesTitle">
+  <div class="band-head"><div><span class="mono">The buying guide</span><h2 class="d2" id="buyingGuidesTitle">Find your next good bottle.</h2><p class="muted">Independent reviews. Useful advice. A place to start.</p></div><a class="pill" href="guides.html">Explore all guides</a></div>
+  <div class="buying-paths"><a href="finder.html#value"><span class="mono">Spend well</span><strong>Best value</strong><span>Highly rated for the price <i aria-hidden="true">↗</i></span></a><a href="finder.html#first"><span class="mono">Start here</span><strong>Your first bottle</strong><span>Approachable picks under $60 <i aria-hidden="true">↗</i></span></a><a href="finder.html#gift"><span class="mono">Give something good</span><strong>A gift under $100</strong><span>Rated 92 points or higher <i aria-hidden="true">↗</i></span></a><a href="finder.html#cocktail"><span class="mono">Make a drink</span><strong>Rye for cocktails</strong><span>Explore bottles for mixing <i aria-hidden="true">↗</i></span></a></div>
+  <div class="guide-stories editorial-grid" hidden></div>
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
@@ -290,7 +297,7 @@ WA.ready(function (data) {
       five = list.filter(Boolean).slice(0, 5); at = 0;
       if (!five.length) { front.innerHTML = ""; return; }
       front.setAttribute("role", "region"); front.setAttribute("aria-roledescription", "carousel"); front.setAttribute("aria-label", "Top stories"); front.classList.add("rotator"); front.style.setProperty("--rot-ms", STEP + "ms");
-      var rest = news.filter(function (st) { return !five.some(function (f) { return f === st || f.id === st.id; }); }).slice(0, 8);
+      var rest = news.filter(function (st) { return !five.some(function (f) { return f === st || f.id === st.id; }); }).slice(0, 4);
       front.innerHTML = '<div class="rot-stage">' + five.map(slide).join("") + '<div class="rot-dots" role="group" aria-label="Choose a top story">' + five.map(dot).join("") + '<button type="button" class="rot-pause"></button></div></div><div class="dense front-list">' + rest.map(WA.storyRow).join("") + "</div>";
       show(0); paintPause(); arm();
     }
@@ -315,5 +322,6 @@ WA.ready(function (data) {
   });
 });
 </script>
+<script src="editorial.js"></script>
 </body>
 </html>

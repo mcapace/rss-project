@@ -20,17 +20,24 @@
 </header>
 
 <section class="band" style="padding-top: 28px">
-  <div class="chan-head"><h1 class="d1">Tools</h1></div>
-  <div class="start" style="grid-template-columns: repeat(3, minmax(0, 1fr))">
-    <a href="finder.html"><span class="n">Ratings</span><strong>Ratings</strong><span>Every published rating since 2013, by taste, price, score and year. Describe what you want or tap the maps.</span></a>
-    <a href="index.html#scan"><span class="n">Camera</span><strong>Shelf scan</strong><span>Photograph a shelf. The labels are read, matched to our ratings, and the scores land over the bottles.</span></a>
-    <a href="cocktails.html"><span class="n">Recipes</span><strong>Cocktail cabinet</strong><span>Tap what you have at home and keep only the drinks you can make. Every recipe scales for one, two or four.</span></a>
-    <a href="finder.html#value"><span class="n">Ratings</span><strong>Best value</strong><span>The bottles that beat the price curve in their category.</span></a>
-    <a href="finder.html"><span class="n">Ratings</span><strong>Compare</strong><span>Pin up to three bottles in the Finder and read them side by side.</span></a>
-    <a href="producers.html"><span class="n">Reference</span><strong>Producers</strong><span>Every house we have rated, with its portfolio, score history and Top 20 entries.</span></a>
-    <a href="guides.html#glossaryBand"><span class="n">Reference</span><strong>Glossary</strong><span>157 terms, defined and cross-linked.</span></a>
-    <a href="industry.html"><span class="n">Trade</span><strong>Sell sheets</strong><span>A rating becomes a shelf talker in the house typography.</span></a>
-    <a href="index.html"><span class="n">Search</span><strong>Ask</strong><span>One question for the whole site, answered from the ratings and the stories.</span></a>
+  <div class="chan-head"><h1 class="d1">Tools</h1><p class="lede">Find your next bottle, make a drink, or learn something new.</p></div>
+  <div class="tool-groups">
+    <section><h2>Find a bottle</h2><div class="start tool-grid">
+      <a href="finder.html"><span class="n">8,000+ reviews</span><strong>Search ratings</strong><span>Choose a style, budget and score, or describe what you enjoy.</span></a>
+      <a href="finder.html#value"><span class="n">Value</span><strong>Find a great buy</strong><span>Explore high-scoring bottles within your budget.</span></a>
+      <a href="finder.html"><span class="n">Compare</span><strong>Choose between bottles</strong><span>Select up to three in Ratings and compare their details.</span></a>
+      <a href="index.html#scan"><span class="n">Camera</span><strong>Scan a shelf</strong><span>Match labels in your photo to published reviews. Check each match.</span></a>
+    </div></section>
+    <section><h2>Use your collection</h2><div class="start tool-grid">
+      <a href="shelf.html"><span class="n">My Shelf</span><strong>Save what you love</strong><span>Keep bottles, stories and recipes together, with your own notes.</span></a>
+      <a href="cocktails.html"><span class="n">Cocktail cabinet</span><strong>Make a drink</strong><span>Find recipes for your ingredients or see what is missing.</span></a>
+    </div></section>
+    <section><h2>Read and learn</h2><div class="start tool-grid">
+      <a href="guides.html#glossaryBand"><span class="n">Reference</span><strong>Understand the terms</strong><span>A glossary of whisky, tasting and production.</span></a>
+      <a href="producers.html"><span class="n">Producers</span><strong>Explore a house</strong><span>Browse portfolios, reviews and score histories.</span></a>
+      <a href="index.html" id="askTool"><span class="n">Ask Whisky Advocate</span><strong>Talk through your choice</strong><span>Ask a question with the reviews and stories as context.</span></a>
+    </div></section>
+    <section><h2>For the trade</h2><div class="start tool-grid"><a href="industry.html"><span class="n">Industry</span><strong>Reviews for your business</strong><span>Browse the trade view and prepare sell sheets.</span></a></div></section>
   </div>
 </section>
 
@@ -49,6 +56,6 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
-<script>WA.ready(function () {});</script>
+<script>WA.ready(function () {}); document.getElementById("askTool").onclick=function(e){e.preventDefault();WA.askChat();};</script>
 </body>
 </html>

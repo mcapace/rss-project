@@ -23,6 +23,7 @@
 <section class="band" style="padding-top: 28px">
   <div class="chan-head"><h1 class="d1">Newsletters</h1><p class="muted" style="margin-top:8px;max-width:56ch">Four letters from the editors. Pick the ones you want, and they arrive from Whisky Advocate, never from anyone else.</p></div>
   <form class="nl" id="nlForm" novalidate>
+    <label class="newsletter-email"><span>Email address</span><input name="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-describedby="nlStatus"></label>
     <div class="nl-lists" role="group" aria-label="Newsletters">
       <label class="nl-card" data-list="notes"><input type="checkbox" name="lists" value="notes" checked><span class="nl-check"></span><span class="nl-art nl-art-notes"></span><span class="nl-body"><span class="mono">Twice a month</span><strong>WhiskyNotes</strong><span>The latest releases, the newest ratings and what the editors are drinking.</span><a href="https://assets.winespectator.com/newsletters/images/WhiskyNotesSample.pdf" target="_blank" rel="noopener">See a sample</a></span></label>
       <label class="nl-card" data-list="weekend"><input type="checkbox" name="lists" value="weekend" checked><span class="nl-check"></span><span class="nl-art nl-art-weekend"></span><span class="nl-body"><span class="mono">Fridays</span><strong>Whisky Weekend</strong><span>The editors' roundup of the week's new releases, in time for the weekend.</span></span></label>
@@ -30,12 +31,11 @@
       <label class="nl-card" data-list="offers"><input type="checkbox" name="lists" value="offers"><span class="nl-check"></span><span class="nl-art nl-art-offers"></span><span class="nl-body"><span class="mono">As needed</span><strong>Offers &amp; Promotions</strong><span>WhiskyFest announcements, new products and offers from selected partners.</span></span></label>
     </div>
     <div class="nl-fields glass">
-      <label class="wide"><span>Email</span><input name="email" type="email" required autocomplete="email" placeholder="you@example.com"></label>
-      <label><span>ZIP or postal code</span><input name="zip" inputmode="numeric" autocomplete="postal-code"></label>
-      <label><span>Industry, if any</span><select name="industry"><option value="">Just a whisky lover</option><option>Consumer</option><option>Importer</option><option>Distiller</option><option>Wine/Spirits Distributor</option><option>Independent Retailer (Wine/Spirits/Beer)</option><option>Chain Retailer (Wine/Spirits/Beer)</option><option>Restaurant</option><option>Bar</option><option>Hotel</option><option>Club (Private, Country)</option><option>Duty Free Operator</option><option>Media/PR</option><option>Finance</option><option>Winery</option><option>Brewer</option><option>Beer Distributor</option><option>Cigar Retailer</option><option>Cigar Distributor</option><option>Cigar Manufacturer</option><option>Other</option></select></label>
+      <label><span>ZIP or postal code (optional)</span><input name="zip" inputmode="numeric" autocomplete="postal-code"></label>
+      <label><span>Industry (optional)</span><select name="industry"><option value="">Just a whisky lover</option><option>Consumer</option><option>Importer</option><option>Distiller</option><option>Wine/Spirits Distributor</option><option>Independent Retailer (Wine/Spirits/Beer)</option><option>Chain Retailer (Wine/Spirits/Beer)</option><option>Restaurant</option><option>Bar</option><option>Hotel</option><option>Club (Private, Country)</option><option>Duty Free Operator</option><option>Media/PR</option><option>Finance</option><option>Winery</option><option>Brewer</option><option>Beer Distributor</option><option>Cigar Retailer</option><option>Cigar Distributor</option><option>Cigar Manufacturer</option><option>Other</option></select></label>
       <label class="wide nl-consent"><input type="checkbox" name="eu"><span>EU residents: tick this box to receive media from M. Shanken. You can unsubscribe at any time from the link in the footer of every email.</span></label>
       <p class="wide muted" style="font-size:12.5px;margin:0">By signing up you agree that M. Shanken Communications, Inc. may process your information under its <a href="privacy.html">privacy policy</a>.</p>
-      <div class="wide actions"><button type="submit" class="pill solid" id="nlGo">Sign up</button><span class="muted" id="nlStatus" style="font-size:13px"></span></div>
+      <div class="wide actions"><button type="submit" class="pill solid" id="nlGo">Sign up</button><span class="muted" id="nlStatus" role="status" aria-live="polite" style="font-size:13px"></span></div>
     </div>
   </form>
 </section>
@@ -51,9 +51,9 @@
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var lists = [].slice.call(form.querySelectorAll("input[name=lists]:checked")).map(function (c) { return c.value; });
-    if (!form.email.validity.valid) { status.textContent = "Add your email first."; form.email.focus(); return; }
+    if (!form.email.validity.valid) { status.textContent = "Enter a valid email address, such as you@example.com."; form.email.setAttribute("aria-invalid","true"); form.email.focus(); return; }
     if (!lists.length) { status.textContent = "Pick at least one letter."; return; }
-    go.disabled = true; status.textContent = "Signing you up…";
+    form.email.removeAttribute("aria-invalid"); go.disabled = true; status.textContent = "Signing you up…";
     WA.signup({ email: form.email.value, zip: form.zip.value, industry: form.industry.value, lists: lists, eu: form.eu.checked, source: "newsletter page" }, function (res) {
       go.disabled = false;
       if (res.ok) { status.textContent = "You are in: " + res.lists.join(", ") + ". The first one arrives with the next send."; go.textContent = "Signed up"; }
@@ -63,10 +63,7 @@
 })();
 </script>
 
-<section class="nl-band" aria-label="Newsletters">
-  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
-  <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
-</section>
+
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><div class="social" aria-label="Whisky Advocate on social media"><a href="https://www.instagram.com/whiskyadvocate/" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg></a><a href="https://www.facebook.com/whiskyadvocate" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.2c0-.9.3-1.5 1.5-1.5h1.5V5.1c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7h2.9z" fill="currentColor"/></svg></a><a href="https://twitter.com/whiskyadvocate" aria-label="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l6.3 8.4L4.3 20h2.2l4.8-5.9L15.8 20H20l-6.6-8.8L19 4h-2.2l-4.4 5.4L8.2 4H4z" fill="currentColor"/></svg></a><a href="https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.3 5 12 5 12 5s-6.3 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.7 19 12 19 12 19s6.3 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3L10 15z" fill="currentColor"/></svg></a></div><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="ninety.html">90+ Club</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>

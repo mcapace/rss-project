@@ -12,17 +12,23 @@ const redirectCache = new Map<string, { target: string | null; status: number; u
  * so it reads the redirect map directly: calling /api/redirects/resolve over HTTP from here failed (deployment
  * protection on previews, and the self-request did not complete in production), so every legacy URL fell through to 404.
  */
+let lastLookup = "";
 async function lookupRedirect(request: NextRequest): Promise<{ target: string | null; status: number } | null> {
   const path = request.nextUrl.pathname;
   const cached = redirectCache.get(path);
-  if (cached && cached.until > Date.now()) return cached.status === 404 ? null : cached;
-  if (!deliveryEnabled()) return null;
+  if (cached && cached.until > Date.now()) { lastLookup = "cached"; return cached.status === 404 ? null : cached; }
+  if (!deliveryEnabled()) { lastLookup = "off"; return null; }
   try {
     const hit = await resolveRedirect(path, request.nextUrl.hostname);
     const data = hit ? { target: hit.target, status: hit.status } : { target: null, status: 404 };
     redirectCache.set(path, { ...data, until: Date.now() + 300_000 });
+    lastLookup = hit ? "hit" : "miss";
     return data.status === 404 ? null : data;
-  } catch { return null; }
+  } catch (error) {
+    lastLookup = "error";
+    console.error("[proxy redirects]", error instanceof Error ? error.message : error);
+    return null;
+  }
 }
 
 /**
@@ -38,7 +44,10 @@ export async function proxy(request: NextRequest) {
       const target = hit.target.startsWith("/") ? new URL(hit.target + request.nextUrl.search, request.url) : new URL(hit.target);
       return NextResponse.redirect(target, [301, 302, 307, 308].includes(hit.status) ? hit.status : 301);
     }
-    return NextResponse.next();
+    // What the redirect engine said about a path it did not redirect (off, miss, cached or error), for diagnosing legacy URLs.
+    const passed = NextResponse.next();
+    passed.headers.set("x-legacy-redirect", lastLookup || "none");
+    return passed;
   }
   let response = NextResponse.next({ request });
   if (!connectedCmsEnabled() || request.nextUrl.pathname.startsWith("/cms/demo")) return response;

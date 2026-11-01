@@ -294,7 +294,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
         WA.recommend({ kind: "bottle", slug: r.slug, title: r.n, summary: r.s + " points, " + fmt(r.p) + ", " + r.c + (r.pr ? ", by " + r.pr : "") + ". " + (notes[r.slug] || ""), candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {
           if (!rec || !rec.picks.length) return;
           var el = document.getElementById("similar"); el.innerHTML = WA.recCards(rec.picks, byslug); WA.fillNotes(el);
-          var head = el.previousElementSibling && el.previousElementSibling.querySelector(".band-head > div, div"); if (head && rec.line) { var l = document.createElement("p"); l.className = "rec-line"; l.textContent = rec.line; head.appendChild(l); }
+          var head = el.previousElementSibling && el.previousElementSibling.querySelector(".band-head > div, div"); if (head && rec.line) { var l = head.querySelector(".rec-line") || document.createElement("p"); l.className = "rec-line"; l.textContent = rec.line; head.appendChild(l); }
         });
       });
     })();

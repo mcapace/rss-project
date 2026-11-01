@@ -655,11 +655,12 @@ document.body.appendChild(waAds);
     var sentinel = document.createElement("div");
     sentinel.setAttribute("aria-hidden", "true");
     bar.parentNode.insertBefore(sentinel, bar);
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (entries) {
-        bar.classList.toggle("stuck", !entries[0].isIntersecting && entries[0].boundingClientRect.top < 0);
-      }, { rootMargin: "-" + (mastH() + 1) + "px 0px 0px 0px", threshold: 0 }).observe(sentinel);
-    }
+    var queued = false;
+    function check() { queued = false; bar.classList.toggle("stuck", sentinel.getBoundingClientRect().top < mastH() - 1); }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(check); } }
+    addEventListener("scroll", queue, { passive: true }); addEventListener("resize", queue);
+    if ("ResizeObserver" in window) new ResizeObserver(queue).observe(document.body);
+    check();
     bar.addEventListener("click", function (e) {
       if (!e.target.closest("button") || !bar.classList.contains("stuck") || getComputedStyle(bar).position !== "sticky") return;
       requestAnimationFrame(function () {
@@ -667,5 +668,87 @@ document.body.appendChild(waAds);
         scrollTo({ top: top, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       });
     });
+  };
+})();
+
+/* Video players (2026-11-01): WA.playEmbed(button) plays a poster button's film on the first click everywhere.
+   - JW Player films play in a native <video> started inside the click: the HLS manifest where the browser plays HLS
+     (Safari, iOS), else the MP4 rendition from JW's media feed, prefetched on hover, focus, touch or when the poster scrolls
+     into view. Their iframe player never autoplayed, so every JW film took two clicks.
+   - YouTube: the plain embed with autoplay where that works (Chrome and Edge desktop); on Safari and phones the click is lost
+     through the iframe load, so the YouTube player API starts it once ready (the lite-youtube-embed approach). The API is
+     preloaded on hover or touch.
+   The button is replaced by a div with the same classes plus "playing", so player controls never sit inside a button. */
+(function () {
+  window.WA = window.WA || {};
+  var APPLE_OR_MOBILE = /Apple/.test(navigator.vendor || "") || /Mobi/.test(navigator.userAgent);
+  var jw = {}, ytApi = null;
+  function embedOf(el) { var h = el && el.closest("[data-embed]"); return h ? h.getAttribute("data-embed") : ""; }
+  function jwId(src) { var m = /cdn\.jwplayer\.com\/players\/([A-Za-z0-9]+)-/.exec(src || ""); return m ? m[1] : ""; }
+  function ytId(src) { var m = /youtube(?:-nocookie)?\.com\/embed\/([\w-]{6,})/.exec(src || ""); return m ? m[1] : ""; }
+  function jwSources(id) {
+    if (!jw[id]) jw[id] = fetch("https://cdn.jwplayer.com/v2/media/" + id).then(function (r) { return r.json(); }).then(function (d) {
+      var srcs = ((d.playlist || [])[0] || {}).sources || [];
+      jw[id].mp4 = srcs.filter(function (x) { return x.type === "video/mp4" && x.height; }).sort(function (a, b) { return a.height - b.height; });
+      return jw[id].mp4;
+    }).catch(function () { jw[id].mp4 = []; return []; });
+    return jw[id];
+  }
+  function loadYT() {
+    if (!ytApi) ytApi = new Promise(function (res, rej) {
+      if (window.YT && window.YT.Player) return res();
+      var prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () { if (prev) prev(); res(); };
+      var el = document.createElement("script"); el.src = "https://www.youtube.com/iframe_api"; el.async = true; el.onerror = rej; document.head.appendChild(el);
+    });
+    return ytApi;
+  }
+  function prefetch(el) {
+    var src = embedOf(el); if (!src) return;
+    var id = jwId(src);
+    if (id) { jwSources(id); return; }
+    if (APPLE_OR_MOBILE && ytId(src)) loadYT().catch(function () {});
+  }
+  ["pointerover", "focusin", "touchstart"].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { var b = e.target.closest && e.target.closest(".frame, .top20-play"); if (b && !b.classList.contains("playing")) prefetch(b); }, { passive: true });
+  });
+  var seen = "IntersectionObserver" in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) { if (en.isIntersecting) { prefetch(en.target); seen.unobserve(en.target); } });
+  }, { rootMargin: "200px" }) : null;
+  WA.watchPosters = function (root) { if (!seen) return; (root || document).querySelectorAll(".frame:not(.playing), .top20-play:not(.playing)").forEach(function (b) { if (jwId(embedOf(b))) seen.observe(b); }); };
+  function iframe(box, src) { box.innerHTML = '<iframe src="' + src + (src.indexOf("?") >= 0 ? "&" : "?") + (ytId(src) ? "autoplay=1&playsinline=1" : "autostart=true") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video"></iframe>'; }
+  function pickMp4(list, box) {
+    var want = Math.min(1080, Math.ceil((box.offsetWidth || 960) * 9 / 16 * (window.devicePixelRatio || 1)));
+    var fit = list.filter(function (x) { return x.height >= want; })[0];
+    return (fit || list[list.length - 1]).file;
+  }
+  WA.playEmbed = function (btn) {
+    if (!btn || btn.classList.contains("playing")) return;
+    var src = embedOf(btn); if (!src) return;
+    var poster = btn.querySelector("img"); poster = poster ? poster.currentSrc || poster.src : "";
+    var box = document.createElement("div");
+    box.className = btn.className + " playing";
+    btn.replaceWith(box);
+    if (WA.track) WA.track("video_play", { src: src });
+    var id = jwId(src), yid = ytId(src);
+    if (id) {
+      var v = document.createElement("video");
+      v.controls = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; if (poster) v.poster = poster;
+      box.appendChild(v);
+      var go = function (url) { v.src = url; var p = v.play(); if (p && p.catch) p.catch(function () {}); };
+      if (v.canPlayType("application/vnd.apple.mpegurl")) { go("https://cdn.jwplayer.com/manifests/" + id + ".m3u8"); return; }
+      var entry = jwSources(id);
+      if (entry.mp4 && entry.mp4.length) { go(pickMp4(entry.mp4, box)); return; }
+      entry.then(function (list) { if (list.length) go(pickMp4(list, box)); else { box.innerHTML = ""; iframe(box, src); } });
+      return;
+    }
+    if (yid && APPLE_OR_MOBILE) {
+      var ph = document.createElement("div"); box.appendChild(ph);
+      loadYT().then(function () {
+        new YT.Player(ph, { width: "100%", height: "100%", videoId: yid, playerVars: { autoplay: 1, playsinline: 1, rel: 0 }, events: { onReady: function (e) { e.target.playVideo(); } } });
+      }).catch(function () { iframe(box, src); });
+      return;
+    }
+    iframe(box, src);
   };
 })();

@@ -13,7 +13,7 @@ export const FRONT_POSITIONS = 5;
 export const FRONT_LABELS = { "": "No label", sponsored: "Sponsored", archive: "From the archive", editors: "Editors' pick" } as const;
 export type FrontLabel = keyof typeof FRONT_LABELS;
 
-export type FrontStory = { id: string; slug: string | null; title: string; byline: string; excerpt: string; section: string; date: string | null; published: boolean };
+export type FrontStory = { id: string; slug: string | null; title: string; byline: string; excerpt: string; section: string; date: string | null; published: boolean; hero: string | null };
 export type FrontSlot = { position: number; pinned: (FrontStory & { label: FrontLabel; ends_at: string | null; set_by: string; updated_at: string }) | null; fallback: FrontStory | null };
 
 type DocRow = { id: string; slug: string | null; title: string; byline: string; excerpt: string; publication_state: string; metadata: Record<string, unknown> };
@@ -23,7 +23,13 @@ function story(row: DocRow): FrontStory {
   const dates = (meta.legacy_dates && typeof meta.legacy_dates === "object" ? meta.legacy_dates : {}) as Record<string, unknown>;
   const date = typeof dates.published_date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.published_date) ? dates.published_date.slice(0, 10) : typeof dates.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.date) ? dates.date.slice(0, 10) : null;
   const cats = Array.isArray(meta.categories) ? meta.categories.filter((c): c is string => typeof c === "string") : [];
-  return { id: row.id, slug: row.slug, title: row.title, byline: row.byline, excerpt: row.excerpt, section: cats[0] || "", date, published: row.publication_state === "published" };
+  // The lead picture: the first media item the CMS holds, else the legacy thumbnail path made absolute.
+  const media = Array.isArray(meta.media) ? (meta.media as Record<string, unknown>[]) : [];
+  const first = media.find(m => m && typeof m === "object" && (typeof m.url === "string" || typeof m.src === "string"));
+  const legacyMedia = (meta.legacy_media && typeof meta.legacy_media === "object" ? meta.legacy_media : {}) as Record<string, unknown>;
+  const thumb = typeof legacyMedia.thumb_file === "string" ? legacyMedia.thumb_file : typeof legacyMedia.banner === "string" ? legacyMedia.banner : "";
+  const hero = first ? String(first.url || first.src) : thumb ? (thumb.startsWith("/") ? "https://whiskyadvocate.com" + thumb : thumb) : null;
+  return { id: row.id, slug: row.slug, title: row.title, byline: row.byline, excerpt: row.excerpt, section: cats[0] || "", date, published: row.publication_state === "published", hero };
 }
 
 const DOC_FIELDS = "id,slug,title,byline,excerpt,publication_state,metadata";

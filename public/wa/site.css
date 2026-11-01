@@ -1642,3 +1642,7 @@ a.author p::after { content: " →"; color: var(--copper); }
 @media (max-width: 700px) { .stage { height: clamp(520px, 78vh, 680px); } .scene-copy[data-scene="0"] { padding-top: 22px; } .stage .ask-landing .suggest { display: none; } }
 .stage { height: clamp(420px, 56vh, 580px); }
 @media (max-width: 700px) { .stage { height: clamp(500px, 72vh, 640px); } }
+/* Clamped headlines keep their descenders: the clip happens at the padding edge, so a little padding below the last line saves the g, p and y. */
+.story h3, .pick-card h3, .recipe-card h3, .video-card h3 { padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.front .rot-slide h3 { line-height: 1.12; padding-bottom: 0.14em; margin-bottom: -0.1em; }
+.story.lead h3 { min-height: calc(2.24em + 0.14em); }

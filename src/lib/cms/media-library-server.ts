@@ -5,7 +5,7 @@ import type { CmsBrand } from "./types";
 import type { MediaFile, MediaFilePage, MediaGallery, MediaLibraryOverview } from "@/lib/editorial/media-library-types";
 
 /** Types the public asset route can serve and resize; anything else streams through the CMS file route. */
-const PUBLIC_EXT = /\.(jpg|png|gif|webp|avif|pdf)$/;
+const PUBLIC_EXT = /\.(jpg|png|gif|webp|avif|pdf|mp4|mov|m4v|webm)$/;
 const KEY = /^cms\/legacy\/(wa|ws|ca|mw)\/([a-f0-9]{64})\.([a-z0-9]{2,5})$/;
 
 export function publicUrl(key: string | null): string | null {

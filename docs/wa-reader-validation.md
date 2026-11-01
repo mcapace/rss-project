@@ -76,9 +76,17 @@ in `cms-development.md`. AI requires Anthropic configuration; recorded narration
 requires ElevenLabs; newsletter delivery requires Braze. Existing server settings
 must be verified on the actual deployment rather than copied into this repo.
 
-The repository declares Next.js/Vercel, but `rss-project-ten.vercel.app` is not
-treated as a verified production target merely because it appears in source.
-Verify GitHub deployment metadata and Vercel project/branch mappings before any
-release. Smoke-test the development deployment before promoting to production,
-then repeat the smoke and production performance checks on the confirmed URL.
+The project owner supplied these deployment targets:
+
+- Vercel team: `michael-capaces-projects-f6224d63` (`team_DL7N0OK4rKHGGoF8QOD352t1`).
+- Project: `rss-project` (`prj_gD3QNIPhRXu8DEN7sET9XsDCpjft`), Next.js on Node 24.
+- Production: `main`, target `production`, public domain `rss-project-ten.vercel.app`; the website is under `/wa`.
+- Existing development branch: `claude/exciting-meitner-jhi9uc`, with generated preview URLs. New PR branch previews must be confirmed through deployment metadata.
+- Preview URLs require Vercel SSO; the attached production domain is public.
+
+Release this branch by opening a PR, confirming its preview deployment, smoke-testing
+that preview with authenticated access, then merging to main and confirming the
+production deployment and public smoke tests. The current cloud instance's network
+policy has not yet applied the saved GitHub API/Vercel additions, so remote status,
+PR creation, protected-preview checks and production performance remain pending.
 No localhost timing is presented as a production performance score.

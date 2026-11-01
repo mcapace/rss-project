@@ -31,7 +31,7 @@
       <p class="club-stats" id="stats"></p>
       <p class="club-note" id="note"></p>
       <div class="actions" id="actions" style="margin-top: 18px"></div>
-      <p class="sp-note" role="note" style="margin-top: 22px">The 90+ Club is a paid partner program: the brands on these pages pay to be featured. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
+      <p class="sp-note" role="note" style="margin-top: 22px">Sponsored by Pernod Ricard USA. The 90+ Club is a paid partner program: Pernod Ricard USA pays to feature its brands on these pages. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
     </div>
   </div>
 </section>
@@ -70,7 +70,7 @@ WA.ready(function () { WA.archive(function (DATA) {
     document.title = plain(it.n) + " · 90+ Club · Whisky Advocate";
     document.getElementById("crumbName").textContent = plain(it.n);
     var pic = document.getElementById("pic"); pic.src = it.img; pic.alt = plain(it.n);
-    document.getElementById("kicker").innerHTML = WA.sponsorChip() + "90+ Club · " + esc(it.member ? "Member" : "Top-shelf spirit");
+    document.getElementById("kicker").innerHTML = WA.sponsorChip() + "90+ Club · " + esc(it.member ? "Member" : "Top-shelf spirit") + " · Pernod Ricard USA";
     document.getElementById("name").textContent = it.n;
     if (it.s) { var sc = document.getElementById("score"); sc.innerHTML = '<b class="score-type">' + esc(it.s) + "</b><span>points</span>"; sc.hidden = false; }
     var stats = [];

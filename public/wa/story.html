@@ -8,7 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
@@ -86,6 +85,8 @@
 </footer>
 
 <script src="site.js"></script>
+<script src="reader-core.js"></script>
+<script src="reader.js"></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, bySlug = data.bySlug;
@@ -98,6 +99,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var pre = null;
     function load(st) {
       if (WA.cleanUrl) WA.cleanUrl(st.slug);
+      WA.bindSave(document.getElementById("saveStory"), {kind:"story",slug:st.slug,title:st.title});
       // Sponsored stories get their own template: only the advertiser's bottles named in the text, no recommended stories, AI picks, Q&A, related links or tags.
       var SP = WA.isSponsored(st);
     (pre && pre.slug === st.slug ? function (f) { f(pre.body); } : function (f) { WA.article(st.slug, f); })(function (body) {
@@ -308,14 +310,14 @@ WA.ready(function (recent) { WA.archive(function (data) {
       at = i; var clip = next && next.i === i ? next.p : fetchClip(i); next = null;
       clip.then(function (url) {
         if (!playing || at !== i) return;
-        audio = new Audio(url); audio.onended = function () { URL.revokeObjectURL(url); playFrom(i + 1); }; audio.onerror = function () { playFrom(i + 1); };
+        audio = new Audio(url); audio.playbackRate = WA.readingRate || 1; audio.onended = function () { URL.revokeObjectURL(url); playFrom(i + 1); }; audio.onerror = function () { playFrom(i + 1); };
         audio.play().catch(function () { btn.textContent = "Tap to play"; });
         if (i + 1 < queue.length) next = { i: i + 1, p: fetchClip(i + 1) };   // the next paragraph loads while this one plays
-      }).catch(function () { if (synth && window.SpeechSynthesisUtterance) { useBrowser = true; speakBrowser(i); } else { btn.textContent = "Voice unavailable"; setTimeout(stop, 2500); } });
+      }).catch(function () { if (synth && window.SpeechSynthesisUtterance) { useBrowser = true; WA.reader.notice("Using this browser’s voice. Recorded narration is unavailable."); speakBrowser(i); } else { btn.textContent = "Voice unavailable"; setTimeout(stop, 2500); } });
     }
     function speakBrowser(i) {
       if (!playing || i >= queue.length) { stop(); return; }
-      at = i; var u = new SpeechSynthesisUtterance(queue[i]); var vs = synth.getVoices(), pick = null; vs.forEach(function (v) { if (/^en/i.test(v.lang) && (!pick || /Google|Samantha|Daniel|Natural|Premium/i.test(v.name))) pick = v; }); if (pick) u.voice = pick;
+      at = i; var u = new SpeechSynthesisUtterance(queue[i]); u.rate = WA.readingRate || 1; var vs = synth.getVoices(), pick = null; vs.forEach(function (v) { if (/^en/i.test(v.lang) && (!pick || /Google|Samantha|Daniel|Natural|Premium/i.test(v.name))) pick = v; }); if (pick) u.voice = pick;
       u.onend = function () { if (playing && !paused) speakBrowser(i + 1); }; u.onerror = function () { if (i === 0) { playing = false; btn.textContent = "No voice in this browser"; setTimeout(function () { btn.textContent = label; }, 2500); return; } if (playing && !paused) speakBrowser(i + 1); };
       synth.speak(u);
     }
@@ -328,7 +330,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     addEventListener("beforeunload", function () { if (synth) synth.cancel(); });
     window.__storyListenLabel = function (t) { label = t; if (!playing) btn.textContent = t; };
   })();
-  document.getElementById("saveStory").addEventListener("click", function () { this.textContent = "Saved"; });
+
   document.getElementById("share").addEventListener("click", function () { var b = this; try { navigator.clipboard.writeText(location.href).then(function () { b.textContent = "Link copied"; }, function () { b.textContent = "Copy the address bar"; }); } catch (e) { b.textContent = "Copy the address bar"; } });
 }); });
 </script>

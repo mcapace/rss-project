@@ -8,7 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body class="rating-page">
@@ -133,6 +132,8 @@
 </footer>
 
 <script src="site.js"></script>
+<script src="reader-core.js"></script>
+<script src="reader.js"></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
   var fmt = WA.fmt, cur = null, STORIES = null, byRating = null, Tlist = null, FILMS = null, bySlug = {}; WA.stories(function (st) { STORIES = st; if (cur) mentions(cur); });
@@ -237,12 +238,13 @@ WA.ready(function (recent) { WA.archive(function (data) {
     if (top) {
       if (!Tlist) return;
       var entry = Tlist.filter(function (e) { return e.year === +top[1] && e.rank === +top[2]; })[0];
-      if (!entry) return;
+      if (!entry) { document.getElementById("name").textContent = "Bottle not found"; document.getElementById("save").disabled = true; return; }
       r = asRating(entry);
-    } else r = WA.find(data, slug) || recent.slice().sort(function (a, b) { return b.s - a.s; })[0];
+    } else r = WA.find(data, slug);
+    if (!r) { document.getElementById('name').textContent = 'Bottle not found'; document.getElementById('note').textContent = 'This rating is unavailable. Search the ratings for another bottle.'; document.getElementById('save').disabled = true; return; }
     if (r && !top && WA.cleanUrl && WA.find(data, slug)) WA.cleanUrl(r.slug);
     if (r.f == null) { WA.note(r.slug, function (f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") : f; show(); }); r.f = ""; return; }
-    cur = r; var B = band(r.s);
+    cur = r; WA.bindSave(document.getElementById("save"), {kind:"bottle",slug:r.slug,title:r.n}); document.getElementById("compareLink").href = "finder.html?compare=" + encodeURIComponent(r.slug); var B = band(r.s);
     if (!window.WA_PATHS) document.title = r.n + " · " + r.s + " points";
     document.getElementById("crumbCat").textContent = r.c; document.getElementById("crumbName").textContent = r.n;
     var cp = document.getElementById("crumbProd"); cp.textContent = r.pr; cp.href = WA.producerHref(r.pr);
@@ -322,7 +324,6 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var f = e.target.closest(".top20-play"); if (!f || f.classList.contains("playing")) return;
     WA.playEmbed(f);
   });
-  document.getElementById("save").addEventListener("click", function () { this.textContent = "Saved to my shelf"; this.setAttribute("aria-pressed", "true"); });
   WA.shop(function () { var p = WA.productFor(cur && cur.slug); var sb = document.getElementById("storeBtn"); if (p) { sb.href = WA.buyHref(p); sb.textContent = p.p ? "Buy at the store · $" + Math.round(p.p) : "Buy at the store"; sb.hidden = false; } });
   document.getElementById("buyBtn").addEventListener("click", function () { var b = document.getElementById("buy"); b.style.display = b.style.display === "none" ? "" : "none"; });
   document.getElementById("askBtn").addEventListener("click", function () { document.getElementById("askBand").scrollIntoView({ behavior: "smooth" }); document.getElementById("askInput").focus(); });

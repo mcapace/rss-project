@@ -8,7 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
@@ -67,6 +66,8 @@
 </footer>
 
 <script src="site.js"></script>
+<script src="reader-core.js"></script>
+<script src="reader.js"></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
   var STORIES = null, TOP = null; WA.stories(function (x) { STORIES = x; if (current) extras(current); }); WA.top20(function (x) { TOP = x; if (current) extras(current); });
@@ -79,7 +80,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var byProducer = {}; data.forEach(function (r) { if (r.pr !== "Unknown producer") (byProducer[r.pr] = byProducer[r.pr] || []).push(r); });
   var ranked = Object.keys(byProducer).sort(function (a, b) { return byProducer[b].length - byProducer[a].length || a.localeCompare(b); });
   function show() {
-    var name = WA.hashName(); if (!name || !byProducer[name]) name = ranked[0];
+    var name = WA.hashName(); if (!name || !byProducer[name]) { document.getElementById("name").textContent = "Producer not found"; return; }
     var rows = byProducer[name].slice().sort(function (a, b) { return (a.d || "").localeCompare(b.d || ""); });
     document.title = name + " · Whisky Advocate";
     current = name; extras(name);

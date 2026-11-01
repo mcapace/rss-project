@@ -8,7 +8,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
@@ -25,7 +24,7 @@
   <div class="search-line" style="margin-bottom: 18px"><svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="width:18px;height:18px;color:var(--amber);flex-shrink:0"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg><input id="q" type="text" placeholder="A drink name, or an ingredient: Manhattan, Aperol, egg white" aria-label="Search recipes"></div>
   <div class="facets filter-bar ck-facets" id="facetBar">
     <div><h3 class="mono" style="margin-bottom: 8px">The whisky</h3><div class="suggest" id="spirits"><button type="button" data-spirit="" aria-pressed="true">Any</button><button type="button" data-spirit="bourbon">Bourbon</button><button type="button" data-spirit="rye">Rye</button><button type="button" data-spirit="scotch">Scotch</button><button type="button" data-spirit="irish">Irish</button><button type="button" data-spirit="japanese">Japanese</button><button type="button" data-spirit="other">Something else</button></div></div>
-    <div><h3 class="mono" style="margin-bottom: 8px">In your cabinet <span style="text-transform:none; letter-spacing:0; color: var(--ink-3)">· tap what you have, we keep only the drinks you can make with it</span></h3><div class="cabinet" id="cabinet"></div></div>
+    <div><h3 class="mono" style="margin-bottom: 8px">In your cabinet <span style="text-transform:none; letter-spacing:0; color: var(--ink-3)">· saved on this device; select ingredients to narrow the recipes. Check each recipe before mixing.</span></h3><div class="cabinet" id="cabinet"></div></div>
   </div>
   <div class="results-head" style="margin-bottom: 14px"><span id="count"></span><div class="sortrow" id="sortRow" role="group" aria-label="Sort"><button type="button" data-sort="new" aria-pressed="true">Newest</button><button type="button" data-sort="simple" aria-pressed="false">Fewest ingredients</button><button type="button" data-sort="name" aria-pressed="false">A to Z</button></div></div>
   <div class="recipes" id="grid"></div>
@@ -44,11 +43,13 @@
 </footer>
 
 <script src="site.js"></script>
+<script src="reader-core.js"></script>
+<script src="reader.js"></script>
 <script>
 WA.ready(function () {
   WA.cocktails(function (all) {
     var CAB = [["bourbon", /bourbon|maker|woodford|buffalo trace|wild turkey|four roses|elijah craig|old forester|knob creek/], ["rye", /\brye\b|rittenhouse|sazerac|whistlepig|high west/], ["scotch", /scotch|single malt|johnnie|monkey shoulder|glenfiddich|dewar|laphroaig|ardbeg|macallan|talisker|bowmore|highland park/], ["irish", /irish|jameson|redbreast|bushmills|teeling|tullamore/], ["sweet vermouth", /sweet vermouth|vermouth rosso|carpano|punt e mes/], ["dry vermouth", /dry vermouth/], ["lemon", /lemon/], ["lime", /lime/], ["orange", /orange/], ["bitters", /bitters/], ["simple syrup", /simple syrup|sugar|demerara|syrup/], ["honey", /honey/], ["maple", /maple/], ["egg white", /egg white|aquafaba/], ["mint", /mint/], ["ginger", /ginger/], ["amaro", /amaro|campari|aperol|fernet|cynar/], ["coffee", /coffee|espresso/], ["apple", /apple|cider/], ["soda", /soda|seltzer|tonic|ginger beer/]];
-    var state = { spirit: "", q: "", cab: [], sort: "new", limit: 24 };
+    var state = { spirit: "", q: "", cab: WA.reader.pantry(), sort: "new", limit: 24 };
     document.getElementById("cabinet").innerHTML = CAB.map(function (c) { return '<button type="button" data-cab="' + c[0] + '" aria-pressed="false">' + c[0] + "</button>"; }).join("");
     function ingText(r) { return r.ingredients.join(" | ").toLowerCase(); }
     function canMake(r) { if (!state.cab.length) return true; var t = ingText(r); var essentials = r.ingredients.filter(function (i) { return !/garnish|twist|peel|rim|optional|ice\b|cube/i.test(i); }); return essentials.every(function (i) { var l = i.toLowerCase(); return CAB.some(function (c) { return state.cab.indexOf(c[0]) >= 0 && c[1].test(l); }) || /water|ice|salt|sugar/.test(l); }); }
@@ -57,7 +58,7 @@ WA.ready(function () {
       if (state.sort === "simple") out.sort(function (a, b) { return a.ingredients.length - b.ingredients.length; }); else if (state.sort === "name") out.sort(function (a, b) { return a.name.localeCompare(b.name); });
       return out;
     }
-    function card(r) { return '<a class="recipe-card" href="cocktail.html#' + encodeURIComponent(r.slug) + '"><img src="' + r.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + (r.spirit === "other" ? "cocktail" : r.spirit) + " · " + r.ingredients.length + ' ingredients</span><h3>' + r.name + '</h3><p class="ing">' + r.ingredients.slice(0, 3).map(function (i) { var a = WA.amount(i); return (a ? a.rest : i).replace(/,?\s*for garnish.*$/i, ""); }).join(", ") + (r.ingredients.length > 3 ? ", …" : "") + '</p><p class="who">' + (r.credit ? r.credit.split(",")[0] : r.storyTitle) + "</p></div></a>"; }
+    function card(r) { return '<a class="recipe-card" href="/wa/recipes/' + encodeURIComponent(r.slug) + '"><img src="' + r.img + '" alt="" loading="lazy"><div class="body"><span class="tag">' + (r.spirit === "other" ? "cocktail" : r.spirit) + " · " + r.ingredients.length + ' ingredients</span><h3>' + r.name + '</h3><p class="ing">' + r.ingredients.slice(0, 3).map(function (i) { var a = WA.amount(i); return (a ? a.rest : i).replace(/,?\s*for garnish.*$/i, ""); }).join(", ") + (r.ingredients.length > 3 ? ", …" : "") + '</p><p class="who">' + (r.credit ? r.credit.split(",")[0] : r.storyTitle) + "</p></div></a>"; }
     function seatAd() {
       var grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]');
       if (!ad) return;
@@ -69,12 +70,12 @@ WA.ready(function () {
       var at = Math.min(cards.length, Math.max(cols, 2));
       if (at < cards.length) grid.insertBefore(ad, cards[at]);
     }
-    function render() { var rs = rows(), grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]'); if (ad && ad.parentNode === grid) grid.parentNode.insertBefore(ad, grid.nextSibling); document.getElementById("count").textContent = rs.length + " of " + all.length + " drinks" + (state.cab.length ? " you can make" : ""); grid.innerHTML = rs.slice(0, state.limit).map(card).join(""); seatAd(); if (window.WAAds) WAAds.seat(grid, 12, "cocktails"); document.getElementById("more").style.display = rs.length > state.limit ? "" : "none"; document.querySelectorAll("#spirits button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-spirit") === state.spirit)); }); document.querySelectorAll("#cabinet button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.cab.indexOf(b.getAttribute("data-cab")) >= 0)); }); document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); }); }
+    function render() { var rs = rows(), grid = document.getElementById("grid"), ad = document.querySelector('[data-slot="wa_cocktails_leader_1"]'); if (ad && ad.parentNode === grid) grid.parentNode.insertBefore(ad, grid.nextSibling); document.getElementById("count").textContent = rs.length + " of " + all.length + " drinks" + (state.cab.length ? " matching your pantry (check every ingredient)" : ""); grid.innerHTML = rs.length ? rs.slice(0, state.limit).map(card).join("") : "<p>No recipes match. Clear an ingredient or search term.</p>"; seatAd(); if (window.WAAds) WAAds.seat(grid, 12, "cocktails"); document.getElementById("more").style.display = rs.length > state.limit ? "" : "none"; document.querySelectorAll("#spirits button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-spirit") === state.spirit)); }); document.querySelectorAll("#cabinet button").forEach(function (b) { b.setAttribute("aria-pressed", String(state.cab.indexOf(b.getAttribute("data-cab")) >= 0)); }); document.querySelectorAll("#sortRow button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-sort") === state.sort)); }); }
     addEventListener("resize", seatAd);
     /* The filters stay with you: a compact sticky bar once you scroll past them (WA.stickyFilters in site.js). */
     WA.stickyFilters(document.getElementById("facetBar"));
     document.getElementById("spirits").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.spirit = b.getAttribute("data-spirit"); state.limit = 24; render(); });
-    document.getElementById("cabinet").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var k = b.getAttribute("data-cab"), i = state.cab.indexOf(k); if (i >= 0) state.cab.splice(i, 1); else state.cab.push(k); state.limit = 24; render(); });
+    document.getElementById("cabinet").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; var k = b.getAttribute("data-cab"), i = state.cab.indexOf(k); if (i >= 0) state.cab.splice(i, 1); else state.cab.push(k); state.limit = 24; WA.reader.setPantry(state.cab); render(); });
     document.getElementById("sortRow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.sort = b.getAttribute("data-sort"); render(); });
     document.getElementById("q").addEventListener("input", function () { state.q = this.value; state.limit = 24; render(); });
     document.getElementById("more").addEventListener("click", function () { state.limit += 24; render(); });

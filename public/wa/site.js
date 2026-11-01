@@ -1,13 +1,25 @@
 /* Whisky Advocate concept: shared behaviour. Data is real (320 recent ratings); the "AI" is a deterministic stand-in. */
 (function () {
   var DATA = null;
+  var requests = {};
+  function dataError() {
+    if (document.getElementById('waDataError')) return;
+    var box = document.createElement('div'); box.id = 'waDataError'; box.className = 'reader-error'; box.setAttribute('role', 'alert');
+    box.innerHTML = '<p>Some content could not load. Check your connection and try again.</p><button type="button" class="pill">Retry loading</button>';
+    box.querySelector('button').onclick = function () { location.reload(); }; document.body.appendChild(box);
+  }
+  function json(url) {
+    if (!requests[url]) requests[url] = fetch(url, { signal: AbortSignal.timeout(15000) }).then(function (r) { if (!r.ok) throw Error('Data unavailable'); return r.json(); }).catch(function (e) { delete requests[url]; dataError(); throw e; });
+    return requests[url];
+  }
+
   var fmt = function (n) { return n > 0 ? "$" + Math.round(n).toLocaleString() : "Price n/a"; };
   function charScore(r, c) { return c === "smoky" ? r.sm : c === "sweet" ? r.sw : c === "rich" ? r.ri : r.li; }
   function slugOf(r) { return (r.pr + " " + r.n).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
   // On the live site every story and rating has its own server-rendered page at /wa/<slug>; elsewhere (the artifact copy) the hash pages.
   var PATHS = !!window.WA_PATHS || /^\/wa\//.test(location.pathname);
   function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; var s = r && r.slug ? r.slug : (typeof x === "string" ? x : ""); if (PATHS && s && !/^t20-/i.test(s)) return "/wa/" + encodeURIComponent(s); return "bottle.html#" + (s ? encodeURIComponent(s) : x); }
-  function producerHref(name) { return "producer.html#" + encodeURIComponent(name); }
+  function producerHref(name) { return "/wa/producers/" + encodeURIComponent(name); }
   var value = function (r) { return r.s - 80 - Math.log((r.p > 0 ? r.p : 60) / 30) * 4; };
 
   window.WA = { data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, value: value, slugOf: slugOf };
@@ -19,12 +31,12 @@
   function loaded(cb) {
     var el = document.getElementById("data");
     if (el) { DATA = JSON.parse(el.textContent); cb(DATA); return; }
-    fetch("data.json").then(function (r) { return r.json(); }).then(function (d) { DATA = unent(d); cb(DATA); });
+    json("data.json").then(function (d) { DATA = unent(d); cb(DATA); }).catch(dataError);
   }
 
   /* Entrance, home only: a quiet loader, then a layered scene with a WebGL whisky field under it.
      The scene plays itself in for the first moments and then belongs to the scroll. */
-  var MOTION = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var MOTION = !matchMedia("(prefers-reduced-motion: reduce)").matches && !(navigator.connection && navigator.connection.saveData) && innerWidth > 600;
   function clamp01(x) { return Math.min(1, Math.max(0, x)); }
   function seg(p, a, b) { return clamp01((p - a) / (b - a)); }
   function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
@@ -82,7 +94,7 @@
       if (intro > 0.3 && copy.getAttribute("data-on") !== "true") copy.setAttribute("data-on", "true");
       if (intro > 0.5 && stage.getAttribute("data-landing") !== "true") stage.setAttribute("data-landing", "true");
       if (gl) gl.render(now, 0.4, pointer, intro);
-      if (stage.getBoundingClientRect().bottom > 0) requestAnimationFrame(frame); else setTimeout(function () { requestAnimationFrame(frame); }, 400);
+      if (MOTION && !document.hidden) { if (stage.getBoundingClientRect().bottom > 0) requestAnimationFrame(frame); else setTimeout(function () { requestAnimationFrame(frame); }, 1000); }
     }
     requestAnimationFrame(frame);
   }
@@ -137,16 +149,16 @@
   var STORY_ARCHIVE = null, STORY_ARCHIVE_WAIT = null, STORIES_WAIT = null;
   function stories(cb, opts) {
     var all = opts && opts.all;
-    function done() { if (!all) return cb(STORIES); if (STORY_ARCHIVE) return cb(STORIES.concat(STORY_ARCHIVE)); if (!STORY_ARCHIVE_WAIT) STORY_ARCHIVE_WAIT = fetch("stories-archive.json").then(function (r) { return r.ok ? r.json() : []; }, function () { return []; }).then(function (d) { STORY_ARCHIVE = d; return d; }); STORY_ARCHIVE_WAIT.then(function () { cb(STORIES.concat(STORY_ARCHIVE)); }); }
+    function done() { if (!all) return cb(STORIES); if (STORY_ARCHIVE) return cb(STORIES.concat(STORY_ARCHIVE)); if (!STORY_ARCHIVE_WAIT) STORY_ARCHIVE_WAIT = json("stories-archive.json").then(function (d) { STORY_ARCHIVE = d; return d; }); STORY_ARCHIVE_WAIT.then(function () { cb(STORIES.concat(STORY_ARCHIVE)); }).catch(dataError); }
     if (STORIES) return done();
-    if (!STORIES_WAIT) STORIES_WAIT = fetch("stories.json").then(function (r) { return r.json(); }).then(function (d) { STORIES = d; return d; });
-    STORIES_WAIT.then(done);
+    if (!STORIES_WAIT) STORIES_WAIT = json("stories.json").then(function (d) { STORIES = d; return d; });
+    STORIES_WAIT.then(done).catch(dataError);
   }
   function storyBySlug(slug, cb) { stories(function (recent) { var k = String(slug).toLowerCase(), hit = recent.filter(function (s) { return s.slug.toLowerCase() === k; })[0]; if (hit) return cb(hit, recent); stories(function (all) { cb(all.filter(function (s) { return s.slug.toLowerCase() === k; })[0] || null, all); }, { all: true }); }); }
   var ARTS = {};
-  function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return cb(ARTS[k][slug] || null); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; cb(d[slug] || null); }, function () { cb(null); }); }
+  function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return cb(ARTS[k][slug] || null); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; cb(d[slug] || null); }, function () { dataError(); cb(null); }); }
   var GLOSSARY = null;
-  function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); fetch("glossary.json").then(function (r) { return r.json(); }).then(function (d) { GLOSSARY = d; cb(d); }); }
+  function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); json("glossary.json").then(function (d) { GLOSSARY = d; cb(d); }).catch(dataError); }
   var SECTION_HREF = { news: "stories.html#news", features: "stories.html#features", guides: "guides.html", cocktails: "cocktails.html", travel: "travel.html", life: "stories.html#life" };
   function initials(name) { return (name || "WA").split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
   function storyHref(st) { return (window.WA_PATHS || /^\/wa\//.test(location.pathname)) ? "/wa/" + encodeURIComponent(st.slug) : "story.html#" + st.slug; }
@@ -159,17 +171,17 @@
   var ARCHIVE = null, NOTES = {};
   function archive(cb) {
     if (ARCHIVE) return cb(ARCHIVE);
-    fetch("ratings.json").then(function (r) { return r.json(); }).then(function (d) {
+    json("ratings.json").then(function (d) {
       ARCHIVE = d.rows.map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = typeof row[i] === "string" && row[i].indexOf("&") >= 0 ? unentText(row[i]) : row[i]; }); o.t = ""; return o; });
       ARCHIVE.words = d.words || []; window.WA.WORDS = ARCHIVE.words;
       var bySlug = {}; ARCHIVE.forEach(function (r) { bySlug[r.slug.toLowerCase()] = r; });
       ARCHIVE.bySlug = bySlug; DATA = ARCHIVE; cb(ARCHIVE);
-    });
+    }).catch(dataError);
   }
   function shardOf(slug) { var h = 0; for (var i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0; return String(h % 64).padStart(2, "0"); }
   function note(slug, cb) {
     var k = shardOf(slug); if (NOTES[k]) return cb(NOTES[k][slug] || "");
-    fetch("notes/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { NOTES[k] = d; cb(d[slug] || ""); }, function () { cb(""); });
+    fetch("notes/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { NOTES[k] = d; cb(d[slug] || ""); }, function () { dataError(); cb(""); });
   }
   /* Cards rendered from the archive carry no note; fill them in once their shard arrives. */
   function fillNotes(root) { decorateBuy(root);
@@ -182,10 +194,10 @@
   function hashSlug() { if (window.WA_SLUG) return window.WA_SLUG; var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
   // A hash URL (story.html#slug) on the live site becomes the item's own URL without a reload, so links, shares and bookmarks use it.
   function cleanUrl(slug) { if (!PATHS || window.WA_SLUG || !slug || /^t20-/i.test(slug) || !history.replaceState) return; window.WA_SLUG = slug; try { history.replaceState(null, "", "/wa/" + encodeURIComponent(slug)); } catch (e) {} }
-  function find(data, slug) { if (!slug) return null; if (data.bySlug) return data.bySlug[slug.toLowerCase()] || null; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = parseInt(slug, 10); return isNaN(n) ? null : data[n] || null; }
+  function find(data, slug) { if (!slug) return null; if (data.bySlug && data.bySlug[slug.toLowerCase()]) return data.bySlug[slug.toLowerCase()]; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = /^\d+$/.test(slug) ? Number(slug) : NaN; return isNaN(n) ? null : data[n] || null; }
   var COCKTAILS = null, TOP20 = null;
-  function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); fetch("cocktails.json").then(function (r) { return r.json(); }).then(function (d) { COCKTAILS = d; cb(d); }); }
-  function top20(cb) { if (TOP20) return cb(TOP20); fetch("top20.json").then(function (r) { return r.json(); }).then(function (d) { TOP20 = d; cb(d); }); }
+  function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); json("cocktails.json").then(function (d) { COCKTAILS = d; cb(d); }).catch(dataError); }
+  function top20(cb) { if (TOP20) return cb(TOP20); json("top20.json").then(function (d) { TOP20 = d; cb(d); }).catch(dataError); }
   /* Producers, summarised from the archive: count, best, average, main category, country from the categories. */
   var COUNTRY = { "Single Malt Scotch": "Scotland", "Blended Scotch Whisky": "Scotland", "Blended Malt Scotch Whisky": "Scotland", "Single Grain Scotch": "Scotland", "Blended Grain Scotch": "Scotland", "Bourbon/Tennessee Whiskey": "United States", "Rye Whiskey": "United States", "Single Malt American Whiskey": "United States", "American Whiskey": "United States", "Wheat Whiskey": "United States", "Irish Single Malt": "Ireland", "Blended Irish Whiskey": "Ireland", "Irish Single Pot Still": "Ireland", "Irish": "Ireland", "Irish Grain": "Ireland", "Japanese Whisky": "Japan", "Canadian": "Canada" };
   function producers(data) {
@@ -271,15 +283,13 @@
     var out = rows.map(function (r) {
       var ns = named ? nameScore(named, r) : 0; if (named && !ns) return null;
       if (!named || ns < 2) { if (f.types.length && !f.types.some(function (t) { return t.cats.indexOf(r.c) >= 0; })) return null; }
-      if (f.price && r.p > f.price) return null;
+      if (f.price && (!(r.p > 0) || r.p > f.price)) return null;
       if (f.score && r.s < f.score) return null;
       var fit = f.chars.reduce(function (acc, c) { return acc + Math.min(3, charScore(r, c)); }, 0);
       // Unasked-for trophies sink a little: a $7,500 bottle is not the answer to "peaty whisky".
       var reach = (!named && !f.price && r.p) ? (r.p > 1000 ? 5 : r.p > 400 ? 3 : r.p > 200 ? 1 : 0) : 0;
       return { r: r, rank: r.s + fit * 1.5 + ns * 6 + (r.d ? (+r.d.slice(0, 4) - 2013) * 0.15 : 0) - reach };
     }).filter(Boolean);
-    // A typed name that matches nothing exactly still finds its nearest spellings.
-    if (named && !out.length) { out = rows.map(function (r) { var best = 0; named.forEach(function (t) { best += termHit(t, r); }); return best ? { r: r, rank: r.s + best * 6 } : null; }).filter(Boolean); }
     return out.sort(function (a, b) { return b.rank - a.rank || a.r.p - b.r.p; }).map(function (x) { return x.r; });
   }
   function facetLabels(f) {
@@ -357,7 +367,7 @@
     menu.addEventListener("click", function (e) { var b = e.target.closest(".ask-row"); if (b) { e.preventDefault(); menu.setAttribute("data-open", "false"); ask(b.getAttribute("data-ask")); } });
     document.addEventListener("click", function (e) { if (!e.target.closest(".ask")) menu.setAttribute("data-open", "false"); });
     var sug = document.getElementById("suggest"); if (sug) sug.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; input.value = b.textContent; ask(b.textContent); });
-    var mic = form.querySelector(".mic"); if (mic) mic.addEventListener("click", function () { input.placeholder = "Listening… say what you're in the mood for"; input.focus(); setTimeout(function () { input.placeholder = "A sherried Speyside under $90 for a winter night"; }, 2500); });
+
     window.WA.ask = ask;
   }
 
@@ -432,7 +442,7 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
 
   /* Hash routing helpers */
   window.WA.hashIndex = function () { var h = (location.hash || "").replace("#", ""); var i = parseInt(h, 10); return isNaN(i) ? null : i; };
-  window.WA.hashName = function () { var h = (location.hash || "").replace("#", ""); return h ? decodeURIComponent(h) : null; };
+  window.WA.hashName = function () { if (window.WA_PRODUCER) return window.WA_PRODUCER; var h = (location.hash || "").replace("#", ""); return h ? decodeURIComponent(h) : null; };
 
   window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastPour(); mastState(); ambient(); parallax(); cb(d); }); };
 })();
@@ -522,10 +532,10 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
   var btn = document.createElement("button"); btn.type = "button"; btn.className = "pill search-btn"; btn.setAttribute("aria-label", "Search the site"); btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Search</span>';
   tools.insertAdjacentElement("afterbegin", btn);
   var ov = document.createElement("div"); ov.id = "waSearch"; ov.setAttribute("data-open", "false");
-  ov.innerHTML = '<div class="search-box glass"><form class="search-form" id="waSearchForm" autocomplete="off"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="waSearchInput" type="search" placeholder="Search bottles, stories, producers, cocktails" aria-label="Search"><button type="button" class="search-close" id="waSearchClose" aria-label="Close">&times;</button></form><div class="search-results" id="waSearchResults"><p class="muted">Type a bottle, a distillery, a cocktail or a subject. Enter opens Ratings with your words.</p></div></div>';
+  ov.innerHTML = '<div class="search-box glass"><form class="search-form" id="waSearchForm" autocomplete="off"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="waSearchInput" type="search" placeholder="Search bottles, stories, producers, cocktails" aria-label="Search"><button type="button" class="search-close" id="waSearchClose" aria-label="Close">&times;</button></form><div class="search-results" id="waSearchResults"><p class="muted">Type a bottle, a distillery, a cocktail or a subject. Enter opens all search results with your words.</p></div></div>';
   document.body.appendChild(ov);
   var input = document.getElementById("waSearchInput"), results = document.getElementById("waSearchResults"), timer = null, stories = null, cocktails = null;
-  function open(on) { ov.setAttribute("data-open", String(on)); document.body.classList.toggle("search-open", on); if (on) { setTimeout(function () { input.focus(); input.select(); }, 40); if (WA.archive) WA.archive(function () { if (input.value) run(input.value); }); if (!stories && WA.storiesAll) WA.storiesAll(function (s) { stories = s; if (input.value) run(input.value); }); if (!cocktails && WA.cocktails) WA.cocktails(function (c) { cocktails = c; }); } }
+  function open(on) { ov.setAttribute("data-open", String(on)); document.body.classList.toggle("search-open", on); if (on) { setTimeout(function () { input.focus(); input.select(); }, 40); if (WA.archive) WA.archive(function () { if (input.value) run(input.value); }); if (!stories && WA.storiesAll) WA.storiesAll(function (s) { stories = s; if (input.value) run(input.value); }); if (!cocktails && WA.cocktails) WA.cocktails(function (c) { cocktails = c; if (input.value) run(input.value); }); } }
   btn.addEventListener("click", function () { open(true); });
   document.getElementById("waSearchClose").addEventListener("click", function () { open(false); });
   ov.addEventListener("click", function (e) { if (e.target === ov) open(false); });
@@ -537,7 +547,7 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function mark(text, terms) { var out = esc(text); terms.forEach(function (t) { if (t.length < 3) return; out = out.replace(new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i"), "<b>$1</b>"); }); return out; }
   function run(q) {
-    q = q.trim(); if (!q) { results.innerHTML = '<p class="muted">Type a bottle, a distillery, a cocktail or a subject. Enter opens Ratings with your words.</p>'; return; }
+    q = q.trim(); if (!q) { results.innerHTML = '<p class="muted">Type a bottle, a distillery, a cocktail or a subject. Enter opens all search results with your words.</p>'; return; }
     var terms = WA.nameTerms(q), low = q.toLowerCase(), groups = [];
     var data = WA.data() || [];
     if (terms.length) {
@@ -554,12 +564,12 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
     }
     if (cocktails) {
       var cs = cocktails.filter(function (c) { return (c.name || c.title || "").toLowerCase().indexOf(low) >= 0; }).slice(0, 4);
-      if (cs.length) groups.push({ title: "Cocktails", items: cs.map(function (c) { return '<a href="cocktail.html#' + encodeURIComponent(c.slug || c.id || "") + '"><span class="ct-only">' + mark(c.name || c.title, [low]) + "</span></a>"; }) });
+      if (cs.length) groups.push({ title: "Cocktails", items: cs.map(function (c) { return '<a href="/wa/recipes/' + encodeURIComponent(c.slug || c.id || "") + '"><span class="ct-only">' + mark(c.name || c.title, [low]) + "</span></a>"; }) });
     }
-    results.innerHTML = groups.length ? groups.map(function (g) { return '<section><h4 class="mono">' + g.title + (g.more ? ' <a href="' + g.more + '">All</a>' : "") + "</h4>" + g.items.join("") + "</section>"; }).join("") : '<p class="muted">Nothing by that name. Press Enter to search the ratings for “' + esc(q) + '”.</p>';
+    results.innerHTML = groups.length ? groups.map(function (g) { return '<section><h4 class="mono">' + g.title + (g.more ? ' <a href="' + g.more + '">All</a>' : "") + "</h4>" + g.items.join("") + "</section>"; }).join("") : '<p class="muted">No suggestions yet. Press Enter to search all content for “' + esc(q) + '”.</p>';
   }
   input.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(function () { run(input.value); }, 90); });
-  document.getElementById("waSearchForm").addEventListener("submit", function (e) { e.preventDefault(); var first = results.querySelector("section a"); if (first && results.querySelectorAll("section").length === 1 && results.querySelectorAll("section a").length === 1) { location.href = first.href; return; } location.href = "finder.html?q=" + encodeURIComponent(input.value.trim()); });
+  document.getElementById("waSearchForm").addEventListener("submit", function (e) { e.preventDefault(); location.href = "/wa/search.html?q=" + encodeURIComponent(input.value.trim()); });
   WA.openSearch = function () { open(true); };
 })();
 

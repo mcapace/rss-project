@@ -6,6 +6,14 @@ import { resolveRedirect } from "@/lib/cms/redirects-server";
 /** Paths the application itself serves; anything else is a candidate legacy URL for the redirect engine. */
 const APP_PREFIXES = ["/cms", "/admin", "/reader", "/login", "/api", "/_next", "/brands-cms", "/share", "/wa"];
 const redirectCache = new Map<string, { target: string | null; status: number; until: number }>();
+/**
+ * Staging hosts answered as the legacy domain, so old whiskyadvocate.com paths can be tested end to end before the
+ * domain moves. REDIRECT_HOST_ALIASES ("staging.host=legacy.host,...") replaces the default; remove at launch.
+ */
+const HOST_ALIASES = new Map(
+  (process.env.REDIRECT_HOST_ALIASES ?? "rss-project-ten.vercel.app=whiskyadvocate.com")
+    .split(",").map(pair => pair.split("=").map(part => part.trim().toLowerCase())).filter(pair => pair.length === 2 && pair[0] && pair[1]) as [string, string][],
+);
 
 /**
  * Ask the redirect engine about a legacy path, remembering answers briefly per instance. The proxy runs on Node.js,
@@ -19,7 +27,8 @@ async function lookupRedirect(request: NextRequest): Promise<{ target: string | 
   if (cached && cached.until > Date.now()) { lastLookup = "cached"; return cached.status === 404 ? null : cached; }
   if (!deliveryEnabled()) { lastLookup = "off"; return null; }
   try {
-    const hit = await resolveRedirect(path, request.nextUrl.hostname);
+    const host = request.nextUrl.hostname.toLowerCase();
+    const hit = await resolveRedirect(path, HOST_ALIASES.get(host) ?? host);
     const data = hit ? { target: hit.target, status: hit.status } : { target: null, status: 404 };
     redirectCache.set(path, { ...data, until: Date.now() + 300_000 });
     lastLookup = hit ? "hit" : "miss";

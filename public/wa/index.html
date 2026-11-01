@@ -21,12 +21,7 @@
   <div class="tools"><a class="pill fest-pill" href="#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<div class="story-stage" id="storyStage">
-  <div class="stage" id="stage" data-hint="on">
-    <canvas class="layer gl" id="gl" aria-hidden="true"></canvas>
-    <div class="layer sheet" aria-hidden="true"><video muted playsinline preload="auto" poster="img/sheet.jpg"><source src="pour-land.mp4" type="video/mp4"></video></div>
-    <div class="scene-copy" data-scene="0" data-on="false"><div><span class="mono">The whisky authority</span><h2 style="margin-top:14px">Poured, nosed, <span class="sweep">rated blind.</span></h2><p>Every score on this site was earned in a glass like this one, by a panel that never sees the label.</p></div></div>
-    <div class="ask-landing">
+<section class="ask-band" aria-label="Ask Whisky Advocate">
       <div class="ask">
         <form id="askForm" autocomplete="off">
           <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z"/></svg>
@@ -41,9 +36,7 @@
           <button type="button">Japanese whisky worth the price</button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
+</section>
 
 <section class="hero after-stage">
   <div class="ask"><div class="answer" id="answer" aria-live="polite"><div class="answer-head" id="answerFacets"></div><div class="answer-body"><div class="answer-text" id="answerText"></div><div class="answer-picks" id="answerPicks"></div></div></div></div>
@@ -171,7 +164,7 @@
 <script src="site.js"></script>
 <script>
 WA.ready(function (data) {
-  WA.scrollAnswer = function () { var st = document.getElementById("storyStage"); window.scrollTo({ top: st.offsetTop + st.offsetHeight - 150, behavior: "smooth" }); };
+  WA.scrollAnswer = function () { var st = document.getElementById("answer"); if (st) window.scrollTo({ top: st.getBoundingClientRect().top + window.scrollY - 120, behavior: "smooth" }); };
   var fresh = data.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 4);
   document.getElementById("fresh").innerHTML = fresh.map(function (r) { return WA.bottleCard(r); }).join("");
   // WhiskyFest: a live count to the doors, and the latest WhiskyFest stories.

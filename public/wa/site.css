@@ -1633,17 +1633,23 @@ body[data-menu="true"] { overflow: hidden; }
 .tasting-row .compass-card canvas { width: 100%; height: 220px; margin: 4px 0; }
 .rating-page .rail { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 1000px) { .rating-page .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 960px) {
   .rating-page .bottle-hero { grid-template-columns: 1fr; }
   .rating-page .hero-art { position: relative; top: auto; max-width: 300px; }
   .film-row { grid-template-columns: 1fr; }
   .film-copy { padding: 4px 6px 8px; }
   .rating-nav.stuck .rating-nav-name { display: none; }
+}
+@media (max-width: 800px) {
   .rating-page .profile, .tasting-row { grid-template-columns: 1fr; }
   .rating-nav { padding: 0 10px; }
+}
+@media (max-width: 640px) {
   .film-copy p { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
   .rating-page .rail { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 74%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; scrollbar-width: none; }
   .rating-page .rail > * { scroll-snap-align: start; }
   .rating-page .rail::-webkit-scrollbar { display: none; }
+}
 
 /* Phone audit (2026-10-31): the states fold on a phone, the lenses scroll, the compare tray fits, Top 20 and the tools stack. */
 .ret-state summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
@@ -1891,3 +1897,6 @@ a.author p::after { content: " →"; color: var(--copper); }
 .club-stats { margin-top: 14px; color: var(--ink-2); font-size: 14px; }
 .club-stats span { color: var(--ink-3); padding: 0 4px; }
 .club-note { margin-top: 18px; max-width: 60ch; font-size: 17px; line-height: 1.6; }
+
+/* Bottle page rails: a scrolling rail clips what rises above it, so it keeps room for the hover lift and shadow. */
+@media (max-width: 640px) { .rating-page .rail { padding-top: 6px; margin-top: -6px; padding-bottom: 14px; } }

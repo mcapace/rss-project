@@ -2075,3 +2075,28 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
 /* Story pages (2026-11-01): reader.js puts the reading-preferences bar inside the two-column article grid, ahead of the text.
    It spans both columns, so the story stays in the wide column and "In this story" stays beside it. */
 .article > .reader-preferences { grid-column: 1 / -1; margin: 0 0 4px; }
+
+/* Reading settings (2026-11-01): an "Aa" pill in the story's action row opens a small card with two segmented choices. */
+.actions .reader-preferences { position: relative; display: inline-flex; flex-wrap: nowrap; gap: 0; margin: 0; }
+.rp-toggle { min-width: 44px; justify-content: center; font-weight: 600; letter-spacing: -0.01em; }
+.rp-toggle[aria-expanded="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rp-card { position: absolute; z-index: 40; top: calc(100% + 10px); left: 0; width: 272px; padding: 16px; display: grid; gap: 14px; border: 1px solid var(--glass-edge, var(--rule)); border-radius: 18px; background: rgba(255, 251, 245, 0.96); box-shadow: 0 18px 40px -18px rgba(40, 24, 10, 0.35); }
+.rp-card[hidden] { display: none; }
+.rp-row { display: grid; gap: 8px; }
+.rp-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.rp-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; border-radius: 999px; background: var(--paper-3); }
+.rp-seg button { min-height: 34px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; line-height: 1; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease; }
+.rp-seg button:hover { color: var(--ink); }
+.rp-seg button[aria-checked="true"] { background: var(--paper-2); color: var(--ink); box-shadow: 0 1px 2px rgba(23, 18, 13, 0.12), 0 2px 8px -4px rgba(23, 18, 13, 0.2); }
+.rp-note { margin: 0; font-size: 12px; color: var(--ink-3); }
+@media (max-width: 640px) { .rp-card { position: fixed; z-index: 1003; top: auto; left: 12px; right: 12px; bottom: 12px; width: auto; padding: 18px; border-radius: 22px; box-shadow: 0 -10px 40px -12px rgba(40, 24, 10, 0.35); } .rp-seg button { min-height: 40px; } }
+
+/* Home "Features, guides, cocktails, travel" (2026-11-01): on desktop the first two stories are an even pair, the same width,
+   the same 16:9 picture and the same type, so their kickers, titles and summaries line up across. */
+@media (min-width: 861px) {
+  #homeStories .story.lead, #homeStories .story.side { grid-column: span 6; min-height: 0; display: flex; flex-direction: column; }
+  #homeStories .story.lead.has-img img, #homeStories .story.side.has-img img { width: 100%; height: auto; min-height: 0; aspect-ratio: 16 / 9; object-fit: cover; }
+  #homeStories .story.lead h3, #homeStories .story.side h3 { font-size: clamp(24px, 2.1vw, 32px); line-height: 1.12; min-height: 2.24em; }
+  #homeStories .story.lead p, #homeStories .story.side p { max-width: 62ch; }
+}
+.rp-card.glass { background: #fffbf5; backdrop-filter: none; -webkit-backdrop-filter: none; }

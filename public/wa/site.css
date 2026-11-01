@@ -1800,3 +1800,10 @@ a.author p::after { content: " →"; color: var(--copper); }
 .mast::after { background: linear-gradient(180deg, rgba(247,243,236,0.22), rgba(247,243,236,0.34)); }
 .mast nav a, .mast .tools .pill:not(.solid) { text-shadow: 0 1px 10px rgba(255,255,255,0.75); }
 .mast .tools .pill:not(.solid) { background: rgba(255,253,249,0.82); }
+
+/* Mast swirl, second pass (2026-11-01): the clip is now a wave of whisky at liquid level, pre-cropped to the band the nav shows,
+   so the motion is in view at every width; the wash is lighter and the above-nav ad no longer touches the bar. */
+.mast .mast-pour { opacity: 1; }
+.mast .mast-pour video, .mast .mast-pour img { object-position: center; filter: saturate(1.05) brightness(1.1); }
+.mast::after { background: linear-gradient(180deg, rgba(247,243,236,0.5), rgba(247,243,236,0.6)); }
+.ad-above, .ad-above.ad-billboard, .ad-above.ad-filled { margin-bottom: 14px; }

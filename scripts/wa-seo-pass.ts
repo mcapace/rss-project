@@ -32,7 +32,7 @@
 import { parseArgs } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
 import type { CmsJsonObject } from "../src/lib/cms/types";
-import { fit, plain } from "./fill-meta-descriptions";
+import { plain } from "./fill-meta-descriptions";
 import { brandFlag, connectReader, connectTarget } from "./lib/target";
 
 export const VERSION = "2026-11-01";
@@ -99,13 +99,18 @@ export function fitDescription(input: string, max = 155, min = 100): string {
   if (sentence >= min) return head.slice(0, sentence + 1);
   const clause = Math.max(head.lastIndexOf(", "), head.lastIndexOf("; "));
   if (clause >= min) return `${head.slice(0, clause)}.`;
+  // Before a word cut, end where a new phrase starts ("... and the new Fort Nelson distillery"), so no name is split.
+  const joins = [" and ", " with ", " while ", " as ", " after ", " before ", " including ", " plus ", " where ", " which "].map(join => head.lastIndexOf(join));
+  const join = Math.max(...joins);
+  if (join >= min - 10) return `${head.slice(0, join).replace(/[\s,;:]+$/, "")}.`;
+  if (clause >= min - 20) return `${head.slice(0, clause)}.`;
   return `${clip(text, max - 1).replace(/\s+(and|or|with|of|the|a|an|for|to|in|on|at)$/i, "")}.`;
 }
 
 /** A search title an editor wrote that already meets the rules. */
 export function goodTitle(value: string): boolean { return value.length >= 25 && value.length <= 60 && !/[<>]|&[a-z]+;/i.test(value); }
 /** A description that already meets the rules. */
-export function goodDescription(value: string): boolean { return value.length >= 120 && value.length <= 158 && !/[<>]|&[a-z]+;/i.test(value); }
+export function goodDescription(value: string): boolean { return value.length >= 120 && value.length <= 158 && !/[<>]|&[a-z]+;/i.test(value) && !/(…|\.\.\.)\s*$/.test(value); }
 
 /** A rating's fields from its own data: no model call. */
 export function ratingSeo(row: Pick<Row, "title" | "body_html" | "excerpt" | "metadata">): CmsJsonObject {
@@ -123,7 +128,7 @@ export function ratingSeo(row: Pick<Row, "title" | "body_html" | "excerpt" | "me
   const tail = score ? `: ${score} Points` : " Review";
   const title = short.length + tail.length <= 60 ? `${short}${tail}` : `${clip(short, 60 - tail.length)}${tail}`;
   const lead = [score ? `${short}: ${score} points` : short, [category, price ? `$${price}` : ""].filter(Boolean).join(", ")].filter(Boolean).join(". ");
-  const built = fit(`${lead}. ${note}`, 155);
+  const built = fitDescription(`${lead}. ${note}`);
   const existing = str(seo.description);
   const description = goodDescription(existing) ? existing : built;
   const firstSentence = note.match(/^[^.!?]+[.!?]/)?.[0] ?? "";
@@ -160,10 +165,10 @@ export function tidyStory(raw: Record<string, unknown>, existing: CmsJsonObject,
 export async function runSeoPass(args: string[], log: (line: string) => void = console.log) {
   const { values } = parseArgs({ args, options: {
     brand: { type: "string", default: "wa" }, kind: { type: "string" }, limit: { type: "string", default: "300" }, concurrency: { type: "string", default: "4" },
-    redo: { type: "boolean", default: false }, preview: { type: "string" },
+    redo: { type: "boolean", default: false }, fix: { type: "boolean", default: false }, preview: { type: "string" },
     apply: { type: "boolean", default: false }, "development-target": { type: "string" }, help: { type: "boolean", default: false },
   }, strict: true });
-  if (values.help) { log("Usage: wa-seo-pass --brand wa [--kind article|rating|...] [--limit N] [--concurrency N] [--redo] [--preview N] [--apply --development-target HOST]"); return; }
+  if (values.help) { log("Usage: wa-seo-pass --brand wa [--kind article|rating|...] [--limit N] [--concurrency N] [--redo | --fix] [--preview N] [--apply --development-target HOST]"); return; }
   const brand = brandFlag(values.brand);
   if (values.kind && !KINDS.includes(values.kind)) throw new Error(`--kind must be one of ${KINDS.join(", ")}.`);
   const kinds = values.kind ? [values.kind] : KINDS;
@@ -179,15 +184,21 @@ export async function runSeoPass(args: string[], log: (line: string) => void = c
   // Records this version has not covered yet, newest first so the live site's stories come first.
   const rows: Row[] = [];
   let left = 0;
+  // --fix takes the records whose description ends in an ellipsis, whatever pass wrote them; otherwise the records this version has not covered.
+  const select = "id,kind,slug,title,byline,excerpt,body_html,metadata,revision";
   for (const kind of kinds) {
-    const { data, error, count } = await reader.from("cms_documents").select("id,kind,slug,title,byline,excerpt,body_html,metadata,revision", { count: "exact" })
-      .eq("brand", brand).eq("publication_state", "published").eq("kind", kind).not("slug", "is", null)
-      .or(values.redo ? "id.not.is.null" : `metadata->seo->pass->>version.is.null,metadata->seo->pass->>version.neq.${VERSION}`)
-      .order("published_at", { ascending: false, nullsFirst: false }).limit(Math.max(0, limit - rows.length));
-    if (error) throw new Error(`Could not read ${kind} records: ${error.message}`);
-    left += count ?? 0;
-    // A record an editor locked keeps its fields.
-    rows.push(...((data ?? []) as Row[]).filter(row => obj(obj(row.metadata).seo).locked !== true));
+    for (const ending of values.fix ? ["%…", "%..."] : [null]) {
+      const base = () => reader.from("cms_documents").select(select, { count: "exact" }).eq("brand", brand).eq("publication_state", "published").eq("kind", kind).not("slug", "is", null);
+      const { data, error, count } = await (ending
+        ? base().like("metadata->seo->>description", ending)
+        : base().or(values.redo ? "id.not.is.null" : `metadata->seo->pass->>version.is.null,metadata->seo->pass->>version.neq.${VERSION}`))
+        .order("published_at", { ascending: false, nullsFirst: false }).limit(Math.max(0, limit - rows.length));
+      if (error) throw new Error(`Could not read ${kind} records: ${error.message}`);
+      left += count ?? 0;
+      // A record an editor locked keeps its fields.
+      rows.push(...((data ?? []) as Row[]).filter(row => obj(obj(row.metadata).seo).locked !== true && !rows.some(seen => seen.id === row.id)));
+      if (rows.length >= limit) break;
+    }
     if (rows.length >= limit) break;
   }
   const summary = { mode: writer ? "development-apply" : previewCount ? "preview" : "dry-run", brand, kinds, model: needsModel ? MODEL : null, records_left: left, documents: rows.length, saved: 0, kept_title: 0, kept_description: 0, failed: 0, failures: [] as string[], samples: [] as unknown[] };

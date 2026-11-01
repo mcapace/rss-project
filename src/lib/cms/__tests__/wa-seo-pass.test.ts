@@ -39,4 +39,13 @@ describe("SEO pass", () => {
     expect(long.endsWith(".")).toBe(true);
     expect(long).not.toContain("…");
   });
+  it("never keeps an ellipsis and never splits a name on the last-resort cut", () => {
+    expect(goodDescription(`${"x".repeat(130)}…`)).toBe(false);
+    expect(goodDescription(`${"x".repeat(130)}...`)).toBe(false);
+    const cut = fitDescription("Dan McKee succeeds Pamela Heilmann as Michter's master distiller in May as Matt Bell becomes distiller and the Fort Nelson Distillery opens on Whiskey Row in Louisville");
+    expect(cut).toBe("Dan McKee succeeds Pamela Heilmann as Michter's master distiller in May as Matt Bell becomes distiller.");
+    const rating = ratingSeo({ title: "Caol Ila 12 year old, 57.6%", body_html: `<p>${"Smoky and sweet with a long, peppery finish that lingers. ".repeat(4)}</p>`, excerpt: "", metadata: { rating: { score: 88, price: 79, category: "Single Malt Scotch" } } });
+    expect(String(rating.description)).not.toMatch(/…$/);
+  });
 });
+

@@ -53,8 +53,8 @@ const SCHEMA = {
 } as const;
 
 const SYSTEM = `You write the search and answer-engine fields for whiskyadvocate.com, the magazine of record for whisky. Given one piece, return JSON:
-- title: the search title, 25 to 60 characters. Put the main subject first (the whisky, distillery, person, place or topic people search for), then what the piece offers (review, guide, recipe, news, interview). Keep the piece's meaning; no clickbait, no year unless it matters, no site name.
-- description: 120 to 155 characters telling a searcher exactly what they will find, using only facts in the piece and naming the whiskies, people or places it names. Present tense, plain words, one or two sentences.
+- title: the search title, 25 to 60 characters; count them, never more than 60. Put the main subject first (the whisky, distillery, person, place or topic people search for), then what the piece offers (review, guide, recipe, news, interview). Keep the piece's meaning; no clickbait, no year unless it matters, no site name.
+- description: 120 to 155 characters (never more than 155) telling a searcher exactly what they will find, using only facts in the piece and naming the whiskies, people or places it names. Present tense, plain words, one or two sentences.
 - og_title: a social headline up to 90 characters, the most interesting true thing in the piece.
 - og_description: up to 200 characters for social sharing.
 - focus_keyword: the one lowercase search phrase this piece should rank for.
@@ -76,6 +76,30 @@ export function clip(input: string, max: number): string {
   const cut = text.slice(0, max + 1);
   const end = cut.lastIndexOf(" ");
   return (end > max * 0.6 ? cut.slice(0, end) : cut.slice(0, max)).replace(/[\s,;:–-]+$/, "");
+}
+
+/** A title over `max` cut at its last clause (": ", " | ", " - ", ", "), never mid-phrase; a word cut only as a last resort. */
+export function fitTitle(input: string, max = 60, min = 25): string {
+  const text = clip(input, 400);
+  if (text.length <= max) return text;
+  const head = text.slice(0, max + 1);
+  for (const sep of [": ", " | ", " - ", ", ", " & ", " and "]) {
+    const at = head.lastIndexOf(sep);
+    if (at >= min) return text.slice(0, at).replace(/[\s,;:&-]+$/, "");
+  }
+  return clip(text, max).replace(/\s+(and|or|with|of|the|a|an|for|to|in|on|at|new)$/i, "");
+}
+
+/** A description over `max` ends on its last full sentence, else its last clause, with no ellipsis. */
+export function fitDescription(input: string, max = 155, min = 100): string {
+  const text = clip(input, 1000);
+  if (text.length <= max) return text;
+  const head = text.slice(0, max + 1);
+  const sentence = Math.max(head.lastIndexOf(". "), head.lastIndexOf("! "), head.lastIndexOf("? "));
+  if (sentence >= min) return head.slice(0, sentence + 1);
+  const clause = Math.max(head.lastIndexOf(", "), head.lastIndexOf("; "));
+  if (clause >= min) return `${head.slice(0, clause)}.`;
+  return `${clip(text, max - 1).replace(/\s+(and|or|with|of|the|a|an|for|to|in|on|at)$/i, "")}.`;
 }
 
 /** A search title an editor wrote that already meets the rules. */
@@ -119,12 +143,12 @@ export function ratingSeo(row: Pick<Row, "title" | "body_html" | "excerpt" | "me
 export function tidyStory(raw: Record<string, unknown>, existing: CmsJsonObject, docTitle: string): CmsJsonObject {
   const keepTitle = goodTitle(str(existing.title));
   const keepDescription = goodDescription(str(existing.description));
-  const title = keepTitle ? str(existing.title) : clip(str(raw.title) || docTitle, 60);
-  const description = keepDescription ? str(existing.description) : fit(str(raw.description), 155);
+  const title = keepTitle ? str(existing.title) : fitTitle(str(raw.title) || docTitle);
+  const description = keepDescription ? str(existing.description) : fitDescription(str(raw.description));
   const focus = clip(str(raw.focus_keyword).toLowerCase(), 60);
   return {
     title, description,
-    og_title: clip(str(raw.og_title) || docTitle, 90), og_description: clip(str(raw.og_description) || description, 200),
+    og_title: fitTitle(str(raw.og_title) || docTitle, 95, 40), og_description: fitDescription(str(raw.og_description) || description, 300, 150),
     focus_keyword: focus,
     keywords: [...new Set(strs(raw.keywords).map(k => clip(k.toLowerCase(), 50)).filter(k => k && k !== focus))].slice(0, 10),
     summary: clip(str(raw.summary), 320),

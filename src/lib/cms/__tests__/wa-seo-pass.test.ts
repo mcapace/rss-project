@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clip, goodDescription, goodTitle, ratingSeo, tidyStory } from "../../../../scripts/wa-seo-pass";
+import { clip, fitDescription, fitTitle, goodDescription, goodTitle, ratingSeo, tidyStory } from "../../../../scripts/wa-seo-pass";
 
 describe("SEO pass", () => {
   it("judges titles and descriptions by the search rules", () => {
@@ -29,5 +29,14 @@ describe("SEO pass", () => {
   });
   it("clips without dangling separators", () => {
     expect(clip("Bourbon — the long view, explained in full", 20)).toBe("Bourbon, the long");
+  });
+  it("cuts an over-long title at a clause and a description at a sentence, never with an ellipsis", () => {
+    expect(fitTitle("Woodford Reserve Chocolate Malt, Elijah Craig Rye: New Whisky Releases")).toBe("Woodford Reserve Chocolate Malt, Elijah Craig Rye");
+    const d = fitDescription("New releases include Woodford Reserve Chocolate Malted Rye bourbon and Elijah Craig's first straight rye. Also Lagavulin Nick Offerman Edition and Teeling Single Pot Still.");
+    expect(d).toBe("New releases include Woodford Reserve Chocolate Malted Rye bourbon and Elijah Craig's first straight rye.");
+    const long = fitDescription("A roundup of new whiskies with chocolate malted rye bourbon from Woodford, Elijah Craig straight rye, Aberfeldy and Craigellachie single casks, Jack Daniel's Heritage Barrel and more");
+    expect(long.length).toBeLessThanOrEqual(155);
+    expect(long.endsWith(".")).toBe(true);
+    expect(long).not.toContain("…");
   });
 });

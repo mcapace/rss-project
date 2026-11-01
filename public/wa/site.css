@@ -2071,3 +2071,7 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
 @media (min-width: 820px) and (max-width: 900px) {
   .mast .tools > a.fest-pill { display: inline-flex; }
 }
+
+/* Story pages (2026-11-01): reader.js puts the reading-preferences bar inside the two-column article grid, ahead of the text.
+   It spans both columns, so the story stays in the wide column and "In this story" stays beside it. */
+.article > .reader-preferences { grid-column: 1 / -1; margin: 0 0 4px; }

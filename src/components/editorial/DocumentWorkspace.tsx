@@ -20,6 +20,7 @@ import { usePageTitle, useShell } from "./Shell";
 import { BodyEditor, type InsertableImage } from "./BodyEditor";
 import { CatalogField } from "./CatalogField";
 import { NewsletterCard } from "./NewsletterCard";
+import { sponsorship } from "@/lib/cms/sponsored";
 import { SiteCard } from "./SiteCard";
 import { useCollaboration } from "./collab/useCollaboration";
 import { ACCESS_TIERS, requiredTier, type AccessTier } from "@/lib/delivery/paywall";
@@ -413,6 +414,13 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
         </Field>
         <Field label="Public URL" htmlFor="ed-url"><input id="ed-url" className="ed-input" type="url" value={draft.public_url ?? ""} onChange={event => update({ public_url: event.target.value })} placeholder="https://" /></Field>
         <Field label="Tags" htmlFor="ed-tags" hint="Comma separated."><input id="ed-tags" className="ed-input" value={stringList(draft.metadata.tags).join(", ")} onChange={event => updateMeta({ tags: event.target.value.split(",").map(tag => tag.trim()).filter(Boolean) })} placeholder="Bourbon, Collecting" /></Field>
+        {document.kind === "article" && (() => {
+          const sp = sponsorship(draft.metadata, draft.byline);
+          return <Field label="Sponsored" htmlFor="ed-sponsored" hint={sp.on ? "Labeled Sponsored in every feed on the site, with a disclosure at the top of the story." : sp.explicit ? "Marked not sponsored. Legacy byline or tags are ignored." : "Paid content gets a Sponsored label in feeds and a disclosure on the story."}>
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13 }}><input id="ed-sponsored" type="checkbox" className="ed-checkbox" checked={sp.on} onChange={event => updateMeta({ sponsored: { on: event.target.checked, by: sp.by } })} />This is sponsored content</label>
+            {sp.on && <input className="ed-input" style={{ marginTop: 8 }} aria-label="Sponsor" value={sp.by} onChange={event => updateMeta({ sponsored: { on: true, by: event.target.value } })} placeholder="Sponsor, shown as “Sponsored by …” (optional)" />}
+          </Field>;
+        })()}
       </Card>
 
       {document.kind === "rating" || document.kind === "product_review" ? <Card pad={false} className="ed-rail-card still">

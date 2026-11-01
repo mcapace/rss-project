@@ -1,6 +1,7 @@
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { CmsError } from "@/lib/cms/access";
 import type { CmsBrand } from "@/lib/cms/types";
+import { sponsorship } from "./sponsored";
 
 /**
  * The home page's news rotator. Five positions: a pinned position shows the
@@ -13,7 +14,7 @@ export const FRONT_POSITIONS = 5;
 export const FRONT_LABELS = { "": "No label", sponsored: "Sponsored", archive: "From the archive", editors: "Editors' pick" } as const;
 export type FrontLabel = keyof typeof FRONT_LABELS;
 
-export type FrontStory = { id: string; slug: string | null; title: string; byline: string; excerpt: string; section: string; date: string | null; published: boolean; hero: string | null };
+export type FrontStory = { id: string; slug: string | null; title: string; byline: string; excerpt: string; section: string; date: string | null; published: boolean; hero: string | null; sponsored: boolean; sponsor: string };
 export type FrontSlot = { position: number; pinned: (FrontStory & { label: FrontLabel; ends_at: string | null; set_by: string; updated_at: string }) | null; fallback: FrontStory | null };
 
 type DocRow = { id: string; slug: string | null; title: string; byline: string; excerpt: string; publication_state: string; metadata: Record<string, unknown> };
@@ -29,7 +30,8 @@ function story(row: DocRow): FrontStory {
   const legacyMedia = (meta.legacy_media && typeof meta.legacy_media === "object" ? meta.legacy_media : {}) as Record<string, unknown>;
   const thumb = typeof legacyMedia.thumb_file === "string" ? legacyMedia.thumb_file : typeof legacyMedia.banner === "string" ? legacyMedia.banner : "";
   const hero = first ? String(first.url || first.src) : thumb ? (thumb.startsWith("/") ? "https://whiskyadvocate.com" + thumb : thumb) : null;
-  return { id: row.id, slug: row.slug, title: row.title, byline: row.byline, excerpt: row.excerpt, section: cats[0] || "", date, published: row.publication_state === "published", hero };
+  const sp = sponsorship(meta, row.byline);
+  return { id: row.id, slug: row.slug, title: row.title, byline: row.byline, excerpt: row.excerpt, section: cats[0] || "", date, published: row.publication_state === "published", hero, sponsored: sp.on, sponsor: sp.by };
 }
 
 const DOC_FIELDS = "id,slug,title,byline,excerpt,publication_state,metadata";

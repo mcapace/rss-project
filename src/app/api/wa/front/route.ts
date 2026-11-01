@@ -19,7 +19,7 @@ export async function GET() {
     const slots = await resolveFront("wa");
     const stories = slots.map(slot => {
       const s = slot.pinned || slot.fallback;
-      return s ? { position: slot.position, id: s.id, slug: s.slug, title: s.title, by: s.byline, dek: s.excerpt, sec: s.section, d: s.date, hero: s.hero, pinned: Boolean(slot.pinned), label: slot.pinned?.label || "" } : null;
+      return s ? { position: slot.position, id: s.id, slug: s.slug, title: s.title, by: s.byline, dek: s.excerpt, sec: s.section, d: s.date, hero: s.hero, pinned: Boolean(slot.pinned), label: slot.pinned?.label || "", ...(s.sponsored || slot.pinned?.label === "sponsored" ? { sp: 1, ...(s.sponsor ? { spBy: s.sponsor } : {}) } : {}) } : null;
     }).filter(Boolean);
     return NextResponse.json({ stories }, { headers: { ...CORS, "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
   } catch (error) {

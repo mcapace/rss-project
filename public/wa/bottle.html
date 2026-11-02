@@ -284,6 +284,17 @@ WA.ready(function (recent) { WA.archive(function (data) {
     (function () {
       var pool = [], seen = {}, byslug = {};
       function add(x, how) { if (!x || same(x) || seen[x.slug] || pool.length >= 22) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
+      // Bottles like this by meaning and flavor profile, read from every tasting note; the local guess stands when there are none.
+      function liked(cb) {
+        if (!r.slug || /^t20-/.test(r.slug)) return cb([]);
+        fetch("/api/wa/bottles-like?slug=" + encodeURIComponent(r.slug), { headers: { Accept: "application/json" } }).then(function (res) { return res.ok ? res.json() : null; }).then(function (j) {
+          cb(((j && j.bottles) || []).map(function (b) { return WA.find(data, b.slug); }).filter(function (x) { return x && !same(x); }).slice(0, 8));
+        }, function () { cb([]); });
+      }
+      liked(function (near) {
+      if (cur !== r) return;
+      if (near.length >= 4) { var rail = document.getElementById("similar"); rail.innerHTML = near.slice(0, 4).map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(rail); }
+      near.forEach(function (x) { add(x, "closest in flavor, from the tasting notes"); });
       sim.slice(0, 10).forEach(function (x) { add(x, "closest by score, price and character"); });
       data.filter(function (x) { return x.pr === r.pr && !same(x); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4).forEach(function (x) { add(x, "same house"); });
       peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 4).forEach(function (x) { add(x, "scores as high for less"); });
@@ -295,6 +306,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
           var el = document.getElementById("similar"); el.innerHTML = WA.recCards(rec.picks, byslug); WA.fillNotes(el);
           var head = el.previousElementSibling && el.previousElementSibling.querySelector(".band-head > div, div"); if (head && rec.line) { var l = head.querySelector(".rec-line") || document.createElement("p"); l.className = "rec-line"; l.textContent = rec.line; head.appendChild(l); }
         });
+      });
       });
     })();
     if (WA.setContext) WA.setContext({ kind: "bottle", title: r.n, summary: r.s + " points, " + fmt(r.p) + ", " + r.c + (r.pr ? ", by " + r.pr : ""), slugs: [r.slug].concat(sim.slice(0, 6).map(function (x) { return x.slug; })) });

@@ -3,8 +3,25 @@
   var input=document.getElementById('discoveryQuery'), results=document.getElementById('discoveryResults'), status=document.getElementById('discoveryStatus'), more=document.getElementById('discoveryMore'), esc=WAReader.escape;
   var index=[], ratings=[], ready=false, limit=12, kind='All', kinds=['All','Bottle','Story','Recipe','Producer'], labels={All:'All',Bottle:'Bottles',Story:'Stories',Recipe:'Recipes',Producer:'Producers'};
   var tabs=document.createElement('div'); tabs.className='discovery-tabs'; tabs.setAttribute('role','group'); tabs.setAttribute('aria-label','Result type'); status.before(tabs);
+  // The answer: the question matched by meaning against every rating and story, answered from what was found.
+  var panel=document.createElement('section'), asked=''; panel.className='answer search-answer'; panel.setAttribute('aria-label','Answer'); panel.setAttribute('aria-live','polite'); tabs.before(panel);
+  function head(note){ return '<div class="answer-head"><span class="facet">Answer</span><span class="mono search-answer-note">'+note+'</span></div>'; }
+  function ask(q) {
+    if(q===asked)return; asked=q;
+    if(q.length<3){panel.removeAttribute('data-show');panel.innerHTML='';return;}
+    panel.innerHTML=head('Reading the ratings and stories')+'<div class="answer-body solo"><div class="answer-text"><p class="search-answer-wait" aria-label="Loading"><span></span><span></span><span></span></p></div></div>'; panel.setAttribute('data-show','true');
+    fetch('/api/wa/answer?q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+      if(q!==asked)return;
+      var bottles=(j&&j.bottles)||[], stories=(j&&j.stories)||[];
+      if(!j||(!j.answer&&!bottles.length&&!stories.length)){panel.removeAttribute('data-show');panel.innerHTML='';return;}
+      var picks=bottles.map(function(b){return '<a class="pick" href="'+esc(WA.bottleHref(b.slug))+'"><span class="sc score-type">'+esc(b.score||'')+'</span><span><span class="nm">'+esc(b.title)+'</span><span class="ct">'+esc(b.why||b.line||b.category)+'</span></span><span class="pr">'+(b.price?esc(WA.fmt(b.price)):'')+'</span></a>';}).join('');
+      var reads=stories.map(function(s){return '<a href="'+esc(WA.storyHref(s))+'">'+esc(s.title)+'</a>';}).join('');
+      panel.innerHTML=head('From Whisky Advocate ratings and stories')+'<div class="answer-body'+(picks?'':' solo')+'"><div class="answer-text">'+(j.answer?'<p>'+esc(j.answer)+'</p>':'')+(reads?'<p class="mono search-answer-label">Read more</p><div class="src">'+reads+'</div>':'')+'</div>'+(picks?'<div class="answer-picks">'+picks+'</div>':'')+'</div>';
+      WA.track&&WA.track('search_answer',{q:q,bottles:bottles.length,stories:stories.length});
+    },function(){if(q===asked){panel.removeAttribute('data-show');panel.innerHTML='';}});
+  }
   function restore() { var params=new URLSearchParams(location.search); input.value=params.get('q')||''; kind=kinds.includes(params.get('type'))?params.get('type'):'All'; limit=12; }
-  function navigate(type) { kind=type;limit=12;var url=new URL(location.href);url.searchParams.set('q',input.value.trim());if(kind==='All')url.searchParams.delete('type');else url.searchParams.set('type',kind);history.pushState(null,'',url);render(); }
+  function navigate(type) { kind=type;limit=12;var url=new URL(location.href);url.searchParams.set('q',input.value.trim());if(kind==='All')url.searchParams.delete('type');else url.searchParams.set('type',kind);history.pushState(null,'',url);ask(input.value.trim());render(); }
   function highlight(text,query) { var words=WA.norm(query).split(' ').filter(function (w) { return w.length>2; }); if(!words.length)return esc(text); var pattern=new RegExp('('+words.map(function(w){return w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|')+')','ig');return String(text||'').split(pattern).map(function(s,i){return i%2?'<mark>'+esc(s)+'</mark>':esc(s);}).join(''); }
   function card(x,q) { return '<article class="reader-card discovery-card">'+(x.rating?'<span class="score-type result-score" aria-label="'+x.rating.s+' points">'+x.rating.s+'</span>':'')+'<div><p class="mono">'+esc(x.kind)+'</p><h3><a href="'+esc(x.href)+'">'+highlight(x.title,q)+'</a></h3><p>'+esc(x.description||'')+'</p></div></article>'; }
   function render() {
@@ -33,5 +50,5 @@
   document.getElementById('discoveryForm').onsubmit=function(e){e.preventDefault();navigate(kind);};
   function choose(e){var b=e.target.closest('[data-type]');if(b){navigate(b.dataset.type);tabs.querySelector('[data-type="'+kind+'"]').focus();}}
   tabs.addEventListener('click',choose);results.addEventListener('click',choose);more.onclick=function(){limit+=12;render();};
-  addEventListener('popstate',function(){restore();render();});restore();load();
+  addEventListener('popstate',function(){restore();ask(input.value.trim());render();});restore();ask(input.value.trim());load();
 })();

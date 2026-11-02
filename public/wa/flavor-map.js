@@ -1,0 +1,254 @@
+/* The flavor map: every rated bottle placed by how it tastes (flavor.json, UMAP over each tasting note's flavor
+   profile), drawn with WebGL. Drag to pan, wheel or pinch to zoom, hover or tap a point for the bottle. */
+(function () {
+  'use strict';
+  var AXES = ['smoke', 'maritime', 'sweet', 'fresh_fruit', 'dried_fruit', 'tropical', 'floral', 'spice', 'oak', 'grain', 'nutty', 'herbal', 'body', 'finish'];
+  var AXIS_LABEL = { smoke: 'Smoke', maritime: 'Sea and brine', sweet: 'Vanilla and caramel', fresh_fruit: 'Orchard and citrus', dried_fruit: 'Dried fruit and sherry', tropical: 'Tropical fruit', floral: 'Floral', spice: 'Spice', oak: 'Oak and leather', grain: 'Grain and malt', nutty: 'Nut and chocolate', herbal: 'Herbal', body: 'Body', finish: 'Finish' };
+  var GROUPS = [
+    { id: 'bourbon', label: 'Bourbon', color: [0.96, 0.68, 0.26], test: function (c) { return /bourbon|tennessee/i.test(c); } },
+    { id: 'rye', label: 'Rye', color: [0.93, 0.42, 0.25], test: function (c) { return /rye/i.test(c); } },
+    { id: 'malt', label: 'Single malt Scotch', color: [0.55, 0.76, 0.95], test: function (c) { return /single malt scotch/i.test(c); } },
+    { id: 'blend', label: 'Blended Scotch', color: [0.72, 0.64, 0.96], test: function (c) { return /scotch/i.test(c); } },
+    { id: 'irish', label: 'Irish', color: [0.45, 0.85, 0.58], test: function (c) { return /irish/i.test(c); } },
+    { id: 'japan', label: 'Japanese', color: [0.97, 0.55, 0.68], test: function (c) { return /japan/i.test(c); } },
+    { id: 'world', label: 'Everything else', color: [0.86, 0.82, 0.74], test: function () { return true; } }
+  ];
+  var stage = document.getElementById('fmapStage'), canvas = document.getElementById('fmapCanvas'), labels = document.getElementById('fmapLabels'), tip = document.getElementById('fmapTip'), panel = document.getElementById('fmapPanel');
+  var status = document.getElementById('fmapStatus'), find = document.getElementById('fmapFind'), suggest = document.getElementById('fmapSuggest'), chips = document.getElementById('fmapChips'), minScore = document.getElementById('fmapScore'), colorBy = document.getElementById('fmapColor');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var pts = [], grid = {}, CELL = 24, view = { x: 500, y: 500, k: 1 }, target = null, hover = -1, selected = -1, group = 'all', born = 0;
+  var gl, prog, buf, loc = {}, dpr = 1, W = 0, H = 0, dirty = true;
+
+  function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
+  function decode(f) { var v = []; for (var i = 0; i < f.length; i++) v.push(parseInt(f[i], 11) || 0); return v; }
+  function vec(p) { var v = p.f.slice(0, 12); v.push(p.f[12] * 2, p.f[13] * 2); return v; }
+  function cosine(a, b) { var d = 0, na = 0, nb = 0; for (var i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; } return na && nb ? d / Math.sqrt(na * nb) : 0; }
+  function groupOf(c) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].test(c || '')) return i; return GROUPS.length - 1; }
+  function visible(p) { return p.s >= +minScore.value && (group === 'all' || GROUPS[p.g].id === group); }
+
+  // Data space (0-1000 square) to CSS pixels, fitted to the stage with a margin.
+  function base() { return Math.min(W, H) / 1080; }
+  function toScreen(x, y) { var s = base() * view.k; return [(x - view.x) * s + W / 2, (y - view.y) * s + H / 2]; }
+  function toData(sx, sy) { var s = base() * view.k; return [(sx - W / 2) / s + view.x, (sy - H / 2) / s + view.y]; }
+
+  function nearest(sx, sy, radius) {
+    var d = toData(sx, sy), r = radius / (base() * view.k), best = -1, bd = r * r;
+    for (var gx = Math.floor((d[0] - r) / CELL); gx <= Math.floor((d[0] + r) / CELL); gx++) for (var gy = Math.floor((d[1] - r) / CELL); gy <= Math.floor((d[1] + r) / CELL); gy++) {
+      var cell = grid[gx + ',' + gy]; if (!cell) continue;
+      for (var i = 0; i < cell.length; i++) { var p = pts[cell[i]]; if (!visible(p)) continue; var dx = p.x - d[0], dy = p.y - d[1], dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = cell[i]; } }
+    }
+    return best;
+  }
+
+  function setup() {
+    gl = canvas.getContext('webgl', { antialias: true, premultipliedAlpha: true, alpha: true });
+    if (!gl) return false;
+    var vs = 'attribute vec2 a_pos; attribute vec2 a_from; attribute vec3 a_col; attribute float a_state; uniform vec4 u_view; uniform float u_t; uniform float u_size; varying vec3 v_col; varying float v_state;' +
+      'void main() { float t = u_t * u_t * (3.0 - 2.0 * u_t); vec2 p = mix(a_from, a_pos, t); gl_Position = vec4((p - u_view.xy) * u_view.zw, 0.0, 1.0); gl_Position.y = -gl_Position.y;' +
+      ' v_col = a_col; v_state = a_state; gl_PointSize = a_state < 0.5 ? u_size * 0.55 : (a_state > 1.5 ? u_size * 3.2 : u_size); }';
+    var fs = 'precision mediump float; varying vec3 v_col; varying float v_state;' +
+      'void main() { float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard;' +
+      ' if (v_state > 1.5) { float ring = smoothstep(0.62, 0.72, d) * (1.0 - smoothstep(0.86, 1.0, d)); float core = 1.0 - smoothstep(0.18, 0.3, d); gl_FragColor = vec4(vec3(1.0, 0.93, 0.8) * (ring + core), ring + core); return; }' +
+      ' float a = v_state < 0.5 ? 0.06 : 1.0; float glow = exp(-d * d * 5.0) * 0.55 + (1.0 - smoothstep(0.25, 0.45, d)) * 0.6; gl_FragColor = vec4(v_col * glow * a, glow * a); }';
+    function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+    prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
+    gl.useProgram(prog);
+    ['a_pos', 'a_from', 'a_col', 'a_state'].forEach(function (n) { loc[n] = gl.getAttribLocation(prog, n); });
+    ['u_view', 'u_t', 'u_size'].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
+    buf = gl.createBuffer();
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+    return true;
+  }
+
+  // One interleaved buffer: position, start position, colour, state (0 filtered out, 1 shown, 2 selected).
+  function upload() {
+    var score = colorBy.value === 'score', data = new Float32Array(pts.length * 8);
+    pts.forEach(function (p, i) {
+      var c = GROUPS[p.g].color;
+      if (score) { var t = Math.max(0, Math.min(1, (p.s - 80) / 17)); c = [0.35 + 0.65 * t, 0.22 + 0.62 * t * t, 0.12 + 0.5 * t * t * t]; }
+      var o = i * 8; data[o] = p.x; data[o + 1] = p.y; data[o + 2] = p.fx; data[o + 3] = p.fy; data[o + 4] = c[0]; data[o + 5] = c[1]; data[o + 6] = c[2]; data[o + 7] = visible(p) ? 1 : 0;
+    });
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    var stride = 32;
+    gl.enableVertexAttribArray(loc.a_pos); gl.vertexAttribPointer(loc.a_pos, 2, gl.FLOAT, false, stride, 0);
+    gl.enableVertexAttribArray(loc.a_from); gl.vertexAttribPointer(loc.a_from, 2, gl.FLOAT, false, stride, 8);
+    gl.enableVertexAttribArray(loc.a_col); gl.vertexAttribPointer(loc.a_col, 3, gl.FLOAT, false, stride, 16);
+    gl.enableVertexAttribArray(loc.a_state); gl.vertexAttribPointer(loc.a_state, 1, gl.FLOAT, false, stride, 28);
+    dirty = true;
+  }
+
+  function resize() {
+    var r = stage.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
+    dirty = true;
+  }
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (target) { var e = reduce ? 1 : 0.14; view.x += (target.x - view.x) * e; view.y += (target.y - view.y) * e; view.k += (target.k - view.k) * e; if (Math.abs(target.k - view.k) < 0.002 && Math.abs(target.x - view.x) < 0.05 && Math.abs(target.y - view.y) < 0.05) { view.x = target.x; view.y = target.y; view.k = target.k; target = null; } dirty = true; }
+    var t = reduce ? 1 : Math.min(1, (now - born) / 1600);
+    if (t < 1) dirty = true;
+    if (!dirty || !gl) return;
+    dirty = false;
+    var s = base() * view.k;
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform4f(loc.u_view, view.x, view.y, (2 * s) / W, (2 * s) / H);
+    gl.uniform1f(loc.u_t, t);
+    gl.uniform1f(loc.u_size, Math.max(5, Math.min(22, 4.6 * Math.sqrt(view.k) * Math.min(W, H) / 700)) * dpr);
+    gl.drawArrays(gl.POINTS, 0, pts.length);
+    if (selected >= 0 && t >= 1) { gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); var p = pts[selected]; drawOne(p); gl.blendFunc(gl.ONE, gl.ONE); }
+    place();
+  }
+  // The selected bottle: a ring, drawn from a one-point buffer so the main buffer stays untouched.
+  var one;
+  function drawOne(p) {
+    one = one || gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, one); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([p.x, p.y, p.x, p.y, 1, 1, 1, 2]), gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(loc.a_pos, 2, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(loc.a_from, 2, gl.FLOAT, false, 32, 8); gl.vertexAttribPointer(loc.a_col, 3, gl.FLOAT, false, 32, 16); gl.vertexAttribPointer(loc.a_state, 1, gl.FLOAT, false, 32, 28);
+    gl.drawArrays(gl.POINTS, 0, 1);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.vertexAttribPointer(loc.a_pos, 2, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(loc.a_from, 2, gl.FLOAT, false, 32, 8); gl.vertexAttribPointer(loc.a_col, 3, gl.FLOAT, false, 32, 16); gl.vertexAttribPointer(loc.a_state, 1, gl.FLOAT, false, 32, 28);
+  }
+
+  // Region names sit where bottles led by that flavor gather; labels that would collide are left out.
+  var regions = [];
+  function findRegions() {
+    var by = {};
+    pts.forEach(function (p) { var top = 0; for (var i = 1; i < 12; i++) if (p.f[i] > p.f[top]) top = i; if (p.f[top] < 6) return; (by[top] = by[top] || []).push(p); });
+    regions = Object.keys(by).filter(function (k) { return by[k].length >= Math.max(25, pts.length * 0.012); }).map(function (k) {
+      var list = by[k], xs = list.map(function (p) { return p.x; }).sort(function (a, b) { return a - b; }), ys = list.map(function (p) { return p.y; }).sort(function (a, b) { return a - b; });
+      return { label: AXIS_LABEL[AXES[k]], x: xs[xs.length >> 1], y: ys[ys.length >> 1], n: list.length };
+    }).sort(function (a, b) { return b.n - a.n; });
+    labels.innerHTML = regions.map(function (r) { return '<span class="fmap-region">' + esc(r.label) + '</span>'; }).join('');
+  }
+  function place() {
+    var boxes = [], els = labels.children;
+    regions.forEach(function (r, i) {
+      var el = els[i], s = toScreen(r.x, r.y), w = el.offsetWidth || 120, h = 22, box = [s[0] - w / 2, s[1] - h / 2, s[0] + w / 2, s[1] + h / 2];
+      var clash = box[0] < 8 || box[1] < 8 || box[2] > W - 8 || box[3] > H - 8 || boxes.some(function (b) { return box[0] < b[2] + 10 && box[2] > b[0] - 10 && box[1] < b[3] + 6 && box[3] > b[1] - 6; });
+      el.style.transform = 'translate(' + Math.round(box[0]) + 'px,' + Math.round(box[1]) + 'px)'; el.classList.toggle('off', clash || born + 1400 > performance.now());
+      if (!clash) boxes.push(box);
+    });
+    if (hover >= 0) showTip(hover);
+  }
+
+  function showTip(i) {
+    var p = pts[i], s = toScreen(p.x, p.y);
+    tip.innerHTML = '<strong>' + esc(p.n) + '</strong><span>' + p.s + ' points' + (p.p ? ' · ' + WA.fmt(p.p) : '') + '</span>' + (p.t ? '<em>' + esc(p.t) + '</em>' : '');
+    tip.hidden = false;
+    var x = Math.min(W - tip.offsetWidth - 10, Math.max(10, s[0] + 14)), y = s[1] - tip.offsetHeight - 14; if (y < 10) y = s[1] + 16;
+    tip.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+  }
+
+  function bars(p) {
+    return '<div class="fmap-bars">' + AXES.slice(0, 12).map(function (a, i) { return '<div><span>' + esc(AXIS_LABEL[a]) + '</span><i><b style="width:' + p.f[i] * 10 + '%"></b></i></div>'; }).join('') +
+      '<div><span>Body</span><i><b style="width:' + p.f[12] * 20 + '%"></b></i></div><div><span>Finish</span><i><b style="width:' + p.f[13] * 20 + '%"></b></i></div></div>';
+  }
+  function select(i, fly) {
+    selected = i; dirty = true;
+    if (i < 0) { panel.hidden = true; stage.classList.remove('has-panel'); if (history.replaceState) history.replaceState(null, '', location.pathname + location.search); return; }
+    var p = pts[i], me = vec(p);
+    var near = pts.map(function (q, j) { return { j: j, d: j === i || q.n === p.n ? -1 : cosine(me, vec(q)) - Math.abs(q.s - p.s) * 0.002 }; }).filter(function (x) { return x.d > 0 && pts[x.j].s >= 85; }).sort(function (a, b) { return b.d - a.d; }).slice(0, 5);
+    panel.innerHTML = '<button type="button" class="fmap-close" aria-label="Close">×</button><p class="mono">' + esc(p.c) + (p.d ? ' · ' + String(p.d).slice(0, 4) : '') + '</p><h2>' + esc(p.n) + '</h2>' +
+      '<p class="fmap-score"><span class="score-type">' + p.s + '</span><span>' + (p.p ? WA.fmt(p.p) : '') + '</span></p>' + (p.t ? '<p class="fmap-notes">' + esc(p.t) + '</p>' : '') + bars(p) +
+      '<a class="pill solid" href="' + esc(WA.bottleHref(p.slug)) + '">Read the review</a>' +
+      (near.length ? '<h3 class="mono">Nearest in flavor</h3><ul class="fmap-near">' + near.map(function (x) { var q = pts[x.j]; return '<li><button type="button" data-i="' + x.j + '"><span class="score-type">' + q.s + '</span><span>' + esc(q.n) + '<small>' + esc(q.c) + (q.p ? ' · ' + WA.fmt(q.p) : '') + '</small></span></button></li>'; }).join('') + '</ul>' : '');
+    panel.hidden = false; stage.classList.add('has-panel');
+    if (history.replaceState) history.replaceState(null, '', '#' + encodeURIComponent(p.slug));
+    // Centre the bottle in the part of the stage the panel leaves open (beside it on desktop, above the sheet on phones).
+    var k = fly ? Math.max(view.k, 3.2) : view.k, s = base() * k, sheet = W <= 760;
+    var dx = sheet ? 0 : (panel.offsetWidth + 16) / 2, dy = sheet ? (panel.offsetHeight + 10) / 2 : 0;
+    var sp = toScreen(p.x, p.y), covered = sheet ? sp[1] > H - panel.offsetHeight - 30 : sp[0] > W - panel.offsetWidth - 40;
+    if (fly || covered) target = { x: p.x + dx / s, y: p.y + dy / s, k: k };
+    WA.track && WA.track('flavor_map_select', { slug: p.slug });
+  }
+  panel.addEventListener('click', function (e) {
+    if (e.target.closest('.fmap-close')) return select(-1);
+    var b = e.target.closest('[data-i]'); if (b) select(+b.getAttribute('data-i'), true);
+  });
+
+  // Pan, zoom and pinch with pointer events; a tap or click without movement selects.
+  var pointers = {}, drag = null, pinch = null, moved = false;
+  function zoomAt(sx, sy, factor) {
+    var before = toData(sx, sy), k = Math.max(0.8, Math.min(40, (target ? target.k : view.k) * factor));
+    var s = base() * k, nx = before[0] - (sx - W / 2) / s, ny = before[1] - (sy - H / 2) / s;
+    target = { x: nx, y: ny, k: k };
+  }
+  function local(e) { var r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+  canvas.addEventListener('pointerdown', function (e) {
+    canvas.setPointerCapture(e.pointerId); pointers[e.pointerId] = local(e); moved = false;
+    var ids = Object.keys(pointers);
+    if (ids.length === 1) drag = { p: local(e), x: view.x, y: view.y };
+    else if (ids.length === 2) { var a = pointers[ids[0]], b = pointers[ids[1]]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), k: view.k, c: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], data: toData((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) }; drag = null; }
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    var p = local(e);
+    if (pointers[e.pointerId]) pointers[e.pointerId] = p;
+    var ids = Object.keys(pointers);
+    if (pinch && ids.length === 2) {
+      var a = pointers[ids[0]], b = pointers[ids[1]], k = Math.max(0.8, Math.min(40, pinch.k * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)), c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], s = base() * k;
+      target = null; view.k = k; view.x = pinch.data[0] - (c[0] - W / 2) / s; view.y = pinch.data[1] - (c[1] - H / 2) / s; moved = true; dirty = true; return;
+    }
+    if (drag) {
+      var dx = p[0] - drag.p[0], dy = p[1] - drag.p[1];
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      if (moved) { target = null; var s2 = base() * view.k; view.x = drag.x - dx / s2; view.y = drag.y - dy / s2; dirty = true; tip.hidden = true; hover = -1; }
+      return;
+    }
+    if (e.pointerType === 'mouse') { var i = nearest(p[0], p[1], 14); if (i !== hover) { hover = i; canvas.style.cursor = i >= 0 ? 'pointer' : 'grab'; if (i < 0) tip.hidden = true; else showTip(i); } }
+  });
+  function up(e) {
+    var p = local(e), wasDrag = drag && !moved && !pinch;
+    delete pointers[e.pointerId];
+    if (Object.keys(pointers).length < 2) pinch = null;
+    if (!Object.keys(pointers).length) drag = null;
+    if (wasDrag) { var i = nearest(p[0], p[1], e.pointerType === 'mouse' ? 14 : 22); select(i, false); }
+  }
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('pointerleave', function () { if (hover >= 0) { hover = -1; tip.hidden = true; } });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); var p = local(e); zoomAt(p[0], p[1], Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022))); }, { passive: false });
+  canvas.addEventListener('dblclick', function (e) { var p = local(e); zoomAt(p[0], p[1], 2); });
+  document.getElementById('fmapZoomIn').onclick = function () { zoomAt(W / 2, H / 2, 1.6); };
+  document.getElementById('fmapZoomOut').onclick = function () { zoomAt(W / 2, H / 2, 1 / 1.6); };
+  document.getElementById('fmapReset').onclick = function () { target = { x: 500, y: 500, k: 1 }; };
+
+  // Find a bottle by name.
+  function matches(q) { var words = q.toLowerCase().split(/\s+/).filter(Boolean); if (!words.length) return []; return pts.filter(function (p) { return words.every(function (w) { return p.key.indexOf(w) >= 0; }); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 7); }
+  find.addEventListener('input', function () {
+    var list = matches(find.value);
+    suggest.innerHTML = list.map(function (p) { return '<li><button type="button" data-i="' + p.i + '"><span class="score-type">' + p.s + '</span>' + esc(p.n) + '</button></li>'; }).join('');
+    suggest.hidden = !list.length;
+  });
+  suggest.addEventListener('click', function (e) { var b = e.target.closest('[data-i]'); if (!b) return; suggest.hidden = true; find.value = ''; select(+b.getAttribute('data-i'), true); });
+  document.getElementById('fmapFindForm').addEventListener('submit', function (e) { e.preventDefault(); var list = matches(find.value); if (list.length) { suggest.hidden = true; find.value = ''; select(list[0].i, true); } });
+
+  function filters() {
+    chips.innerHTML = '<button type="button" class="pill" data-g="all" aria-pressed="' + (group === 'all') + '">All</button>' + GROUPS.map(function (g) { var n = pts.filter(function (p) { return GROUPS[p.g].id === g.id; }).length; return n ? '<button type="button" class="pill" data-g="' + g.id + '" aria-pressed="' + (group === g.id) + '"><i style="background:rgb(' + g.color.map(function (c) { return Math.round(c * 255); }).join(',') + ')"></i>' + esc(g.label) + '</button>' : ''; }).join('');
+    var shown = pts.filter(visible).length;
+    status.textContent = shown.toLocaleString() + ' of ' + pts.length.toLocaleString() + ' rated bottles. Bottles that sit together taste alike.';
+  }
+  chips.addEventListener('click', function (e) { var b = e.target.closest('[data-g]'); if (!b) return; group = b.getAttribute('data-g'); filters(); upload(); if (selected >= 0 && !visible(pts[selected])) select(-1); });
+  minScore.addEventListener('change', function () { filters(); upload(); });
+  colorBy.addEventListener('change', function () { stage.classList.toggle('by-score', colorBy.value === 'score'); upload(); });
+
+  WA.archive(function (data) {
+    WA.loadJSON('flavor.json').then(function (fl) {
+      var col = {}; fl.cols.forEach(function (c, i) { col[c] = i; });
+      fl.rows.forEach(function (row) {
+        var r = WA.find(data, row[col.slug]); if (!r) return;
+        var j = hash(row[col.slug]), a = j * Math.PI * 2, rad = 6 + hash(row[col.slug] + '·') * 6;
+        var p = { i: pts.length, slug: r.slug, n: r.n, c: r.c, s: r.s, p: r.p, d: r.d, t: row[col.t], f: decode(row[col.f]), x: row[col.x] + Math.cos(a) * rad * 0.6, y: row[col.y] + Math.sin(a) * rad * 0.6 };
+        p.fx = 500 + Math.cos(a * 7) * 40 * j; p.fy = 500 + Math.sin(a * 7) * 40 * j; p.g = groupOf(p.c); p.key = (p.n + ' ' + p.c).toLowerCase();
+        pts.push(p);
+        var k = Math.floor(p.x / CELL) + ',' + Math.floor(p.y / CELL); (grid[k] = grid[k] || []).push(p.i);
+      });
+      resize();
+      if (!setup()) { status.textContent = 'The flavor map needs WebGL, which this browser has turned off.'; stage.classList.add('no-gl'); return; }
+      filters(); findRegions(); upload(); born = performance.now(); requestAnimationFrame(frame);
+      var want = WA.hashSlug(), hit = want && pts.filter(function (p) { return p.slug.toLowerCase() === want.toLowerCase(); })[0];
+      if (hit) setTimeout(function () { select(hit.i, true); }, reduce ? 0 : 1500);
+    }).catch(function () { status.textContent = 'The flavor map could not load. Try again in a moment.'; });
+  });
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); else addEventListener('resize', resize);
+})();

@@ -466,12 +466,39 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
         busy = false; document.getElementById("waChatSend").disabled = false; wait.remove();
         if (!res.ok || !res.answer) { add("<p>" + esc(res.error || "Something went wrong. Try again.") + "</p>", "bot"); return; }
         turns.push({ role: "assistant", text: res.answer });
-        var bySlug = {}; bottles.forEach(function (b) { bySlug[b.slug] = b; });
-        var cards = (res.picks || []).map(function (s) { var b = bySlug[s]; if (!b) return ""; var r = (WA.data() || []).filter(function (x) { return x.slug === s; })[0]; var href = r ? WA.bottleHref(r) : "finder.html"; return '<a class="chat-pick" href="' + href + '"><span class="sc score-type">' + b.score + '</span><span><span class="nm">' + esc(b.name) + '</span><span class="ct">' + esc(b.category) + "</span></span><span class=\"pr\">" + (b.price ? "$" + b.price : "") + "</span></a>"; }).join("");
+        var bySlug = {}; bottles.concat(res.cards || []).forEach(function (b) { bySlug[b.slug] = b; });
+        function hrefOf(s) { var r = (WA.data() || []).filter(function (x) { return x.slug === s; })[0]; return r ? WA.bottleHref(r) : WA.bottleHref(s); }
+        var cards = (res.picks || []).map(function (s) { var b = bySlug[s]; if (!b) return ""; return '<a class="chat-pick" href="' + hrefOf(s) + '"><span class="sc score-type">' + b.score + '</span><span><span class="nm">' + esc(b.name) + '</span><span class="ct">' + esc(b.category) + "</span></span><span class=\"pr\">" + (b.price ? "$" + b.price : "") + "</span></a>"; }).join("");
         var follow = (res.followups || []).map(function (f) { return '<button type="button">' + esc(f) + "</button>"; }).join("");
-        add("<p>" + esc(res.answer) + "</p>" + (cards ? '<div class="chat-picks">' + cards + "</div>" : "") + (follow ? '<div class="chat-follow">' + follow + "</div>" : ""), "bot");
+        var msg = add("<p>" + esc(res.answer) + "</p>" + (cards ? '<div class="chat-picks">' + cards + "</div>" : "") + '<div class="chat-actions"></div>' + (follow ? '<div class="chat-follow">' + follow + "</div>" : ""), "bot");
+        actions(msg.querySelector(".chat-actions"), res.actions || [], bySlug, hrefOf);
         WA.decorateBuy && WA.decorateBuy(log);
       });
+  }
+  // What the answer offers to do: compare side by side, a tasting flight, where to buy, save to the shelf.
+  function actions(box, list, bySlug, hrefOf) {
+    list.forEach(function (a) {
+      var names = a.slugs.map(function (s) { return (bySlug[s] || {}).name || s; });
+      if (a.type === "compare") { box.insertAdjacentHTML("beforeend", '<a class="pill" href="finder.html?compare=' + a.slugs.map(encodeURIComponent).join(",") + '">Compare ' + a.slugs.length + " side by side</a>"); }
+      else if (a.type === "flight") {
+        var card = document.createElement("div"); card.className = "chat-flight";
+        card.innerHTML = '<span class="mono">Tasting flight</span><strong>' + esc(a.title || "A flight to pour") + "</strong><ol>" + a.slugs.map(function (s, i) { var b = bySlug[s] || {}; return '<li><a href="' + hrefOf(s) + '">' + esc(names[i]) + "</a>" + (b.score ? '<span class="score-type">' + b.score + "</span>" : "") + "</li>"; }).join("") + '</ol><button type="button" class="pill">Save the flight to My Shelf</button>';
+        card.querySelector("button").addEventListener("click", function (e) {
+          var btn = e.currentTarget, saved = 0;
+          a.slugs.forEach(function (s, i) { var tmp = document.createElement("button"); if (!WA.bindSave) return; WA.bindSave(tmp, { kind: "bottle", slug: s, title: names[i] }); if (tmp.getAttribute("aria-pressed") !== "true") { tmp.click(); saved++; } });
+          btn.textContent = saved ? "Saved to My Shelf" : "Already on My Shelf"; btn.disabled = true;
+          WA.track && WA.track("chat_flight_saved", { slugs: a.slugs.join(",") });
+        });
+        box.appendChild(card);
+      }
+      else if (a.type === "buy") {
+        var s = a.slugs[0], link = document.createElement("a"); link.className = "pill amber"; link.href = hrefOf(s); link.textContent = "Where to buy " + names[0].split(",")[0];
+        if (WA.shop) WA.shop(function () { var p = WA.productFor(s); if (p) { link.href = WA.buyHref(p); link.target = "_blank"; link.rel = "noopener"; link.textContent = "Buy at the store" + (p.p ? " · $" + Math.round(p.p) : ""); } });
+        box.appendChild(link);
+      }
+      else if (a.type === "save" && WA.bindSave) { var b = document.createElement("button"); b.type = "button"; b.className = "pill"; WA.bindSave(b, { kind: "bottle", slug: a.slugs[0], title: names[0] }); box.appendChild(b); }
+    });
+    if (!box.children.length) box.remove();
   }
   log.addEventListener("click", function (e) { var b = e.target.closest(".chat-follow button"); if (b) askIt(b.textContent); });
   document.getElementById("waChatForm").addEventListener("submit", function (e) { e.preventDefault(); askIt(input.value); });

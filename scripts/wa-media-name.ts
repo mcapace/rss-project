@@ -71,9 +71,13 @@ Use the file name, gallery, existing alt text and story titles as clues, but say
 /** Words that carry no meaning in a web file name. */
 const FILLER = new Set(["image", "images", "img", "photo", "photos", "picture", "pic", "pics", "file", "final", "copy", "hero", "banner", "thumb", "thumbnail", "web", "new", "edit", "edited", "version", "v1", "v2", "v3", "large", "small", "the", "a", "an", "of", "and", "jpg", "jpeg", "png", "tif", "tiff", "gif", "webp"]);
 
+/** Words a release number follows ("Batch 036", "Cask No. 004", "Chapter 07"): a zero-padded number after one is the bottle's identity, not a copy counter. */
+const SERIES = new Set(["batch", "no", "number", "release", "edition", "cask", "barrel", "lot", "series", "chapter", "vol", "volume", "bottling", "issue"]);
+
 /** Pixel sizes and copy counters in file names (300, 600px, 1600x900, 0001); years (1800 to 2039) are kept, they tell vintages apart. */
-function isSize(word: string): boolean {
-  if (/^\d+x\d+$/.test(word) || /^\d{3,4}px$/.test(word) || /^0\d{2,3}$/.test(word)) return true;
+function isSize(word: string, previous = ""): boolean {
+  if (/^\d+x\d+$/.test(word) || /^\d{3,4}px$/.test(word)) return true;
+  if (/^0\d{2,3}$/.test(word)) return !SERIES.has(previous);
   if (!/^\d{3,4}$/.test(word)) return false;
   const n = Number(word);
   return !(n >= 1800 && n <= 2039);
@@ -82,7 +86,7 @@ function isSize(word: string): boolean {
 /** A web file name from any text: lowercase ASCII, hyphens, no filler or pixel sizes, no repeats, at most `max` characters on a word boundary. */
 export function slugify(input: string, max = 60): string {
   const words = input.normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/&/g, " and ").replace(/['’]/g, "").toLowerCase()
-    .split(/[^a-z0-9]+/).filter(word => word && !FILLER.has(word) && !isSize(word));
+    .split(/[^a-z0-9]+/).filter((word, i, all) => word && !FILLER.has(word) && !isSize(word, all[i - 1] ?? ""));
   const out: string[] = [];
   for (const word of words) {
     if (out.includes(word)) continue;
@@ -90,6 +94,26 @@ export function slugify(input: string, max = 60): string {
     out.push(word);
   }
   return out.join("-");
+}
+
+/**
+ * Puts back a release number the old counter rule dropped from a web name: "Barrell Bourbon Batch 035" in the title and
+ * "barrell-bourbon-batch-6-year-..." as the name gives "barrell-bourbon-batch-035-6-year-...". Only when the name has the series
+ * word and not the number; trailing words go if the result would pass 80 characters. Returns null when there is nothing to restore.
+ */
+export function restoreNumbers(name: string, title: string): string | null {
+  const words = name.split("-");
+  let changed = false;
+  const found = title.toLowerCase().matchAll(/\b(batch|no|number|release|edition|cask|barrel|lot|series|chapter|vol|volume|bottling|issue)\.?\s*#?\s*(0\d{2,3})\b/g);
+  for (const [, series, number] of found) {
+    if (words.includes(number)) continue;
+    const at = words.indexOf(series === "volume" && !words.includes("volume") ? "vol" : series);
+    if (at < 0) continue;
+    words.splice(at + 1, 0, number); changed = true;
+  }
+  if (!changed) return null;
+  while (words.join("-").length > 80 && words.length > 2) words.pop();
+  return words.join("-");
 }
 
 /** Cut text to `max` characters on a word, without a dangling separator. */
@@ -147,19 +171,51 @@ async function preview(bytes: Uint8Array): Promise<string | null> {
   } catch { return null; }
 }
 
+/**
+ * --restore-numbers: no model calls. Every named picture whose title carries a release number ("Batch 035") that its web
+ * name lost gets the number back after the series word, kept unique against every other web name. Dry run lists them.
+ */
+async function restoreNumberNames(reader: ReturnType<typeof connectReader>, writer: ReturnType<typeof connectTarget>, brand: string, log: (line: string) => void) {
+  const PAGE = 1000, names = new Map<string, { name: string; title: string }>(), taken = new Set<string>();
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await reader.from("cms_media_files").select("sha256,seo_name,seo_title").eq("brand", brand).not("seo_name", "is", null).not("sha256", "is", null)
+      .order("sha256").order("source_gallery_id").order("source_file_id").range(from, from + PAGE - 1);
+    if (error) throw new Error(`Could not read the library: ${error.message}`);
+    for (const row of (data ?? []) as { sha256: string; seo_name: string; seo_title: string | null }[]) {
+      taken.add(row.seo_name);
+      if (!names.has(row.sha256)) names.set(row.sha256, { name: row.seo_name, title: row.seo_title ?? "" });
+    }
+    if (!data || data.length < PAGE) break;
+  }
+  const changes: { sha256: string; from: string; to: string }[] = [];
+  for (const [sha256, { name, title }] of names) {
+    const restored = restoreNumbers(name, title);
+    if (!restored || restored === name) continue;
+    const to = uniqueName(restored, "", taken); taken.add(to);
+    changes.push({ sha256, from: name, to });
+  }
+  let saved = 0; const failures: string[] = [];
+  if (writer) for (const change of changes) {
+    const { error } = await writer.from("cms_media_files").update({ seo_name: change.to }).eq("brand", brand).eq("sha256", change.sha256).eq("seo_name", change.from);
+    if (error) failures.push(`${change.from}: ${error.message}`); else saved += 1;
+  }
+  log(JSON.stringify({ mode: writer ? "development-apply" : "dry-run", brand, pictures: names.size, restore: changes.length, saved, failures, samples: changes.slice(0, 15).map(c => `${c.from} -> ${c.to}`) }, null, 2));
+}
+
 export async function runMediaName(args: string[], log: (line: string) => void = console.log) {
   const { values } = parseArgs({ args, options: {
     brand: { type: "string", default: "wa" }, limit: { type: "string", default: "300" }, concurrency: { type: "string", default: "6" },
-    gallery: { type: "string" }, redo: { type: "boolean", default: false }, "retry-failed": { type: "boolean", default: false }, dedupe: { type: "boolean", default: false }, preview: { type: "string" },
+    gallery: { type: "string" }, redo: { type: "boolean", default: false }, "retry-failed": { type: "boolean", default: false }, dedupe: { type: "boolean", default: false }, "restore-numbers": { type: "boolean", default: false }, preview: { type: "string" },
     apply: { type: "boolean", default: false }, "development-target": { type: "string" }, help: { type: "boolean", default: false },
   }, strict: true });
-  if (values.help) { log("Usage: wa-media-name --brand wa [--limit N] [--concurrency N] [--gallery ID] [--redo | --retry-failed | --dedupe] [--preview N] [--apply --development-target HOST]"); return; }
+  if (values.help) { log("Usage: wa-media-name --brand wa [--limit N] [--concurrency N] [--gallery ID] [--redo | --retry-failed | --dedupe | --restore-numbers] [--preview N] [--apply --development-target HOST]"); return; }
   const brand = brandFlag(values.brand);
   const previewCount = values.preview ? Math.min(50, Math.max(1, Number(values.preview) || 10)) : 0;
   const limit = previewCount || Math.min(2000, Math.max(1, Number(values.limit) || 300));
   const concurrency = Math.min(8, Math.max(1, Number(values.concurrency) || 4));
   const reader = connectReader();
   const writer = connectTarget(values);
+  if (values["restore-numbers"]) { await restoreNumberNames(reader, writer, brand, log); return; }
   const calls = Boolean(writer || previewCount);
   const bucket = process.env.S3_BUCKET;
   if (calls && (!bucket || !process.env.ANTHROPIC_API_KEY)) throw new Error("Naming needs S3_BUCKET, AWS credentials and ANTHROPIC_API_KEY.");

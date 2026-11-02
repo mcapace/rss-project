@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clip, slugify, tidy, uniqueName } from "../../../../scripts/wa-media-name";
+import { clip, restoreNumbers, slugify, tidy, uniqueName } from "../../../../scripts/wa-media-name";
 
 describe("web names for gallery files", () => {
   it("makes lowercase hyphenated names without filler, sizes, accents or repeats", () => {
@@ -34,6 +34,24 @@ describe("web names for gallery files", () => {
     expect(uniqueName("fresh-name", "x.jpg", taken)).toBe("fresh-name");
     taken.add("midleton-very-rare-vintage-release-bottle-2024");
     expect(uniqueName("midleton-very-rare-vintage-release-bottle", "midleton.png", taken)).toBe("midleton-very-rare-vintage-release-bottle-2");
+  });
+});
+
+describe("release numbers", () => {
+  it("keeps a zero-padded number after a series word and still drops copy counters", () => {
+    expect(slugify("Barrell Batch 036 Cask Strength")).toBe("barrell-batch-036-cask-strength");
+    expect(slugify("Laphroaig Cask Strength Batch 010")).toBe("laphroaig-cask-strength-batch-010");
+    expect(slugify("Chattanooga Experimental Batch 047")).toBe("chattanooga-experimental-batch-047");
+    expect(slugify("Aberlour-13-year-old_300-0001.png")).toBe("aberlour-13-year-old");
+  });
+  it("puts a lost number back after its series word", () => {
+    expect(restoreNumbers("barrell-bourbon-batch-6-year-cask-strength-bottle", "Barrell Bourbon Batch 035, 6 year old cask strength bottle")).toBe("barrell-bourbon-batch-035-6-year-cask-strength-bottle");
+    expect(restoreNumbers("aberlour-abunadh-alba-batch-bottle", "Aberlour A'bunadh Alba Batch 001 bottle")).toBe("aberlour-abunadh-alba-batch-001-bottle");
+    expect(restoreNumbers("jack-daniels-10-year-old-batch-02-tennessee-whiskey-bottle", "Jack Daniel's 10 Year Old, Batch 02")).toBeNull();
+    expect(restoreNumbers("some-bottle", "Batch 035 bottle")).toBeNull();
+    const long = restoreNumbers("a".repeat(70) + "-batch-word-word", "Batch 035");
+    expect(long!.length).toBeLessThanOrEqual(80);
+    expect(long).toContain("batch-035");
   });
 });
 

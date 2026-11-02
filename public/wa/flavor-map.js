@@ -24,7 +24,8 @@
   function vec(p) { var v = p.f.slice(0, 12); v.push(p.f[12] * 2, p.f[13] * 2); return v; }
   function cosine(a, b) { var d = 0, na = 0, nb = 0; for (var i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; } return na && nb ? d / Math.sqrt(na * nb) : 0; }
   function groupOf(c) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].test(c || '')) return i; return GROUPS.length - 1; }
-  function visible(p) { return p.s >= +minScore.value && (group === 'all' || GROUPS[p.g].id === group); }
+  function visible(p) { return p.s >= +minScore.value && (group === 'all' || (group === 'shelf' ? p.saved : GROUPS[p.g].id === group)); }
+  function savedSlugs() { var out = {}; try { (WAReader.read(localStorage).shelf || []).forEach(function (x) { if (x.kind === 'bottle') out[x.slug.toLowerCase()] = true; }); } catch (e) {} return out; }
 
   // Data space (0-1000 square) to CSS pixels, fitted to the stage with a margin.
   function base() { return Math.min(W, H) / 1080; }
@@ -224,7 +225,8 @@
   document.getElementById('fmapFindForm').addEventListener('submit', function (e) { e.preventDefault(); var list = matches(find.value); if (list.length) { suggest.hidden = true; find.value = ''; select(list[0].i, true); } });
 
   function filters() {
-    chips.innerHTML = '<button type="button" class="pill" data-g="all" aria-pressed="' + (group === 'all') + '">All</button>' + GROUPS.map(function (g) { var n = pts.filter(function (p) { return GROUPS[p.g].id === g.id; }).length; return n ? '<button type="button" class="pill" data-g="' + g.id + '" aria-pressed="' + (group === g.id) + '"><i style="background:rgb(' + g.color.map(function (c) { return Math.round(c * 255); }).join(',') + ')"></i>' + esc(g.label) + '</button>' : ''; }).join('');
+    var mine = pts.filter(function (p) { return p.saved; }).length;
+    chips.innerHTML = '<button type="button" class="pill" data-g="all" aria-pressed="' + (group === 'all') + '">All</button>' + (mine ? '<button type="button" class="pill" data-g="shelf" aria-pressed="' + (group === 'shelf') + '"><i style="background:#fff"></i>My shelf · ' + mine + '</button>' : '') + GROUPS.map(function (g) { var n = pts.filter(function (p) { return GROUPS[p.g].id === g.id; }).length; return n ? '<button type="button" class="pill" data-g="' + g.id + '" aria-pressed="' + (group === g.id) + '"><i style="background:rgb(' + g.color.map(function (c) { return Math.round(c * 255); }).join(',') + ')"></i>' + esc(g.label) + '</button>' : ''; }).join('');
     var shown = pts.filter(visible).length;
     status.textContent = shown.toLocaleString() + ' of ' + pts.length.toLocaleString() + ' rated bottles. Bottles that sit together taste alike.';
   }
@@ -234,17 +236,18 @@
 
   WA.archive(function (data) {
     WA.loadJSON('flavor.json').then(function (fl) {
-      var col = {}; fl.cols.forEach(function (c, i) { col[c] = i; });
+      var col = {}, saved = savedSlugs(); fl.cols.forEach(function (c, i) { col[c] = i; });
       fl.rows.forEach(function (row) {
         var r = WA.find(data, row[col.slug]); if (!r) return;
         var j = hash(row[col.slug]), a = j * Math.PI * 2, rad = 6 + hash(row[col.slug] + '·') * 6;
         var p = { i: pts.length, slug: r.slug, n: r.n, c: r.c, s: r.s, p: r.p, d: r.d, t: row[col.t], f: decode(row[col.f]), x: row[col.x] + Math.cos(a) * rad * 0.6, y: row[col.y] + Math.sin(a) * rad * 0.6 };
-        p.fx = 500 + Math.cos(a * 7) * 40 * j; p.fy = 500 + Math.sin(a * 7) * 40 * j; p.g = groupOf(p.c); p.key = (p.n + ' ' + p.c).toLowerCase();
+        p.fx = 500 + Math.cos(a * 7) * 40 * j; p.fy = 500 + Math.sin(a * 7) * 40 * j; p.g = groupOf(p.c); p.key = (p.n + ' ' + p.c).toLowerCase(); p.saved = !!saved[p.slug.toLowerCase()];
         pts.push(p);
         var k = Math.floor(p.x / CELL) + ',' + Math.floor(p.y / CELL); (grid[k] = grid[k] || []).push(p.i);
       });
       resize();
       if (!setup()) { status.textContent = 'The flavor map needs WebGL, which this browser has turned off.'; stage.classList.add('no-gl'); return; }
+      if (WA.hashSlug() === 'shelf' && pts.some(function (p) { return p.saved; })) group = 'shelf';
       filters(); findRegions(); upload(); born = performance.now(); requestAnimationFrame(frame);
       var want = WA.hashSlug(), hit = want && pts.filter(function (p) { return p.slug.toLowerCase() === want.toLowerCase(); })[0];
       if (hit) setTimeout(function () { select(hit.i, true); }, reduce ? 0 : 1500);

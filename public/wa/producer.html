@@ -99,8 +99,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
     rows.forEach(function (r) { cats[r.c] = (cats[r.c] || 0) + 1; });
     var mainCat = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; })[0];
     document.getElementById("lede").textContent = (WA.COUNTRY[mainCat] || "") + (WA.COUNTRY[mainCat] ? ". " : "") + rows.length + (rows.length === 1 ? " rating" : " ratings") + (rows[0].d ? " since " + rows[0].d.slice(0, 4) : "") + ", mostly " + mainCat.toLowerCase() + ". The panel's highest mark is " + best.s + " for " + best.n + ".";
-    var prices = rows.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; });
-    document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], [WA.fmt(prices[0]) + (prices.length > 1 ? " to " + WA.fmt(prices[prices.length - 1]) : ""), "price range"], [Object.keys(cats).length, Object.keys(cats).length === 1 ? "category" : "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
+    var prices = rows.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; }), priced = prices.filter(function (p) { return p > 0; });
+    var typical = priced.length ? [WA.fmt(priced[priced.length >> 1]), "typical price" + (priced.length > 1 ? " · " + WA.fmt(priced[0]) + " to " + WA.fmt(priced[priced.length - 1]) : "")] : ["—", "price not listed"];
+    document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], typical].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
     var shownRows = rows.slice().sort(function (a, b) { return b.s - a.s; }), portfolioLimit = 12;
     function portfolio() {
       var budget = Number(document.getElementById('portfolioBudget').value), sort = document.getElementById('portfolioSort').value;

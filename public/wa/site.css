@@ -2478,3 +2478,15 @@ main { min-height: 100vh; min-height: 100dvh; }
   .term .def a { padding: 6px 0; }
   .term summary { padding: 6px 0; }
 }
+
+/* Polish (2026-11-02): breadcrumbs on one line on phones, roomier hit areas for links in text and cards, legible small labels. */
+@media (max-width: 720px) {
+  .crumbs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; white-space: nowrap; margin-right: calc(-1 * var(--gutter, 16px)); padding-right: var(--gutter, 16px); }
+  .crumbs::-webkit-scrollbar { display: none; }
+  .bottle .score small, .shelf-bottle .score small, .score-type + small, .scale span { font-size: 12px; }
+}
+.bottle h3 a, .shelf-bottle h3 a, .lead-copy h2 a, .top20-card h3 a { padding-block: 8px; }
+.bottle .score small, .shelf-bottle .score small { letter-spacing: 0.06em; }
+
+.rating-page .hero-art.poured { overflow: hidden; border: 0; border-radius: 26px; background: radial-gradient(120% 90% at 50% 30%, #fbf6ee 0%, #efe5d6 100%); box-shadow: inset 0 0 0 1px rgba(23, 18, 13, 0.06), 0 30px 60px -40px rgba(23, 18, 13, 0.35); }
+.rating-page .hero-art.poured .pour, .rating-page .hero-art.poured .stage-light { border-radius: inherit; clip-path: inset(0 round 26px); }

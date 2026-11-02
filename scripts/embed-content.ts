@@ -7,8 +7,7 @@
  *   node --import tsx scripts/embed-content.ts --brand wa --apply --development-target <host>
  */
 import { parseArgs } from "node:util";
-import type { CmsJsonObject } from "../src/lib/cms/types";
-import { embeddingsConfigured, mediaEmbeddingText, upsertDocumentEmbedding, upsertMediaEmbedding } from "../src/lib/editorial/server/embeddings";
+import { embeddingsConfigured, refreshDocumentEmbeddings, type EmbeddableDocument } from "../src/lib/editorial/server/embeddings";
 import { brandFlag, connectReader, connectTarget } from "./lib/target";
 
 export async function runEmbed(args: string[], log: (line: string) => void = console.log) {
@@ -31,12 +30,10 @@ export async function runEmbed(args: string[], log: (line: string) => void = con
       const { data: row, error: readError } = await reader.from("cms_documents").select("id,title,excerpt,body_html,metadata").eq("id", item.document_id).single();
       if (readError || !row) { summary.failures.push(`${item.document_id}: ${readError?.message ?? "missing"}`); continue; }
       try {
-        if (await upsertDocumentEmbedding(writer, row)) summary.documents_embedded += 1;
-        const media = Array.isArray(row.metadata?.media) ? (row.metadata.media as CmsJsonObject[]) : [];
-        for (const [index, media_item] of media.entries()) {
-          if (!mediaEmbeddingText(media_item)) continue;
-          if (await upsertMediaEmbedding(writer, row.id, index, media_item)) summary.images_embedded += 1;
-        }
+        // Only what changed since the stored hash: the text, each described image; vectors for removed images go.
+        const done = await refreshDocumentEmbeddings(writer, row as EmbeddableDocument);
+        if (done.document) summary.documents_embedded += 1;
+        summary.images_embedded += done.images;
       } catch (failure) { summary.failures.push(`${item.document_id}: ${failure instanceof Error ? failure.message : "failed"}`); }
     }
   }

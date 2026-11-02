@@ -46,7 +46,10 @@
 WA.ready(function () { WA.top20(function (T) { Promise.all([fetch("videos.json").then(function (r) { return r.json(); }), fetch("top20-films.json").then(function (r) { return r.json(); })]).then(function (loaded) { var V = loaded[0], FILMS = loaded[1]; WA.archive(function (data) {
   var bySlug = {}; V.forEach(function (v) { bySlug[v.slug] = v; });
   var years = T.map(function (e) { return e.year; }).filter(function (y, i, a) { return y && a.indexOf(y) === i; }).sort(function (a, b) { return b - a; });
-  var state = { year: years[0], down: false }, reveal = !matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window, seen = reveal && new IntersectionObserver(function (es) { es.forEach(function (x) { if (!x.isIntersecting) return; seen.unobserve(x.target); x.target.classList.add("in"); }); }, { rootMargin: "0px 0px -12% 0px", threshold: 0.15 });
+  var state = { year: years[0], down: false }, reveal = !matchMedia("(prefers-reduced-motion: reduce)").matches, ticking = false;
+  // Every card that has reached the screen, or been scrolled past, is revealed; a fast scroll never leaves one hidden.
+  function sweep() { ticking = false; var line = innerHeight * 0.9; document.querySelectorAll("#list .top20-card:not(.in)").forEach(function (c) { if (c.getBoundingClientRect().top < line) c.classList.add("in"); }); }
+  if (reveal) { addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(sweep); } }, { passive: true }); addEventListener("resize", sweep); }
   document.getElementById("years").innerHTML = years.map(function (y) { return '<button type="button" data-year="' + y + '" aria-pressed="' + (y === state.year) + '">' + y + "</button>"; }).join("");
   var STOP = { the: 1, and: 1, for: 1, with: 1, from: 1, old: 1, year: 1, years: 1, month: 1, months: 1, aged: 1, release: 1, edition: 1, anniversary: 1, collection: 1, noble: 1, special: 1, straight: 1, kentucky: 1 };
   function tokens(t) {
@@ -90,7 +93,7 @@ WA.ready(function () { WA.top20(function (T) { Promise.all([fetch("videos.json")
     document.getElementById("list").innerHTML = rows.map(function (e) { return card(e, match(e)); }).join("");
     var list = document.getElementById("list");
     list.classList.toggle("reveal", !!reveal); list.classList.toggle("down", state.down);
-    if (reveal) list.querySelectorAll(".top20-card").forEach(function (c, i) { c.style.setProperty("--d", (i % 2) * 90 + "ms"); seen.observe(c); });
+    if (reveal) { list.querySelectorAll(".top20-card").forEach(function (c, i) { c.style.setProperty("--d", (i % 2) * 90 + "ms"); }); requestAnimationFrame(sweep); }
     document.getElementById("countdown").setAttribute("aria-pressed", String(state.down));
     if (WA.watchPosters) WA.watchPosters(list);
     document.querySelectorAll("#years button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-year") === state.year)); });

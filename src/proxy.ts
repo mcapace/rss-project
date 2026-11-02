@@ -8,10 +8,10 @@ const APP_PREFIXES = ["/cms", "/admin", "/reader", "/login", "/api", "/_next", "
 const redirectCache = new Map<string, { target: string | null; status: number; until: number }>();
 /**
  * Staging hosts answered as the legacy domain, so old whiskyadvocate.com paths can be tested end to end before the
- * domain moves. REDIRECT_HOST_ALIASES ("staging.host=legacy.host,...") replaces the default; remove at launch.
+ * domain moves. Set REDIRECT_HOST_ALIASES ("staging.host=legacy.host,...") to turn this on; unset, every host answers as itself.
  */
 const HOST_ALIASES = new Map(
-  (process.env.REDIRECT_HOST_ALIASES ?? "rss-project-ten.vercel.app=whiskyadvocate.com")
+  (process.env.REDIRECT_HOST_ALIASES ?? "")
     .split(",").map(pair => pair.split("=").map(part => part.trim().toLowerCase())).filter(pair => pair.length === 2 && pair[0] && pair[1]) as [string, string][],
 );
 

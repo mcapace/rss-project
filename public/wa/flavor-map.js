@@ -1,5 +1,6 @@
-/* The flavor map: every rated bottle placed by how it tastes (flavor.json, UMAP over each tasting note's flavor
-   profile), drawn with WebGL. Drag to pan, wheel or pinch to zoom, hover or tap a point for the bottle. */
+/* The flavor map: every rated bottle on a flavor wheel, drawn with WebGL. The twelve flavor families sit around the
+   rim, related ones side by side; each bottle is pulled toward the flavors that stand out in its tasting note, so bold
+   single-minded bottles sit near the rim and balanced ones near the middle. Drag to pan, wheel or pinch to zoom, hover or tap a point for the bottle. */
 (function () {
   'use strict';
   var AXES = ['smoke', 'maritime', 'sweet', 'fresh_fruit', 'dried_fruit', 'tropical', 'floral', 'spice', 'oak', 'grain', 'nutty', 'herbal', 'body', 'finish'];
@@ -19,6 +20,28 @@
   var pts = [], grid = {}, CELL = 24, view = { x: 500, y: 500, k: 1 }, target = null, hover = -1, selected = -1, group = 'all', born = 0;
   var gl, prog, buf, loc = {}, dpr = 1, W = 0, H = 0, dirty = true;
 
+  var WHEEL = ['smoke', 'maritime', 'herbal', 'grain', 'fresh_fruit', 'floral', 'tropical', 'sweet', 'spice', 'oak', 'nutty', 'dried_fruit'], RIM = 420, CX = 500, CY = 500;
+  function angleOf(axis) { return -Math.PI / 2 + WHEEL.indexOf(axis) * Math.PI * 2 / WHEEL.length; }
+  // Each bottle's pull toward every flavor is how far it stands above the average bottle on that flavor.
+  function wheel(list) {
+    var mean = AXES.slice(0, 12).map(function (a, i) { return list.reduce(function (t, p) { return t + p.f[i]; }, 0) / list.length; });
+    var sd = mean.map(function (m, i) { return Math.sqrt(list.reduce(function (t, p) { return t + (p.f[i] - m) * (p.f[i] - m); }, 0) / list.length) || 1; });
+    var pulls = list.map(function (p) {
+      var x = 0, y = 0;
+      for (var i = 0; i < 12; i++) { var w = Math.max(0, (p.f[i] - mean[i]) / sd[i]); if (!w) continue; w = Math.pow(w, 1.3); var a = angleOf(AXES[i]); x += Math.cos(a) * w; y += Math.sin(a) * w; }
+      return [x, y, Math.hypot(x, y)];
+    });
+    // Distance from the middle follows each bottle's rank by strength of pull, so the disc fills evenly.
+    var order = list.map(function (p, i) { return i; }).sort(function (a, b) { return pulls[a][2] - pulls[b][2]; }), rank = [];
+    order.forEach(function (i, n) { rank[i] = n / Math.max(1, order.length - 1); });
+    list.forEach(function (p, i) {
+      var q = pulls[i], j = hash(p.slug), a = j * Math.PI * 2, ang = q[2] ? Math.atan2(q[1], q[0]) : a;
+      var r = Math.sqrt(rank[i]) * RIM * 0.95 + hash(p.slug + '·') * 8;
+      p.x = CX + Math.cos(ang) * r; p.y = CY + Math.sin(ang) * r;
+      p.fx = CX + Math.cos(a * 7) * 30 * j; p.fy = CY + Math.sin(a * 7) * 30 * j;
+    });
+  }
+
   function hash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
   function decode(f) { var v = []; for (var i = 0; i < f.length; i++) v.push(parseInt(f[i], 11) || 0); return v; }
   function vec(p) { var v = p.f.slice(0, 12); v.push(p.f[12] * 2, p.f[13] * 2); return v; }
@@ -28,7 +51,7 @@
   function savedSlugs() { var out = {}; try { (WAReader.read(localStorage).shelf || []).forEach(function (x) { if (x.kind === 'bottle') out[x.slug.toLowerCase()] = true; }); } catch (e) {} return out; }
 
   // Data space (0-1000 square) to CSS pixels, fitted to the stage with a margin.
-  function base() { return Math.min(W, H) / 1080; }
+  function base() { return W < 600 ? Math.min(W / 1320, H / 1080) : Math.min(W, H) / 1100; }
   function toScreen(x, y) { var s = base() * view.k; return [(x - view.x) * s + W / 2, (y - view.y) * s + H / 2]; }
   function toData(sx, sy) { var s = base() * view.k; return [(sx - W / 2) / s + view.x, (sy - H / 2) / s + view.y]; }
 
@@ -44,19 +67,19 @@
   function setup() {
     gl = canvas.getContext('webgl', { antialias: true, premultipliedAlpha: true, alpha: true });
     if (!gl) return false;
-    var vs = 'attribute vec2 a_pos; attribute vec2 a_from; attribute vec3 a_col; attribute float a_state; uniform vec4 u_view; uniform float u_t; uniform float u_size; varying vec3 v_col; varying float v_state;' +
+    var vs = 'attribute vec2 a_pos; attribute vec2 a_from; attribute vec3 a_col; attribute float a_state; uniform vec4 u_view; uniform float u_t; uniform float u_size; uniform float u_gain; varying vec3 v_col; varying float v_gain; varying float v_state;' +
       'void main() { float t = u_t * u_t * (3.0 - 2.0 * u_t); vec2 p = mix(a_from, a_pos, t); gl_Position = vec4((p - u_view.xy) * u_view.zw, 0.0, 1.0); gl_Position.y = -gl_Position.y;' +
-      ' v_col = a_col; v_state = a_state; gl_PointSize = a_state < 0.5 ? u_size * 0.55 : (a_state > 1.5 ? u_size * 3.2 : u_size); }';
-    var fs = 'precision mediump float; varying vec3 v_col; varying float v_state;' +
+      ' v_col = a_col; v_state = a_state; v_gain = u_gain; gl_PointSize = a_state < 0.5 ? u_size * 0.55 : (a_state > 1.5 ? u_size * 3.2 : u_size); }';
+    var fs = 'precision mediump float; varying vec3 v_col; varying float v_state; varying float v_gain;' +
       'void main() { float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard;' +
       ' if (v_state > 1.5) { float ring = smoothstep(0.62, 0.72, d) * (1.0 - smoothstep(0.86, 1.0, d)); float core = 1.0 - smoothstep(0.18, 0.3, d); gl_FragColor = vec4(vec3(1.0, 0.93, 0.8) * (ring + core), ring + core); return; }' +
-      ' float a = v_state < 0.5 ? 0.06 : 1.0; float glow = exp(-d * d * 5.0) * 0.55 + (1.0 - smoothstep(0.25, 0.45, d)) * 0.6; gl_FragColor = vec4(v_col * glow * a, glow * a); }';
+      ' float a = v_state < 0.5 ? 0.06 : v_gain; float glow = exp(-d * d * 5.0) * 0.55 + (1.0 - smoothstep(0.25, 0.45, d)) * 0.6; gl_FragColor = vec4(v_col * glow * a, glow * a); }';
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
     prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
     gl.useProgram(prog);
     ['a_pos', 'a_from', 'a_col', 'a_state'].forEach(function (n) { loc[n] = gl.getAttribLocation(prog, n); });
-    ['u_view', 'u_t', 'u_size'].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
+    ['u_view', 'u_t', 'u_size', 'u_gain'].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
     buf = gl.createBuffer();
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
     return true;
@@ -79,9 +102,21 @@
     dirty = true;
   }
 
+  var guides = document.createElement('canvas'), g2 = guides.getContext('2d'); guides.className = 'fmap-guides'; guides.setAttribute('aria-hidden', 'true'); stage.insertBefore(guides, canvas);
+  function drawGuides() {
+    if (!g2) return;
+    g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.clearRect(0, 0, W, H);
+    var c = toScreen(CX, CY), s = base() * view.k;
+    g2.lineWidth = 1;
+    [0.33, 0.66, 1].forEach(function (f, i) { g2.beginPath(); g2.arc(c[0], c[1], RIM * f * s, 0, Math.PI * 2); g2.strokeStyle = i === 2 ? 'rgba(255,236,210,0.22)' : 'rgba(255,236,210,0.08)'; g2.stroke(); });
+    for (var i = 0; i < WHEEL.length; i++) { var a = angleOf(WHEEL[i]) + Math.PI / WHEEL.length; g2.beginPath(); g2.moveTo(c[0] + Math.cos(a) * RIM * 0.12 * s, c[1] + Math.sin(a) * RIM * 0.12 * s); g2.lineTo(c[0] + Math.cos(a) * RIM * s, c[1] + Math.sin(a) * RIM * s); g2.strokeStyle = 'rgba(255,236,210,0.07)'; g2.stroke(); }
+    g2.fillStyle = 'rgba(255,236,210,0.42)'; g2.font = '500 11px ' + getComputedStyle(document.body).fontFamily; g2.textAlign = 'center'; g2.fillText('BALANCED', c[0], c[1] + 4);
+  }
+
   function resize() {
     var r = stage.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    guides.width = canvas.width; guides.height = canvas.height; guides.style.width = W + 'px'; guides.style.height = H + 'px';
     if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
     dirty = true;
   }
@@ -94,9 +129,10 @@
     if (!dirty || !gl) return;
     dirty = false;
     var s = base() * view.k;
+    drawGuides();
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform4f(loc.u_view, view.x, view.y, (2 * s) / W, (2 * s) / H);
-    gl.uniform1f(loc.u_t, t);
+    gl.uniform1f(loc.u_t, t); gl.uniform1f(loc.u_gain, Math.min(1, 0.5 + 0.18 * view.k));
     gl.uniform1f(loc.u_size, Math.max(5, Math.min(22, 4.6 * Math.sqrt(view.k) * Math.min(W, H) / 700)) * dpr);
     gl.drawArrays(gl.POINTS, 0, pts.length);
     if (selected >= 0 && t >= 1) { gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); var p = pts[selected]; drawOne(p); gl.blendFunc(gl.ONE, gl.ONE); }
@@ -112,24 +148,26 @@
     gl.vertexAttribPointer(loc.a_pos, 2, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(loc.a_from, 2, gl.FLOAT, false, 32, 8); gl.vertexAttribPointer(loc.a_col, 3, gl.FLOAT, false, 32, 16); gl.vertexAttribPointer(loc.a_state, 1, gl.FLOAT, false, 32, 28);
   }
 
-  // Region names sit where bottles led by that flavor gather; labels that would collide are left out.
+  // The flavor families around the rim. Each name is a button that zooms into its part of the wheel.
   var regions = [];
   function findRegions() {
-    var by = {};
-    pts.forEach(function (p) { var top = 0; for (var i = 1; i < 12; i++) if (p.f[i] > p.f[top]) top = i; if (p.f[top] < 6) return; (by[top] = by[top] || []).push(p); });
-    regions = Object.keys(by).filter(function (k) { return by[k].length >= Math.max(25, pts.length * 0.012); }).map(function (k) {
-      var list = by[k], xs = list.map(function (p) { return p.x; }).sort(function (a, b) { return a - b; }), ys = list.map(function (p) { return p.y; }).sort(function (a, b) { return a - b; });
-      return { label: AXIS_LABEL[AXES[k]], x: xs[xs.length >> 1], y: ys[ys.length >> 1], n: list.length };
-    }).sort(function (a, b) { return b.n - a.n; });
-    labels.innerHTML = regions.map(function (r) { return '<span class="fmap-region">' + esc(r.label) + '</span>'; }).join('');
+    regions = WHEEL.map(function (a) {
+      var i = AXES.indexOf(a), n = pts.filter(function (p) { var top = 0; for (var k = 1; k < 12; k++) if (p.f[k] > p.f[top]) top = k; return top === i; }).length, ang = angleOf(a);
+      return { axis: a, label: AXIS_LABEL[a], n: n, ang: ang, x: CX + Math.cos(ang) * RIM * 1.1, y: CY + Math.sin(ang) * RIM * 1.1 };
+    });
+    labels.innerHTML = regions.map(function (r, i) { return '<button type="button" class="fmap-region" data-r="' + i + '">' + esc(r.label) + '</button>'; }).join('');
   }
+  labels.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-r]'); if (!b) return; var r = regions[+b.getAttribute('data-r')];
+    select(-1); target = { x: CX + Math.cos(r.ang) * RIM * 0.62, y: CY + Math.sin(r.ang) * RIM * 0.62, k: 2.4 };
+    WA.track && WA.track('flavor_map_region', { axis: r.axis });
+  });
   function place() {
-    var boxes = [], els = labels.children;
+    var els = labels.children, intro = born + 1200 > performance.now();
     regions.forEach(function (r, i) {
-      var el = els[i], s = toScreen(r.x, r.y), w = el.offsetWidth || 120, h = 22, box = [s[0] - w / 2, s[1] - h / 2, s[0] + w / 2, s[1] + h / 2];
-      var clash = box[0] < 8 || box[1] < 8 || box[2] > W - 8 || box[3] > H - 8 || boxes.some(function (b) { return box[0] < b[2] + 10 && box[2] > b[0] - 10 && box[1] < b[3] + 6 && box[3] > b[1] - 6; });
-      el.style.transform = 'translate(' + Math.round(box[0]) + 'px,' + Math.round(box[1]) + 'px)'; el.classList.toggle('off', clash || born + 1400 > performance.now());
-      if (!clash) boxes.push(box);
+      var el = els[i], s = toScreen(r.x, r.y), w = el.offsetWidth || 120, h = el.offsetHeight || 28, cos = Math.cos(r.ang);
+      var x = s[0] - w / 2 + cos * w * 0.35, y = s[1] - h / 2, off = s[0] < -20 || s[1] < -20 || s[0] > W + 20 || s[1] > H + 20; x = Math.max(6, Math.min(W - w - 6, x)); y = Math.max(6, Math.min(H - h - 6, y));
+      el.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)'; el.classList.toggle('off', off || intro);
     });
     if (hover >= 0) showTip(hover);
   }
@@ -228,7 +266,7 @@
     var mine = pts.filter(function (p) { return p.saved; }).length;
     chips.innerHTML = '<button type="button" class="pill" data-g="all" aria-pressed="' + (group === 'all') + '">All</button>' + (mine ? '<button type="button" class="pill" data-g="shelf" aria-pressed="' + (group === 'shelf') + '"><i style="background:#fff"></i>My shelf · ' + mine + '</button>' : '') + GROUPS.map(function (g) { var n = pts.filter(function (p) { return GROUPS[p.g].id === g.id; }).length; return n ? '<button type="button" class="pill" data-g="' + g.id + '" aria-pressed="' + (group === g.id) + '"><i style="background:rgb(' + g.color.map(function (c) { return Math.round(c * 255); }).join(',') + ')"></i>' + esc(g.label) + '</button>' : ''; }).join('');
     var shown = pts.filter(visible).length;
-    status.textContent = shown.toLocaleString() + ' of ' + pts.length.toLocaleString() + ' rated bottles. Bottles that sit together taste alike.';
+    status.textContent = shown.toLocaleString() + ' of ' + pts.length.toLocaleString() + ' rated bottles. Near the middle: balanced. Toward the rim: one flavor leads.';
   }
   chips.addEventListener('click', function (e) { var b = e.target.closest('[data-g]'); if (!b) return; group = b.getAttribute('data-g'); filters(); upload(); if (selected >= 0 && !visible(pts[selected])) select(-1); });
   minScore.addEventListener('change', function () { filters(); upload(); });
@@ -239,12 +277,12 @@
       var col = {}, saved = savedSlugs(); fl.cols.forEach(function (c, i) { col[c] = i; });
       fl.rows.forEach(function (row) {
         var r = WA.find(data, row[col.slug]); if (!r) return;
-        var j = hash(row[col.slug]), a = j * Math.PI * 2, rad = 6 + hash(row[col.slug] + '·') * 6;
-        var p = { i: pts.length, slug: r.slug, n: r.n, c: r.c, s: r.s, p: r.p, d: r.d, t: row[col.t], f: decode(row[col.f]), x: row[col.x] + Math.cos(a) * rad * 0.6, y: row[col.y] + Math.sin(a) * rad * 0.6 };
-        p.fx = 500 + Math.cos(a * 7) * 40 * j; p.fy = 500 + Math.sin(a * 7) * 40 * j; p.g = groupOf(p.c); p.key = (p.n + ' ' + p.c).toLowerCase(); p.saved = !!saved[p.slug.toLowerCase()];
+        var p = { i: pts.length, slug: r.slug, n: r.n, c: r.c, s: r.s, p: r.p, d: r.d, t: row[col.t], f: decode(row[col.f]) };
+        p.g = groupOf(p.c); p.key = (p.n + ' ' + p.c).toLowerCase(); p.saved = !!saved[p.slug.toLowerCase()];
         pts.push(p);
-        var k = Math.floor(p.x / CELL) + ',' + Math.floor(p.y / CELL); (grid[k] = grid[k] || []).push(p.i);
       });
+      wheel(pts);
+      pts.forEach(function (p) { var k = Math.floor(p.x / CELL) + ',' + Math.floor(p.y / CELL); (grid[k] = grid[k] || []).push(p.i); });
       resize();
       if (!setup()) { status.textContent = 'The flavor map needs WebGL, which this browser has turned off.'; stage.classList.add('no-gl'); return; }
       if (WA.hashSlug() === 'shelf' && pts.some(function (p) { return p.saved; })) group = 'shelf';

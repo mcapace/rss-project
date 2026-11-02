@@ -2451,3 +2451,13 @@ main { min-height: 100vh; min-height: 100dvh; }
 .new-card:hover i { background: var(--gold, #e3a443); color: #1a100a; border-color: transparent; }
 @media (max-width: 1100px) { .new-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .new-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 20px; margin: 0 -20px; padding: 0 20px 6px; scrollbar-width: none; } .new-grid::-webkit-scrollbar { display: none; } .new-card { flex: 0 0 78%; min-height: 210px; scroll-snap-align: start; } }
+
+/* Flavor wheel (2026-11-02): rim labels as readable buttons, guide rings behind the points; Top 20 rank never clipped. */
+.fmap-guides { position: absolute; inset: 0; display: block; pointer-events: none; }
+.fmap-labels .fmap-region { pointer-events: auto; padding: 6px 12px; border: 1px solid rgba(255, 236, 210, 0.18); border-radius: 999px; background: rgba(20, 13, 8, 0.72); color: #fff6ea; font-family: inherit; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; text-shadow: none; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: opacity 400ms ease, border-color 200ms, background 200ms; }
+.fmap-labels .fmap-region:hover, .fmap-labels .fmap-region:focus-visible { border-color: var(--gold, #e3a443); background: rgba(40, 26, 14, 0.9); }
+.fmap-labels .fmap-region.off { opacity: 0; pointer-events: none; }
+@media (max-width: 760px) { .fmap-labels .fmap-region { padding: 4px 9px; font-size: 11.5px; } }
+.top20-grid.reveal .top20-card.in .rank { clip-path: none; }
+.top20-card.woty.has-film { grid-template-columns: auto 160px minmax(0, 1.1fr) minmax(340px, 480px); }
+@media (max-width: 1200px) { .top20-card.woty.has-film { grid-template-columns: auto 110px minmax(0, 1fr); } }

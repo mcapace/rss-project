@@ -2459,8 +2459,8 @@ main { min-height: 100vh; min-height: 100dvh; }
 .fmap-labels .fmap-region.off { opacity: 0; pointer-events: none; }
 @media (max-width: 760px) { .fmap-labels .fmap-region { padding: 4px 9px; font-size: 11.5px; } }
 .top20-grid.reveal .top20-card.in .rank { clip-path: none; }
-.top20-card.woty.has-film { grid-template-columns: auto 160px minmax(0, 1.1fr) minmax(340px, 480px); }
-@media (max-width: 1200px) { .top20-card.woty.has-film { grid-template-columns: auto 110px minmax(0, 1fr); } }
+.top20-card.woty.has-film { grid-template-columns: auto minmax(160px, 220px) minmax(0, 1fr); }
+@media (max-width: 760px) { .top20-card.woty.has-film { grid-template-columns: auto 110px minmax(0, 1fr); } }
 
 /* Audit fixes (2026-11-02): no clipped scores, no sideways scroll on phones, roomier taps and labels. */
 .shelf-bottle .top { height: auto; min-height: 46px; overflow: visible; }

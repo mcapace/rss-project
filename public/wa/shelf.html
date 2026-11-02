@@ -20,6 +20,7 @@
 </header>
 
 <main class="band"><h1 class="d1">My Shelf</h1><p class="lede">Bottles, stories and recipes saved on this device. Account sync is not connected. Clearing browser data removes your shelf, so export a copy to keep it.</p>
+<section id="palate" class="palate" aria-label="Your palate" hidden></section>
 <div id="shelfControls" class="shelf-controls"><label>Search your saves<input id="shelfQuery" type="search" placeholder="A bottle, recipe or note"></label><label>Collection<select id="shelfKind"><option value="all">Everything</option><option value="owned">Bottles I own</option><option value="want">Bottles to try</option><option value="story">Stories</option><option value="recipe">Recipes</option></select></label><label>Sort<select id="shelfOrder"><option value="recent">Recently saved</option><option value="name">Name A to Z</option></select></label></div>
 <p id="shelfCount" role="status"></p><div id="readerShelf" class="reader-grid"></div><button class="pill" id="shelfMore" type="button" hidden>Show 24 more</button>
 <aside class="shelf-backup"><div><h2>Keep a copy</h2><p>Saved in this browser. Export a backup before clearing browser data, or import it on another device. Imports keep existing items and notes.</p></div><div class="actions"><button type="button" class="pill" id="shelfExport">Export Shelf</button><label class="pill shelf-import">Import Shelf<input type="file" accept=".json,application/json" id="shelfImport"></label></div></aside></main>
@@ -39,6 +40,7 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
-<script>WA.ready(function () {});</script>
+<script src="palate.js"></script>
+<script>WA.ready(function () { var el = document.getElementById("palate"), t = 0; WA.renderPalate(el); document.addEventListener("wa:shelf", function () { clearTimeout(t); t = setTimeout(function () { WA.renderPalate(el); }, 250); }); });</script>
 </body>
 </html>

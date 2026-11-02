@@ -2465,12 +2465,14 @@ main { min-height: 100vh; min-height: 100dvh; }
 /* Audit fixes (2026-11-02): no clipped scores, no sideways scroll on phones, roomier taps and labels. */
 .shelf-bottle .top { height: auto; min-height: 46px; overflow: visible; }
 .bottle .score small { font-size: 11px; }
-.story-body table, .article-body table, article table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.prose table, .policy table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 @media (max-width: 720px) {
   .new-grid { margin: 0 calc(-1 * var(--gutter, 16px)); padding: 0 var(--gutter, 16px) 6px; scroll-padding-inline: var(--gutter, 16px); }
   .new-card .mono { font-size: 12px; }
   .fmap-chips { margin: 0 calc(-1 * var(--gutter, 16px)); padding: 0 var(--gutter, 16px); }
-  .buy-chip, .top20-card .acts .pill, .bottle .foot button { min-height: 38px; }
+  .buy-chip, .top20-card .acts .pill, .bottle .foot button, .shelf-bottle .foot button { min-height: 38px; }
+  .rot-dot { width: 34px; height: 36px; }
+  .fmap-labels .fmap-region { min-height: 34px; }
   .crumbs a { display: inline-block; padding: 9px 0; }
   .ret-links a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 6px; }
   .term .def a { padding: 6px 0; }

@@ -2223,3 +2223,10 @@ body.finder-page > dialog:modal { position: fixed !important; }
   .shelf-label b { font-size: 32px; }
   .shelf-label span { margin-top: 0; }
 }
+
+/* ---- Cocktails pantry: All / Can make now / Missing one ingredient, clear, and what each recipe still needs (2026-11-02) ---- */
+#pantryMode { margin-top: 12px; }
+#pantryMode button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.pantry-clear { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--copper); font-size: 13px; }
+.pantry-clear:hover { text-decoration: underline; }
+.missing-ingredient { margin-top: 8px; color: var(--copper); font-size: 13px; }

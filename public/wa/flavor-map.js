@@ -20,7 +20,8 @@
   var pts = [], grid = {}, CELL = 24, view = { x: 500, y: 500, k: 1 }, target = null, hover = -1, selected = -1, group = 'all', born = 0;
   var gl, prog, buf, loc = {}, dpr = 1, W = 0, H = 0, dirty = true;
 
-  var WHEEL = ['smoke', 'maritime', 'herbal', 'grain', 'fresh_fruit', 'floral', 'tropical', 'sweet', 'spice', 'oak', 'nutty', 'dried_fruit'], RIM = 420, CX = 500, CY = 500;
+  var WHEEL = ['smoke', 'maritime', 'herbal', 'grain', 'fresh_fruit', 'floral', 'tropical', 'sweet', 'spice', 'oak', 'nutty', 'dried_fruit'], RIM = 420, HUB = 0.2, CX = 500, CY = 500;
+  var SERIF = '"Instrument Serif", Georgia, serif';
   function angleOf(axis) { return -Math.PI / 2 + WHEEL.indexOf(axis) * Math.PI * 2 / WHEEL.length; }
   // Each bottle's pull toward every flavor is how far it stands above the average bottle on that flavor.
   function wheel(list) {
@@ -36,7 +37,7 @@
     order.forEach(function (i, n) { rank[i] = n / Math.max(1, order.length - 1); });
     list.forEach(function (p, i) {
       var q = pulls[i], j = hash(p.slug), a = j * Math.PI * 2, ang = q[2] ? Math.atan2(q[1], q[0]) : a;
-      var r = Math.sqrt(rank[i]) * RIM * 0.95 + hash(p.slug + '·') * 8;
+      var r = (HUB + (1 - HUB) * Math.sqrt(rank[i])) * RIM * 0.95 + hash(p.slug + '·') * 8;
       p.x = CX + Math.cos(ang) * r; p.y = CY + Math.sin(ang) * r;
       p.fx = CX + Math.cos(a * 7) * 30 * j; p.fy = CY + Math.sin(a * 7) * 30 * j;
     });
@@ -51,7 +52,7 @@
   function savedSlugs() { var out = {}; try { (WAReader.read(localStorage).shelf || []).forEach(function (x) { if (x.kind === 'bottle') out[x.slug.toLowerCase()] = true; }); } catch (e) {} return out; }
 
   // Data space (0-1000 square) to CSS pixels, fitted to the stage with a margin.
-  function base() { return W < 600 ? Math.min(W / 1320, H / 1080) : Math.min(W, H) / 1100; }
+  function base() { return W < 600 ? Math.min(W / 1080, H / 1080) : Math.min(W, H) / 1100; }
   function toScreen(x, y) { var s = base() * view.k; return [(x - view.x) * s + W / 2, (y - view.y) * s + H / 2]; }
   function toData(sx, sy) { var s = base() * view.k; return [(sx - W / 2) / s + view.x, (sy - H / 2) / s + view.y]; }
 
@@ -73,7 +74,7 @@
     var fs = 'precision mediump float; varying vec3 v_col; varying float v_state; varying float v_gain;' +
       'void main() { float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard;' +
       ' if (v_state > 1.5) { float ring = smoothstep(0.62, 0.72, d) * (1.0 - smoothstep(0.86, 1.0, d)); float core = 1.0 - smoothstep(0.18, 0.3, d); gl_FragColor = vec4(vec3(1.0, 0.93, 0.8) * (ring + core), ring + core); return; }' +
-      ' float a = v_state < 0.5 ? 0.06 : v_gain; float glow = exp(-d * d * 5.0) * 0.55 + (1.0 - smoothstep(0.25, 0.45, d)) * 0.6; gl_FragColor = vec4(v_col * glow * a, glow * a); }';
+      ' float a = v_state < 0.5 ? 0.06 : v_gain; float glow = exp(-d * d * 6.0) * 0.35 + (1.0 - smoothstep(0.25, 0.45, d)) * 0.6; gl_FragColor = vec4(v_col * glow * a, glow * a); }';
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
     prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
@@ -110,8 +111,19 @@
     g2.lineWidth = 1;
     [0.33, 0.66, 1].forEach(function (f, i) { g2.beginPath(); g2.arc(c[0], c[1], RIM * f * s, 0, Math.PI * 2); g2.strokeStyle = i === 2 ? 'rgba(255,236,210,0.22)' : 'rgba(255,236,210,0.08)'; g2.stroke(); });
     for (var i = 0; i < WHEEL.length; i++) { var a = angleOf(WHEEL[i]) + Math.PI / WHEEL.length; g2.beginPath(); g2.moveTo(c[0] + Math.cos(a) * RIM * 0.12 * s, c[1] + Math.sin(a) * RIM * 0.12 * s); g2.lineTo(c[0] + Math.cos(a) * RIM * s, c[1] + Math.sin(a) * RIM * s); g2.strokeStyle = 'rgba(255,236,210,0.07)'; g2.stroke(); }
-    g2.fillStyle = 'rgba(255,236,210,0.42)'; g2.font = '500 11px ' + getComputedStyle(document.body).fontFamily; g2.textAlign = 'center'; g2.fillText('BALANCED', c[0], c[1] + 4);
+    // The hub: a quiet disc in the middle where the most balanced bottles begin.
+    var hub = RIM * HUB * 0.9 * s, glow = g2.createRadialGradient(c[0], c[1], 0, c[0], c[1], hub);
+    glow.addColorStop(0, 'rgba(255,214,160,0.10)'); glow.addColorStop(0.7, 'rgba(255,214,160,0.04)'); glow.addColorStop(1, 'rgba(255,214,160,0)');
+    g2.fillStyle = glow; g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.fill();
+    g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.strokeStyle = 'rgba(255,236,210,0.16)'; g2.stroke();
+    if (hub > 22) {
+      var big = Math.round(Math.max(14, Math.min(34, hub * 0.34)));
+      g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff3e2';
+      g2.font = 'italic ' + big + 'px ' + SERIF; g2.fillText('Balanced', c[0], c[1] - (hub > 58 ? big * 0.32 : 0));
+      if (hub > 58) { g2.fillStyle = 'rgba(255,236,210,0.62)'; g2.font = '400 ' + Math.round(Math.max(11, big * 0.46)) + 'px ' + getComputedStyle(document.body).fontFamily; g2.fillText('No one flavor leads', c[0], c[1] + big * 0.62); }
+    }
   }
+  if (document.fonts) document.fonts.load('italic 24px "Instrument Serif"').then(function () { dirty = true; }, function () {});
 
   function resize() {
     var r = stage.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
@@ -132,8 +144,8 @@
     drawGuides();
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform4f(loc.u_view, view.x, view.y, (2 * s) / W, (2 * s) / H);
-    gl.uniform1f(loc.u_t, t); gl.uniform1f(loc.u_gain, Math.min(1, 0.5 + 0.18 * view.k));
-    gl.uniform1f(loc.u_size, Math.max(5, Math.min(22, 4.6 * Math.sqrt(view.k) * Math.min(W, H) / 700)) * dpr);
+    gl.uniform1f(loc.u_t, t); gl.uniform1f(loc.u_gain, Math.min(1, 0.42 + 0.2 * view.k));
+    gl.uniform1f(loc.u_size, Math.max(4.5, Math.min(22, 4.2 * Math.sqrt(view.k) * Math.min(W, H) / 700)) * dpr);
     gl.drawArrays(gl.POINTS, 0, pts.length);
     if (selected >= 0 && t >= 1) { gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); var p = pts[selected]; drawOne(p); gl.blendFunc(gl.ONE, gl.ONE); }
     place();

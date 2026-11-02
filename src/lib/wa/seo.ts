@@ -190,7 +190,7 @@ export type StoryView = { slug: string; title: string; description: string; sect
  * the search title, social copy, keywords, an answer-first summary and key facts for AI answer engines (GEO),
  * the people, places and brands the piece is about, and alt text for the lead picture.
  */
-export type SeoFields = { seoTitle?: string; socialTitle?: string; socialDescription?: string; keywords?: string[]; summary?: string; keyFacts?: string[]; entities?: { name: string; type: string }[]; heroAlt?: string };
+export type SeoFields = { dek?: string; seoTitle?: string; socialTitle?: string; socialDescription?: string; keywords?: string[]; summary?: string; keyFacts?: string[]; entities?: { name: string; type: string }[]; heroAlt?: string };
 
 const ENTITY_TYPES: Record<string, string> = { person: "Person", brand: "Brand", organization: "Organization", distillery: "Organization", company: "Organization", place: "Place", product: "Product", event: "Event" };
 
@@ -219,9 +219,12 @@ export function storyView(doc: WaDoc, origin: string): StoryView {
   const body = cleanBody(doc.body_html || "");
   const text = plain(body);
   const description = clip(plain(String(seo.description || doc.excerpt || meta.ai_summary || "")) || text, 300);
+  // The dek readers see is the editors' line; the SEO pass keeps the one it replaced in seo.previous.
+  const editors = "previous" in seo ? String(obj(seo.previous).description || "") : String(seo.description || "");
+  const dek = clip(plain(String(editors || doc.excerpt || meta.ai_summary || "")), 300) || description;
   const sp = sponsorship(meta, doc.byline);
   const dates = docDates(doc);
-  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind, ...seoFields(meta) };
+  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind, dek, ...seoFields(meta) };
 }
 
 function longDate(day: string | null): string {
@@ -278,7 +281,7 @@ export function renderStory(templateHtml: string, v: StoryView, origin: string):
   html = fill(html, "crumbs", `<a href="${BASE}/stories.html">Stories</a> › <a href="${BASE}/stories.html#${v.section}">${esc(v.sectionLabel)}</a>`);
   html = fill(html, "kicker", (v.sponsored ? '<span class="sp-chip">Sponsored</span>' : "") + esc(v.sectionLabel) + (v.tags[0] && !/sponsor/i.test(v.tags[0]) ? " · " + esc(v.tags[0]) : ""));
   html = fill(html, "title", esc(v.title));
-  html = fill(html, "dek", esc(v.description));
+  html = fill(html, "dek", esc(v.dek || v.description));
   const date = v.day ? `<time datetime="${esc(v.published ?? v.day)}">${esc(longDate(v.day))}</time>` : "";
   const who = v.sponsored ? `<span>${v.sponsor ? `Sponsored by <strong>${esc(v.sponsor)}</strong>` : "<strong>Sponsored content</strong>"}</span>` : v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${BASE}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
   html = fill(html, "byline", `${who}<span>${date}</span>${v.words ? `<span>${Math.max(1, Math.round(v.words / 230))} minute read</span>` : ""}`);

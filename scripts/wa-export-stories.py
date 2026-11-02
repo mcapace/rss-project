@@ -24,7 +24,7 @@ if CACHE and os.path.exists(CACHE): rows = json.load(open(CACHE))
 else:
     rows = []; off = 0
     while True:
-        page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'sponsored' as sponsored, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
+        page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'seo'->'previous'->>'description' as seo_prev, (metadata->'seo') ? 'previous' as seo_replaced, metadata->'sponsored' as sponsored, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
           metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner,
           metadata->'lead_image' as lead, (select min(i.n - 1) from jsonb_array_elements(case when jsonb_typeof(metadata->'media') = 'array' then metadata->'media' else '[]'::jsonb end) with ordinality as i(m, n) where i.m->>'is_lead' = 'true') as lead_index
           from cms_documents where brand='wa' and kind in ('article','legacy_record') and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
@@ -72,7 +72,9 @@ for r in rows:
     words = len(text(body).split())
     sec = o.get("sec") or section(r["tags"] or [], cats, r["title"] or "", words)
     first = text(next(iter(re.findall(r"<p[^>]*>(.*?)</p>", body, re.S)), ""))
-    dek = (r["seo"] or r["excerpt"] or o.get("dek") or first)[:320].strip()
+    # The visible dek is the editors' line: the description from before the SEO pass rewrote it for search, else the current one.
+    editors = (r.get("seo_prev") or "") if r.get("seo_replaced") else r["seo"]
+    dek = (editors or r["excerpt"] or o.get("dek") or first)[:320].strip()
     thumb = r["thumb"] or r["banner"] or ""
     hero = f"/api/media/{r['id']}/{r['lead_index']}?w=1600" if r.get("lead_index") is not None else (o.get("hero") or (("https://whiskyadvocate.com" + thumb) if thumb.startswith("/") else thumb))
     lead = r.get("lead") or {}

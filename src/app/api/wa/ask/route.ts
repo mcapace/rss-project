@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   try {
     const anthropic = new Anthropic();
     const message = await anthropic.messages.create({
-      model: MODEL, max_tokens: 700, system: SYSTEM, messages,
+      model: MODEL, max_tokens: 2000, system: SYSTEM, messages,
       output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> } },
     } as Anthropic.MessageCreateParamsNonStreaming);
     const text = message.content.map(c => (c.type === "text" ? c.text : "")).join("");

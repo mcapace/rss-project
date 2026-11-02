@@ -81,10 +81,11 @@ export async function POST(request: Request) {
   try {
     const anthropic = new Anthropic();
     const message = await anthropic.messages.create({
-      model: MODEL, max_tokens: 600, system: SYSTEM,
+      model: MODEL, max_tokens: 2000, system: SYSTEM,
       messages: [{ role: "user", content: `${page}\n\nCandidates (slug | name | score | price | category | producer | how the page found it | note):\n${list}` }],
       output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> } },
     } as Anthropic.MessageCreateParamsNonStreaming);
+    if (message.stop_reason === "max_tokens") throw new Error("the answer ran past max_tokens");
     const text = message.content.map(c => (c.type === "text" ? c.text : "")).join("");
     const out = JSON.parse(text) as { line: string; picks: { slug: string; why: string }[] };
     const known = new Set(candidates.map(c => c.slug));

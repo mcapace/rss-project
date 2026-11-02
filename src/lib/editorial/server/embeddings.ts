@@ -67,6 +67,91 @@ export async function upsertMediaEmbedding(db: SupabaseClient, documentId: strin
   return true;
 }
 
+export type EmbeddableDocument = { id: string; title: string; excerpt: string; body_html: string; metadata?: CmsJsonObject | null };
+export type EmbeddingRefresh = { document: boolean; images: number; removed: number };
+
+const mediaHash = (text: string) => createHash("sha256").update(text).digest("hex");
+
+/** Splits texts into Voyage requests that stay well under its per-request token limit. */
+function batches<T extends { text: string }>(items: T[], maxItems = 32, maxChars = 240_000): T[][] {
+  const out: T[][] = [];
+  let current: T[] = [], chars = 0;
+  for (const item of items) {
+    const size = Math.min(item.text.length, 16_000);
+    if (current.length && (current.length >= maxItems || chars + size > maxChars)) { out.push(current); current = []; chars = 0; }
+    current.push(item); chars += size;
+  }
+  if (current.length) out.push(current);
+  return out;
+}
+
+/**
+ * Brings one document's semantic index up to date: its text and each described
+ * image, embedding only what changed since the stored hash (one Voyage request
+ * for the lot in the usual case), and removing image vectors for images that
+ * are gone or no longer described. Safe to call after every save.
+ */
+export async function refreshDocumentEmbeddings(db: SupabaseClient, doc: EmbeddableDocument, signal?: AbortSignal): Promise<EmbeddingRefresh> {
+  const result: EmbeddingRefresh = { document: false, images: 0, removed: 0 };
+  if (!embeddingsConfigured()) return result;
+  const { data: stored, error } = await db.from("cms_embeddings").select("kind,media_index,content_hash,model").eq("document_id", doc.id);
+  if (error) throw new CmsError(500, `The stored embeddings could not be read: ${error.message}`);
+  const have = new Map<string, string>();
+  for (const row of (stored ?? []) as { kind: string; media_index: number | null; content_hash: string; model: string }[]) {
+    if (row.model === EMBEDDING_MODEL) have.set(row.kind === "media" ? `media:${row.media_index}` : "document", row.content_hash);
+  }
+  const jobs: { kind: "document" | "media"; index: number | null; hash: string; text: string }[] = [];
+  const docHash = documentContentHash(doc);
+  if (have.get("document") !== docHash) jobs.push({ kind: "document", index: null, hash: docHash, text: documentEmbeddingText(doc) });
+  const rawMedia = doc.metadata?.media;
+  const media = Array.isArray(rawMedia) ? (rawMedia as CmsJsonObject[]) : [];
+  const described = new Set<number>();
+  media.forEach((item, index) => {
+    const text = item && typeof item === "object" && !Array.isArray(item) ? mediaEmbeddingText(item) : "";
+    if (!text) return;
+    described.add(index);
+    const hash = mediaHash(text);
+    if (have.get(`media:${index}`) !== hash) jobs.push({ kind: "media", index, hash, text });
+  });
+  for (const group of batches(jobs)) {
+    const vectors = await embedTexts(group.map(job => job.text), "document", signal);
+    for (const [i, job] of group.entries()) {
+      const { error: upsertError } = await db.rpc("cms_upsert_embedding", { p_document_id: doc.id, p_kind: job.kind, p_media_index: job.index, p_content_hash: job.hash, p_model: EMBEDDING_MODEL, p_embedding: vectorLiteral(vectors[i]) });
+      if (upsertError) throw new CmsError(500, `The embedding could not be stored: ${upsertError.message}`);
+      if (job.kind === "document") result.document = true; else result.images += 1;
+    }
+  }
+  const stale = ((stored ?? []) as { kind: string; media_index: number | null }[]).filter(row => row.kind === "media" && row.media_index !== null && !described.has(row.media_index)).map(row => row.media_index as number);
+  if (stale.length) {
+    const { error: deleteError } = await db.from("cms_embeddings").delete().eq("document_id", doc.id).eq("kind", "media").in("media_index", stale);
+    if (deleteError) throw new CmsError(500, `Old image embeddings could not be removed: ${deleteError.message}`);
+    result.removed = stale.length;
+  }
+  return result;
+}
+
+/** Refreshes the oldest-changed documents in the backlog until the time budget runs out; the save hook's safety net. */
+export async function embedBacklog(db: SupabaseClient, brands: CmsBrand[], options: { limit?: number; budgetMs?: number } = {}): Promise<{ backlog: number; documents: number; images: number; removed: number; failures: string[]; stopped_early: boolean }> {
+  const started = Date.now();
+  const summary = { backlog: 0, documents: 0, images: 0, removed: 0, failures: [] as string[], stopped_early: false };
+  if (!embeddingsConfigured() || !brands.length) return summary;
+  const { data, error } = await db.rpc("cms_embedding_backlog", { p_brands: brands, p_limit: Math.min(500, Math.max(1, options.limit ?? 200)) });
+  if (error) throw new CmsError(500, `Could not read the embedding backlog: ${error.message}`);
+  const backlog = (data ?? []) as { document_id: string }[];
+  summary.backlog = backlog.length;
+  for (const item of backlog) {
+    if (options.budgetMs && Date.now() - started > options.budgetMs) { summary.stopped_early = true; break; }
+    const { data: row, error: readError } = await db.from("cms_documents").select("id,title,excerpt,body_html,metadata").eq("id", item.document_id).maybeSingle();
+    if (readError || !row) { summary.failures.push(`${item.document_id}: ${readError?.message ?? "missing"}`); continue; }
+    try {
+      const done = await refreshDocumentEmbeddings(db, row as EmbeddableDocument);
+      if (done.document) summary.documents += 1;
+      summary.images += done.images; summary.removed += done.removed;
+    } catch (failure) { summary.failures.push(`${item.document_id}: ${failure instanceof Error ? failure.message : "failed"}`); }
+  }
+  return summary;
+}
+
 export type SemanticMatch = { document_id: string; brand: CmsBrand; kind: "document" | "media"; media_index: number | null; similarity: number; title: string; publication_state: string };
 
 export async function semanticMatches(db: SupabaseClient, brands: CmsBrand[], query: string, kind: "document" | "media" | null, limit: number, signal?: AbortSignal): Promise<SemanticMatch[]> {

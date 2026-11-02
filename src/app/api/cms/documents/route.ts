@@ -1,10 +1,12 @@
 import { createHash, randomUUID } from "node:crypto";
+import { after } from "next/server";
 import { requireCmsUser } from "@/lib/cms/auth-server";
 import { assertBrand, assertSameOrigin, CmsError, readJson } from "@/lib/cms/access";
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { cmsJson, cmsFailure } from "@/lib/cms/http";
 import { brandValue, kindValue, textValue, isUuid } from "@/lib/cms/validation";
 import { CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES } from "@/lib/cms/types";
+import { embeddingsConfigured, refreshDocumentEmbeddings, type EmbeddableDocument } from "@/lib/editorial/server/embeddings";
 
 export const runtime = "nodejs";
 
@@ -54,6 +56,12 @@ export async function POST(request: Request) {
       p_document: { ...document, source_hash: sourceHash }, p_actor: user.id,
     });
     if (error) databaseError(error);
+    // A new story is findable by meaning from its first save.
+    const created = data as { document_id?: string; action?: string } | null;
+    if (embeddingsConfigured() && typeof created?.document_id === "string" && created.action === "created") {
+      const doc: EmbeddableDocument = { id: created.document_id, title: document.title, excerpt: document.excerpt, body_html: document.body_html, metadata: document.metadata };
+      after(() => refreshDocumentEmbeddings(cmsDb(), doc).catch(failure => console.error(`Embedding failed for new document ${doc.id}:`, failure instanceof Error ? failure.message : failure)));
+    }
     return cmsJson(data, 201);
   } catch (error) { return cmsFailure(error); }
 }

@@ -184,7 +184,7 @@ describes each capability. Where to look in the code:
 | Collaboration | `src/components/editorial/collab/`, `/api/cms/realtime`, `/api/cms/documents/[id]/collab`. |
 | Redirect engine | `src/lib/cms/redirects.ts`, `redirects-server.ts`, `/api/cms/redirects`, `/api/redirects/resolve`, the redirect step in `src/proxy.ts`, `scripts/build-redirects.ts`. |
 | Media renditions and re-hosting | `src/lib/media/renditions.ts`, `/api/media/[id]/[index]`, `scripts/rehost-media.ts`. |
-| Semantic search | `src/lib/editorial/server/embeddings.ts`, `src/lib/editorial/rank.ts`, `scripts/embed-content.ts`. |
+| Semantic search | `src/lib/editorial/server/embeddings.ts` (`refreshDocumentEmbeddings` runs after every save and create; `embedBacklog` is the daily catch-up), `src/app/api/cron/embeddings/route.ts` (Vercel cron in `vercel.json`, `CRON_SECRET`), `src/lib/editorial/rank.ts`, `scripts/embed-content.ts`. |
 
 Tests: `src/lib/cms/__tests__/blocks.test.ts`, `redirects.test.ts`,
 `src/lib/delivery/__tests__/paywall.test.ts`, `src/lib/newsletter/__tests__/render.test.ts`.

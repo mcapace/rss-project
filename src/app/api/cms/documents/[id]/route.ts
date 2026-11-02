@@ -10,7 +10,7 @@ import { createRedirect } from "@/lib/cms/redirects-server";
 import type { CmsDocument } from "@/lib/cms/types";
 import { documentPatch } from "@/lib/cms/validation";
 import { sanitizeCmsHtml } from "@/lib/cms/html";
-import { embeddingsConfigured, upsertDocumentEmbedding } from "@/lib/editorial/server/embeddings";
+import { embeddingsConfigured, refreshDocumentEmbeddings } from "@/lib/editorial/server/embeddings";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -47,9 +47,10 @@ export async function PATCH(request: Request, context: Context) {
     if (patch.slug !== undefined && previousPath && nextPath && previousPath !== nextPath) {
       await createRedirect({ brand: saved.brand, legacy_host: null, legacy_path: previousPath, target_path: null, document_id: saved.id, status: 301, source: "slug_change" }).catch(() => undefined);
     }
-    // Refresh the semantic index after the response, never on the editor's clock.
-    if (embeddingsConfigured() && (patch.title !== undefined || patch.excerpt !== undefined || patch.body_html !== undefined)) {
-      after(() => upsertDocumentEmbedding(cmsDb(), saved).catch(() => undefined));
+    // Refresh the semantic index (text and described images, only what changed) after the
+    // response, never on the editor's clock. A failure stays in the backlog for the daily catch-up.
+    if (embeddingsConfigured() && (patch.title !== undefined || patch.excerpt !== undefined || patch.body_html !== undefined || patch.metadata !== undefined)) {
+      after(() => refreshDocumentEmbeddings(cmsDb(), saved).catch(error => console.error(`Embedding refresh failed for ${saved.id}:`, error instanceof Error ? error.message : error)));
     }
     return cmsJson({ document: saved, preview_html: sanitizeCmsHtml(saved.body_html || "") });
   } catch (error) { return cmsFailure(error); }

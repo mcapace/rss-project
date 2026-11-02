@@ -30,11 +30,13 @@
 <section class="band">
   <div class="band-head"><div><span class="mono">Score history</span><h2 class="d2" style="margin-top:10px">How the house has rated, bottle by bottle.</h2></div></div>
   <div class="score-history"><canvas id="timeline" aria-label="Scores over time"></canvas></div>
+  <details class="history-details"><summary>Show the scores as a table</summary><div id="historyTable"></div></details>
 </section>
 
 <section class="band">
   <div id="housePicks" hidden style="margin-bottom: 34px"><div class="band-head"><div><span class="mono">Where to start</span><h2 class="d2" style="margin-top:10px">The bottles to know the house by.</h2><p class="rec-line"></p></div></div><div class="rail"></div></div>
   <div class="band-head"><div><span class="mono">Portfolio</span><h2 class="d2" style="margin-top:10px">Every bottle we have rated.</h2></div><a class="pill" href="industry.html">Export as sell sheet</a></div>
+  <div class="portfolio-controls"><label>Sort reviews <select id="portfolioSort"><option value="score">Highest score</option><option value="new">Newest review</option><option value="price">Lowest price</option></select></label><label>Budget <select id="portfolioBudget"><option value="0">Any price</option><option value="60">Up to $60</option><option value="100">Up to $100</option><option value="200">Up to $200</option></select></label><p id="portfolioCount" role="status"></p></div>
   <div class="rail" id="bottles"></div>
 </section>
 
@@ -54,6 +56,12 @@
   <div class="dense" id="others"></div>
 </section>
 
+<section class="band buying-guide-band" id="buyingGuides" aria-labelledby="buyingGuidesTitle">
+  <div class="band-head"><div><span class="mono">The buying guide</span><h2 class="d2" style="margin-top:10px" id="buyingGuidesTitle">Find your next good bottle.</h2><p>Independent reviews and useful advice, a place to start.</p></div><a class="pill" href="guides.html">All guides</a></div>
+  <div class="lenses buying-paths"><a class="lens" href="finder.html#value"><strong>Best value</strong><span>Beats the price curve</span></a><a class="lens" href="finder.html#first"><strong>A first bottle</strong><span>Approachable, under $60</span></a><a class="lens" href="finder.html#gift"><strong>A gift under $100</strong><span>92 points or better</span></a><a class="lens" href="finder.html#cocktail"><strong>Cocktail rye</strong><span>Spice that stands up to vermouth</span></a></div>
+  <div class="story-grid guide-stories" hidden></div>
+</section>
+
 <section class="nl-band" aria-label="Newsletters">
   <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
@@ -65,9 +73,11 @@
   <div><h4>Company</h4><a href="about.html">About</a><a href="about.html#faq">FAQ</a><a href="contact.html">Contact</a><a href="contact.html#advertise">Advertise</a><a href="contact.html#submit">Submit whiskies</a><a href="https://www.mshanken.com/">M. Shanken Communications</a><a href="privacy.html">Privacy policy</a></div>
 </footer>
 
+<script src="catalog-core.js"></script>
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
+<script src="editorial.js" defer></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
   var STORIES = null, TOP = null; WA.stories(function (x) { STORIES = x; if (current) extras(current); }); WA.top20(function (x) { TOP = x; if (current) extras(current); });
@@ -91,7 +101,16 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("lede").textContent = (WA.COUNTRY[mainCat] || "") + (WA.COUNTRY[mainCat] ? ". " : "") + rows.length + (rows.length === 1 ? " rating" : " ratings") + (rows[0].d ? " since " + rows[0].d.slice(0, 4) : "") + ", mostly " + mainCat.toLowerCase() + ". The panel's highest mark is " + best.s + " for " + best.n + ".";
     var prices = rows.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; });
     document.getElementById("stats").innerHTML = [[rows.length, "bottles rated"], [best.s, "highest score"], [avg.toFixed(1), "average score"], [WA.fmt(prices[0]) + (prices.length > 1 ? " to " + WA.fmt(prices[prices.length - 1]) : ""), "price range"], [Object.keys(cats).length, Object.keys(cats).length === 1 ? "category" : "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
-    var shownRows = rows.slice().sort(function (a, b) { return b.s - a.s; }); document.getElementById("bottles").innerHTML = shownRows.slice(0, 24).map(function (r) { return WA.bottleCard(r); }).join("") + (shownRows.length > 24 ? '<div class="more" style="grid-column: 1 / -1"><button type="button" class="pill" id="moreBottles">All ' + shownRows.length + " bottles</button></div>" : ""); WA.fillNotes(document.getElementById("bottles")); var mb = document.getElementById("moreBottles"); if (mb) mb.addEventListener("click", function () { document.getElementById("bottles").innerHTML = shownRows.map(function (r) { return WA.bottleCard(r); }).join(""); WA.fillNotes(document.getElementById("bottles")); });
+    var shownRows = rows.slice().sort(function (a, b) { return b.s - a.s; }), portfolioLimit = 12;
+    function portfolio() {
+      var budget = Number(document.getElementById('portfolioBudget').value), sort = document.getElementById('portfolioSort').value;
+      var filtered = rows.filter(function (r) { return !budget || (r.p > 0 && r.p <= budget); }).sort(function (a, b) { return sort === 'new' ? (b.d || '').localeCompare(a.d || '') : sort === 'price' ? (a.p || 1e9) - (b.p || 1e9) : b.s - a.s; });
+      document.getElementById('portfolioCount').textContent = filtered.length + (filtered.length === 1 ? ' review' : ' reviews');
+      document.getElementById('bottles').innerHTML = filtered.slice(0, portfolioLimit).map(function (r) { return WA.bottleCard(r); }).join('') + (filtered.length > portfolioLimit ? '<div class="more" style="grid-column: 1 / -1"><button type="button" class="pill" id="moreBottles">Show 12 more <span class="muted">(' + (filtered.length - portfolioLimit) + ' more)</span></button></div>' : '') + (!filtered.length ? '<p>No reviews within that budget. Try Any price.</p>' : '');
+      WA.fillNotes(document.getElementById('bottles')); var more = document.getElementById('moreBottles'); if (more) more.onclick = function () { portfolioLimit += 12; portfolio(); };
+    }
+    ['portfolioSort', 'portfolioBudget'].forEach(function (id) { document.getElementById(id).onchange = function () { portfolioLimit = 12; portfolio(); }; }); portfolio();
+    document.getElementById('historyTable').innerHTML = '<table class="history-table"><caption>Published scores by review date</caption><thead><tr><th scope="col">Bottle</th><th scope="col">Score</th><th scope="col">Date</th></tr></thead><tbody>' + rows.slice().sort(function (a, b) { return (b.d || '').localeCompare(a.d || ''); }).map(function (r) { return '<tr><th scope="row"><a href="' + WA.bottleHref(r) + '">' + WAReader.escape(r.n) + '</a></th><td>' + r.s + '</td><td>' + WAReader.escape(r.d || 'Not recorded') + '</td></tr>'; }).join('') + '</tbody></table>';
     drawTimeline(rows);
     (function () {
       var host = document.getElementById("housePicks"); if (!host || !WA.recommend) return; host.hidden = true;

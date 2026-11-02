@@ -2136,3 +2136,78 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
 .ingredient-step label { display: grid; grid-template-columns: 18px 84px 1fr; gap: 14px; align-items: baseline; padding: 9px 0; cursor: pointer; }
 .ingredient-step input { accent-color: var(--amber-text); width: 18px; height: 18px; margin: 0; align-self: center; }
 .ingredient-step input:checked ~ span, .ingredient-step input:checked ~ b { text-decoration: line-through; color: var(--ink-3); }
+
+/* ---- Ratings filters in a dialog, aligned comparison sheet, search results by type (2026-11-02, from the Codex branch without its redesign) ---- */
+.filter-dialog { width: min(600px, calc(100vw - 24px)); max-height: 85dvh; padding: 0; border: 1px solid var(--rule); border-radius: 22px; background: var(--paper-2); color: var(--ink); }
+.filter-dialog::backdrop, .comparison-sheet::backdrop { background: #17120d70; backdrop-filter: blur(3px); }
+.dialog-heading { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; background: var(--paper-2); border-bottom: 1px solid var(--rule); }
+.dialog-heading h2 { font-size: 22px; line-height: 1.2; }
+.dialog-heading .pill { flex-shrink: 0; }
+.filter-dialog .pop { position: static; transform: none; animation: none; min-width: 0; max-width: none; width: 100%; padding: 22px; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+.filter-dialog .pop[data-open="true"] { display: block; }
+.filter-dialog .chips, .filter-dialog .words, .filter-dialog .ladder { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-dialog button, .filter-dialog input { min-height: 44px; }
+.filter-dialog .menu { position: static; max-height: 42dvh; }
+.comparison-sheet { padding: 0; overflow: auto; }
+.compare-hint { padding: 12px 22px 0; color: var(--ink-2); font-size: 13px; }
+.compare-scroll { padding: 16px 22px 22px; overflow-x: auto; }
+.comparison-sheet #compareCards { display: grid; grid-template-columns: repeat(var(--compare-count, 1), minmax(190px, 1fr)); gap: 12px; margin: 0; }
+.comparison-sheet .reader-card { padding: 18px; min-width: 0; }
+.comparison-sheet .reader-card h3 { font-size: 19px; min-height: 7.2em; }
+.comparison-sheet .reader-card dl { display: grid; grid-template-rows: 24px 32px 24px 32px 24px 64px 24px 64px; }
+.comparison-sheet .reader-card dt { margin: 0; }
+.discovery-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.discovery-tabs button span { color: inherit; opacity: .8; font-size: 12px; }
+.discovery-group { margin-top: 12px; }
+.results-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.results-heading h2 { font-size: 24px; line-height: 1.2; }
+.results-heading h2 span { font-size: 14px; color: var(--ink-2); font-weight: 400; }
+.discovery-group .reader-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; margin-top: 18px; }
+.discovery-card { display: flex; gap: 16px; padding: 20px; }
+.discovery-card h3 { font-size: 19px; line-height: 1.25; }
+.discovery-card p:not(.mono) { font-size: 13px; color: var(--ink-2); }
+.discovery-card .mono { margin-bottom: 8px; }
+.result-score { flex-shrink: 0; font-size: 32px; }
+.discovery-card mark { color: inherit; background: #e3a44330; }
+.reader-empty { padding: 28px 0; }
+.reader-empty p { margin: 10px 0 20px; }
+@media (max-width: 1000px) { .discovery-group .reader-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) {
+  .filter-dialog { margin: auto 12px 12px; max-height: 80dvh; }
+  .dialog-heading { padding: 14px 18px; }
+  .dialog-heading h2 { font-size: 20px; }
+  .comparison-sheet .dialog-heading { flex-wrap: wrap; }
+  .comparison-sheet #compareCards { grid-template-columns: repeat(var(--compare-count,1), minmax(165px,1fr)); }
+  .comparison-sheet .reader-card { padding: 14px; }
+  .comparison-sheet .reader-card h3 { font-size: 17px; }
+  .discovery-group .reader-grid { grid-template-columns: 1fr; }
+  .discovery-card { padding: 16px; }
+  .results-heading h2 { font-size: 22px; }
+}
+
+/* ---- Read next as story cards, and the buying guide (finder shortcuts plus guide stories) under stories, ratings, recipes and the home page (2026-11-02) ---- */
+.story-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.story-grid .story { min-height: 0; }
+.story-grid .story h3 { font-size: 20px; line-height: 1.2; }
+.story-grid .story:not(.has-img) { min-height: 220px; }
+.buying-guide-band .band-head p { margin-top: 8px; }
+.buying-paths { margin-bottom: 0; }
+.buying-paths .lens { flex: 1 1 200px; }
+.guide-stories { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 22px; }
+@media (max-width: 1000px) { .story-grid, .guide-stories { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .story-grid, .guide-stories { grid-template-columns: 1fr; } .buying-paths .lens { flex: 0 0 auto; } }
+.story-grid[hidden] { display: none; }
+
+/* ---- Producer portfolio: sort, budget and paging, scores as a table (2026-11-02) ---- */
+.portfolio-controls { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+.portfolio-controls label { display: grid; gap: 6px; font-size: 13px; }
+.portfolio-controls select { min-height: 44px; padding: 10px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper-2); color: var(--ink); font: inherit; }
+#portfolioCount { font-size: 13px; color: var(--ink-2); margin: 0 0 12px; }
+.history-details { margin-top: 18px; }
+.history-details summary { cursor: pointer; font-size: 14px; color: var(--ink-2); }
+.history-table { border-collapse: collapse; width: 100%; margin-top: 16px; font-size: 14px; }
+.history-table caption { text-align: left; font-weight: 500; padding: 12px 0; }
+.history-table th, .history-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--rule-2); }
+.history-table tbody th { font-weight: 400; }
+/* The finder page lifts every direct child of body into its own layer (position: relative); open dialogs stay fixed to the screen. */
+body.finder-page > dialog:modal { position: fixed !important; }

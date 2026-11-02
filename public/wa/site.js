@@ -24,7 +24,7 @@
   function recipeHref(slug) { return PATHS ? "/wa/recipes/" + encodeURIComponent(slug) : "cocktail.html#" + encodeURIComponent(slug); }
   var value = function (r) { return r.s - 80 - Math.log((r.p > 0 ? r.p : 60) / 30) * 4; };
 
-  window.WA = { data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, recipeHref: recipeHref, value: value, slugOf: slugOf };
+  window.WA = { loadJSON: json, data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, recipeHref: recipeHref, value: value, slugOf: slugOf };
 
   // Names that reached the archive with HTML entities ("Jacob&#039;s Pardon") read as text everywhere.
   var ENT = document.createElement("textarea");
@@ -166,6 +166,10 @@
   function storyHref(st) { return (window.WA_PATHS || /^\/wa\//.test(location.pathname)) ? "/wa/" + encodeURIComponent(st.slug) : "story.html#" + st.slug; }
   function storyRow(st) { return '<a href="' + storyHref(st) + '">' + (st.hero ? '<img class="th" src="' + st.hero + '" alt="" loading="lazy">' : '<span class="tag">' + SECTION[st.sec] + '</span>') + '<span><span class="nm">' + st.title + '</span><span class="sub">' + (st.dek || SECTION[st.sec] + " · " + st.by) + '</span></span><span class="when">' + when(st.d) + "</span></a>"; }
   function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
+  window.WA.editorialCard = function (st, reason) {
+    var esc = window.WAReader.escape;
+    return '<article class="editorial-card"><a class="editorial-image" href="' + esc(storyHref(st)) + '" tabindex="-1" aria-hidden="true">' + (st.hero ? '<img src="' + esc(st.hero) + '" alt="" loading="lazy">' : '<span>Whisky Advocate</span>') + '</a><div class="editorial-copy"><span class="mono">' + esc(reason || SECTION[st.sec] || 'Story') + '</span><h3><a href="' + esc(storyHref(st)) + '">' + st.title + '</a></h3>' + (st.dek ? '<p>' + st.dek + '</p>' : '') + '<span class="editorial-meta">' + esc(when(st.d)) + (st.min ? ' · ' + st.min + ' min read' : '') + '</span></div></article>';
+  };
   window.WA.stories = stories; window.WA.storyBySlug = storyBySlug; window.WA.storiesAll = function (cb) { stories(cb, { all: true }); }; window.WA.article = article; window.WA.glossary = glossary; window.WA.SECTION_HREF = SECTION_HREF; window.WA.when = when; window.WA.SECTION = SECTION; window.WA.initials = initials; window.WA.storyHref = storyHref; window.WA.storyRow = storyRow; window.WA.storyCard = storyCard;
 
 
@@ -198,7 +202,7 @@
   function cleanUrl(slug) { if (!PATHS || window.WA_SLUG || !slug || /^t20-/i.test(slug) || !history.replaceState) return; window.WA_SLUG = slug; try { history.replaceState(null, "", "/wa/" + encodeURIComponent(slug)); } catch (e) {} }
   function find(data, slug) { if (!slug) return null; if (data.bySlug && data.bySlug[slug.toLowerCase()]) return data.bySlug[slug.toLowerCase()]; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = /^\d+$/.test(slug) ? Number(slug) : NaN; return isNaN(n) ? null : data[n] || null; }
   var COCKTAILS = null, TOP20 = null;
-  function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); json("cocktails.json").then(function (d) { COCKTAILS = d; cb(d); }).catch(dataError); }
+  function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); json("cocktails.json").then(function (d) { COCKTAILS = d.filter(WACatalog.validRecipe); cb(COCKTAILS); }).catch(dataError); }
   function top20(cb) { if (TOP20) return cb(TOP20); json("top20.json").then(function (d) { TOP20 = d; cb(d); }).catch(dataError); }
   /* Producers, summarised from the archive: count, best, average, main category, country from the categories. */
   var COUNTRY = { "Single Malt Scotch": "Scotland", "Blended Scotch Whisky": "Scotland", "Blended Malt Scotch Whisky": "Scotland", "Single Grain Scotch": "Scotland", "Blended Grain Scotch": "Scotland", "Bourbon/Tennessee Whiskey": "United States", "Rye Whiskey": "United States", "Single Malt American Whiskey": "United States", "American Whiskey": "United States", "Wheat Whiskey": "United States", "Irish Single Malt": "Ireland", "Blended Irish Whiskey": "Ireland", "Irish Single Pot Still": "Ireland", "Irish": "Ireland", "Irish Grain": "Ireland", "Japanese Whisky": "Japan", "Canadian": "Canada" };
@@ -225,82 +229,9 @@
   window.WA.PATHS = PATHS; window.WA.cleanUrl = cleanUrl; window.WA.archive = archive; window.WA.note = note; window.WA.fillNotes = fillNotes; window.WA.hashSlug = hashSlug; window.WA.find = find;
 
   /* Query understanding */
-  var TYPES = [
-    { key: "Bourbon", match: /bourbon|kentucky|wheated/i, cats: ["Bourbon/Tennessee Whiskey"] },
-    { key: "Rye", match: /\brye\b|manhattan|sazerac/i, cats: ["Rye Whiskey"] },
-    { key: "Single malt Scotch", match: /single malt|speyside|highland|islay|scotch|lagavulin|ardbeg|laphroaig|macallan/i, cats: ["Single Malt Scotch"] },
-    { key: "Blended Scotch", match: /blended scotch|blend\b/i, cats: ["Blended Scotch Whisky", "Blended Malt Scotch Whisky"] },
-    { key: "Irish", match: /irish|pot still|redbreast/i, cats: ["Irish Single Malt", "Blended Irish Whiskey", "Irish", "Irish Single Pot Still"] },
-    { key: "Japanese", match: /japan|yamazaki|hibiki|nikka/i, cats: ["Japanese Whisky"] },
-    { key: "Canadian", match: /canad/i, cats: ["Canadian"] },
-    { key: "American single malt", match: /american single malt/i, cats: ["Single Malt American Whiskey"] },
-  ];
-  /* Names: typo-tolerant matching of what was typed against bottle and producer names. */
-  function norm(s) { return String(s || "").toLowerCase().replace(/[\u2019']/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim(); }
-  var INTENT = /^(best|top|great|good|under|below|over|for|a|an|the|with|and|or|of|in|to|me|my|whisky|whiskey|whiskies|bottle|bottles|something|like|rated|points?|pts|dollars?|night|gift|cheap|value|smoky|smoke|peat|peated|peaty|sweet|sherry|sherried|rich|light|bourbon|rye|scotch|irish|japanese|japan|canadian|single|malt|blended|blend|highland|speyside|islay|winter|summer|first|friend|year|years|old|cask|strength|proof|from|that|this|what|which|should|use|worth|price)$/;
-  function nameTerms(q) { return norm(q).split(" ").filter(function (t) { return t.length >= 3 && !INTENT.test(t) && !/^\d+$/.test(t); }); }
-  function edit(a, b, max) {
-    if (Math.abs(a.length - b.length) > max) return max + 1;
-    var prev = [], cur = [], i, j; for (j = 0; j <= b.length; j++) prev[j] = j;
-    for (i = 1; i <= a.length; i++) { cur[0] = i; var rowMin = i; for (j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (cur[j] < rowMin) rowMin = cur[j]; } if (rowMin > max) return max + 1; prev = cur.slice(); }
-    return prev[b.length];
-  }
-  function tokensOf(r) { if (!r._tk) r._tk = norm(r.n + " " + r.pr).split(" "); return r._tk; }
-  function termHit(term, r) {
-    var best = 0, toks = tokensOf(r);
-    for (var i = 0; i < toks.length; i++) { var t = toks[i]; if (t === term) return 3; if (t.indexOf(term) === 0 || (term.length >= 4 && term.indexOf(t) === 0 && t.length >= 4)) { best = Math.max(best, 2); continue; } if (best < 1 && t.length >= 4 && edit(term, t, term.length > 6 ? 2 : 1) <= (term.length > 6 ? 2 : 1)) best = 1; }
-    return best;
-  }
-  function nameScore(terms, r) { var total = 0; for (var i = 0; i < terms.length; i++) { var h = termHit(terms[i], r); if (!h) return 0; total += h; } return total; }
+  var norm = WACatalog.norm, nameTerms = WACatalog.nameTerms, nameScore = WACatalog.nameScore;
+  var understand = WACatalog.understand, apply = WACatalog.apply;
   window.WA.nameTerms = nameTerms; window.WA.nameScore = nameScore; window.WA.norm = norm;
-
-  /* Typos in the words that carry meaning ("peety", "smokey", "sherryed") are corrected before anything is matched. */
-  var VOCAB = ["peat", "peaty", "peated", "smoky", "smoke", "smokey", "sherry", "sherried", "sweet", "rich", "light", "fruity", "floral", "spicy", "bourbon", "rye", "scotch", "irish", "japanese", "canadian", "islay", "speyside", "highland", "campbeltown", "lowland", "cheap", "value", "gift", "winter", "summer", "bottle", "whisky", "whiskey", "whiskies", "best", "under", "points", "single", "malt", "blended", "cask", "strength", "manhattan", "cocktail", "night", "friend", "budget"];
-  function fixTypos(q) {
-    var words = (window.WA.WORDS || []).concat(VOCAB);
-    return q.split(/(\s+)/).map(function (tok) {
-      var t = tok.toLowerCase().replace(/[^a-z]/g, ""); if (t.length < 4 || /\s/.test(tok)) return tok;
-      if (INTENT.test(t) || words.indexOf(t) >= 0) return tok;
-      var best = null, bd = 2;
-      for (var i = 0; i < words.length; i++) { var w = words[i]; if (Math.abs(w.length - t.length) > 1) continue; var d = edit(t, w, 1); if (d < bd) { bd = d; best = w; } }
-      return best ? tok.replace(/[A-Za-z]+/, best) : tok;
-    }).join("");
-  }
-  function understand(raw) {
-    var q = fixTypos(raw);
-    var f = { types: [], price: null, score: null, chars: [], text: q, raw: raw, terms: nameTerms(q) };
-    TYPES.forEach(function (t) { if (t.match.test(q)) f.types.push(t); });
-    var m = q.match(/(?:under|below|less than|up to|max(?:imum)?)\s*\$?\s*(\d{2,4})/i) || q.match(/\$\s*(\d{2,4})/); if (m) f.price = +m[1];
-    var s = q.match(/(\d{2})\s*(?:points?|pts|\+|or higher|or better|and up)/i); if (s) f.score = +s[1];
-    if (/smok|peat|islay|lagavulin|ardbeg|laphroaig|bonfire/i.test(q)) f.chars.push("smoky");
-    if (/sherr|sweet|fruit|dessert|winter|christmas|raisin|honey/i.test(q)) f.chars.push("sweet");
-    if (/rich|oily|full|chewy|cask strength|big/i.test(q)) f.chars.push("rich");
-    if (/light|delicate|floral|summer|easy|gentle|aperitif/i.test(q)) f.chars.push("light");
-    if (/value|worth the price|bang for|cheap|budget|affordable/i.test(q) && !f.price) f.price = 80;
-    if (/best|top|great|excellent/i.test(q) && !f.score) f.score = 90;
-    return f;
-  }
-  function apply(f, rows) {
-    var named = f.terms && f.terms.length ? f.terms : null;
-    var out = rows.map(function (r) {
-      var ns = named ? nameScore(named, r) : 0; if (named && !ns) return null;
-      if (!named || ns < 2) { if (f.types.length && !f.types.some(function (t) { return t.cats.indexOf(r.c) >= 0; })) return null; }
-      if (f.price && (!(r.p > 0) || r.p > f.price)) return null;
-      if (f.score && r.s < f.score) return null;
-      var fit = f.chars.reduce(function (acc, c) { return acc + Math.min(3, charScore(r, c)); }, 0);
-      // Unasked-for trophies sink a little: a $7,500 bottle is not the answer to "peaty whisky".
-      var reach = (!named && !f.price && r.p) ? (r.p > 1000 ? 5 : r.p > 400 ? 3 : r.p > 200 ? 1 : 0) : 0;
-      return { r: r, rank: r.s + fit * 1.5 + ns * 6 + (r.d ? (+r.d.slice(0, 4) - 2013) * 0.15 : 0) - reach };
-    }).filter(Boolean);
-    // A typed name that matches nothing exactly still finds its nearest spellings, inside the asked budget, score and style.
-    if (named && !out.length) { out = rows.map(function (r) {
-      if (f.price && (!(r.p > 0) || r.p > f.price)) return null;
-      if (f.score && r.s < f.score) return null;
-      if (f.types.length && !f.types.some(function (t) { return t.cats.indexOf(r.c) >= 0; })) return null;
-      var best = 0; named.forEach(function (t) { best += termHit(t, r); }); return best ? { r: r, rank: r.s + best * 6 } : null;
-    }).filter(Boolean); }
-    return out.sort(function (a, b) { return b.rank - a.rank || a.r.p - b.r.p; }).map(function (x) { return x.r; });
-  }
   function facetLabels(f) {
     var out = []; (f.terms || []).forEach(function (t) { out.push("“" + t + "”"); }); f.types.forEach(function (t) { out.push(t.key); });
     if (f.price) out.push("under " + fmt(f.price)); if (f.score) out.push(f.score + "+ points"); f.chars.forEach(function (c) { out.push(c); });
@@ -308,6 +239,7 @@
   }
   function answerFor(f, picks) {
     if (!picks.length) return "<p>Nothing in the archive matches all of that at once. Loosen the budget or the score and the picks come back.</p>";
+    if (picks.approximate) return "<p>Close matches within your selected style, price and score. Check the name and edition before choosing.</p>";
     var top = picks[0], avg = Math.round(picks.slice(0, 8).reduce(function (a, r) { return a + r.p; }, 0) / Math.min(8, picks.length));
     if (f.terms && f.terms.length) {
       var byPr = {}; picks.forEach(function (r) { byPr[r.pr] = (byPr[r.pr] || 0) + 1; });
@@ -571,17 +503,16 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
     q = q.trim(); if (!q) { results.innerHTML = '<p class="muted">Type a bottle, a distillery, a cocktail or a subject. Enter opens all search results with your words.</p>'; return; }
     var terms = WA.nameTerms(q), low = q.toLowerCase(), groups = [];
     var data = WA.data() || [];
-    if (terms.length) {
-      var bottles = []; for (var i = 0; i < data.length; i++) { var ns = WA.nameScore(terms, data[i]); if (ns) bottles.push({ r: data[i], ns: ns }); }
-      bottles.sort(function (a, b) { return b.ns - a.ns || b.r.s - a.r.s; });
-      if (bottles.length) groups.push({ title: "Bottles", more: "finder.html?q=" + encodeURIComponent(q), items: bottles.slice(0, 5).map(function (x) { return '<a href="' + WA.bottleHref(x.r) + '"><span class="sc score-type">' + x.r.s + "</span><span><span class=\"nm\">" + mark(x.r.n, terms) + '</span><span class="ct">' + esc(x.r.c) + (x.r.p ? " · $" + x.r.p : "") + "</span></span></a>"; }) });
-      var P = WA.producers(data), ps = Object.keys(P).filter(function (n) { return terms.every(function (t) { return n.toLowerCase().indexOf(t) >= 0; }) || terms.some(function (t) { return n.toLowerCase().indexOf(t) === 0; }); }).sort(function (a, b) { return P[b].n - P[a].n; }).slice(0, 4);
+    {
+      var matches = WA.apply(WA.understand(q), data), bottles = matches.map(function (r) { return {r:r}; });
+      if (bottles.length) groups.push({ title: matches.approximate ? "Close bottle matches" : "Bottles", more: "finder.html?q=" + encodeURIComponent(q), items: bottles.slice(0, 5).map(function (x) { return '<a href="' + WA.bottleHref(x.r) + '"><span class="sc score-type">' + x.r.s + "</span><span><span class=\"nm\">" + mark(x.r.n, terms) + '</span><span class="ct">' + esc(x.r.c) + (x.r.p ? " · $" + x.r.p : "") + "</span></span></a>"; }) });
+      var P = WA.producers(data), ps = Object.keys(P).filter(function (n) { return terms.length && (terms.every(function (t) { return n.toLowerCase().indexOf(t) >= 0; }) || terms.some(function (t) { return n.toLowerCase().indexOf(t) === 0; })); }).sort(function (a, b) { return P[b].n - P[a].n; }).slice(0, 4);
       if (ps.length) groups.push({ title: "Producers", items: ps.map(function (n) { return '<a href="' + WA.producerHref(n) + '"><span class="ct-only">' + mark(n, terms) + "</span><span class=\"ct\">" + P[n].n + " ratings</span></a>"; }) });
     }
     if (stories) {
       var words = low.split(/\s+/).filter(function (w) { return w.length >= 3; });
       var st = stories.map(function (s) { var hay = (s.title + " " + (s.dek || "") + " " + (s.tags || []).join(" ") + " " + (s.q || "")).toLowerCase(); var hit = words.filter(function (w) { return hay.indexOf(w) >= 0; }).length; return hit === words.length && words.length ? { s: s, hit: hit + (s.title.toLowerCase().indexOf(low) >= 0 ? 2 : 0) } : null; }).filter(Boolean).sort(function (a, b) { return b.hit - a.hit || (a.s.d < b.s.d ? 1 : -1); }).slice(0, 5);
-      if (st.length) groups.push({ title: "Stories", more: "stories.html", items: st.map(function (x) { return '<a href="' + WA.storyHref(x.s) + '"><span class="ct-only">' + mark(x.s.title, words) + '</span><span class="ct">' + esc(WA.SECTION[x.s.sec] || "") + " · " + WA.when(x.s.d) + "</span></a>"; }) });
+      if (st.length) groups.push({ title: "Stories", more: "search.html?type=Story&q=" + encodeURIComponent(q), items: st.map(function (x) { return '<a href="' + WA.storyHref(x.s) + '"><span class="ct-only">' + mark(x.s.title, words) + '</span><span class="ct">' + esc(WA.SECTION[x.s.sec] || "") + " · " + WA.when(x.s.d) + "</span></a>"; }) });
     }
     if (cocktails) {
       var cs = cocktails.filter(function (c) { return (c.name || c.title || "").toLowerCase().indexOf(low) >= 0; }).slice(0, 4);

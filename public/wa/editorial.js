@@ -10,7 +10,7 @@
       var slug = WA.hashSlug && WA.hashSlug(), current = slug ? stories.find(function (s) { return s.slug === slug; }) : null;
       if (current && WA.isSponsored(current)) { host.remove(); return; }
       var heading = document.querySelector('h1'), words = WACatalog.norm(((heading && heading.textContent) || '') + ' ' + ((current && current.tags) || []).join(' '));
-      var terms = words.split(' ').filter(function (t) { return t.length > 3 && !/^(whisky|whiskey|bottle|stories|ratings|advocate|review|year)$/.test(t); });
+      var terms = host.dataset.meaning === 'off' ? [] : words.split(' ').filter(function (t) { return t.length > 3 && !/^(whisky|whiskey|bottle|stories|ratings|advocate|review|year)$/.test(t); });
       var already = new Set(Array.from(document.querySelectorAll('#next a, #mentions a, #homeStories a')).map(function (a) { return a.getAttribute('href'); }));
       var pool = stories.filter(function (s) { return s.sec === 'guides' && s !== current && !WA.isSponsored(s) && !already.has(WA.storyHref(s)) && !/auction/i.test(s.title); });
       var guides = pool.filter(function (s) { return /value|under|bottles|buy|guide|how to|best|starter|beginners|gift|whisky list/i.test(s.title + ' ' + (s.tags || []).join(' ')); });
@@ -18,13 +18,14 @@
       guides.sort(function (a, b) { return relevance(b) - relevance(a) || (b.d || '').localeCompare(a.d || ''); });
       var grid = host.querySelector('.guide-stories');
       function show(list) { grid.innerHTML = list.slice(0, 3).map(function (s) { return WA.storyCard(s, ''); }).join(''); grid.hidden = !list.length; }
-      // Guide stories closest in meaning to this page come first (the search's meaning route, cached per page); the keyword picks fill the rest.
+      // Among the buying-advice guides, the ones closest in meaning to this page come first (the search's meaning route, cached per page); the keyword order fills the rest.
       var subject = (((heading && heading.textContent) || '') + ' ' + ((current && current.tags) || []).slice(0, 6).join(' ')).replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 160);
-      if (subject.length < 3 || !window.fetch) { show(guides); return; }
+      // The home page has no one subject, so its guides keep the keyword order.
+      if (host.dataset.meaning === 'off' || subject.length < 3 || !window.fetch) { show(guides); return; }
       var settled = false, timer = setTimeout(function () { if (!settled) { settled = true; show(guides); } }, 2500);
       fetch('/api/wa/meaning?q=' + encodeURIComponent(subject), { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
         if (settled) return; settled = true; clearTimeout(timer);
-        var bySlug = new Map(pool.map(function (s) { return [s.slug, s]; })), picked = [];
+        var bySlug = new Map(guides.map(function (s) { return [s.slug, s]; })), picked = [];
         ((j && j.stories) || []).forEach(function (x) { var s = bySlug.get(x.slug); if (s && picked.indexOf(s) < 0) picked.push(s); });
         guides.forEach(function (s) { if (picked.indexOf(s) < 0) picked.push(s); });
         show(picked);

@@ -2211,3 +2211,15 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
 .history-table tbody th { font-weight: 400; }
 /* The finder page lifts every direct child of body into its own layer (position: relative); open dialogs stay fixed to the screen. */
 body.finder-page > dialog:modal { position: fixed !important; }
+
+/* ---- Ratings shelves: each score band is one row that scrolls sideways (the 2026-10-31 shelf change, undone on 2026-11-01 when an
+   older wrapping rule was restored after it), and the desktop label column fits "Outstanding" (2026-11-02) ---- */
+.shelf-row { flex-wrap: nowrap; align-items: stretch; min-width: 0; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.shelf-bottle { height: 392px; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.shelf-bottle.is-open { height: auto; }
+@media (min-width: 961px) {
+  .shelf { grid-template-columns: 184px minmax(0,1fr); }
+  .shelf-label { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .shelf-label b { font-size: 32px; }
+  .shelf-label span { margin-top: 0; }
+}

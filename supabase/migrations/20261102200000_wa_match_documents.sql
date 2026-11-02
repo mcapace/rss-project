@@ -3,7 +3,16 @@
 -- rows afterwards loses most of them, so this filters inside the scan, with HNSW's iterative scan and a deeper
 -- candidate list so a filtered query still fills its limit.
 -- The hnsw.* settings exist only once pgvector's library is loaded; using a vector loads it.
-SELECT '[1]'::extensions.vector;
+-- Databases without pgvector (local test harnesses) have no cms_embeddings table, so this is skipped there,
+-- like the semantic index in 20261101120000_cms_embeddings.sql.
+DO $outer$
+BEGIN
+  IF to_regclass('public.cms_embeddings') IS NULL THEN
+    RAISE NOTICE 'cms_embeddings is not here (no pgvector); wa_match_documents was not created.';
+    RETURN;
+  END IF;
+  EXECUTE $load$SELECT '[1]'::extensions.vector$load$;
+  EXECUTE $migration$
 CREATE OR REPLACE FUNCTION public.wa_match_documents(
   p_query extensions.vector, p_kinds text[], p_limit integer DEFAULT 20, p_exclude uuid DEFAULT NULL
 ) RETURNS TABLE (document_id uuid, kind text, slug text, title text, similarity real)
@@ -19,3 +28,6 @@ AS $$
 $$;
 REVOKE ALL ON FUNCTION public.wa_match_documents(extensions.vector, text[], integer, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.wa_match_documents(extensions.vector, text[], integer, uuid) TO service_role;
+  $migration$;
+END
+$outer$;

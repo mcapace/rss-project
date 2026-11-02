@@ -2230,3 +2230,30 @@ body.finder-page > dialog:modal { position: fixed !important; }
 .pantry-clear { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--copper); font-size: 13px; }
 .pantry-clear:hover { text-decoration: underline; }
 .missing-ingredient { margin-top: 8px; color: var(--copper); font-size: 13px; }
+
+/* Layout stability and touch (2026-11-02 audit).
+   Space for what arrives after the page paints, so nothing below it jumps: the top ad keeps its likeliest size
+   until Ad Manager answers (an empty slot still collapses), and lists rendered from data keep the newsletter band
+   and footer below the fold until they fill. */
+.ad-above:not(.ad-empty):not(.ad-filled) { min-height: 58px; margin-top: 8px; }
+@media (min-width: 768px) { .ad-above:not(.ad-empty):not(.ad-filled) { min-height: 98px; } }
+@media (min-width: 1024px) { .ad-above:not(.ad-empty):not(.ad-filled) { min-height: 258px; } }
+.ad-above:not(.ad-empty):not(.ad-filled) > div { min-height: inherit; }
+main { min-height: 100vh; min-height: 100dvh; }
+#list:empty, #rows:empty, #grid:empty, #results:empty { min-height: 80vh; }
+.picks3:empty:has(+ .dense:empty) { min-height: 460px; }
+@media (max-width: 760px) { .picks3:empty:has(+ .dense:empty) { min-height: 0; } }
+/* A story whose body holds a long unbroken link stays inside a phone screen. */
+.read-frame > * { min-width: 0; }
+.prose { overflow-wrap: break-word; }
+/* Carousel dots: the same 6px bar, inside a 30px tall touch target. */
+.rot-dot { height: 30px; background: none; overflow: visible; }
+.rot-dot::before { content: ""; position: absolute; left: 0; right: 0; top: 12px; height: 6px; border-radius: 999px; background: rgba(42,35,64,0.18); }
+.rot-dot .rot-bar { top: 12px; bottom: auto; height: 6px; border-radius: 999px; }
+/* Phones: footer links and form fields big enough to tap, and fields at 16px so iOS does not zoom on focus. */
+@media (max-width: 760px) {
+  footer.site a { padding: 8px 0; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px; }
+}
+.shelf-bottle .score small { font-size: 10.5px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

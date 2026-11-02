@@ -136,14 +136,23 @@ export async function runMediaName(args: string[], log: (line: string) => void =
 
   // The files still to name, one row per distinct file (the same picture can sit in several galleries).
   const which = values["retry-failed"] ? "named_at.not.is.null,seo_name.is.null" : values.redo ? null : "named_at.is.null";
-  const { data, error, count } = await reader.from("cms_media_files").select("source_gallery_id,file_name,alt,mime,width,height,sha256,s3_key", { count: "exact" })
-    .eq("brand", brand).eq("status", "stored").not("sha256", "is", null)
-    .match(values.gallery ? { source_gallery_id: values.gallery } : {})
-    .or(which ? `and(${which})` : "sha256.not.is.null")
-    .order("sha256").limit(limit * 3);
-  if (error) throw new Error(`Could not read the gallery catalog: ${error.message}`);
+  // The API returns at most 1,000 rows a request, so read page by page (in hash order, so a file's copies stay
+  // together) until there are more distinct files than the limit, which also means the last one kept is complete.
+  const PAGE = 1000;
   const byHash = new Map<string, Row[]>();
-  for (const row of (data ?? []) as Row[]) byHash.set(row.sha256, [...(byHash.get(row.sha256) ?? []), row]);
+  let count: number | null = null;
+  for (let from = 0; byHash.size <= limit; from += PAGE) {
+    const { data, error, count: total } = await reader.from("cms_media_files").select("source_gallery_id,file_name,alt,mime,width,height,sha256,s3_key", { count: from ? undefined : "exact" })
+      .eq("brand", brand).eq("status", "stored").not("sha256", "is", null)
+      .match(values.gallery ? { source_gallery_id: values.gallery } : {})
+      .or(which ? `and(${which})` : "sha256.not.is.null")
+      .order("sha256").order("source_gallery_id").order("source_file_id").range(from, from + PAGE - 1);
+    if (error) throw new Error(`Could not read the gallery catalog: ${error.message}`);
+    if (!from) count = total;
+    const page = (data ?? []) as Row[];
+    for (const row of page) byHash.set(row.sha256, [...(byHash.get(row.sha256) ?? []), row]);
+    if (page.length < PAGE) break;
+  }
   const files = [...byHash.values()].slice(0, limit);
   const summary = { mode: writer ? "development-apply" : previewCount ? "preview" : "dry-run", brand, model: MODEL, rows_left: count ?? 0, documents: files.length, named: 0, from_picture: 0, from_clues: 0, failed: 0, failures: [] as string[], samples: [] as unknown[] };
   if (!calls || !files.length) { log(JSON.stringify(summary, null, 2)); return summary; }

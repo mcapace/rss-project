@@ -2273,3 +2273,90 @@ main { min-height: 100vh; min-height: 100dvh; }
 .search-answer-wait span:nth-child(3) { animation-delay: 0.3s; }
 @keyframes search-answer-pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .search-answer-wait span { animation: none; opacity: 0.6; } }
+
+/* Flavor map (2026-11-02): flavor-map.html, a WebGL map of every rated bottle by taste. */
+.fmap-head { max-width: 760px; }
+.fmap-head .d1 { margin-top: 8px; }
+.fmap-dek { margin-top: 12px; color: var(--ink-2); font-size: 17px; line-height: 1.5; }
+.fmap-controls { display: grid; grid-template-columns: minmax(200px, 280px) minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; margin: 24px 0 14px; }
+.fmap-find { position: relative; }
+.fmap-find input { width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper-2); font: inherit; font-size: 15px; color: var(--ink); }
+.fmap-suggest { position: absolute; z-index: 5; top: calc(100% + 6px); left: 0; right: 0; margin: 0; padding: 6px; list-style: none; border: 1px solid var(--rule); border-radius: 16px; background: var(--paper-2); box-shadow: 0 18px 40px -20px rgba(23, 18, 13, 0.35); }
+.fmap-suggest button { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px 10px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 14px; text-align: left; color: var(--ink); cursor: pointer; }
+.fmap-suggest button:hover, .fmap-suggest button:focus-visible { background: var(--paper-3); }
+.fmap-suggest .score-type { min-width: 28px; font-size: 18px; color: var(--copper); }
+.fmap-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fmap-chips .pill { display: inline-flex; align-items: center; gap: 7px; }
+.fmap-chips .pill i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(23, 18, 13, 0.08); }
+.fmap-chips .pill[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.fmap-selects { display: flex; gap: 10px; }
+.fmap-select { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.fmap-select select { height: 36px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper-2); font: inherit; font-family: var(--sans, inherit); font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.fmap-stage { position: relative; height: clamp(460px, 74vh, 860px); border-radius: 26px; overflow: hidden; background: radial-gradient(120% 90% at 30% 20%, #2a1a0e 0%, #140c07 55%, #0b0704 100%); box-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.06), 0 40px 80px -50px rgba(23, 18, 13, 0.6); }
+.fmap-stage canvas { position: absolute; inset: 0; display: block; touch-action: none; cursor: grab; }
+.fmap-stage canvas:active { cursor: grabbing; }
+.fmap-labels { position: absolute; inset: 0; pointer-events: none; }
+.fmap-region { position: absolute; top: 0; left: 0; white-space: nowrap; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 238, 214, 0.78); text-shadow: 0 1px 12px rgba(0, 0, 0, 0.9); transition: opacity 400ms ease; }
+.fmap-region.off { opacity: 0; }
+.fmap-tip { position: absolute; top: 0; left: 0; z-index: 3; max-width: 270px; padding: 10px 12px; border: 1px solid rgba(255, 236, 210, 0.14); border-radius: 12px; background: rgba(18, 12, 8, 0.92); color: #fff6ea; pointer-events: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.fmap-tip strong { display: block; font-size: 14px; font-weight: 500; line-height: 1.3; }
+.fmap-tip span { display: block; margin-top: 3px; font-family: var(--mono); font-size: 12px; color: var(--gold); }
+.fmap-tip em { display: block; margin-top: 4px; font-size: 12.5px; font-style: normal; color: rgba(255, 238, 214, 0.7); }
+.fmap-zoom { position: absolute; left: 16px; bottom: 16px; z-index: 2; display: grid; gap: 6px; }
+.fmap-zoom button { width: 40px; height: 40px; border: 1px solid rgba(255, 236, 210, 0.16); border-radius: 50%; background: rgba(28, 19, 12, 0.72); color: #fff6ea; font-size: 18px; line-height: 1; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.fmap-zoom button:hover { background: rgba(60, 40, 24, 0.85); }
+.fmap-panel { position: absolute; top: 16px; right: 16px; bottom: 16px; z-index: 4; width: min(360px, calc(100% - 32px)); padding: 22px 22px 24px; overflow: auto; border: 1px solid rgba(255, 236, 210, 0.14); border-radius: 20px; background: rgba(20, 13, 8, 0.86); color: #fff6ea; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: rise 280ms ease; }
+.fmap-panel .mono { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 238, 214, 0.6); }
+.fmap-panel h2 { margin: 8px 30px 0 0; font-size: 22px; line-height: 1.15; font-weight: 500; letter-spacing: -0.01em; }
+.fmap-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255, 236, 210, 0.08); color: #fff6ea; font-size: 20px; cursor: pointer; }
+.fmap-score { display: flex; align-items: baseline; gap: 12px; margin-top: 10px; }
+.fmap-score .score-type { font-size: 40px; color: var(--gold); }
+.fmap-score span:last-child { font-family: var(--mono); font-size: 14px; color: rgba(255, 238, 214, 0.75); }
+.fmap-notes { margin-top: 6px; font-size: 14px; color: rgba(255, 238, 214, 0.8); }
+.fmap-bars { display: grid; gap: 6px; margin: 16px 0 18px; }
+.fmap-bars div { display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; align-items: center; font-size: 12px; color: rgba(255, 238, 214, 0.72); }
+.fmap-bars i { height: 6px; border-radius: 999px; background: rgba(255, 236, 210, 0.1); overflow: hidden; }
+.fmap-bars b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--amber), var(--gold)); }
+.fmap-panel h3 { margin: 22px 0 8px; }
+.fmap-near { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.fmap-near button { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: center; width: 100%; padding: 8px 6px; border: 0; border-radius: 10px; background: none; color: #fff6ea; font: inherit; font-size: 13.5px; line-height: 1.3; text-align: left; cursor: pointer; }
+.fmap-near button:hover, .fmap-near button:focus-visible { background: rgba(255, 236, 210, 0.08); }
+.fmap-near .score-type { font-size: 20px; color: var(--gold); }
+.fmap-near small { display: block; margin-top: 2px; font-size: 11.5px; color: rgba(255, 238, 214, 0.55); }
+.fmap-status { margin-top: 12px; font-size: 12px; color: var(--ink-3); }
+.fmap-stage.no-gl { display: grid; place-items: center; }
+@media (max-width: 900px) {
+  .fmap-controls { grid-template-columns: 1fr; }
+  .fmap-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px; }
+  .fmap-chips::-webkit-scrollbar { display: none; }
+  .fmap-chips .pill { flex: none; }
+}
+@media (max-width: 760px) {
+  .fmap-stage { height: 72vh; height: 72dvh; border-radius: 20px; margin: 0 -8px; }
+  .fmap-panel { top: auto; left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 64%; padding: 18px; }
+  .fmap-panel h2 { font-size: 19px; }
+  .fmap-stage.has-panel .fmap-zoom { display: none; }
+  .fmap-region { font-size: 10px; }
+}
+.fmap-panel .pill.solid { background: var(--gold); border-color: var(--gold); color: #1a1008; }
+.fmap-panel .pill.solid:hover { background: #f0b85a; }
+@media (max-width: 760px) { .fmap-panel { max-height: 56%; } }
+.compass-map-link { display: inline-block; margin-top: 10px; font-size: 13.5px; font-weight: 500; color: var(--copper); border-bottom: 1px solid currentColor; }
+
+/* The pour (2026-11-02): WebGL glass on rating pages without a bottle photograph (glass.js). */
+.hero-art.poured { background: #f3ece0; }
+.hero-art.poured img { display: none; }
+.hero-art .pour { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.hero-art:not(.poured) .pour { display: none; }
+
+/* Ask actions (2026-11-02): compare, tasting flight, where to buy and save, offered under a chat answer. */
+.chat-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chat-actions .pill { font-size: 13px; padding: 7px 12px; }
+.chat-flight { flex: 1 1 100%; display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--rule-2); border-radius: 14px; background: var(--paper); }
+.chat-flight .mono { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.chat-flight strong { font-size: 15px; font-weight: 500; }
+.chat-flight ol { margin: 2px 0 4px; padding-left: 20px; display: grid; gap: 4px; }
+.chat-flight li { font-size: 13.5px; line-height: 1.3; }
+.chat-flight li a { color: var(--ink); border-bottom: 1px solid var(--rule); }
+.chat-flight li .score-type { margin-left: 8px; font-size: 15px; color: var(--copper); }
+.chat-flight .pill { justify-self: start; }

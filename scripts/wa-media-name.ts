@@ -26,7 +26,10 @@
  * Dry-run by default (counts what is left). --preview N names N files and prints the
  * result without writing. --apply writes cms_media_files.seo_* and keywords; a file
  * that cannot be named is marked attempted with the reason (ai.error) so a pass moves
- * on, and --retry-failed tries those again.
+ * on, and --retry-failed tries those again. --dedupe renames the pictures whose web name another,
+ * different picture also carries (nine Midleton Very Rare vintages all "midleton-very-rare-vintage-release-bottle"):
+ * each is renamed knowing the files it shares the name with, so the name gains what sets it apart (year,
+ * batch, edition, age, angle), and a name still taken gets a distinguishing token from its file name.
  *
  *   node --import tsx scripts/wa-media-name.ts --brand wa
  *   node --import tsx scripts/wa-media-name.ts --brand wa --preview 12
@@ -68,10 +71,18 @@ Use the file name, gallery, existing alt text and story titles as clues, but say
 /** Words that carry no meaning in a web file name. */
 const FILLER = new Set(["image", "images", "img", "photo", "photos", "picture", "pic", "pics", "file", "final", "copy", "hero", "banner", "thumb", "thumbnail", "web", "new", "edit", "edited", "version", "v1", "v2", "v3", "large", "small", "the", "a", "an", "of", "and", "jpg", "jpeg", "png", "tif", "tiff", "gif", "webp"]);
 
+/** Pixel sizes and copy counters in file names (300, 600px, 1600x900, 0001); years (1800 to 2039) are kept, they tell vintages apart. */
+function isSize(word: string): boolean {
+  if (/^\d+x\d+$/.test(word) || /^\d{3,4}px$/.test(word) || /^0\d{2,3}$/.test(word)) return true;
+  if (!/^\d{3,4}$/.test(word)) return false;
+  const n = Number(word);
+  return !(n >= 1800 && n <= 2039);
+}
+
 /** A web file name from any text: lowercase ASCII, hyphens, no filler or pixel sizes, no repeats, at most `max` characters on a word boundary. */
 export function slugify(input: string, max = 60): string {
   const words = input.normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/&/g, " and ").replace(/['’]/g, "").toLowerCase()
-    .split(/[^a-z0-9]+/).filter(word => word && !FILLER.has(word) && !/^\d{3,4}(px|x\d+)?$/.test(word) && !/^\d+x\d+$/.test(word));
+    .split(/[^a-z0-9]+/).filter(word => word && !FILLER.has(word) && !isSize(word));
   const out: string[] = [];
   for (const word of words) {
     if (out.includes(word)) continue;
@@ -106,6 +117,25 @@ export function tidy(raw: Record<string, unknown>, fileName: string): Named {
   };
 }
 
+/**
+ * A web name no other picture carries: the name itself, else with a token from the original file name it lacks
+ * (a year, batch or edition number first), else with a counter. Stays within the 80-character column limit.
+ */
+export function uniqueName(name: string, fileName: string, taken: Set<string>): string {
+  if (!taken.has(name)) return name;
+  const words = slugify(fileName.replace(/\.[a-z0-9]{2,5}$/i, ""), 80).split("-").filter(Boolean);
+  const own = new Set(name.split("-"));
+  const tokens = [...words.filter(w => /^(19|20)\d{2}$/.test(w)), ...words.filter(w => /\d/.test(w) && !/^(19|20)\d{2}$/.test(w)), ...words.filter(w => !/\d/.test(w))].filter(w => !own.has(w));
+  for (const token of tokens) {
+    const candidate = `${name}-${token}`.slice(0, 80).replace(/-+$/, "");
+    if (!taken.has(candidate)) return candidate;
+  }
+  for (let n = 2; ; n++) {
+    const candidate = `${name.slice(0, 80 - String(n).length - 1)}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+}
+
 type Row = { source_gallery_id: string; file_name: string; alt: string; mime: string; width: number | null; height: number | null; sha256: string; s3_key: string };
 
 /** A 768 px JPEG of the picture for the model, or null when it cannot be decoded (HEIC, broken files). */
@@ -120,10 +150,10 @@ async function preview(bytes: Uint8Array): Promise<string | null> {
 export async function runMediaName(args: string[], log: (line: string) => void = console.log) {
   const { values } = parseArgs({ args, options: {
     brand: { type: "string", default: "wa" }, limit: { type: "string", default: "300" }, concurrency: { type: "string", default: "6" },
-    gallery: { type: "string" }, redo: { type: "boolean", default: false }, "retry-failed": { type: "boolean", default: false }, preview: { type: "string" },
+    gallery: { type: "string" }, redo: { type: "boolean", default: false }, "retry-failed": { type: "boolean", default: false }, dedupe: { type: "boolean", default: false }, preview: { type: "string" },
     apply: { type: "boolean", default: false }, "development-target": { type: "string" }, help: { type: "boolean", default: false },
   }, strict: true });
-  if (values.help) { log("Usage: wa-media-name --brand wa [--limit N] [--concurrency N] [--gallery ID] [--redo | --retry-failed] [--preview N] [--apply --development-target HOST]"); return; }
+  if (values.help) { log("Usage: wa-media-name --brand wa [--limit N] [--concurrency N] [--gallery ID] [--redo | --retry-failed | --dedupe] [--preview N] [--apply --development-target HOST]"); return; }
   const brand = brandFlag(values.brand);
   const previewCount = values.preview ? Math.min(50, Math.max(1, Number(values.preview) || 10)) : 0;
   const limit = previewCount || Math.min(2000, Math.max(1, Number(values.limit) || 300));
@@ -153,7 +183,39 @@ export async function runMediaName(args: string[], log: (line: string) => void =
     for (const row of page) byHash.set(row.sha256, [...(byHash.get(row.sha256) ?? []), row]);
     if (page.length < PAGE) break;
   }
-  const files = [...byHash.values()].slice(0, limit);
+  let files = [...byHash.values()].slice(0, limit);
+
+  // --dedupe: every stored picture, grouped by web name; a name two different pictures share is redone for each of them.
+  const taken = new Set<string>();
+  const sharing = new Map<string, { name: string; others: string[] }>();
+  if (values.dedupe) {
+    const all: (Row & { seo_name: string | null; seo_title: string | null })[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await reader.from("cms_media_files").select("source_gallery_id,file_name,alt,mime,width,height,sha256,s3_key,seo_name,seo_title")
+        .eq("brand", brand).eq("status", "stored").not("sha256", "is", null).not("seo_name", "is", null)
+        .order("sha256").order("source_gallery_id").order("source_file_id").range(from, from + PAGE - 1);
+      if (error) throw new Error(`Could not read the gallery catalog: ${error.message}`);
+      all.push(...((data ?? []) as typeof all));
+      if ((data ?? []).length < PAGE) break;
+    }
+    const groups = new Map<string, Map<string, typeof all>>();
+    for (const row of all) {
+      const group = groups.get(row.seo_name!) ?? new Map();
+      group.set(row.sha256, [...(group.get(row.sha256) ?? []), row]);
+      groups.set(row.seo_name!, group);
+    }
+    files = [];
+    for (const [nameTaken, group] of groups) {
+      if (group.size < 2) { taken.add(nameTaken); continue; }
+      if (files.length >= limit) { taken.add(nameTaken); continue; }
+      for (const [sha, rows] of group) {
+        const others = [...group].filter(([other]) => other !== sha).map(([, r]) => r[0].seo_title ? `${r[0].file_name} (${r[0].seo_title})` : r[0].file_name);
+        sharing.set(sha, { name: nameTaken, others });
+        files.push(rows);
+      }
+    }
+    count = files.length;
+  }
   const summary = { mode: writer ? "development-apply" : previewCount ? "preview" : "dry-run", brand, model: MODEL, rows_left: count ?? 0, documents: files.length, named: 0, from_picture: 0, from_clues: 0, failed: 0, failures: [] as string[], samples: [] as unknown[] };
   if (!calls || !files.length) { log(JSON.stringify(summary, null, 2)); return summary; }
 
@@ -193,6 +255,7 @@ export async function runMediaName(args: string[], log: (line: string) => void =
         `Gallery: ${[...new Set(rows.map(row => galleryTitle.get(row.source_gallery_id) ?? row.source_gallery_id))].join(" | ")}`,
         `Morweb alt text: ${rows.map(row => row.alt).find(Boolean) || "none"}`,
         `Stories that use it: ${(stories.get(first.sha256) ?? []).join(" | ") || "none found"}`,
+        sharing.has(first.sha256) ? `This picture was named "${sharing.get(first.sha256)!.name}", the same web name as ${sharing.get(first.sha256)!.others.length} other, different picture(s): ${sharing.get(first.sha256)!.others.slice(0, 8).join("; ")}. Give it a web name, title and alt text that tell it apart from those: keep the same leading identifier and add what is specific to this one (vintage or release year, batch, edition, age, bottle size, packaging, number of bottles, angle or setting), taken from the picture or its clues.` : "",
         image ? "" : "No picture is attached: name the file from these clues alone and keep the alt text and description to what they establish.",
       ].filter(Boolean).join("\n");
       const message = await anthropic.beta.messages.create({
@@ -209,6 +272,7 @@ export async function runMediaName(args: string[], log: (line: string) => void =
       if (message.stop_reason === "max_tokens") throw new Error("answer cut off");
       const text = message.content.map(block => (block.type === "text" ? block.text : "")).join("");
       const named = tidy(JSON.parse(text) as Record<string, unknown>, first.file_name);
+      if (values.dedupe) { named.seo_name = uniqueName(named.seo_name, first.file_name, taken); taken.add(named.seo_name); }
       summary.named++; if (image) summary.from_picture++; else summary.from_clues++;
       if (summary.samples.length < (previewCount || 5)) summary.samples.push({ file: first.file_name, ...named });
       if (!writer) return;

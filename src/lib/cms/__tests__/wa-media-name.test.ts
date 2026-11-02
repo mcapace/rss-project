@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clip, slugify, tidy } from "../../../../scripts/wa-media-name";
+import { clip, slugify, tidy, uniqueName } from "../../../../scripts/wa-media-name";
 
 describe("web names for gallery files", () => {
   it("makes lowercase hyphenated names without filler, sizes, accents or repeats", () => {
@@ -7,6 +7,8 @@ describe("web names for gallery files", () => {
     expect(slugify("Hero Image FINAL copy 1600x900 Rieger’s Holiday")).toBe("riegers-holiday");
     expect(slugify("Glenfarclás & Crème Brûlée")).toBe("glenfarclas-creme-brulee");
     expect(slugify("bourbon bourbon barrel barrel")).toBe("bourbon-barrel");
+    expect(slugify("Midleton-Very-Rare-Vintage-2024_300.jpg")).toBe("midleton-very-rare-vintage-2024");
+    expect(slugify("Macallan 1946 Select Reserve 1600x900 600px 0001")).toBe("macallan-1946-select-reserve");
   });
   it("keeps names within 60 characters on a word boundary", () => {
     const slug = slugify("buffalo trace antique collection george t stagg kentucky straight bourbon whiskey bottle studio shot");
@@ -26,4 +28,12 @@ describe("web names for gallery files", () => {
     expect(named.keywords).toEqual(["rieger's", "kansas city whiskey"]);
     expect(tidy({ seo_slug: "", kind: "nonsense" }, "Still Austin image.jpg")).toMatchObject({ seo_name: "still-austin", kind: "other" });
   });
+  it("keeps web names unique with a year or batch from the file name, else a counter", () => {
+    const taken = new Set(["midleton-very-rare-vintage-release-bottle"]);
+    expect(uniqueName("midleton-very-rare-vintage-release-bottle", "Midleton-Very-Rare-Vintage-2024_300.jpg", taken)).toBe("midleton-very-rare-vintage-release-bottle-2024");
+    expect(uniqueName("fresh-name", "x.jpg", taken)).toBe("fresh-name");
+    taken.add("midleton-very-rare-vintage-release-bottle-2024");
+    expect(uniqueName("midleton-very-rare-vintage-release-bottle", "midleton.png", taken)).toBe("midleton-very-rare-vintage-release-bottle-2");
+  });
 });
+

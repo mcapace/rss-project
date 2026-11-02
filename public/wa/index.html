@@ -221,7 +221,7 @@ WA.ready(function (data) {
       WA.reader.dialog(ov, "Shelf scan", document.getElementById("scanFile"));
       function close() { ov.setAttribute("data-open", "false"); document.body.classList.remove("scan-open"); }
       document.getElementById("soClose").addEventListener("click", close); document.getElementById("soDone").addEventListener("click", close);
-      document.getElementById("soAgain").addEventListener("click", function () { file.click(); });
+      document.getElementById("soAgain").addEventListener("click", function () { if (useLive) { close(); camera(); } else file.click(); });
       // The marks layer sits exactly on the photograph, whatever the screen's shape.
       function fit() { var img = document.getElementById("soImg"), m = document.getElementById("soMarks"), ph = img.parentElement; if (!img.naturalWidth) return; var r = img.getBoundingClientRect(), p = ph.getBoundingClientRect(); m.style.left = (r.left - p.left) + "px"; m.style.top = (r.top - p.top) + "px"; m.style.width = r.width + "px"; m.style.height = r.height + "px"; }
       document.getElementById("soImg").addEventListener("load", fit); addEventListener("resize", fit); ov.__fit = fit;
@@ -266,7 +266,42 @@ WA.ready(function (data) {
       else viaImage();
       file.value = "";
     }
-    file.addEventListener("change", function () { handle(file.files && file.files[0]); });
+    file.addEventListener("change", function () { if (live) shut(); handle(file.files && file.files[0]); });
+    // In the store: a live viewfinder on phones. The shutter freezes the frame and sends it through the same scan.
+    var live = null, stream = null, useLive = false;
+    function shut() { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; if (live) live.setAttribute("data-open", "false"); }
+    function camera() {
+      if (!live) {
+        live = document.createElement("div"); live.id = "scanLive"; live.setAttribute("data-open", "false");
+        live.innerHTML = '<video id="slVideo" playsinline muted autoplay></video><div class="sl-frame" aria-hidden="true"><i></i><i></i><i></i><i></i><b class="sl-line"></b></div>'
+          + '<div class="so-head sl-head"><div><span class="mono">In the store</span><strong id="slStatus">Starting the camera…</strong></div><button type="button" class="so-close" id="slClose" aria-label="Close">&times;</button></div>'
+          + '<div class="sl-bar"><label class="sl-side" for="scanFile">Use a photo</label><button type="button" class="sl-shutter" id="slShutter" aria-label="Read this shelf" disabled><span></span></button><button type="button" class="sl-side" id="slTorch" aria-pressed="false" hidden>Light</button></div>';
+        document.body.appendChild(live);
+        WA.reader.dialog(live, "Scan in the store", lbl);
+        document.getElementById("slClose").addEventListener("click", shut);
+        document.addEventListener("keydown", function (e) { if (e.key === "Escape" && live.getAttribute("data-open") === "true") shut(); });
+        document.getElementById("slShutter").addEventListener("click", function () {
+          var v = document.getElementById("slVideo"); if (!v.videoWidth) return;
+          live.classList.add("flash"); setTimeout(function () { live.classList.remove("flash"); }, 260);
+          var shot = shrink(v, v.videoWidth, v.videoHeight); WA.track("shelf_scan", { mode: "live" });
+          setTimeout(function () { shut(); upload(shot); }, 160);
+        });
+        document.getElementById("slTorch").addEventListener("click", function () {
+          var b = this, on = b.getAttribute("aria-pressed") !== "true", track = stream && stream.getVideoTracks()[0];
+          if (track) track.applyConstraints({ advanced: [{ torch: on }] }).then(function () { b.setAttribute("aria-pressed", String(on)); }, function () { b.hidden = true; });
+        });
+      }
+      live.setAttribute("data-open", "true"); document.getElementById("slShutter").disabled = true; document.getElementById("slStatus").textContent = "Starting the camera…";
+      navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } }).then(function (s) {
+        if (live.getAttribute("data-open") !== "true") { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+        stream = s; var v = document.getElementById("slVideo"); v.srcObject = s; var p = v.play(); if (p && p.catch) p.catch(function () {});
+        var track = s.getVideoTracks()[0], caps = track && track.getCapabilities ? track.getCapabilities() : {};
+        document.getElementById("slTorch").hidden = !caps.torch; document.getElementById("slShutter").disabled = false;
+        document.getElementById("slStatus").textContent = "Frame the shelf with the labels facing you, then tap";
+      }, function () {
+        document.getElementById("slStatus").textContent = "The camera is off for this site. Use a photo instead, or allow the camera in Settings.";
+      });
+    }
     // A phone opens the camera; a desktop picks a photo from disk or takes one dropped on the phone.
     var coarse = (window.matchMedia && matchMedia("(pointer: coarse)").matches) || /iPhone|iPad|Android/i.test(navigator.userAgent), lbl = document.querySelector('label[for="scanFile"]'), stage = document.querySelector(".scan-stage");
     if (!coarse) {
@@ -277,6 +312,10 @@ WA.ready(function (data) {
         stage.addEventListener("dragleave", function () { stage.removeAttribute("data-drop"); });
         stage.addEventListener("drop", function (e) { e.preventDefault(); stage.removeAttribute("data-drop"); handle(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
       }
+    }
+    if (coarse && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.isSecureContext !== false) {
+      useLive = true;
+      if (lbl) lbl.addEventListener("click", function (e) { e.preventDefault(); camera(); });
     }
   })();
   WA.stories(function (all) {

@@ -21,7 +21,7 @@
 
 <section class="band" style="padding-top: 28px">
   <div class="chan-head"><h1 class="d1">Top 20</h1></div>
-  <div class="suggest" id="years" style="margin-bottom: 22px"></div>
+  <div class="top20-bar"><div class="suggest" id="years"></div><button type="button" class="pill top20-count" id="countdown" aria-pressed="false">Count down from 20</button></div>
   <div class="ad ad-leader" data-slot="wa_top20_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
   <div class="top20-films" id="films" hidden></div>
   <div class="top20-grid" id="list"></div>
@@ -46,7 +46,7 @@
 WA.ready(function () { WA.top20(function (T) { Promise.all([fetch("videos.json").then(function (r) { return r.json(); }), fetch("top20-films.json").then(function (r) { return r.json(); })]).then(function (loaded) { var V = loaded[0], FILMS = loaded[1]; WA.archive(function (data) {
   var bySlug = {}; V.forEach(function (v) { bySlug[v.slug] = v; });
   var years = T.map(function (e) { return e.year; }).filter(function (y, i, a) { return y && a.indexOf(y) === i; }).sort(function (a, b) { return b - a; });
-  var state = { year: years[0] };
+  var state = { year: years[0], down: false }, reveal = !matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window, seen = reveal && new IntersectionObserver(function (es) { es.forEach(function (x) { if (!x.isIntersecting) return; seen.unobserve(x.target); x.target.classList.add("in"); }); }, { rootMargin: "0px 0px -12% 0px", threshold: 0.15 });
   document.getElementById("years").innerHTML = years.map(function (y) { return '<button type="button" data-year="' + y + '" aria-pressed="' + (y === state.year) + '">' + y + "</button>"; }).join("");
   var STOP = { the: 1, and: 1, for: 1, with: 1, from: 1, old: 1, year: 1, years: 1, month: 1, months: 1, aged: 1, release: 1, edition: 1, anniversary: 1, collection: 1, noble: 1, special: 1, straight: 1, kentucky: 1 };
   function tokens(t) {
@@ -85,10 +85,14 @@ WA.ready(function () { WA.top20(function (T) { Promise.all([fetch("videos.json")
     return '<article class="top20-card' + (e.rank === 1 ? " woty" : "") + (film ? " has-film" : "") + '"><div class="rank">' + (e.rank < 10 ? "0" : "") + e.rank + "</div>" + ((e.img || e.hero) ? '<img class="bottle" src="' + (e.img || e.hero) + '" alt="" loading="lazy">' : "") + '<div class="body">' + (e.rank === 1 ? '<span class="mono">Whisky of the Year ' + e.year + "</span>" : "") + "<h3>" + (href ? '<a href="' + href + '">' + e.title + "</a>" : e.title) + "</h3>" + (meta.length ? '<p class="meta">' + meta.join(" · ") + (e.owner ? '<span class="owner">' + e.owner + "</span>" : "") + "</p>" : "") + (e.body ? "<p>" + e.body.slice(0, e.rank === 1 ? 520 : 300).replace(/\s\S*$/, "") + "…</p>" : "") + '<div class="acts">' + (e.store ? '<a class="buy-chip" href="' + e.store + '" target="_blank" rel="noopener">Buy at the store</a>' : "") + (href ? '<a class="pill" href="' + href + '">The rating</a>' : "") + "</div></div>" + player(film) + "</article>";
   }
   function render() {
-    var rows = T.filter(function (e) { return e.year === state.year; }).sort(function (a, b) { return a.rank - b.rank; });
+    var rows = T.filter(function (e) { return e.year === state.year; }).sort(function (a, b) { return state.down ? b.rank - a.rank : a.rank - b.rank; });
     document.getElementById("films").hidden = true;
     document.getElementById("list").innerHTML = rows.map(function (e) { return card(e, match(e)); }).join("");
-    if (WA.watchPosters) WA.watchPosters(document.getElementById("list"));
+    var list = document.getElementById("list");
+    list.classList.toggle("reveal", !!reveal); list.classList.toggle("down", state.down);
+    if (reveal) list.querySelectorAll(".top20-card").forEach(function (c, i) { c.style.setProperty("--d", (i % 2) * 90 + "ms"); seen.observe(c); });
+    document.getElementById("countdown").setAttribute("aria-pressed", String(state.down));
+    if (WA.watchPosters) WA.watchPosters(list);
     document.querySelectorAll("#years button").forEach(function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-year") === state.year)); });
     document.title = "Top 20 Whiskies of " + state.year + " · Whisky Advocate";
   }
@@ -97,6 +101,7 @@ WA.ready(function () { WA.top20(function (T) { Promise.all([fetch("videos.json")
     WA.playEmbed(f);
   });
   document.getElementById("years").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.year = +b.getAttribute("data-year"); history.replaceState(null, "", "#" + state.year); render(); });
+  document.getElementById("countdown").addEventListener("click", function () { state.down = !state.down; render(); if (WA.track) WA.track("top20_countdown", { on: state.down }); var top = document.getElementById("list").getBoundingClientRect().top + scrollY - 120; if (scrollY > top) scrollTo({ top: top, behavior: reveal ? "smooth" : "auto" }); });
   var h = +(location.hash || "").slice(1); if (years.indexOf(h) >= 0) state.year = h;
   render();
 }); }); }); });

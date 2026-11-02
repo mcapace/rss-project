@@ -35,10 +35,11 @@ const SYSTEM = `You place whisky producers on a map. For each producer give wher
 function producers(): Producer[] {
   const r = JSON.parse(readFileSync("public/wa/ratings.json", "utf8")) as { cols: string[]; rows: unknown[][] };
   const c = (k: string) => r.cols.indexOf(k);
-  const by = new Map<string, { scores: number[]; cats: Map<string, number>; bottles: string[] }>();
+  type Tally = { scores: number[]; cats: Map<string, number>; bottles: string[] };
+  const by = new Map<string, Tally>();
   for (const row of r.rows) {
     const n = String(row[c("pr")] || ""); if (!n || n === "Unknown producer") continue;
-    const e = by.get(n) ?? { scores: [], cats: new Map(), bottles: [] };
+    const e: Tally = by.get(n) ?? { scores: [], cats: new Map(), bottles: [] };
     e.scores.push(Number(row[c("s")]) || 0); e.cats.set(String(row[c("c")]), (e.cats.get(String(row[c("c")])) ?? 0) + 1);
     if (e.bottles.length < 3) e.bottles.push(String(row[c("n")]));
     by.set(n, e);

@@ -92,6 +92,7 @@
 
 <div class="tray" id="tray" data-open="false" aria-label="Compare"><div class="tray-head"><span id="trayCount">Compare</span><button type="button" id="trayClear">Clear</button></div><div class="tray-body" id="trayBody"></div></div>
 
+<script src="catalog-core.js"></script>
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
@@ -116,7 +117,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
   function restore() {
     var params = new URLSearchParams(location.search), raw = params.get('filters');
     setLens('');
-    state.q = params.get('q') || ''; state.terms = WA.nameTerms(state.q);
+    state.q = params.get('q') || ''; var queryIntent = WA.understand(state.q); state.terms = queryIntent.terms;
+    state.types = queryIntent.types.reduce(function (all,t) { return all.concat(t.cats); }, []); state.price = queryIntent.price || 0; state.score = queryIntent.score || 0; state.chars = queryIntent.chars;
     if (state.q) { var parsed = WA.understand(state.q); state.price = parsed.price || 0; state.score = parsed.score || 0; state.chars = parsed.chars; state.types = parsed.types.flatMap(function (x) { return x.cats; }); }
     if (raw) try {
       var saved = JSON.parse(raw);
@@ -201,7 +203,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       return true;
     });
     if (state.sort === "twin" && state.twin) { var T = state.twin; rows.sort(function (a, b) { return closeness(a, T) - closeness(b, T); }); }
-    else if (state.sort === "score") rows.sort(function (a, b) { return b.s - a.s || a.p - b.p; });
+    else if (state.sort === "score") rows.sort(function (a, b) { return (state.terms.length ? WA.nameScore(state.terms,b) - WA.nameScore(state.terms,a) : 0) || b.s - a.s || a.p - b.p; });
     if (state.sort === "value") rows.sort(function (a, b) { return value(b) - value(a); });
     if (state.sort === "price-asc") rows.sort(function (a, b) { return (a.p || 1e9) - (b.p || 1e9); });
     if (state.sort === "new") rows.sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; });
@@ -232,10 +234,26 @@ WA.ready(function (recent) { WA.archive(function (data) {
       '<div class="foot"><span>' + fmt(r.p) + (r.a ? " · " + r.a + "%" : "") + '</span><button type="button" data-i="' + idx + '" aria-pressed="' + !!on + '">' + (on ? "Pinned" : "Compare") + '</button><span class="buy-slot"></span></div>' +
       '<p data-note></p></article>';
   }
-  function openPop(name) { rail.querySelectorAll(".pop").forEach(function (p) { p.setAttribute("data-open", String(p.getAttribute("data-for") === name)); }); rail.querySelectorAll(".rail-pill[data-pop]").forEach(function (b) { b.setAttribute("aria-expanded", String(b.getAttribute("data-pop") === name)); }); if (name === "twin") setTimeout(function () { document.getElementById("twinQ").focus(); }, 30); if (name === "brand") setTimeout(function () { document.getElementById("brandQ").focus(); }, 30); }
-  rail.addEventListener("click", function (e) { var b = e.target.closest(".rail-pill[data-pop]"); if (!b) return; var name = b.getAttribute("data-pop"); openPop(b.getAttribute("aria-expanded") === "true" ? "" : name); });
-  document.addEventListener("click", function (e) { if (!e.target.closest("#rail")) openPop(""); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") openPop(""); });
+  // Native modal lives outside the horizontal rail so no scrolling ancestor can clip its controls.
+  var filterDialog = document.createElement('dialog'); filterDialog.className = 'filter-dialog';
+  filterDialog.innerHTML = '<header class="dialog-heading"><h2 id="filterTitle">Filter ratings</h2><button type="button" class="pill" id="filterDone">Done</button></header><div class="filter-content"></div>';
+  filterDialog.setAttribute('aria-labelledby','filterTitle'); document.body.appendChild(filterDialog);
+  var panels = Array.from(rail.querySelectorAll('.pop')), activeFilter = null;
+  panels.forEach(function (panel) { panel.id = 'filter-' + panel.dataset.for; filterDialog.querySelector('.filter-content').appendChild(panel); });
+  rail.querySelectorAll('[data-pop]').forEach(function (b) { b.setAttribute('aria-expanded','false'); b.setAttribute('aria-haspopup','dialog'); b.setAttribute('aria-controls','filter-' + b.dataset.pop); });
+  function openPop(name) {
+    if (!name) { if (filterDialog.open) filterDialog.close(); return; }
+    activeFilter = rail.querySelector('[data-pop="' + name + '"]');
+    panels.forEach(function (p) { p.setAttribute('data-open',String(p.dataset.for === name)); });
+    rail.querySelectorAll('[data-pop]').forEach(function (b) { b.setAttribute('aria-expanded',String(b === activeFilter)); });
+    document.getElementById('filterTitle').textContent = activeFilter.querySelector('.k').textContent + ' filter';
+    if (!filterDialog.open) filterDialog.showModal();
+    var field = filterDialog.querySelector('.pop[data-open="true"] input'); if (field) field.focus();
+  }
+  rail.addEventListener('click', function (e) { var b = e.target.closest('[data-pop]'); if (b) openPop(b.dataset.pop); });
+  document.getElementById('filterDone').onclick = function () { filterDialog.close(); };
+  filterDialog.addEventListener('click', function (e) { if (e.target === filterDialog) { var r = filterDialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) filterDialog.close(); } });
+  filterDialog.addEventListener('close', function () { rail.querySelectorAll('[data-pop]').forEach(function (b) { b.setAttribute('aria-expanded','false'); }); if (activeFilter) activeFilter.focus(); });
   document.getElementById("exploreToggle").addEventListener("click", function () { var on = this.getAttribute("aria-pressed") !== "true"; this.setAttribute("aria-pressed", String(on)); document.getElementById("maps").setAttribute("data-open", String(on)); if (on) render(); });
   document.getElementById("maps").addEventListener("click", function (e) { var b = e.target.closest("[data-map-pick]"); if (!b) return; this.setAttribute("data-which", b.getAttribute("data-map-pick")); this.querySelectorAll("[data-map-pick]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); drawMaps(current()); });
   function pressed(id) { return [].slice.call(document.getElementById(id).querySelectorAll('[aria-pressed="true"]')).map(function (b) { return b.textContent.trim(); }); }
@@ -310,16 +328,17 @@ WA.ready(function (recent) { WA.archive(function (data) {
     card.click();
   });
   var compareOpen = document.createElement('button'); compareOpen.className = 'pill solid compare-open'; compareOpen.hidden = true; compareOpen.textContent = 'Open comparison'; document.body.appendChild(compareOpen);
-  var sheet = document.createElement('dialog'); sheet.className = 'comparison-sheet'; sheet.setAttribute('aria-label','Compare bottles'); sheet.innerHTML = '<button class="pill" id="compareClose">Close comparison</button><h2>Compare bottles</h2><div class="reader-grid" id="compareCards"></div>'; document.body.appendChild(sheet);
+  var sheet = document.createElement('dialog'); sheet.className = 'comparison-sheet'; sheet.setAttribute('aria-label','Compare bottles'); sheet.innerHTML = '<header class="dialog-heading"><h2>Compare bottles</h2><button class="pill" id="compareClose">Close comparison</button></header><p class="compare-hint">Swipe across to compare every selected bottle.</p><div class="compare-scroll" tabindex="0" role="region" aria-label="Bottle comparison"><div class="reader-grid" id="compareCards"></div></div>'; document.body.appendChild(sheet);
   compareOpen.onclick = function () { sheet.showModal(); };
   sheet.querySelector('#compareClose').onclick = function () { sheet.close(); };
-  sheet.addEventListener('close', function () { compareOpen.focus(); });
+  sheet.addEventListener('close', function () { if (!compareOpen.hidden) compareOpen.focus(); else document.getElementById('askInput').focus(); });
   sheet.addEventListener('click', function (e) { var b=e.target.closest('[data-remove]'); if (!b) return; state.compare=state.compare.filter(function (i) { return i !== Number(b.dataset.remove); }); render(); renderTray(); });
   function renderTray() {
     var tray = document.getElementById("tray"); var picks = state.compare.map(function (i) { return data[i]; });
     tray.setAttribute("data-open", String(picks.length > 0));
     compareOpen.hidden = !picks.length; compareOpen.textContent = 'Compare ' + picks.length + ' bottles';
-    sheet.querySelector('#compareCards').innerHTML = picks.map(function (r) { return '<article class="reader-card"><h3><a href="'+WA.bottleHref(r)+'">'+esc(r.n)+'</a></h3><dl><dt>Score</dt><dd>'+r.s+'</dd><dt>Price</dt><dd>'+fmt(r.p)+'</dd><dt>Type</dt><dd>'+esc(r.c)+'</dd><dt>Character</dt><dd>'+['smoky','sweet','rich','light'].filter(function (c) { return charScore(r,c)>0; }).join(', ')+'</dd></dl><button class="pill" data-remove="'+data.indexOf(r)+'">Remove '+esc(r.n)+'</button></article>'; }).join('') || '<p>No bottles selected. Close comparison to choose more.</p>';
+    sheet.querySelector('#compareCards').style.setProperty('--compare-count', Math.max(1,picks.length));
+    sheet.querySelector('#compareCards').innerHTML = picks.map(function (r) { return '<article class="reader-card"><h3><a href="'+WA.bottleHref(r)+'">'+esc(r.n)+'</a></h3><dl><dt>Score</dt><dd>'+r.s+'</dd><dt>Price</dt><dd>'+fmt(r.p)+'</dd><dt>Type</dt><dd>'+esc(r.c)+'</dd><dt>Character</dt><dd>'+['smoky','sweet','rich','light'].filter(function (c) { return charScore(r,c)>0; }).join(', ')+'</dd></dl><button class="pill" data-remove="'+data.indexOf(r)+'" aria-label="Remove '+esc(r.n)+'">Remove</button></article>'; }).join('') || '<p>No bottles selected. Close comparison to choose more.</p>';
     document.getElementById("trayCount").textContent = "Compare · " + picks.length + " of 3";
     var rows = [["Bottle", function (r) { return '<a href="' + WA.bottleHref(data.indexOf(r)) + '">' + r.n + "</a>"; }], ["Score", function (r) { return '<span class="big score-type">' + r.s + "</span>"; }], ["Price", function (r) { return fmt(r.p); }], ["Type", function (r) { return r.c; }], ["Character", function (r) { return ["smoky", "sweet", "rich", "light"].filter(function (c) { return charScore(r, c) > 0; }).join(", ") || "—"; }]];
     document.getElementById("trayBody").innerHTML = rows.map(function (row) { return '<div class="k">' + row[0] + "</div>" + [0, 1, 2].map(function (i) { return "<div>" + (picks[i] ? row[1](picks[i]) : "") + "</div>"; }).join(""); }).join("");

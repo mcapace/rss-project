@@ -2505,3 +2505,15 @@ main { min-height: 100vh; min-height: 100dvh; }
   .fmap-labels .fmap-region { padding: 3px 9px 4px; font-size: 13.5px; background: rgba(20, 13, 8, 0.78); }
   .fmap-panel h2 { font-size: 25px; }
 }
+
+/* ---- Phone tap targets (2026-11-02) ---- */
+@media (max-width: 720px) {
+  .history-table a { display: inline-block; padding-block: 7px; }
+  .foot > a:not(.buy-chip):not(.pill) { padding-block: 9px; margin-block: -9px; }
+  .compass-map-link { padding-block: 8px; border-bottom: 0; text-decoration: underline; text-underline-offset: 4px; }
+  .fest-dots { gap: 0; right: 10px; bottom: 12px; }
+  .fest-dots button { width: 32px; height: 32px; padding: 12px; background-clip: content-box; }
+  .fest-dots button[aria-current="true"] { background-clip: content-box; }
+  .scale-labels { font-size: 11.5px; }
+  .price-ladder-labels { font-size: 11px; }
+}

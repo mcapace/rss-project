@@ -11,7 +11,7 @@ on:
         description: Which script to run
         required: true
         type: choice
-        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags, galleries, names, names-preview, names-retry, seo, seo-preview, seo-fix]
+        options: [rehost, heroes, captions, describe, bottles, normalize, redirects, embed, tags, galleries, names, names-preview, names-retry, names-dedupe, names-dedupe-preview, seo, seo-preview, seo-fix]
       brand:
         description: Publication (wa, ws, ca, mw)
         required: true
@@ -92,6 +92,8 @@ jobs:
             names)      script=scripts/wa-media-name.ts;    extra=() ;;
             names-preview) script=scripts/wa-media-name.ts; extra=(--preview 12) ;;
             names-retry) script=scripts/wa-media-name.ts;   extra=(--retry-failed) ;;
+            names-dedupe) script=scripts/wa-media-name.ts;  extra=(--dedupe) ;;
+            names-dedupe-preview) script=scripts/wa-media-name.ts; extra=(--dedupe --preview 12) ;;
             seo)        script=scripts/wa-seo-pass.ts;      extra=() ;;
             seo-preview) script=scripts/wa-seo-pass.ts;     extra=(--kind article --preview 8) ;;
             seo-fix)    script=scripts/wa-seo-pass.ts;      extra=(--fix) ;;

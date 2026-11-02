@@ -68,7 +68,7 @@
 <section class="band" id="tasting">
   <div class="band-head"><div><span class="mono">In the glass</span><h2 class="d2" style="margin-top:10px">How it tastes, how to drink it, what it costs.</h2></div></div>
   <div class="glass-grid">
-    <div class="verdict compass-card"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other rating since 2022.</p></div>
+    <div class="verdict compass-card"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other rating since 2022.</p><a class="compass-map-link" id="flavorMapLink" href="flavor-map.html">See it on the flavor map</a></div>
     <div class="verdict"><h3>What the taster found</h3><div class="descriptors" id="descriptors" style="margin-top: 6px"></div></div>
     <div class="verdict"><h3>How to drink it</h3><p class="big" id="serveBig"></p><p id="serveNote"></p></div>
     <div class="verdict value-card"><div><h3>Value</h3><p class="big" id="valueBig"></p><p id="valueNote"></p></div><div><div class="price-ladder" id="ladder"></div><div class="price-ladder-labels"><span>under $40</span><span>$40–60</span><span>$60–100</span><span>$100–200</span><span>$200+</span></div><p id="ladderNote"></p></div></div>
@@ -135,9 +135,10 @@
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
 <script src="editorial.js" defer></script>
+<script src="glass.js"></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
-  var fmt = WA.fmt, cur = null, STORIES = null, byRating = null, Tlist = null, FILMS = null, bySlug = {}; WA.stories(function (st) { STORIES = st; if (cur) mentions(cur); });
+  var fmt = WA.fmt, cur = null, pourGlass = null, STORIES = null, byRating = null, Tlist = null, FILMS = null, bySlug = {}; WA.stories(function (st) { STORIES = st; if (cur) mentions(cur); });
   var STOP = { the: 1, and: 1, for: 1, with: 1, from: 1, old: 1, year: 1, years: 1, month: 1, months: 1, aged: 1, release: 1, edition: 1, anniversary: 1, collection: 1, noble: 1, special: 1, straight: 1, kentucky: 1 };
   function tokens(t) {
     return String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).map(function (x) { var m = x.match(/^(\d+)(?:st|nd|rd|th)$/); return m ? m[1] : x; }).filter(function (x) { if (!x || STOP[x] || x === "0") return false; if (/^\d+$/.test(x) || /^[a-z]\d+$/.test(x)) return true; return x.length > 2; });
@@ -242,7 +243,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     if (!r) { document.getElementById('name').textContent = 'Bottle not found'; document.getElementById('note').textContent = 'This rating is unavailable. Search the ratings for another bottle.'; document.getElementById('save').disabled = true; return; }
     if (r && !top && WA.cleanUrl && WA.find(data, slug)) WA.cleanUrl(r.slug);
     if (r.f == null) { WA.note(r.slug, function (f) { r.f = f; r.t = f.length > 110 ? f.slice(0, 110).replace(/\s\S*$/, "") : f; show(); }); r.f = ""; return; }
-    cur = r; WA.bindSave(document.getElementById("save"), {kind:"bottle",slug:r.slug,title:r.n}); document.getElementById("compareLink").href = "finder.html?compare=" + encodeURIComponent(r.slug); var B = band(r.s);
+    cur = r; document.getElementById("flavorMapLink").href = "flavor-map.html#" + encodeURIComponent(r.slug); WA.bindSave(document.getElementById("save"), {kind:"bottle",slug:r.slug,title:r.n}); document.getElementById("compareLink").href = "finder.html?compare=" + encodeURIComponent(r.slug); var B = band(r.s);
     if (!window.WA_PATHS) document.title = r.n + " · " + r.s + " points";
     document.getElementById("crumbCat").textContent = r.c; document.getElementById("crumbName").textContent = r.n;
     var cp = document.getElementById("crumbProd"); cp.textContent = r.pr; cp.href = WA.producerHref(r.pr);
@@ -256,7 +257,12 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("note").textContent = (r.f || r.t || "").trim() || "The note is on its way.";
     document.getElementById("noteBy").textContent = [r.by || "The Whisky Advocate tasting panel", r.issue ? r.issue + " issue" : ""].filter(Boolean).join(", ");
     filmSlot(r);
-    var art = document.getElementById("art"); art.alt = r.n; art.onerror = function () { art.onerror = null; art.src = WA.shot(r.c); }; art.src = WA.bottleSrc(r); document.querySelector(".hero-art").classList.add("photo");
+    var art = document.getElementById("art"), heroArt = document.querySelector(".hero-art"); art.alt = r.n;
+    // No photograph: pour it. The glass takes the style's colour now and the flavor profile's once the API answers.
+    function pour() { if (!WA.glass) return false; if (!pourGlass) pourGlass = WA.glass(heroArt, r.c); else pourGlass.color(WA.glassColour(r.c)); if (!pourGlass) return false; heroArt.classList.add("poured"); heroArt.classList.remove("photo"); return true; }
+    heroArt.classList.remove("poured");
+    if (!r.img && pour()) art.removeAttribute("src");
+    else { art.onerror = function () { art.onerror = null; if (!pour()) art.src = WA.shot(r.c); }; art.src = WA.bottleSrc(r); heroArt.classList.add("photo"); }
     document.getElementById("facts").innerHTML = [["Price", fmt(r.p)], ["ABV", r.a ? r.a + "%" : "—"], ["Category", r.c], ["Producer", r.pr], ["Taster", r.by || "Tasting panel"], ["Issue", r.issue || "—"]].map(function (x) { return "<div><dt>" + x[0] + "</dt><dd>" + x[1] + "</dd></div>"; }).join("");
     var low = (r.f || r.t || "").toLowerCase(), found = WORDS.filter(function (w) { return low.indexOf(w) >= 0; });
     document.getElementById("descriptors").innerHTML = (found.length ? found : ["balanced"]).slice(0, 14).map(function (w, k) { return "<span" + (k < 3 ? ' class="hot"' : "") + ">" + w + "</span>"; }).join("");
@@ -288,6 +294,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
       function liked(cb) {
         if (!r.slug || /^t20-/.test(r.slug)) return cb([]);
         fetch("/api/wa/bottles-like?slug=" + encodeURIComponent(r.slug), { headers: { Accept: "application/json" } }).then(function (res) { return res.ok ? res.json() : null; }).then(function (j) {
+          if (j && j.flavor && pourGlass && cur === r && !r.img) pourGlass.flavor(j.flavor);
           cb(((j && j.bottles) || []).map(function (b) { return WA.find(data, b.slug); }).filter(function (x) { return x && !same(x); }).slice(0, 8));
         }, function () { cb([]); });
       }

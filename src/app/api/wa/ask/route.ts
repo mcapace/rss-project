@@ -57,8 +57,11 @@ async function closeInMeaning(question: string, have: Set<string>, signal: Abort
     const matches = await matchDocuments(db, await embedQuery(question.slice(0, 400), signal), ["rating"], 40);
     const found = await loadBottles(db, matches.map(m => m.document_id));
     const { min, max } = priceLimits(question);
-    return matches.map(m => found.get(m.document_id)).filter((b): b is NonNullable<typeof b> => !!b && !have.has(b.slug))
-      .filter(b => { const p = Number(b.rating.price) || 0; return (max == null || (p > 0 && p <= max)) && (min == null || p >= min); })
+    const fits = matches.map(m => found.get(m.document_id)).filter((b): b is NonNullable<typeof b> => !!b && !have.has(b.slug))
+      .filter(b => { const p = Number(b.rating.price) || 0; return (max == null || (p > 0 && p <= max)) && (min == null || p >= min); });
+    const strong = fits.filter(b => (b.rating.score ?? 0) >= 85), perHouse = new Map<string, number>();
+    return (strong.length >= 6 ? strong : fits)
+      .filter(b => { const house = (b.rating.brand || b.title.split(" ")[0]).toLowerCase(), n = perHouse.get(house) ?? 0; perHouse.set(house, n + 1); return n < 2; })
       .slice(0, 10)
       .map(b => ({ slug: b.slug, name: b.title, score: b.rating.score ?? 0, price: b.rating.price ?? null, category: b.rating.category || "", producer: b.rating.brand || "", note: b.flavor ? `${b.flavor.line} Notes: ${b.flavor.notes.join(", ")}` : "", how: "close in meaning to the question" }));
   } catch (error) {

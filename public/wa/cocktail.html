@@ -30,7 +30,7 @@
       <div class="actions" style="margin-top: 18px"><button type="button" class="pill" id="save">Save</button><button type="button" class="pill" id="share">Share</button><a class="pill" id="storyLink" href="#">Read the story</a></div>
       <div class="ingredients" style="margin-top: 26px">
         <div class="head"><h3 style="font-size: 17px">Ingredients</h3><div class="serves" role="group" aria-label="How many"><button type="button" data-n="1" aria-pressed="true">For 1</button><button type="button" data-n="2">For 2</button><button type="button" data-n="4">For 4</button></div></div>
-        <ul id="ingredients"></ul>
+        <p class="ingredient-hint">Check off ingredients as you pour.</p><ul id="ingredients"></ul>
       </div>
       <h3 style="margin-top: 28px; font-size: 17px">Method</h3>
       <div class="steps" id="steps"></div>
@@ -78,7 +78,9 @@ WA.ready(function () {
     var intro = document.getElementById("intro"); if (r.intro) intro.textContent = r.intro; else intro.remove();
     document.getElementById("art").src = r.img; document.getElementById("art").alt = r.name;
     document.getElementById("storyLink").href = "story.html#" + r.story; document.getElementById("storyLink").textContent = "Read the story: " + r.storyTitle.slice(0, 40) + (r.storyTitle.length > 40 ? "…" : "");
-    function renderIng() { document.getElementById("ingredients").innerHTML = r.ingredients.map(function (i) { var a = WA.amount(i); return "<li><b>" + (a ? WA.fmtAmount(a.n * n) + (a.unit ? " " + a.unit : "") : "") + "</b><span>" + (a ? a.rest : i) + "</span></li>"; }).join(""); }
+    var checked = new Set();
+    function renderIng() { document.getElementById("ingredients").innerHTML = r.ingredients.map(function (i, index) { var a = WA.amount(i); return '<li class="ingredient-step"><label><input type="checkbox" data-ingredient="' + index + '"' + (checked.has(index) ? ' checked' : '') + '><b>' + WAReader.escape(a ? WA.fmtAmount(a.n * n) + (a.unit ? " " + a.unit : "") : "") + '</b><span>' + WAReader.escape(a ? a.rest : i) + '</span></label></li>'; }).join(""); }
+    document.getElementById("ingredients").addEventListener("change", function (e) { var i = Number(e.target.dataset.ingredient); if (e.target.checked) checked.add(i); else checked.delete(i); });
     var servings = Number(new URLSearchParams(location.search).get("servings")); if ([1,2,4].includes(servings)) n = servings;
     document.querySelectorAll(".serves button").forEach(function (b) { b.setAttribute("aria-pressed", String(Number(b.dataset.n) === n)); });
     renderIng();

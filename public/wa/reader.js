@@ -20,27 +20,53 @@
   var tools = document.querySelector('.mast .tools');
   if (tools) { var link = document.createElement('a'); link.className = 'pill shelf-link'; link.href = 'shelf.html'; link.textContent = 'My Shelf'; tools.appendChild(link); }
   document.querySelectorAll('#waMenu .menu-group').forEach(function (group, i) { if (!i) { var a = document.createElement('a'); a.href = 'shelf.html'; a.textContent = 'My Shelf'; group.appendChild(a); } });
+  var saveBindings = new Map();
+  document.addEventListener('wa:shelf', function () { saveBindings.forEach(function (paint, button) { if (button.isConnected) paint(); else saveBindings.delete(button); }); });
   WA.bindSave = function (button, item) {
     function paint() { var saved = state.shelf.some(function (x) { return x.kind === item.kind && x.slug === item.slug; }); button.textContent = saved ? 'Remove from My Shelf' : 'Save to My Shelf'; button.setAttribute('aria-pressed', String(saved)); }
     button.onclick = function () {
       var existing = state.shelf.find(function (x) { return x.kind === item.kind && x.slug === item.slug; });
-      if (change(function (s) { s.shelf = s.shelf.filter(function (x) { return x.kind !== item.kind || x.slug !== item.slug; }); if (!existing) s.shelf.push(item); }, existing ? 'Removed from My Shelf.' : 'Saved on this device.')) {
+      if (change(function (s) { s.shelf = s.shelf.filter(function (x) { return x.kind !== item.kind || x.slug !== item.slug; }); if (!existing) s.shelf.push(Object.assign({ savedAt: Date.now(), status: 'want', notes: '' }, item)); }, existing ? 'Removed from My Shelf.' : 'Saved on this device.')) {
         if (existing) notice('Removed from My Shelf.', function () { change(function (s) { if (!s.shelf.some(function (x) { return x.kind === existing.kind && x.slug === existing.slug; })) s.shelf.push(existing); }, 'Restored to My Shelf.'); });
       }
     };
-    document.addEventListener('wa:shelf', paint); paint();
+    saveBindings.set(button, paint); paint();
   };
+  var shelfView = { kind: 'all', query: '', order: 'recent', limit: 24 };
   function shelf() {
     var root = document.getElementById('readerShelf'); if (!root) return;
+    var query = shelfView.query.toLowerCase();
+    var rows = state.shelf.filter(function (x) { return (shelfView.kind === 'all' || x.kind === shelfView.kind || (shelfView.kind === 'owned' && x.kind === 'bottle' && x.status === 'owned') || (shelfView.kind === 'want' && x.kind === 'bottle' && x.status !== 'owned')) && (x.title + ' ' + (x.notes || '')).toLowerCase().includes(query); });
+    rows.sort(function (a,b) { return shelfView.order === 'name' ? a.title.localeCompare(b.title) : (b.savedAt || 0) - (a.savedAt || 0); });
+    var count = document.getElementById('shelfCount'); if (count) count.textContent = rows.length + (rows.length === 1 ? ' saved item' : ' saved items');
     root.replaceChildren();
-    if (!state.shelf.length) { root.innerHTML = '<p>Your shelf is empty. Save a bottle, story or recipe to find it here.</p><a class="pill" href="finder.html">Explore ratings</a>'; return; }
-    state.shelf.forEach(function (item) {
-      var card = document.createElement('article'); card.className = 'reader-card';
-      var a = document.createElement('a'); a.textContent = item.title; a.href = item.kind === 'recipe' ? WA.recipeHref(item.slug) : item.kind === 'story' ? WA.storyHref({ slug: item.slug }) : WA.bottleHref(item.slug);
-      var h = document.createElement('h2'); h.appendChild(a); card.appendChild(h);
-      var kind = document.createElement('p'); kind.textContent = item.kind; card.appendChild(kind);
-      var b = document.createElement('button'); b.className = 'pill'; card.appendChild(b); WA.bindSave(b, item); root.appendChild(card);
+    if (!rows.length) { root.innerHTML = '<div class="shelf-empty"><span class="mono">Your collection</span><h2>' + (state.shelf.length ? 'No matching saves' : 'Keep the good finds') + '</h2><p>' + (state.shelf.length ? 'Try another search or collection.' : 'Save bottles to try, keep tasting notes, and collect stories and recipes for later.') + '</p><div class="actions"><a class="pill solid" href="finder.html">Find a bottle</a><a class="pill" href="cocktails.html">Explore recipes</a></div></div>'; }
+    rows.slice(0,shelfView.limit).forEach(function (item,index) {
+      var card = document.createElement('article'); card.className = 'reader-card shelf-card';
+      var href = item.kind === 'recipe' ? WA.recipeHref(item.slug) : item.kind === 'story' ? WA.storyHref({ slug: item.slug }) : WA.bottleHref(item.slug);
+      card.innerHTML = '<span class="mono">' + esc(item.kind) + '</span><h2><a href="' + esc(href) + '">' + esc(item.title) + '</a></h2>';
+      if (item.kind === 'bottle') {
+        var label = document.createElement('label'); label.className = 'shelf-status'; label.textContent = 'Collection';
+        var select = document.createElement('select'); select.innerHTML = '<option value="want">Want to try</option><option value="owned">On my shelf</option>'; select.value = item.status === 'owned' ? 'owned' : 'want'; label.appendChild(select); card.appendChild(label);
+        select.onchange = function () { var value = select.value; change(function (s) { s.shelf.find(function (x) { return x.kind === item.kind && x.slug === item.slug; }).status = value; }, 'Collection updated.'); };
+      }
+      var detail = document.createElement('details'); detail.className = 'shelf-notes';
+      detail.innerHTML = '<summary>' + (item.notes ? 'View your notes' : 'Add a note') + '</summary><label for="shelfNote' + index + '">Your notes</label><textarea id="shelfNote' + index + '" maxlength="2000" rows="3" placeholder="Tasting notes, gift ideas, or what to try next"></textarea><button type="button" class="pill">Save note</button>';
+      detail.querySelector('textarea').value = item.notes || '';
+      detail.querySelector('button').onclick = function () { var note = detail.querySelector('textarea').value; if (change(function (s) { s.shelf.find(function (x) { return x.kind === item.kind && x.slug === item.slug; }).notes = note; }, 'Note saved on this device.')) { var target = root.querySelectorAll('.shelf-card')[index]; if (target) target.querySelector('summary').focus(); } };
+      card.appendChild(detail);
+      var b = document.createElement('button'); b.className = 'pill shelf-remove'; card.appendChild(b); WA.bindSave(b, item); root.appendChild(card);
     });
+    var more = document.getElementById('shelfMore'); if (more) more.hidden = rows.length <= shelfView.limit;
+  }
+  var shelfControls = document.getElementById('shelfControls');
+  if (shelfControls) {
+    document.getElementById('shelfQuery').oninput = function (e) { shelfView.query = e.target.value; shelfView.limit = 24; shelf(); };
+    document.getElementById('shelfKind').onchange = function (e) { shelfView.kind = e.target.value; shelfView.limit = 24; shelf(); };
+    document.getElementById('shelfOrder').onchange = function (e) { shelfView.order = e.target.value; shelf(); };
+    document.getElementById('shelfMore').onclick = function () { shelfView.limit += 24; shelf(); };
+    document.getElementById('shelfExport').onclick = function () { if (!readable) { notice('Storage is unavailable. Reload before exporting.'); return; } var url = URL.createObjectURL(new Blob([JSON.stringify({ version:1, shelf:state.shelf }, null, 2)], { type:'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'whisky-advocate-shelf.json'; a.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); };
+    document.getElementById('shelfImport').onchange = function (e) { var file = e.target.files[0]; if (!file) return; if (file.size > 2000000) { notice('Choose a Shelf export smaller than 2 MB.'); e.target.value = ''; return; } file.text().then(function (text) { core.importShelf(text, state); change(function (s) { s.shelf = core.importShelf(text, s).shelf; }, 'Shelf imported. Existing items and notes were kept.'); }).catch(function (err) { notice(err instanceof SyntaxError ? 'Choose a valid My Shelf JSON export.' : err.message); }).finally(function () { e.target.value = ''; }); };
   }
   document.addEventListener('wa:shelf', shelf); shelf();
   addEventListener('storage', function (e) { if (e.key === core.key || e.key === null) { load(); document.dispatchEvent(new Event('wa:shelf')); } });

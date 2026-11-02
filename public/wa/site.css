@@ -2103,3 +2103,36 @@ p a { text-decoration: underline; text-underline-offset: 3px; }
 
 /* Shelf scan (2026-11-01): the example-scan note sits under the Scan button, not over the phone. */
 .scan-note { margin: 12px 0 0; max-width: 46ch; font-size: 13px; line-height: 1.5; color: var(--ink-3); }
+
+
+/* ---- My Shelf: search, collections, notes, export/import; recipe ingredient checklist (2026-11-02) ---- */
+.shelf-controls { display: flex; flex-wrap: wrap; gap: 18px; margin: 28px 0 18px; }
+.shelf-controls label, .shelf-status { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.shelf-controls label:first-child { flex: 1 1 240px; }
+.shelf-controls input, .shelf-controls select, .shelf-status select { min-height: 44px; padding: 10px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper-2); color: var(--ink); font: inherit; }
+#shelfCount { font-size: 13px; color: var(--ink-2); }
+.shelf-card { display: flex; flex-direction: column; gap: 14px; }
+.shelf-card h2 { margin-bottom: 0; }
+.shelf-card .pill { margin-top: 0; }
+.shelf-notes summary { cursor: pointer; font-size: 14px; }
+.shelf-notes label { display: block; font-size: 13px; margin: 14px 0 8px; }
+.shelf-notes textarea { width: 100%; resize: vertical; padding: 12px; font: inherit; font-size: 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); }
+.shelf-notes button { margin-top: 8px; }
+.shelf-remove { margin-top: auto; align-self: start; }
+.shelf-empty { grid-column: 1 / -1; }
+.shelf-empty h2 { margin: 10px 0; }
+.shelf-empty .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.shelf-backup { margin-top: 36px; border-top: 1px solid var(--rule); padding-top: 24px; display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+.shelf-backup h2 { font-size: 20px; }
+.shelf-backup p { max-width: 65ch; color: var(--ink-2); font-size: 14px; margin-top: 8px; }
+.shelf-backup .actions { display: flex; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+.shelf-import { position: relative; cursor: pointer; }
+.shelf-import input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.shelf-import:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (max-width: 1000px) { .shelf-backup { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 600px) { .shelf-controls { gap: 12px; } }
+.ingredient-hint { font-size: 13px; color: var(--ink-2); margin: 10px 0 4px; }
+.ingredients li.ingredient-step { display: block; padding: 0; }
+.ingredient-step label { display: grid; grid-template-columns: 18px 84px 1fr; gap: 14px; align-items: baseline; padding: 9px 0; cursor: pointer; }
+.ingredient-step input { accent-color: var(--amber-text); width: 18px; height: 18px; margin: 0; align-self: center; }
+.ingredient-step input:checked ~ span, .ingredient-step input:checked ~ b { text-decoration: line-through; color: var(--ink-3); }

@@ -42,6 +42,7 @@ Every page is a plain HTML file in `public/wa` that loads `site.css` and `site.j
 | `top20.html`, `ninety.html`, `club.html` | Top 20 of the year; the 90+ Club partner pages. |
 | `flavor-map.html`, `globe.html`, `tools.html` | The tools: flavor map, distillery globe, the tools index. |
 | `water.html`, `water.js` | Water your whisky: water to add for any rated bottle, the perfect-proof calculator, a lineup at one strength with cost per glass. |
+| `whisky-bars.html`, `whisky-bars.js` | America's Top Whisky Bars (formerly whiskybars.whiskyadvocate.com): film hero, SVG map and searchable list of every bar with Near me, the six classic cocktails, the film and sponsors. Data in `whisky-bars.json`, built from the editors' Google Sheet by `node scripts/wa-whisky-bars.mjs`; `?bar=<slug>` (or the old `?bar=<n>`) opens a bar, `?state=<name>` a state. |
 | `industry.html`, `retailers.html`, `retailer-club.html` | Trade pages: sell sheets, retailer listings. |
 | `newsletter.html`, `search.html`, `app.html`, `about.html`, `contact.html`, `privacy.html` | Sign-up, site search, the WhiskyFest app link, company pages. |
 

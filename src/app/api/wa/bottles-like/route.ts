@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
+import { onlyLive } from "@/lib/wa/live";
 import { loadBottles, matchDocuments, rankSimilar, type Bottle } from "@/lib/wa/semantic";
 
 export const runtime = "nodejs";
@@ -9,8 +10,9 @@ const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods
 export function OPTIONS() { return new NextResponse(null, { status: 204, headers: CORS }); }
 
 /**
- * Bottles like this rating: the hundred ratings whose tasting notes read
+ * Bottles like this rating: the hundred live ratings whose tasting notes read
  * closest by meaning, re-ranked by flavor profile and spread across houses.
+ * A rating that is not live yet has no list (404), like its page.
  * Empty until the rating is embedded, and the page then keeps its own picks.
  */
 export async function GET(request: Request) {
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
   if (!slug) return NextResponse.json({ error: "Which bottle?" }, { status: 400, headers: CORS });
   try {
     const db = cmsDb();
-    const { data: doc } = await db.from("cms_documents").select("id,slug,title,rating:metadata->rating,flavor:metadata->flavor").eq("brand", "wa").eq("kind", "rating").eq("slug", slug).eq("publication_state", "published").maybeSingle();
+    const { data: doc } = await onlyLive(db.from("cms_documents").select("id,slug,title,rating:metadata->rating,flavor:metadata->flavor").eq("brand", "wa").eq("kind", "rating").eq("slug", slug)).maybeSingle();
     if (!doc) return NextResponse.json({ bottles: [] }, { status: 404, headers: CORS });
     const { data: own } = await db.from("cms_embeddings").select("embedding").eq("document_id", doc.id).eq("kind", "document").maybeSingle();
     if (!own?.embedding) return NextResponse.json({ bottles: [], reason: "not embedded yet" }, { headers: { ...CORS, "Cache-Control": "public, s-maxage=300" } });

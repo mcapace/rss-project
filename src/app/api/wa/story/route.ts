@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
 import { leadImagePath } from "@/lib/cms/lead-image";
 import { sponsorship } from "@/lib/cms/sponsored";
+import { onlyLive } from "@/lib/wa/live";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
   const slug = new URL(request.url).searchParams.get("slug")?.slice(0, 200) || "";
   if (!slug) return NextResponse.json({ error: "Which story?" }, { status: 400, headers: CORS });
   try {
-    const { data } = await cmsDb().from("cms_documents").select("id,slug,title,byline,excerpt,body_html,published_at,metadata").eq("brand", "wa").eq("kind", "article").eq("publication_state", "published").or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`).ilike("slug", slug).limit(1).maybeSingle();
+    const { data } = await onlyLive(cmsDb().from("cms_documents").select("id,slug,title,byline,excerpt,body_html,published_at,metadata").eq("brand", "wa").eq("kind", "article").ilike("slug", slug)).limit(1).maybeSingle();
     if (!data) return NextResponse.json({ error: "No such story." }, { status: 404, headers: { ...CORS, "Cache-Control": "public, s-maxage=60" } });
     const meta = (data.metadata || {}) as Record<string, unknown>;
     const dates = (meta.legacy_dates && typeof meta.legacy_dates === "object" ? meta.legacy_dates : {}) as Record<string, unknown>;

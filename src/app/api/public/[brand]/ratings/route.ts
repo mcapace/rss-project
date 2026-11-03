@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 const number = (value: string | null, min: number, max: number) => { const n = value === null || value === "" ? NaN : Number(value); return Number.isFinite(n) && n >= min && n <= max ? n : undefined; };
 const slug = (value: string | null) => value && /^[a-z0-9-]{1,220}$/.test(value) ? value : undefined;
 
-/** Faceted review search for the public sites: published ratings only, filtered by score, price, vintage, region, variety, producer and taster. */
+/** Faceted review search for the public sites: live ratings only (published, and a scheduled one once its time has come), filtered by score, price, vintage, region, variety, producer and taster. */
 export async function GET(request: Request, { params }: { params: Promise<{ brand: string }> }) {
   const { brand } = await params;
   if (!isBrand(brand)) return NextResponse.json({ error: "Unknown publication." }, { status: 404 });
@@ -24,7 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ bran
     sort: (url.searchParams.get("sort") as RatingFilters["sort"]) || "score", limit: number(url.searchParams.get("limit"), 1, 100) ?? 24, offset: number(url.searchParams.get("offset"), 0, 100_000) ?? 0,
   };
   try {
-    const result = await searchRatings([brand], filters);
+    // live: a scheduled rating is left out of the rows, the total, the paging and the facets (see searchRatings).
+    const result = await searchRatings([brand], filters, { live: true });
     const ratings = result.ratings.map(row => ({ ...row, canonical_path: row.slug ? `/${row.brand}/${row.slug}` : null, publication_state: undefined, total: undefined }));
     return NextResponse.json({ brand, ratings, facets: result.facets, total: result.total }, { headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "public, s-maxage=120, stale-while-revalidate=600" } });
   } catch {

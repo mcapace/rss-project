@@ -3,6 +3,7 @@ import { CmsError } from "@/lib/cms/access";
 import type { CmsBrand } from "@/lib/cms/types";
 import { leadImagePath } from "./lead-image";
 import { sponsorship } from "./sponsored";
+import { isLive } from "@/lib/wa/live";
 
 /**
  * The home page's news rotator. Five positions: a pinned position shows the
@@ -59,11 +60,16 @@ export async function pinnedSlots(brand: CmsBrand) {
     .filter(row => row.document);
 }
 
-/** The five positions as the site will show them: pinned where set and live, newest elsewhere. */
+/**
+ * The five positions as the site will show them: pinned where set and live, newest elsewhere. On the site a pin
+ * stands only while its end time is ahead and its story is live (published, and its scheduled time come): a pinned
+ * story that is scheduled, or was taken down, leaves its position to the newest story, like an ended pin.
+ * includeExpired (the editor's view) keeps every pin.
+ */
 export async function resolveFront(brand: CmsBrand, { includeExpired = false } = {}): Promise<FrontSlot[]> {
   const [pins, newest] = await Promise.all([pinnedSlots(brand), newestStories(brand)]);
   const now = Date.now();
-  const live = pins.filter(pin => includeExpired || !pin.ends_at || new Date(pin.ends_at).getTime() > now);
+  const live = pins.filter(pin => includeExpired || ((!pin.ends_at || new Date(pin.ends_at).getTime() > now) && isLive(pin.document, now)));
   const taken = new Set(live.map(pin => pin.document!.id));
   const queue = newest.filter(s => !taken.has(s.id));
   const slots: FrontSlot[] = [];

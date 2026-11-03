@@ -1,5 +1,5 @@
 {
-  "built": "2026-11-03T17:18:33.495Z",
+  "built": "2026-11-03T17:47:54.468Z",
   "campaigns": {
     "whiskyfest": {
       "title": "WhiskyFest New York",
@@ -376,7 +376,7 @@
       "brand": "wa",
       "sizes": {
         "970x250": {
-          "bytes": 416310,
+          "bytes": 376243,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -388,7 +388,7 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 425247,
+          "bytes": 378034,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -400,7 +400,7 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 318866,
+          "bytes": 278831,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -412,7 +412,7 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 175132,
+          "bytes": 146848,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -424,7 +424,7 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 173235,
+          "bytes": 168853,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -436,7 +436,7 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 117960,
+          "bytes": 136945,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -448,7 +448,7 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 98925,
+          "bytes": 117201,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",

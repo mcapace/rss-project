@@ -4,6 +4,62 @@
   var holders = Array.prototype.slice.call(document.querySelectorAll(".ad[data-slot]"));
   if (!holders.length) return;
 
+  /* New house ads on this site only (2026-11-03). When Ad Manager answers a slot with one of the company's
+     house orders, or leaves it empty, the slot shows one of the HTML5 house ads in house-ads/ instead
+     (built by scripts/house-ads/build.mjs). Paid line items are left alone, and nothing changes in Ad Manager.
+     A house reply keeps the size Ad Manager chose; an empty slot takes the largest house size its size
+     mapping allows at this width. Each slot on a page shows a different campaign; WhiskyFest leads until
+     the night itself and drops out after it. */
+  var house = (function () {
+    var HOUSE_ORDERS = { "190702776": 1, "2520850047": 1, "2120544666": 1, "190772856": 1, "169230336": 1 };   // WA, WS, CA, Market Watch, SND house orders
+    var SIZES = { "970x250": 1, "300x600": 1, "300x250": 1, "970x90": 1, "728x90": 1, "468x60": 1, "320x50": 1 };
+    var base = (document.currentScript && document.currentScript.src) ? new URL("house-ads/", document.currentScript.src).href : "/wa/house-ads/";
+    var day = new Date().toISOString().slice(0, 10);
+    var order = ["notes", "subscribe", "weekend", "cocktails", "podcast", "ratingsflash"];
+    if (day <= "2026-11-20") order.unshift("whiskyfest");
+    var start = Math.floor(Math.random() * order.length), n = 0;
+    var MAPS = {
+      top: [[1024, ["970x250", "970x90"]], [768, ["728x90", "468x60"]], [0, ["320x50"]]],
+      leader: [[1024, ["970x90"]], [768, ["728x90", "468x60"]], [0, ["320x50"]]],
+      leaderRect: [[1024, ["970x90"]], [768, ["728x90", "468x60"]], [0, ["300x250"]]],
+      rail: [[1024, ["300x600", "300x250"]], [0, ["300x250"]]]
+    };
+    function fit(map, room) {
+      var w = innerWidth, rows = MAPS[map] || MAPS.top;
+      for (var i = 0; i < rows.length; i++) if (w >= rows[i][0]) {
+        var pick = rows[i][1].filter(function (s) { return +s.split("x")[0] <= room; })[0];
+        return pick || null;
+      }
+      return null;
+    }
+    function take(event, box, holder) {
+      var old = holder.querySelector("iframe.house-ad");
+      if (old) old.parentNode.removeChild(old);
+      box.style.display = "";
+      var isHouse = !event.isEmpty && HOUSE_ORDERS[String(event.campaignId)];
+      if (!isHouse && !event.isEmpty) return false;
+      var spec = holder._spec || slots.filter(function (s) { return s.el === holder; })[0];
+      var size = isHouse && event.size && SIZES[event.size[0] + "x" + event.size[1]] ? event.size[0] + "x" + event.size[1] : fit(spec && spec.map, (holder.parentElement || holder).clientWidth || innerWidth);
+      if (!size) return false;
+      var wh = size.split("x"), campaign = order[(start + n++) % order.length];
+      var frame = document.createElement("iframe");
+      frame.className = "house-ad";
+      frame.src = base + campaign + "/" + size + "/index.html";
+      frame.width = wh[0]; frame.height = wh[1];
+      frame.title = "Advertisement";
+      frame.setAttribute("scrolling", "no");
+      frame.setAttribute("loading", "lazy");
+      frame.style.cssText = "border:0;display:block;width:" + wh[0] + "px;height:" + wh[1] + "px;max-width:100%";
+      box.style.display = "none";
+      holder.appendChild(frame);
+      holder.classList.remove("ad-empty");
+      holder.classList.add("ad-filled", "ad-house");
+      holder.setAttribute("data-house", campaign);
+      return true;
+    }
+    return { take: take };
+  })();
+
   var home = /\/wa\/?$/.test(location.pathname) || /\/index\.html$/.test(location.pathname);
   var path = home ? "/4054/whiskyadvocate/homepage" : "/4054/whiskyadvocate";
   var used = {};
@@ -90,6 +146,7 @@
       var holder = box && box.parentElement;
       if (!holder || !holder.classList.contains("ad")) return;
       var size = event.size;
+      if (house.take(event, box, holder)) return;
       if (event.isEmpty || !size || size[0] === 0 || size[1] === 0) {
         holder.classList.add("ad-empty");
         return;

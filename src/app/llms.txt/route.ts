@@ -1,4 +1,5 @@
-import { BASE, PUBLISHER, siteOrigin } from "@/lib/wa/seo";
+import { PUBLISHER } from "@/lib/wa/seo";
+import { siteFor } from "@/lib/wa/site-host";
 import { isSponsored, listDocsForNews } from "@/lib/wa/feeds";
 
 import { deliveryEnabled } from "@/lib/cms/runtime-config";
@@ -9,8 +10,8 @@ export const maxDuration = 20;
 /** llms.txt: a plain map of the site for AI assistants, with the newest stories. */
 export async function GET(request: Request) {
   if (!deliveryEnabled()) return new Response("Not available on preview deployments.", { status: 503, headers: { "Cache-Control": "no-store" } });
-  const origin = siteOrigin(request);
-  const site = `${origin}${BASE}`;
+  const { origin, base } = siteFor(request);
+  const site = `${origin}${base}`;
   let recent: string[] = [];
   try {
     recent = (await listDocsForNews()).filter(d => !isSponsored(d)).slice(0, 25).map(d => `- [${d.title.replace(/[\[\]]/g, "")}](${site}/${encodeURIComponent(d.slug)})`);
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
     "",
     `> ${PUBLISHER} publishes whisky ratings and reviews on a 100-point scale, news about new releases and the industry, buying guides, cocktails, travel and the annual Top 20 Whiskies of the Year.`,
     "",
-    "Every story and rating has its own page at /wa/<slug> with the full text in the HTML and schema.org markup (NewsArticle for stories, Product with Review for ratings). Paid content is labeled Sponsored and marked AdvertiserContentArticle.",
+    `Every story and rating has its own page at ${base}/<slug> with the full text in the HTML and schema.org markup (NewsArticle for stories, Product with Review for ratings). Paid content is labeled Sponsored and marked AdvertiserContentArticle.`,
     "",
     "## Sections",
     `- [Ratings and reviews](${site}/finder.html): every rated whisky, searchable by score, style, price and producer`,

@@ -4,27 +4,23 @@ import path from "node:path";
 import { cmsDb } from "@/lib/cms/db";
 import { leadImagePath } from "@/lib/cms/lead-image";
 import { sponsorship } from "@/lib/cms/sponsored";
+import { PAGE_FILE_PATTERN, type WaSite } from "./site-host";
 
 /**
  * Server-rendered Whisky Advocate pages for search engines and AI crawlers (2026-11-01).
  *
  * The concept site's pages are static templates that read their story or bottle from the URL hash, so every
- * story was one URL to a crawler and the text only existed after JavaScript ran. /wa/<slug> (the path every
- * legacy whiskyadvocate.com URL already redirects to) now returns the same template with the content, head
- * tags and structured data filled in on the server. Sitemaps, the Google News sitemap, the feed and llms.txt
- * read the same documents.
+ * story was one URL to a crawler and the text only existed after JavaScript ran. /wa/<slug> now returns the same
+ * template with the content, head tags and structured data filled in on the server. Sitemaps, the Google News sitemap,
+ * the feed and llms.txt read the same documents.
+ *
+ * Every builder takes the site ({ origin, base }) from siteFor(request) (src/lib/wa/site-host.ts): on whiskyadvocate.com
+ * the pages live at the root (base ""), so the old addresses stay the canonical ones; elsewhere under /wa.
  */
 
 export const PUBLISHER = "Whisky Advocate";
-export const BASE = "/wa";
 const SECTION: Record<string, string> = { News: "news", Features: "features", Insights: "features", "Whisky Life": "life", Travel: "travel", Cocktails: "cocktails", Guides: "guides" };
 const SECTION_LABEL: Record<string, string> = { news: "News", features: "Features", life: "Whisky Life", travel: "Travel", cocktails: "Cocktails", guides: "Guides" };
-
-/** The public origin for canonical URLs: WA_SITE_ORIGIN when set (the production domain), else the request's. */
-export function siteOrigin(request: Request): string {
-  const configured = process.env.WA_SITE_ORIGIN?.replace(/\/+$/, "");
-  return configured || new URL(request.url).origin;
-}
 
 /** The site's real sections among a story's CMS categories (which also hold "Homepage Slider", "Migration" and the like). */
 export function sectionLabels(categories: unknown): string[] {
@@ -131,12 +127,25 @@ function authorsOf(byline: string | null): string[] {
   return (byline || "").split(/\s*,\s*|\s+and\s+|\s*&\s*/).map(s => s.trim()).filter(s => s && !/sponsor/i.test(s));
 }
 
-/** The body as the site shows it: no scripts, and an old bare-slug link (/Some-Story) goes to that page on this site. */
-function cleanBody(html: string): string {
-  return html
+/** A path segment that names a file rather than a story (slugs themselves may hold dots: "...-Sells-for-2.7-million-..."). */
+const FILE_EXT = /\.(?:html?|js|json|css|xml|txt|png|jpe?g|gif|webp|avif|svg|ico|mp4|pdf)$/i;
+
+/**
+ * The body as the site shows it: no scripts, and same-site links in the site's shape. Under /wa (the development host)
+ * an old bare-slug link (/Some-Story) goes to /wa/Some-Story. At the root (whiskyadvocate.com) a bare slug is already
+ * right, and a link stored as /wa/<x> (the link rewrite wrote that form into the bodies) becomes /<x>.
+ */
+export function cleanBody(html: string, base: WaSite["base"]): string {
+  const out = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/\s(on[a-z]+)=("[^"]*"|'[^']*')/gi, "")
-    .replace(/(<a\b[^>]*?\shref=")\/(?!\/)([^"/?#.]+)"/gi, (_m, a: string, v: string) => `${a}${BASE}/${v}"`);
+    .replace(/\s(on[a-z]+)=("[^"]*"|'[^']*')/gi, "");
+  if (base === "") {
+    return out.replace(/(<a\b[^>]*?\shref=")\/wa(\/[^"]*)?"/gi, (_m, a: string, rest: string | undefined) => {
+      const home = /^\/(?:index\.html)?(?=[?#]|$)/i.exec(rest ?? "/");
+      return home ? `${a}/${(rest ?? "/").slice(home[0].length)}"` : `${a}${rest}"`;
+    });
+  }
+  return out.replace(/(<a\b[^>]*?\shref=")\/(?!\/)([^"/?#]+)"/gi, (m, a: string, v: string) => (v === "wa" || v === "api" || FILE_EXT.test(v) ? m : `${a}${base}/${v}"`));
 }
 
 /** Put inner HTML into the first element carrying id="<id>" (which the template leaves empty). */
@@ -147,9 +156,9 @@ function fill(html: string, id: string, inner: string): string {
 function head(html: string, title: string, tags: string): string {
   return html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(title)}</title>`).replace(/<\/head>/i, `${tags}\n</head>`);
 }
-/** Tell the template which item it shows (it otherwise reads the URL hash) and that links may use clean paths. */
-function boot(html: string, slug: string): string {
-  return html.replace(/<script src="site\.js"><\/script>/, `<script>window.WA_SLUG=${JSON.stringify(slug).replace(/</g, "\\u003c")};window.WA_PATHS=true;</script>\n<script src="site.js"></script>`);
+/** Tell the template which item it shows (it otherwise reads the URL hash), that links may use clean paths, and their base. */
+function boot(html: string, slug: string, base: WaSite["base"]): string {
+  return html.replace(/<script src="site\.js"><\/script>/, `<script>window.WA_SLUG=${JSON.stringify(slug).replace(/</g, "\\u003c")};window.WA_PATHS=true;window.WA_BASE=${JSON.stringify(base)};</script>\n<script src="site.js"></script>`);
 }
 
 const templates = new Map<string, string>();
@@ -161,14 +170,14 @@ export async function template(name: "story.html" | "bottle.html"): Promise<stri
   return html;
 }
 
-function publisher(origin: string) {
-  return { "@type": "Organization", "@id": `${origin}${BASE}/#publisher`, name: PUBLISHER, url: `${origin}${BASE}/`, logo: { "@type": "ImageObject", url: `${origin}${BASE}/img/icon-192.png`, width: 192, height: 192 }, sameAs: ["https://www.instagram.com/whiskyadvocate/", "https://www.facebook.com/whiskyadvocate", "https://twitter.com/whiskyadvocate", "https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg"] };
+function publisher({ origin, base }: WaSite) {
+  return { "@type": "Organization", "@id": `${origin}${base}/#publisher`, name: PUBLISHER, url: `${origin}${base}/`, logo: { "@type": "ImageObject", url: `${origin}${base}/img/icon-192.png`, width: 192, height: 192 }, sameAs: ["https://www.instagram.com/whiskyadvocate/", "https://www.facebook.com/whiskyadvocate", "https://twitter.com/whiskyadvocate", "https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg"] };
 }
 
 /** Search engines show about 155 characters of a description; the tag carries the SEO description cut to fit on a word. */
 export function metaDescription(text: string): string { return clip(text, 158); }
 
-function commonTags(o: { title: string; description: string; canonical: string; image: string; type: string; noindex: boolean; origin: string; socialTitle?: string; socialDescription?: string; imageAlt?: string; keywords?: string[] }): string {
+function commonTags(o: { title: string; description: string; canonical: string; image: string; type: string; noindex: boolean; site: WaSite; socialTitle?: string; socialDescription?: string; imageAlt?: string; keywords?: string[] }): string {
   const social = { title: o.socialTitle || o.title, description: o.socialDescription || o.description };
   const robots = o.noindex ? "noindex, follow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
   return [
@@ -189,7 +198,7 @@ function commonTags(o: { title: string; description: string; canonical: string; 
     `<meta name="twitter:title" content="${esc(social.title)}">`,
     `<meta name="twitter:description" content="${esc(social.description)}">`,
     o.image ? `<meta name="twitter:image" content="${esc(o.image)}">` : "",
-    `<link rel="alternate" type="application/rss+xml" title="${PUBLISHER}" href="${o.origin}${BASE}/feed.xml">`,
+    `<link rel="alternate" type="application/rss+xml" title="${PUBLISHER}" href="${o.site.origin}${o.site.base}/feed.xml">`,
   ].filter(Boolean).join("\n");
 }
 
@@ -220,13 +229,13 @@ export function pageTitle(title: string, suffix = PUBLISHER): string {
   return `${title} | ${suffix}`.length <= 68 ? `${title} | ${suffix}` : title;
 }
 
-export function storyView(doc: WaDoc, origin: string): StoryView {
+export function storyView(doc: WaDoc, site: WaSite): StoryView {
   const meta = obj(doc.metadata);
   const seo = obj(meta.seo);
   const cats = strs(meta.categories);
   const tags = strs(meta.ai_tags).length ? strs(meta.ai_tags) : strs(meta.tags).filter(t => !cats.includes(t) && !/^[a-z0-9_]+$/.test(t));
   const section = cats.map(c => SECTION[c]).find(Boolean) ?? (doc.kind === "article" ? "news" : "features");
-  const body = cleanBody(doc.body_html || "");
+  const body = cleanBody(doc.body_html || "", site.base);
   const text = plain(body);
   const description = clip(plain(String(seo.description || doc.excerpt || meta.ai_summary || "")) || text, 300);
   // The dek readers see is the editors' line; the SEO pass keeps the one it replaced in seo.previous.
@@ -234,7 +243,7 @@ export function storyView(doc: WaDoc, origin: string): StoryView {
   const dek = clip(plain(String(editors || doc.excerpt || meta.ai_summary || "")), 300) || description;
   const sp = sponsorship(meta, doc.byline);
   const dates = docDates(doc);
-  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind, dek, ...seoFields(meta) };
+  return { slug: doc.slug, title: plain(doc.title), description, section, sectionLabel: SECTION_LABEL[section] ?? "Stories", authors: authorsOf(doc.byline), byline: doc.byline || "", published: dates.published, modified: dates.modified, day: dates.day, hero: heroOf(doc, site.origin), tags: tags.slice(0, 12), body, words: text ? text.split(" ").length : 0, sponsored: sp.on, sponsor: sp.by, noindex: isNoIndex(doc), kind: doc.kind, dek, ...seoFields(meta) };
 }
 
 function longDate(day: string | null): string {
@@ -242,8 +251,9 @@ function longDate(day: string | null): string {
   return new Date(day + "T12:00:00Z").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
-export function storyJsonLd(v: StoryView, origin: string): unknown[] {
-  const canonical = `${origin}${BASE}/${v.slug}`;
+export function storyJsonLd(v: StoryView, site: WaSite): unknown[] {
+  const { origin, base } = site;
+  const canonical = `${origin}${base}/${v.slug}`;
   const isArticle = v.kind === "article";
   const article: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -257,8 +267,8 @@ export function storyJsonLd(v: StoryView, origin: string): unknown[] {
     image: v.hero ? [v.hero] : undefined,
     datePublished: v.published ?? undefined,
     dateModified: v.modified ?? v.published ?? undefined,
-    author: v.authors.length ? v.authors.map(name => ({ "@type": "Person", name, url: `${origin}${BASE}/stories.html#by=${encodeURIComponent(name)}` })) : { "@type": "Organization", name: PUBLISHER, url: `${origin}${BASE}/` },
-    publisher: publisher(origin),
+    author: v.authors.length ? v.authors.map(name => ({ "@type": "Person", name, url: `${origin}${base}/stories.html#by=${encodeURIComponent(name)}` })) : { "@type": "Organization", name: PUBLISHER, url: `${origin}${base}/` },
+    publisher: publisher(site),
     articleSection: v.sectionLabel,
     keywords: [...new Set([...(v.keywords ?? []), ...v.tags])].join(", ") || undefined,
     about: v.entities?.length ? v.entities.slice(0, 4).map(e => ({ "@type": e.type, name: e.name })) : undefined,
@@ -269,56 +279,58 @@ export function storyJsonLd(v: StoryView, origin: string): unknown[] {
   };
   if (v.sponsored) article.sponsor = { "@type": "Organization", name: v.sponsor || "Advertiser" };
   const crumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
-    { "@type": "ListItem", position: 1, name: PUBLISHER, item: `${origin}${BASE}/` },
-    { "@type": "ListItem", position: 2, name: v.sectionLabel, item: `${origin}${BASE}/stories.html#${v.section}` },
+    { "@type": "ListItem", position: 1, name: PUBLISHER, item: `${origin}${base}/` },
+    { "@type": "ListItem", position: 2, name: v.sectionLabel, item: `${origin}${base}/stories.html#${v.section}` },
     { "@type": "ListItem", position: 3, name: v.title, item: canonical },
   ] };
   return [article, crumbs];
 }
 
-export function renderStory(templateHtml: string, v: StoryView, origin: string): string {
-  const canonical = `${origin}${BASE}/${v.slug}`;
+export function renderStory(templateHtml: string, v: StoryView, site: WaSite): string {
+  const { base } = site;
+  const canonical = `${site.origin}${base}/${v.slug}`;
   let html = head(templateHtml, pageTitle(v.seoTitle || v.title), [
-    commonTags({ title: v.seoTitle || v.title, description: v.description, canonical, image: v.hero, type: "article", noindex: v.noindex, origin, socialTitle: v.socialTitle || v.title, socialDescription: v.socialDescription, imageAlt: v.heroAlt, keywords: v.keywords }),
+    commonTags({ title: v.seoTitle || v.title, description: v.description, canonical, image: v.hero, type: "article", noindex: v.noindex, site, socialTitle: v.socialTitle || v.title, socialDescription: v.socialDescription, imageAlt: v.heroAlt, keywords: v.keywords }),
     v.published ? `<meta property="article:published_time" content="${esc(v.published)}">` : "",
     v.modified ? `<meta property="article:modified_time" content="${esc(v.modified)}">` : "",
     `<meta property="article:section" content="${esc(v.sectionLabel)}">`,
     ...v.tags.map(t => `<meta property="article:tag" content="${esc(t)}">`),
     ...v.authors.map(a => `<meta property="article:author" content="${esc(a)}">`),
     v.authors.length ? `<meta name="author" content="${esc(v.authors.join(", "))}">` : "",
-    ...storyJsonLd(v, origin).map(jsonLd),
+    ...storyJsonLd(v, site).map(jsonLd),
   ].filter(Boolean).join("\n"));
-  html = fill(html, "crumbs", `<a href="${BASE}/stories.html">Stories</a> › <a href="${BASE}/stories.html#${v.section}">${esc(v.sectionLabel)}</a>`);
+  html = fill(html, "crumbs", `<a href="${base}/stories.html">Stories</a> › <a href="${base}/stories.html#${v.section}">${esc(v.sectionLabel)}</a>`);
   html = fill(html, "kicker", (v.sponsored ? '<span class="sp-chip">Sponsored</span>' : "") + esc(v.sectionLabel) + (v.tags[0] && !/sponsor/i.test(v.tags[0]) ? " · " + esc(v.tags[0]) : ""));
   html = fill(html, "title", esc(v.title));
   html = fill(html, "dek", esc(v.dek || v.description));
   const date = v.day ? `<time datetime="${esc(v.published ?? v.day)}">${esc(longDate(v.day))}</time>` : "";
-  const who = v.sponsored ? `<span>${v.sponsor ? `Sponsored by <strong>${esc(v.sponsor)}</strong>` : "<strong>Sponsored content</strong>"}</span>` : v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${BASE}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
+  const who = v.sponsored ? `<span>${v.sponsor ? `Sponsored by <strong>${esc(v.sponsor)}</strong>` : "<strong>Sponsored content</strong>"}</span>` : v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${base}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
   html = fill(html, "byline", `${who}<span>${date}</span>${v.words ? `<span>${Math.max(1, Math.round(v.words / 230))} minute read</span>` : ""}`);
   if (v.hero) html = html.replace(/<figure class="figure story-hero" id="hero" hidden><img src="" alt="">/, `<figure class="figure story-hero" id="hero"><img src="${esc(v.hero)}" alt="${esc(v.heroAlt || v.title)}" fetchpriority="high">`);
   const disclosure = v.sponsored ? `<p class="sp-note" role="note">This is paid content, produced with ${esc(v.sponsor || "an advertiser")}. It is not part of Whisky Advocate&rsquo;s editorial coverage, and it does not affect our ratings.</p>` : "";
   html = fill(html, "prose", disclosure + v.body);
-  return boot(html, v.slug);
+  return boot(html, v.slug, base);
 }
 
 export type RatingView = { slug: string; name: string; score: number | null; price: number | null; category: string; brand: string; reviewer: string; issue: string; note: string; image: string; published: string | null; day: string | null; noindex: boolean; seoDescription?: string } & SeoFields;
 
-export function ratingView(doc: WaDoc, origin: string): RatingView {
+export function ratingView(doc: WaDoc, site: WaSite): RatingView {
   const meta = obj(doc.metadata);
   const r = obj(meta.rating);
   const score = Number(r.score);
   const price = Number(r.price);
-  return { slug: doc.slug, name: plain(doc.title), score: Number.isFinite(score) && score > 0 ? score : null, price: Number.isFinite(price) && price > 0 ? price : null, category: String(r.category || ""), brand: String(r.brand || r.producer || ""), reviewer: String(r.reviewer || doc.byline || ""), issue: String(r.issue || meta.issue_label || ""), note: plain(doc.body_html || doc.excerpt || ""), image: heroOf(doc, origin), published: docDates(doc).published, day: docDates(doc).day, noindex: isNoIndex(doc), seoDescription: typeof obj(meta.seo).description === "string" ? plain(String(obj(meta.seo).description)) || undefined : undefined, ...seoFields(meta) };
+  return { slug: doc.slug, name: plain(doc.title), score: Number.isFinite(score) && score > 0 ? score : null, price: Number.isFinite(price) && price > 0 ? price : null, category: String(r.category || ""), brand: String(r.brand || r.producer || ""), reviewer: String(r.reviewer || doc.byline || ""), issue: String(r.issue || meta.issue_label || ""), note: plain(doc.body_html || doc.excerpt || ""), image: heroOf(doc, site.origin), published: docDates(doc).published, day: docDates(doc).day, noindex: isNoIndex(doc), seoDescription: typeof obj(meta.seo).description === "string" ? plain(String(obj(meta.seo).description)) || undefined : undefined, ...seoFields(meta) };
 }
 
-export function ratingJsonLd(v: RatingView, origin: string): unknown[] {
-  const canonical = `${origin}${BASE}/${v.slug}`;
+export function ratingJsonLd(v: RatingView, site: WaSite): unknown[] {
+  const { origin, base } = site;
+  const canonical = `${origin}${base}/${v.slug}`;
   const review: Record<string, unknown> = {
     "@type": "Review",
     name: `${v.name} rating`,
     reviewRating: v.score ? { "@type": "Rating", ratingValue: v.score, bestRating: 100, worstRating: 0 } : undefined,
     author: v.reviewer ? { "@type": "Person", name: v.reviewer } : { "@type": "Organization", name: PUBLISHER },
-    publisher: publisher(origin),
+    publisher: publisher(site),
     datePublished: v.published ?? undefined,
     reviewBody: v.note || undefined,
     url: canonical,
@@ -335,20 +347,20 @@ export function ratingJsonLd(v: RatingView, origin: string): unknown[] {
     review,
   };
   const crumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
-    { "@type": "ListItem", position: 1, name: PUBLISHER, item: `${origin}${BASE}/` },
-    { "@type": "ListItem", position: 2, name: "Ratings", item: `${origin}${BASE}/finder.html` },
+    { "@type": "ListItem", position: 1, name: PUBLISHER, item: `${origin}${base}/` },
+    { "@type": "ListItem", position: 2, name: "Ratings", item: `${origin}${base}/finder.html` },
     { "@type": "ListItem", position: 3, name: v.name, item: canonical },
   ] };
   return [product, crumbs];
 }
 
-export function renderRating(templateHtml: string, v: RatingView, origin: string): string {
-  const canonical = `${origin}${BASE}/${v.slug}`;
+export function renderRating(templateHtml: string, v: RatingView, site: WaSite): string {
+  const canonical = `${site.origin}${site.base}/${v.slug}`;
   const title = v.seoTitle || (v.score ? `${v.name}: ${v.score} points` : v.name);
   const description = v.seoDescription || clip([v.score ? `${v.name} scored ${v.score} points from Whisky Advocate` : v.name, v.category ? `${v.category}` : "", v.price ? `$${v.price}` : "", v.note].filter(Boolean).join(". ").replace(/\.\./g, "."), 300);
   let html = head(templateHtml, pageTitle(title, `${PUBLISHER} Rating`), [
-    commonTags({ title, description, canonical, image: v.image, type: "article", noindex: v.noindex, origin, imageAlt: v.heroAlt || (v.image ? `Bottle of ${v.name}` : undefined), keywords: v.keywords }),
-    ...ratingJsonLd(v, origin).map(jsonLd),
+    commonTags({ title, description, canonical, image: v.image, type: "article", noindex: v.noindex, site, imageAlt: v.heroAlt || (v.image ? `Bottle of ${v.name}` : undefined), keywords: v.keywords }),
+    ...ratingJsonLd(v, site).map(jsonLd),
   ].join("\n"));
   html = fill(html, "kicker", esc(["Rating", v.category].filter(Boolean).join(" · ")));
   html = fill(html, "name", esc(v.name));
@@ -359,9 +371,93 @@ export function renderRating(templateHtml: string, v: RatingView, origin: string
   if (v.day) html = fill(html, "when", `<time datetime="${esc(v.published ?? v.day)}">${esc(longDate(v.day))}</time>`);
   if (v.issue) html = fill(html, "issue", esc(v.issue));
   if (v.image) html = html.replace(/<img id="art" src="[^"]*" alt="">/, `<img id="art" src="${esc(v.image)}" alt="${esc(v.name)}">`);
-  return boot(html, v.slug);
+  return boot(html, v.slug, site.base);
 }
 
-export function notFoundPage(origin: string, slug: string): string {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found | ${PUBLISHER}</title><meta name="robots" content="noindex"><link rel="stylesheet" href="${BASE}/site.css"></head><body><section class="band" style="padding-top:80px"><span class="mono">Not found</span><h1 class="d2" style="margin-top:12px">We could not find “${esc(slug)}”.</h1><p class="lede" style="margin-top:14px">It may have moved. <a href="${BASE}/stories.html">Browse the stories</a>, <a href="${BASE}/finder.html">search the ratings</a> or <a href="${origin}${BASE}/">go to the home page</a>.</p></section></body></html>`;
+export function notFoundPage(site: WaSite, slug: string): string {
+  const { origin, base } = site;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found | ${PUBLISHER}</title><meta name="robots" content="noindex"><link rel="stylesheet" href="${base}/site.css"></head><body><section class="band" style="padding-top:80px"><span class="mono">Not found</span><h1 class="d2" style="margin-top:12px">We could not find “${esc(slug)}”.</h1><p class="lede" style="margin-top:14px">It may have moved. <a href="${base}/stories.html">Browse the stories</a>, <a href="${base}/finder.html">search the ratings</a> or <a href="${origin}${base}/">go to the home page</a>.</p></section></body></html>`;
+}
+
+/** A site page's file name in metadata.page_file: a top-level public/wa page such as "water.html", else null. */
+export function sitePageFile(metadata: unknown): string | null {
+  const value = obj(metadata).page_file;
+  return typeof value === "string" && PAGE_FILE_PATTERN.test(value.trim()) ? value.trim() : null;
+}
+
+/**
+ * "Served by a site page": a story whose metadata.page_file names a public/wa page (the water tool) is answered with
+ * that page at the story's own URL. The page keeps its body; its head gets the story's tags as the story page would have
+ * them (title, description, canonical and og:url for this host, robots with the story's noindex, og/twitter card and
+ * picture, the article JSON-LD), so the indexed URL keeps its share image and structured data, and window.WA_BASE so
+ * the page's links take the host's shape. Null when the file is not a valid page on disk (the story renders as usual).
+ */
+export async function sitePage(file: string | null, v: StoryView, site: WaSite): Promise<string | null> {
+  if (!file || !PAGE_FILE_PATTERN.test(file)) return null;
+  let html: string;
+  try { html = await readFile(path.join(process.cwd(), "public", "wa", file), "utf8"); } catch { return null; }
+  const canonical = `${site.origin}${site.base}/${v.slug}`;
+  // The page's own copies of the tags the story sets are dropped, so each appears once.
+  html = html
+    .replace(/[ \t]*<link\b[^>]*\brel=["'](?:canonical|alternate)["'][^>]*>\n?/gi, "")
+    .replace(/[ \t]*<meta\b[^>]*\b(?:name|property)=["'](?:description|keywords|robots|author|og:[^"']*|twitter:[^"']*|article:[^"']*)["'][^>]*>\n?/gi, "");
+  html = head(html, pageTitle(v.seoTitle || v.title), [
+    commonTags({ title: v.seoTitle || v.title, description: v.description, canonical, image: v.hero, type: "article", noindex: v.noindex, site, socialTitle: v.socialTitle || v.title, socialDescription: v.socialDescription, imageAlt: v.heroAlt, keywords: v.keywords }),
+    v.published ? `<meta property="article:published_time" content="${esc(v.published)}">` : "",
+    v.modified ? `<meta property="article:modified_time" content="${esc(v.modified)}">` : "",
+    ...storyJsonLd(v, site).map(jsonLd),
+    `<script>window.WA_BASE=${JSON.stringify(site.base)};</script>`,
+  ].filter(Boolean).join("\n"));
+  // The story itself follows the page, so the text that earned the URL stays on it; links on the page to the story's
+  // own address (the tool's credit line) point down to it instead of at the page itself.
+  html = selfLinksToSource(html, v.slug);
+  const section = sourceSection(v, site);
+  const at = html.search(/<section class="nl-band"|<footer\b/);
+  return at >= 0 ? html.slice(0, at) + section + "\n" + html.slice(at) : html.replace(/<\/body>/i, section + "\n</body>");
+}
+
+/** Links whose target is the story's own address (relative, /wa/, or on whiskyadvocate.com) become "#source". */
+function selfLinksToSource(html: string, slug: string): string {
+  const own = slug.toLowerCase();
+  return html.replace(/<a\b([^>]*?)\bhref=(["'])([^"']*)\2([^>]*)>/gi, (tag, before: string, _q: string, href: string, after: string) => {
+    const path = href.replace(/^https?:\/\/(?:www\.)?whiskyadvocate\.com/i, "").replace(/[?#].*$/, "").replace(/^\/?(?:wa\/)?/i, "").replace(/\/$/, "");
+    if (path.toLowerCase() !== own) return tag;
+    const attrs = (before + after).replace(/\s*\btarget=(["'])[^"']*\1/gi, "").replace(/\s*\brel=(["'])[^"']*\1/gi, "");
+    return `<a${attrs.replace(/\s+$/, "")} href="#source">`;
+  });
+}
+
+/**
+ * The old site's inline widgets (the water story's two calculators: bare inputs and buttons with no script behind them)
+ * are dropped from the copy under a site page, whose own tool does the job; each one leaves a pointer to the tool.
+ */
+export function withoutLegacyControls(html: string): string {
+  const MARK = "\u0000";
+  let out = html
+    .replace(/<(button|select|textarea)\b[^>]*>[\s\S]*?<\/\1>/gi, MARK)
+    .replace(/<input\b[^>]*>/gi, MARK);
+  if (!out.includes(MARK)) return html;
+  for (let i = 0; i < 12; i++) {
+    const next = out.replace(/<(div|form|span|p|label|fieldset)\b[^>]*>\s*(?:\u0000\s*)+<\/\1>/gi, MARK);
+    if (next === out) break;
+    out = next;
+  }
+  return out.replace(/[\s\u0000]*\u0000[\s\u0000]*/g, '\n<p class="muted"><a href="#wtFind">Use the calculator at the top of this page.</a></p>\n');
+}
+
+/** The story under a site page: kicker, headline, byline and the cleaned body in the story page's prose style. */
+function sourceSection(v: StoryView, site: WaSite): string {
+  const date = v.day ? `<span><time datetime="${esc(v.published ?? v.day)}">${esc(longDate(v.day))}</time></span>` : "";
+  const who = v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${site.base}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
+  return `<section class="band wa-source" id="source" aria-labelledby="sourceTitle">
+  <div class="read-frame">
+    <div style="max-width: 980px">
+      <span class="tag">The guide behind the tool</span>
+      <h2 class="d2" style="margin-top: 12px" id="sourceTitle">${esc(v.title)}</h2>
+      ${v.dek ? `<p class="lede" style="margin-top: 14px; max-width: 60ch">${esc(v.dek)}</p>` : ""}
+      <p class="byline" style="margin-top: 18px">${who}${date}</p>
+    </div>
+    <div class="prose" style="margin-top: 28px">${withoutLegacyControls(v.body)}</div>
+  </div>
+</section>`;
 }

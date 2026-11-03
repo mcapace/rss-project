@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { sanitizeCmsHtml } from "@/lib/cms/html";
 import { canonicalPath } from "@/lib/cms/redirects";
+import { onlyLive } from "@/lib/wa/live";
 import { CMS_BRANDS, type CmsBrand, type CmsDocument, type CmsJsonObject } from "@/lib/cms/types";
 import type { BlockDocument } from "@/lib/cms/blocks";
 import type { DeliveredDocument, DeliveredMedia } from "@/lib/editorial/platform-types";
@@ -27,8 +28,7 @@ export async function readerFromRequest(request: Request): Promise<{ tier: Acces
 const DOCUMENT_COLUMNS = "id,brand,kind,title,byline,body_html,body_json,excerpt,slug,public_url,publication_state,published_at,updated_at,metadata";
 
 export async function getPublishedDocument(brand: CmsBrand, slug: string): Promise<CmsDocument | null> {
-  const { data, error } = await cmsDb().from("cms_documents").select(DOCUMENT_COLUMNS).eq("brand", brand).eq("publication_state", "published")
-    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
+  const { data, error } = await onlyLive(cmsDb().from("cms_documents").select(DOCUMENT_COLUMNS).eq("brand", brand))
     .or(`slug.eq.${slug.replace(/[,()]/g, "")},metadata->>canonical_path.eq./${brand}/${slug.replace(/[,()]/g, "")}`).limit(1).maybeSingle();
   if (error) databaseError(error);
   return (data as CmsDocument | null) ?? null;

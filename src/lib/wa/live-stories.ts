@@ -2,6 +2,7 @@ import "server-only";
 import { cmsDb } from "@/lib/cms/db";
 import { leadImagePath } from "@/lib/cms/lead-image";
 import { sponsorship } from "@/lib/cms/sponsored";
+import { onlyLive } from "./live";
 
 /**
  * Stories published from the CMS, in the site's story-index shape (public/wa/stories.json), so the home page, the
@@ -93,11 +94,12 @@ export async function liveStories(): Promise<{ stories: StoryEntry[]; removed: s
   if (published.error) throw new Error(published.error.message);
   if (takenDown.error) throw new Error(takenDown.error.message);
   const stories = ((published.data || []) as Row[]).map(entryOf);
-  // A slug is only removed when no published document still carries it (an unpublished duplicate never hides a live story).
+  // A slug is only removed when no live document still carries it (an unpublished duplicate never hides a live story,
+  // and a scheduled one does not keep a taken-down story listed before its own time).
   const downSlugs = [...new Set(((takenDown.data || []) as { slug: string }[]).map(row => row.slug))];
   const stillLive = new Set<string>();
   for (let i = 0; i < downSlugs.length; i += 100) {
-    const { data, error } = await cmsDb().from("cms_documents").select("slug").eq("brand", "wa").eq("publication_state", "published").in("slug", downSlugs.slice(i, i + 100));
+    const { data, error } = await onlyLive(cmsDb().from("cms_documents").select("slug").eq("brand", "wa")).in("slug", downSlugs.slice(i, i + 100));
     if (error) throw new Error(error.message);
     for (const row of (data || []) as { slug: string }[]) stillLive.add(row.slug.toLowerCase());
   }

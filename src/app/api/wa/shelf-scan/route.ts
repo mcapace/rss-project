@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
+import { isLive, onlyLiveJoined } from "@/lib/wa/live";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -83,15 +84,18 @@ export async function POST(request: Request) {
   seen = seen.filter(b => b.brand && b.confidence >= 0.35).slice(0, 24);
 
   const db = cmsDb();
+  const now = Date.now();
   const results = [];
   for (const bottle of seen) {
     const brandWord = tokens(bottle.brand)[0] ?? bottle.brand.toLowerCase();
-    const { data } = await db.from("cms_ratings").select("product_name,category,score,price,cms_documents!inner(slug,publication_state,metadata)")
-      .eq("brand", "wa").eq("cms_documents.publication_state", "published").ilike("product_name", `%${brandWord.replace(/[%_]/g, "")}%`).limit(60);
-    const rows: Rating[] = (data ?? []).map(row => {
+    // Only live ratings: a scheduled one waits for its time (checked in the query and again on the rows).
+    const { data } = await onlyLiveJoined(db.from("cms_ratings").select("product_name,category,score,price,cms_documents!inner(slug,publication_state,published_at,metadata)")
+      .eq("brand", "wa"), "cms_documents", now).ilike("product_name", `%${brandWord.replace(/[%_]/g, "")}%`).limit(60);
+    const rows: Rating[] = (data ?? []).flatMap(row => {
       const doc = Array.isArray(row.cms_documents) ? row.cms_documents[0] : row.cms_documents;
+      if (!isLive(doc, now)) return [];
       const meta = (doc?.metadata ?? {}) as { legacy_dates?: { published_date?: string } };
-      return { product_name: row.product_name, category: row.category, score: row.score, price: row.price == null ? null : Number(row.price), slug: doc?.slug ?? null, published: meta.legacy_dates?.published_date ?? null };
+      return [{ product_name: row.product_name, category: row.category, score: row.score, price: row.price == null ? null : Number(row.price), slug: doc?.slug ?? null, published: meta.legacy_dates?.published_date ?? null }];
     });
     const hit = best(bottle, rows);
     results.push({ label: `${bottle.brand} ${bottle.name}`.trim(), confidence: bottle.confidence, box: { x: bottle.x, y: bottle.y, w: bottle.w, h: bottle.h },

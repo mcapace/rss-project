@@ -4,6 +4,7 @@ import path from "node:path";
 import { cmsDb } from "@/lib/cms/db";
 import { leadImagePath } from "@/lib/cms/lead-image";
 import { sponsorship } from "@/lib/cms/sponsored";
+import { onlyLive } from "./live";
 import { PAGE_FILE_PATTERN, type WaSite } from "./site-host";
 
 /**
@@ -48,7 +49,7 @@ const DOC_FIELDS = "id,kind,slug,title,byline,excerpt,body_html,metadata,publish
 export async function loadDoc(slug: string): Promise<WaDoc | null> {
   const clean = slug.replace(/[%_\\]/g, c => "\\" + c).slice(0, 300);
   // A scheduled story is not out until its time.
-  const { data, error } = await cmsDb().from("cms_documents").select(DOC_FIELDS).eq("brand", "wa").eq("publication_state", "published").or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`).ilike("slug", clean).limit(2);
+  const { data, error } = await onlyLive(cmsDb().from("cms_documents").select(DOC_FIELDS).eq("brand", "wa")).ilike("slug", clean).limit(2);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as WaDoc[];
   return rows.find(r => r.slug === slug) ?? rows[0] ?? null;
@@ -60,13 +61,13 @@ export async function loadDoc(slug: string): Promise<WaDoc | null> {
  */
 const LITE = "id,slug,kind,title,byline,excerpt,published_at,updated_at,legacy_dates:metadata->legacy_dates,legacy_media:metadata->legacy_media,lead_image:metadata->lead_image,sponsored:metadata->sponsored,tags:metadata->tags,seo:metadata->seo,legacy_seo:metadata->legacy_seo,ai_summary:metadata->>ai_summary,categories:metadata->categories";
 export async function listDocs(kinds: string[], limit = 60000, order: "newest" | "id" = "newest"): Promise<WaDoc[]> {
-  const now = new Date().toISOString();
+  const now = Date.now();
   const toDoc = (row: Record<string, unknown>): WaDoc => {
     const { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories, ...rest } = row;
     return { ...(rest as unknown as WaDoc), body_html: null, metadata: { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories } as Meta };
   };
   // A scheduled story (published_at still ahead) is not listed until its time.
-  const base = () => cmsDb().from("cms_documents").select(LITE).eq("brand", "wa").eq("publication_state", "published").in("kind", kinds).not("slug", "is", null).or(`published_at.is.null,published_at.lte.${now}`);
+  const base = () => onlyLive(cmsDb().from("cms_documents").select(LITE).eq("brand", "wa"), now).in("kind", kinds).not("slug", "is", null);
   const out: WaDoc[] = [];
   for (let from = 0; from < limit; from += 1000) {
     // Newest-first sorts on a JSON field with no index: fine for the feed's 200 rows, too slow for a whole sitemap, which pages by id.

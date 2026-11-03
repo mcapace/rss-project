@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { embedTexts } from "@/lib/editorial/server/embeddings";
+import { liveIds } from "./live";
 
 /**
  * Meaning-based matching for the public Whisky Advocate site: ratings and
@@ -14,10 +15,19 @@ export type Bottle = { id: string; slug: string; title: string; rating: RatingMe
 
 const toVector = (embedding: number[] | string) => (typeof embedding === "string" ? embedding : `[${embedding.map(v => Number(v.toFixed(7))).join(",")}]`);
 
-export async function matchDocuments(db: SupabaseClient, embedding: number[] | string, kinds: ("rating" | "article")[], limit: number, exclude?: string): Promise<Match[]> {
-  const { data, error } = await db.rpc("wa_match_documents", { p_query: toVector(embedding), p_kinds: kinds, p_limit: limit, p_exclude: exclude ?? null });
+/**
+ * The closest live documents of the given kinds. wa_match_documents skips scheduled stories inside the scan from
+ * 20261103180000_wa_match_live_only.sql on; until that is applied (and as a guard after), the matched ids are
+ * checked again here (isLive) and the rest dropped, asking for a few more so the list still fills.
+ */
+export async function matchDocuments(db: SupabaseClient, embedding: number[] | string, kinds: ("rating" | "article" | "legacy_record")[], limit: number, exclude?: string): Promise<Match[]> {
+  const ask = Math.min(100, limit + Math.max(4, Math.ceil(limit / 5)));
+  const { data, error } = await db.rpc("wa_match_documents", { p_query: toVector(embedding), p_kinds: kinds, p_limit: ask, p_exclude: exclude ?? null });
   if (error) throw new Error(error.message);
-  return ((data ?? []) as Match[]).map(m => ({ ...m, similarity: Number(m.similarity) }));
+  const matches = ((data ?? []) as Match[]).map(m => ({ ...m, similarity: Number(m.similarity) }));
+  if (!matches.length) return matches;
+  const live = await liveIds(db, matches.map(m => m.document_id));
+  return matches.filter(m => live.has(m.document_id)).slice(0, limit);
 }
 
 export async function embedQuery(query: string, signal?: AbortSignal): Promise<number[]> {

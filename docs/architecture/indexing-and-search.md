@@ -52,8 +52,8 @@ Watch out: the document hash covers title, summary and body text only (`document
 
 | Function | Used by | What it does |
 |---|---|---|
-| `cms_match_embeddings(brands, query, kind, limit)` | CMS search, `/api/wa/similar` | Nearest vectors across the given brands, any state, documents or images. |
-| `wa_match_documents(query, kinds, limit, exclude)` | `/api/wa/meaning`, `/api/wa/answer`, `/api/wa/ask`, `/api/wa/bottles-like` (through `matchDocuments` in `src/lib/wa/semantic.ts`) | Whisky Advocate only, published only, with a slug, of the chosen kinds (`rating`, `article`). Filters inside the scan with HNSW iterative scan (`hnsw.ef_search = 400`, `relaxed_order`) so a filtered query still fills its limit. Migration `20261102200000_wa_match_documents.sql`. |
+| `cms_match_embeddings(brands, query, kind, limit)` | CMS search | Nearest vectors across the given brands, any state, documents or images. Editors only: no public route reads it. |
+| `wa_match_documents(query, kinds, limit, exclude)` | `/api/wa/meaning`, `/api/wa/answer`, `/api/wa/ask`, `/api/wa/bottles-like`, `/api/wa/similar` (through `matchDocuments` in `src/lib/wa/semantic.ts`) | Whisky Advocate only, live only (published, and `published_at` empty or past), with a slug, of the chosen kinds (`rating`, `article`, `legacy_record`). Filters inside the scan with HNSW iterative scan (`hnsw.ef_search = 400`, `relaxed_order`) so a filtered query still fills its limit. Migrations `20261102200000_wa_match_documents.sql` and `20261103180000_wa_match_live_only.sql` (adds the `published_at` test). `matchDocuments` also re-checks each match with `liveIds` (`src/lib/wa/live.ts`) and asks for a few extra, so a scheduled story never surfaces even before that migration is applied. |
 | `cms_upsert_embedding(...)` | the refresh | Insert or update one vector, keyed by document, kind and image index. |
 | `cms_embedding_backlog(brands, limit)` | the cron and the backfill | Documents to embed, newest edited first. |
 
@@ -115,8 +115,8 @@ sequenceDiagram
 
 ### Similar stories and bottles
 
-- `/api/wa/similar?slug=`: the story's own vector against every other story's (`cms_match_embeddings`), returned as ids and slugs; the page fills in titles from its index. Empty until the story is embedded.
-- `/api/wa/bottles-like?slug=`: the 100 ratings whose notes read closest, re-ranked by flavor profile and spread across houses (`rankSimilar` in `src/lib/wa/semantic.ts`, profiles from `metadata.flavor`).
+- `/api/wa/similar?slug=`: the story's own vector against every other live story's (`wa_match_documents` with kinds `article` and `legacy_record`, excluding itself), returned as ids and slugs; the page fills in titles from its index. Empty until the story is embedded, and empty for a story that is not live yet (its page is a 404).
+- `/api/wa/bottles-like?slug=`: for a live rating, the 100 live ratings whose notes read closest, re-ranked by flavor profile and spread across houses (`rankSimilar` in `src/lib/wa/semantic.ts`, profiles from `metadata.flavor`).
 
 ### Recommendations
 
@@ -142,7 +142,7 @@ All of these are route handlers under `src/app/wa` and `src/app`, built from the
 Rules every list follows:
 
 - Only published documents with a slug, and not marked no-index (`isNoIndex`).
-- **A scheduled story is hidden until its time.** Every read adds `published_at is null or published_at <= now()`, so a story the CMS scheduled appears in sitemaps and feeds when it goes live, not before.
+- **A scheduled story is hidden until its time.** Every read adds `published_at is null or published_at <= now()`, so a story the CMS scheduled appears in sitemaps and feeds when it goes live, not before. The rule lives in `src/lib/wa/live.ts` (`onlyLive` for a `cms_documents` query, `onlyLiveJoined` for an embedded one, `isLive` and `liveIds` for rows already fetched) and covers search by meaning, answers, Ask, similar stories and bottles, the shelf scan and the public ratings API too.
 - **Newest first merges two kinds of dates.** Imported stories carry the old site's date (`metadata.legacy_dates`); stories published from the CMS carry `published_at`. `listDocs` reads the imported ones by legacy date and the CMS ones by `published_at`, then merges them by the effective date (`docDates`). Before this, a new CMS story sorted last and never reached the feed or Google News.
 - Sponsored stories are left out of Google News (`isSponsored`, the same rule that labels them on the site).
 - URLs use `WA_SITE_ORIGIN` when set, so after the domain move they name whiskyadvocate.com.
@@ -154,3 +154,4 @@ Watch out: the development host sends `X-Robots-Tag: noindex, nofollow`, so its 
 - New embedding text or model: change `documentEmbeddingText` or `EMBEDDING_MODEL`. The refresh compares the stored model name, so a model change re-embeds every document on the next pass; run the backfill rather than waiting for the daily budget.
 - New site search behaviour: `discovery.js` for word matches, `closeMatches` for meaning thresholds (`floor`, `spread`, `limit`).
 - New sitemap or feed rule: `src/lib/wa/feeds.ts`, and keep the scheduled-time filter.
+- New public read of `cms_documents` (or a join to it): filter with `onlyLive` / `onlyLiveJoined` from `src/lib/wa/live.ts`, or check fetched rows with `isLive`; a `publication_state = 'published'` test alone lets a scheduled story out early.

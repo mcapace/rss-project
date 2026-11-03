@@ -259,7 +259,7 @@ A rating document keeps `metadata.rating` as the editor's working copy; `cms_ups
 | `cms_search_documents`, `cms_search_keywords`, `cms_search_media`, `cms_search_library` | `/api/cms/search` | Full-text search over documents, attached images, keywords and the gallery library. |
 | `cms_upsert_embedding`, `cms_match_embeddings`, `cms_embedding_backlog` | embeddings jobs, CMS search | Store vectors, find nearest neighbours, list what still needs embedding. |
 | `wa_match_documents` | `/api/wa/meaning`, "bottles like this" | Meaning search over published WA documents of chosen kinds, filtering inside the HNSW scan so a filtered query still fills its limit. |
-| `cms_upsert_rating`, `cms_search_ratings`, `cms_rating_facets`, `cms_catalog_lookup` | saves, `/api/cms/ratings`, `/api/cms/catalog` | Keep the rating row in step; faceted ratings search; catalog typeahead. |
+| `cms_upsert_rating`, `cms_search_ratings`, `cms_rating_facets`, `cms_catalog_lookup` | saves, `/api/cms/ratings`, `/api/public/<brand>/ratings` (with `p_live`), `/api/cms/catalog` | Keep the rating row in step; faceted ratings search; catalog typeahead. |
 | `cms_jwt_brands` | RLS policies | The publications in the caller's JWT (`app_metadata.cms_role`, `cms_brands`). |
 | `cms_canonical_path`, `cms_slugify` | everywhere | A document's public path; a URL-safe slug. |
 | `cms_public_documents` | delivery API | Published documents for a publication, newest first, hiding scheduled ones. |
@@ -307,6 +307,8 @@ A rating document keeps `metadata.rating` as the editor's working copy; `cms_ups
 | `20261103120000_wa_rate_limits.sql` | `wa_rate_limits` and `wa_rate_hit`. |
 | `20261103160000_cms_publishing.sql` | `cms_publish_document`, `cms_unpublish_document`, `publish`/`unpublish` revision reasons, scheduled stories hidden in `cms_public_documents`. |
 | `20261103161000_cms_redirect_host_www.sql` | Redirects match `www.whiskyadvocate.com` and `whiskyadvocate.com` alike. |
+| `20261103180000_wa_match_live_only.sql` | `wa_match_documents` skips scheduled documents (`published_at` still ahead) inside the scan. Replaces the function only. |
+| `20261103190000_cms_ratings_live.sql` | `cms_search_ratings` and `cms_rating_facets` take `p_live`: the public ratings API counts, pages and facets live ratings only (a scheduled one waits for its time). Editors' calls are unchanged. Replaces the two functions only. |
 
 ## What to watch out for
 

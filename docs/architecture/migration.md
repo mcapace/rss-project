@@ -286,7 +286,9 @@ the function in bulk.
 (the last 640 days), `stories-archive.json` (older), `articles/<00-63>.json` (bodies sharded by slug hash) and
 `sponsored.json` (the paid stories).
 
-**How it works.** It reads every published article and legacy record through the Supabase management API, files each into
+**How it works.** It reads every live article and legacy record (published, and `published_at` empty or already past, the
+rule in `src/lib/wa/live.ts`; a scheduled story joins the static files on the first export after its time) through the
+Supabase management API, files each into
 a section (tags and title rules), picks the dek (the editors' description from before the SEO pass, else the excerpt),
 the hero (the rehosted lead), reading time, caption and credit, AI tags and the sponsor flag. Fields the old index carried
 (guide kinds, travel regions) are kept per slug from `scripts/data/wa-story-fields.json`. A story without a date is left out.

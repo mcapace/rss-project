@@ -8,6 +8,7 @@ import { isUuid } from "@/lib/cms/validation";
 import type { CmsJsonObject } from "@/lib/cms/types";
 import { getS3Client } from "@/lib/s3";
 import { allowedMediaKey } from "@/lib/media/keys";
+import { isLive } from "@/lib/wa/live";
 import { cropOf, focalOf, parseAspect, renderRendition, type RenditionFormat } from "@/lib/media/renditions";
 
 export const runtime = "nodejs";
@@ -17,8 +18,9 @@ const FORMATS = new Set<RenditionFormat>(["webp", "avif", "jpeg", "png"]);
 /**
  * Stable image URL for a document's attached media, with on-the-fly renditions:
  * `?w=` width, `?format=` webp|avif|jpeg|png, `?preset=16:9` applies the editor's
- * stored crop, `?aspect=4:3` cover-crops around the focal point. Published
- * documents are public and cacheable; anything else needs the editor's session.
+ * stored crop, `?aspect=4:3` cover-crops around the focal point. Live documents
+ * (published, and a scheduled one once its time has come) are public and
+ * cacheable; anything else needs the editor's session.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string; index: string }> }) {
   try {
@@ -27,10 +29,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id, index: rawIndex } = await params;
     const index = Number(rawIndex);
     if (!isUuid(id) || !Number.isInteger(index) || index < 0 || index > 500) throw new CmsError(404, "Image not found.");
-    const { data: document, error } = await cmsDb().from("cms_documents").select("id,brand,issue_uuid,publication_state,metadata,revision").eq("id", id).maybeSingle();
+    const { data: document, error } = await cmsDb().from("cms_documents").select("id,brand,issue_uuid,publication_state,published_at,metadata,revision").eq("id", id).maybeSingle();
     if (error) databaseError(error);
     if (!document) throw new CmsError(404, "Image not found.");
-    const published = document.publication_state === "published";
+    const published = isLive(document);
     if (!published) {
       const user = await requireCmsUser();
       assertBrand(user, document.brand);

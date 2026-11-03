@@ -34,15 +34,19 @@
 
 <section class="band">
   <div class="band-head"><div><span class="mono">Exports</span><h2 class="d2" style="margin-top:10px">A rating becomes a shelf talker in one tap.</h2></div></div>
-  <div class="trade-grid">
-    <div class="panel" id="sheet" style="display: grid; gap: 10px; align-content: start">
-      <span class="mono">Shelf talker · preview</span>
-      <span class="score-type" id="sheetScore" style="font-size: 84px"></span>
-      <h3 id="sheetName" style="font-size: 20px; margin: 0"></h3>
-      <p class="muted" id="sheetNote" style="font-size: 13.5px"></p>
-      <p class="mono" id="sheetMeta"></p>
-      <div class="actions"><button type="button" class="pill solid" id="exportBtn">Export PDF</button><button type="button" class="pill" id="nextBtn">Another bottle</button></div>
+  <div class="panel sell" id="sheet">
+    <div class="sell-preview"><canvas id="sheetCanvas" role="img" aria-label="Preview of the sell sheet"></canvas></div>
+    <div class="sell-controls">
+      <span class="mono">Sell sheets · print ready</span>
+      <h3 id="sheetTitle">Choose a bottle, then download a PDF.</h3>
+      <div class="sell-kinds" id="sheetKinds" role="group" aria-label="Format"></div>
+      <form class="fmap-find sell-find" id="sheetFindForm" role="search"><label class="sr-only" for="sheetFind">Find a bottle</label><input id="sheetFind" type="search" placeholder="Find a bottle or producer" autocomplete="off"><ul id="sheetSuggest" class="fmap-suggest" hidden></ul></form>
+      <p class="muted sell-help" id="sheetHelp">Scores and tasting notes print in the house typography. Shelf talkers are 4 × 6 in; sell sheets and portfolios are US Letter.</p>
+      <div class="actions"><button type="button" class="pill solid" id="exportBtn">Download PDF</button><button type="button" class="pill" id="nextBtn">Another bottle</button></div>
+      <p class="sell-status" id="sheetStatus" role="status"></p>
     </div>
+  </div>
+  <div class="trade-grid" style="margin-top: 18px">
     <div class="panel"><h3>Market signals</h3>
       <div class="dense" style="border: 0">
         <a href="#"><span class="tag">SND</span><span><span class="nm">Bourbon exports to the EU rebound in Q3</span><span class="sub">Shanken News Daily</span></span><span class="when">Today</span></a>
@@ -70,6 +74,7 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
+<script src="sell-sheet.js"></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
   var byMonth = {}; data.forEach(function (r) { if (r.d) { var m = r.d.slice(0, 7); (byMonth[m] = byMonth[m] || []).push(r); } });
@@ -83,11 +88,51 @@ WA.ready(function (recent) { WA.archive(function (data) {
   document.getElementById("leaders").innerHTML = leaders.map(function (p) { var rs = byProducer[p]; return '<a href="' + WA.producerHref(p) + '"><span class="sc score-type">' + Math.max.apply(null, rs.map(function (r) { return r.s; })) + '</span><span><span class="nm">' + p + '</span><span class="sub">' + rs.length + " at 92 or above</span></span><span class=\"when\">Portfolio</span></a>"; }).join("");
   var all = data.length, avg = data.reduce(function (a, r) { return a + r.s; }, 0) / all, prices = data.map(function (r) { return r.p; }).sort(function (a, b) { return a - b; }), ninety = data.filter(function (r) { return r.s >= 90; }).length;
   document.getElementById("stats").innerHTML = [[all.toLocaleString(), "ratings since 2013"], [avg.toFixed(1), "average score"], [ninety, "at 90 or above"], [WA.fmt(prices[Math.floor(all / 2)]), "median price"], [Object.keys(cats).length, "categories"]].map(function (s) { return '<div class="stat"><b>' + s[0] + "</b><span>" + s[1] + "</span></div>"; }).join("");
-  var sheetRows = data.filter(function (r) { return r.s >= 92 && r.d >= "2025"; }), k = 0;
-  function sheet() { var r = sheetRows[k % sheetRows.length]; document.getElementById("sheetScore").textContent = r.s; document.getElementById("sheetName").textContent = r.n; document.getElementById("sheetNote").textContent = ""; WA.note(r.slug, function (f) { document.getElementById("sheetNote").textContent = f.slice(0, 160).replace(/\s\S*$/, "") + "…"; }); document.getElementById("sheetMeta").textContent = r.c + " · " + WA.fmt(r.p) + (r.a ? " · " + r.a + "% ABV" : "") + " · Whisky Advocate"; }
-  document.getElementById("nextBtn").addEventListener("click", function () { k++; sheet(); });
-  document.getElementById("exportBtn").addEventListener("click", function () { this.textContent = "Sent to your downloads"; });
-  sheet();
+  // Sell sheets: one bottle as a shelf talker or a letter sheet, or a producer's portfolio.
+  var picks = data.filter(function (r) { return r.s >= 92 && r.d >= "2025"; }), k = 0, canvas = document.getElementById("sheetCanvas");
+  var job = { kind: "talker", row: picks[0], note: "" }, lastRow = picks[0], drawing = 0;
+  var houses = {}; data.forEach(function (r) { if (r.pr && r.pr !== "Unknown producer") (houses[r.pr] = houses[r.pr] || []).push(r); });
+  var el = function (id) { return document.getElementById(id); }, esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  function kinds() {
+    var list = job.kind === "portfolio" ? ["portfolio"] : ["talker", "sheet"];
+    el("sheetKinds").innerHTML = list.map(function (x) { return '<button type="button" class="pill" data-kind="' + x + '" aria-pressed="' + (job.kind === x) + '">' + WASellSheet.NAMES[x] + "</button>"; }).join("") + (job.kind === "portfolio" && lastRow ? '<button type="button" class="pill" data-kind="talker" aria-pressed="false">One bottle instead</button>' : "");
+  }
+  function draw() {
+    var n = ++drawing; el("sheetStatus").textContent = ""; kinds();
+    el("sheetTitle").textContent = job.kind === "portfolio" ? job.house + ": " + job.rows.length + " rated bottles" : job.row.n + ", " + job.row.s + " points";
+    el("nextBtn").hidden = job.kind === "portfolio";
+    WASellSheet.render(document.createElement("canvas"), job).then(function (c) { if (n !== drawing) return; canvas.width = c.width; canvas.height = c.height; canvas.getContext("2d").drawImage(c, 0, 0); });
+  }
+  function bottle(r) { job = { kind: job.kind === "portfolio" ? "talker" : job.kind, row: r, note: "" }; lastRow = r; draw(); WA.note(r.slug, function (f) { if (job.row === r) { job.note = f; draw(); } }); }
+  function house(name) { job = { kind: "portfolio", house: name, rows: houses[name] }; draw(); }
+  el("sheetKinds").addEventListener("click", function (e) { var b = e.target.closest("[data-kind]"); if (!b) return; var x = b.getAttribute("data-kind"); if (job.kind === "portfolio" && x !== "portfolio") return bottle(lastRow); job.kind = x; draw(); });
+  el("nextBtn").addEventListener("click", function () { k++; bottle(picks[k % picks.length]); });
+  el("exportBtn").addEventListener("click", function () {
+    var b = this; b.disabled = true; el("sheetStatus").textContent = "Preparing your PDF…";
+    var c = job; WASellSheet.render(document.createElement("canvas"), c).then(function (out) { return WASellSheet.download(out, c); }).then(function () {
+      el("sheetStatus").textContent = "Downloaded: " + WASellSheet.fileName(c); WA.track && WA.track("sell_sheet_download", { kind: c.kind, slug: c.row && c.row.slug, producer: c.house });
+    }).catch(function () { el("sheetStatus").textContent = "The PDF could not be made. Try again in a moment."; }).then(function () { b.disabled = false; });
+  });
+  function matches(q) {
+    var words = q.toLowerCase().split(/\s+/).filter(Boolean); if (!words.length) return [];
+    var hs = Object.keys(houses).filter(function (h) { var l = h.toLowerCase(); return words.every(function (w) { return l.indexOf(w) >= 0; }); }).sort(function (a, b) { return houses[b].length - houses[a].length; }).slice(0, 2).map(function (h) { return { house: h }; });
+    var bs = data.filter(function (r) { var l = (r.n + " " + r.pr).toLowerCase(); return words.every(function (w) { return l.indexOf(w) >= 0; }); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 7 - hs.length).map(function (r) { return { row: r }; });
+    return hs.concat(bs);
+  }
+  var found = [];
+  el("sheetFind").addEventListener("input", function () {
+    found = matches(this.value);
+    el("sheetSuggest").innerHTML = found.map(function (m, i) { return '<li><button type="button" data-i="' + i + '">' + (m.house ? '<span class="score-type">' + houses[m.house].length + "</span>" + esc(m.house) + " · portfolio" : '<span class="score-type">' + m.row.s + "</span>" + esc(m.row.n)) + "</button></li>"; }).join("");
+    el("sheetSuggest").hidden = !found.length;
+  });
+  function choose(m) { el("sheetSuggest").hidden = true; el("sheetFind").value = ""; if (m.house) house(m.house); else bottle(m.row); }
+  el("sheetSuggest").addEventListener("click", function (e) { var b = e.target.closest("[data-i]"); if (b) choose(found[+b.getAttribute("data-i")]); });
+  el("sheetFindForm").addEventListener("submit", function (e) { e.preventDefault(); found = matches(el("sheetFind").value); if (found.length) choose(found[0]); });
+  var h = (location.hash || "").slice(1), want; try { h = decodeURIComponent(h); } catch (e) {}
+  if ((want = h.match(/^sheet=(.+)$/)) && WA.find(data, want[1])) bottle(WA.find(data, want[1]));
+  else if ((want = h.match(/^portfolio=(.+)$/)) && houses[want[1]]) house(want[1]);
+  else bottle(picks[0]);
+  if (want) setTimeout(function () { el("sheet").scrollIntoView({ block: "start" }); }, 300);
 }); });
 </script>
 </body>

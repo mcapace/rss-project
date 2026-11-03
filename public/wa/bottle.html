@@ -32,7 +32,7 @@
       <div class="actions" style="margin-top: 22px"><a class="pill amber" id="storeBtn" hidden target="_blank" rel="noopener">Buy at the store</a><button type="button" class="pill" id="buyBtn">Find it near me</button><button type="button" class="pill" id="save">Save to my shelf</button><a class="pill" id="compareLink" href="finder.html">Compare</a><button type="button" class="pill" id="askBtn">Ask about this bottle</button></div>
       <div class="buy" id="buy" style="margin-top: 18px; display: none"></div>
       <dl class="facts" id="facts" style="margin-top: 22px"></dl>
-      <p class="trade-link"><a href="industry.html">For the trade: print a sell sheet for this bottle</a></p>
+      <p class="trade-link"><a id="sellSheet" href="/wa/industry.html#sheet">For the trade: print a sell sheet for this bottle</a></p>
     </div>
   </div>
 </section>
@@ -253,6 +253,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     document.getElementById("when").textContent = r.d ? new Date(r.d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "";
     document.getElementById("issue").innerHTML = '<a href="' + WA.producerHref(r.pr) + '" style="color: var(--amber)">' + r.pr + "</a>";
     document.getElementById("score").textContent = r.s;
+    document.getElementById("sellSheet").href = (WA.PATHS ? "/wa/" : "") + "industry.html#sheet=" + encodeURIComponent(r.slug);
     document.getElementById("band").textContent = B[0] + " · " + (r.s >= 95 ? "95 to 100" : r.s >= 90 ? "90 to 94" : r.s >= 85 ? "85 to 89" : r.s >= 80 ? "80 to 84" : "below 80");
     document.getElementById("note").textContent = (r.f || r.t || "").trim() || "The note is on its way.";
     document.getElementById("noteBy").textContent = [r.by || "The Whisky Advocate tasting panel", r.issue ? r.issue + " issue" : ""].filter(Boolean).join(", ");

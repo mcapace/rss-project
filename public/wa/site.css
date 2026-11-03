@@ -2531,6 +2531,23 @@ main { min-height: 100vh; min-height: 100dvh; }
 .top20-card.woty .buy-chip, .top20-card.woty .pill { font-size: 14px; padding: 9px 16px; }
 @media (max-width: 760px) { .top20-card.woty p:not(.meta) { font-size: 15px; } }
 
+/* ---- Sell sheets (2026-11-02): live preview beside the controls on the industry page ---- */
+#sheet { scroll-margin-top: 96px; }
+.panel.sell { display: grid; grid-template-columns: minmax(220px, 380px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.sell-preview { position: relative; display: grid; place-items: center; padding: 22px; border-radius: 20px; background: var(--paper-3); }
+.sell-preview canvas { display: block; width: 100%; height: auto; max-height: 560px; object-fit: contain; border-radius: 6px; background: var(--paper-2); box-shadow: 0 1px 2px rgba(23, 18, 13, 0.08), 0 24px 44px -28px rgba(23, 18, 13, 0.45); }
+.sell-controls { display: grid; gap: 14px; align-content: start; }
+.sell-controls h3 { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 500; }
+.sell-kinds { display: flex; flex-wrap: wrap; gap: 8px; }
+.sell-kinds .pill[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.sell-find { max-width: 420px; }
+.sell-help { margin: 0; font-size: 14px; }
+.sell-status { margin: 0; min-height: 1.4em; font-size: 13.5px; color: var(--ink-2); }
+@media (max-width: 760px) {
+  .panel.sell { grid-template-columns: 1fr; gap: 20px; }
+  .sell-preview { padding: 14px; }
+  .sell-preview canvas { max-height: 460px; width: auto; max-width: 100%; }
+
 /* ---- Home front page: news on the left, Ask Whisky Advocate and the taste tools beside it, both above the fold (2026-11-03) ---- */
 .front-split { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; padding-top: 28px; }
 .split-news { min-width: 0; }

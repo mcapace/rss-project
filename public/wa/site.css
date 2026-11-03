@@ -3115,3 +3115,6 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 .start a.tool-new .n { color: var(--copper); }
 .start a.tool-new .tico { top: 50%; right: 24px; width: 64px; height: 64px; transform: translateY(-50%); }
 .start a.tool-new:hover .tico { transform: translateY(calc(-50% - 2px)) rotate(-3deg); }
+
+/* Water your whisky intro link (2026-11-03). */
+.wt-band .fmap-dek a { color: var(--copper); text-decoration: underline; text-underline-offset: 3px; }

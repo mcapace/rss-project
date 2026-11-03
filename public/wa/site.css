@@ -2521,3 +2521,12 @@ main { min-height: 100vh; min-height: 100dvh; }
 
 /* ---- Newsletter page: the email field comes first, above the letters (2026-11-03) ---- */
 .nl-fields.nl-email { grid-template-columns: 1fr; padding: 18px 24px; max-width: 560px; }
+
+/* ---- Top 20 type (2026-11-02): ranks set like the year and scores in Aeonik; larger supporting text on the Whisky of the Year card ---- */
+.top20-card .rank { font-family: var(--font); font-weight: 500; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; line-height: 0.85; }
+.top20-card .meta { font-size: 14px; }
+.top20-card.woty .meta { font-size: 15px; }
+.top20-card.woty .owner { font-size: 14px; }
+.top20-card.woty .meta + p, .top20-card.woty p:not(.meta) { font-size: 16px; line-height: 1.55; max-width: 68ch; }
+.top20-card.woty .buy-chip, .top20-card.woty .pill { font-size: 14px; padding: 9px 16px; }
+@media (max-width: 760px) { .top20-card.woty p:not(.meta) { font-size: 15px; } }

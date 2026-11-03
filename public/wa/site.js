@@ -733,6 +733,8 @@ document.body.appendChild(waAds);
   var seen = "IntersectionObserver" in window ? new IntersectionObserver(function (entries) {
     entries.forEach(function (en) { if (en.isIntersecting) { prefetch(en.target); seen.unobserve(en.target); } });
   }, { rootMargin: "200px" }) : null;
+  // The YouTube player API, loaded once: the story videos in video.js start through it on Safari and phones too.
+  WA.loadYT = loadYT;
   WA.watchPosters = function (root) { if (!seen) return; (root || document).querySelectorAll(".frame:not(.playing), .top20-play:not(.playing)").forEach(function (b) { if (jwId(embedOf(b))) seen.observe(b); }); };
   function iframe(box, src) { box.innerHTML = '<iframe src="' + src + (src.indexOf("?") >= 0 ? "&" : "?") + (ytId(src) ? "autoplay=1&playsinline=1" : "autostart=true") + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video"></iframe>'; }
   function pickMp4(list, box) {

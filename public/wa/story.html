@@ -94,6 +94,7 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
+<script src="video.js"></script>
 <script src="editorial.js" defer></script>
 <script>
 WA.ready(function (recent) { WA.archive(function (data) {
@@ -163,6 +164,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
           if (hit && file.indexOf(nameKey(hit)) >= 0) swap(); else { if (im.complete && im.naturalWidth) mark(); im.addEventListener("load", mark); }
         });
       })();
+      // Videos the editors embedded play here (video.js): a still and a play button, the player only after the click.
+      if (window.WAVideo) WAVideo.upgrade(prose);
       WA.shop(function () { prose.querySelectorAll(".embed[data-slug]").forEach(function (em) { var p = WA.productFor(em.getAttribute("data-slug")); if (p) em.querySelector(".pr").insertAdjacentHTML("afterend", WA.buyChip(p)); }); });
       // Author, tags, sign-up.
       var more = all.filter(function (x) { return x.by === st.by && x !== st; }).length;

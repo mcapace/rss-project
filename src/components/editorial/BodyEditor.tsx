@@ -7,6 +7,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import { CollaborationCaret } from "@tiptap/extension-collaboration-caret";
 import type * as Y from "yjs";
 import type { BlockDocument } from "@/lib/cms/blocks";
+import { videoFor } from "@/lib/cms/video";
 import type { SupabaseProvider } from "./collab/SupabaseProvider";
 import Image from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
@@ -26,21 +27,10 @@ import { Notice } from "./ui";
 /* so the sanitizer keeps it and renderers turn the link into a player. */
 /* ------------------------------------------------------------------ */
 
+/** The rules live in src/lib/cms/video.ts, shared with the story page (public/wa/video.js), the JSON-LD and the newsletter. */
 export function embedFor(url: string): { provider: "youtube" | "vimeo"; id: string; src: string } | null {
-  try {
-    const parsed = new URL(url.trim());
-    const host = parsed.hostname.replace(/^www\./, "");
-    if (host === "youtu.be") { const id = parsed.pathname.slice(1).split("/")[0]; return id ? { provider: "youtube", id, src: `https://www.youtube-nocookie.com/embed/${id}` } : null; }
-    if (host === "youtube.com" || host === "m.youtube.com" || host === "youtube-nocookie.com") {
-      const id = parsed.searchParams.get("v") || parsed.pathname.match(/\/(?:embed|shorts|live)\/([\w-]{6,})/)?.[1];
-      return id && /^[\w-]{6,}$/.test(id) ? { provider: "youtube", id, src: `https://www.youtube-nocookie.com/embed/${id}` } : null;
-    }
-    if (host === "vimeo.com" || host === "player.vimeo.com") {
-      const id = parsed.pathname.match(/(\d{6,})/)?.[1];
-      return id ? { provider: "vimeo", id, src: `https://player.vimeo.com/video/${id}` } : null;
-    }
-  } catch { /* not a URL */ }
-  return null;
+  const video = videoFor(url);
+  return video ? { provider: video.provider, id: video.id, src: video.embed } : null;
 }
 
 /* Premium blocks: any block an editor marks premium carries data-premium="true" */

@@ -3833,3 +3833,4 @@ body.cp .cp-aside { display: grid; gap: 14px; }
 @media (prefers-reduced-motion: reduce) { html:has(body.cp) { scroll-behavior: auto; } }
 body.cp-about .cp-plate img { object-position: 40% 50%; }
 .cp-card a[href^="tel:"], .cp-aside a[href^="tel:"] { white-space: nowrap; }
+.cp-card > .pill { justify-self: start; }

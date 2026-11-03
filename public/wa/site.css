@@ -3212,3 +3212,21 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 /* Nav weight (2026-11-03): section links and tools in Aeonik Bold, full ink. */
 .mast nav a, .mast nav a[aria-current="page"], .mast .tools .pill { font-weight: 700; letter-spacing: -0.005em; }
 .mast nav a, .mast .tools .pill:not(.solid) { color: var(--ink); }
+
+/* Home stories, lead and stack (2026-11-03): one lead story with a large picture across seven columns, the other four as
+   compact picture rows stacked beside it, so the section has a clear lead and fits on one screen. */
+@media (min-width: 861px) {
+  #homeStories { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px 28px; align-items: stretch; }
+  #homeStories .story.lead { grid-column: 1; grid-row: 1 / span 4; display: flex; flex-direction: column; min-height: 0; height: auto; }
+  #homeStories .story.lead.has-img img { flex: 1 1 auto; width: 100%; height: auto; min-height: 300px; aspect-ratio: 16 / 9; object-fit: cover; }
+  #homeStories .story.lead .tag { margin-top: 22px; }
+  #homeStories .story.lead h3 { font-size: clamp(28px, 2.6vw, 40px); line-height: 1.08; min-height: 0; margin-top: 8px; }
+  #homeStories .story.lead p { margin: 10px 22px 24px; max-width: 60ch; }
+  #homeStories .story.side, #homeStories .story.third { grid-column: 2; display: grid; grid-template-columns: 148px minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 18px; row-gap: 6px; align-content: center; min-height: 0; height: auto; padding: 12px; border-radius: 18px; background: var(--paper-2); }
+  #homeStories .story.side.has-img img, #homeStories .story.third.has-img img { grid-column: 1; grid-row: 1 / -1; width: 148px; height: 100%; min-height: 0; max-height: 120px; aspect-ratio: 4 / 3; border-radius: 12px; object-fit: cover; align-self: center; }
+  #homeStories .story.side > :not(img), #homeStories .story.third > :not(img) { grid-column: 2; margin: 0; }
+  #homeStories .story.side .tag, #homeStories .story.third .tag { align-self: end; }
+  #homeStories .story.side h3, #homeStories .story.third h3 { align-self: start; min-height: 0; font-size: 18px; line-height: 1.2; letter-spacing: -0.015em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  #homeStories .story.side p, #homeStories .story.third p { display: none; }
+  #homeStories .story.side:hover h3, #homeStories .story.third:hover h3 { color: var(--copper); }
+}

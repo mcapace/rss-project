@@ -955,6 +955,17 @@ WA.canvasTips = function (canvas, points, html, href) {
       star(22, 22, 9.5 + pu, t * 0.25, 0.95);
       for (var k = 0; k < 2; k++) { var a = t * 0.9 + k * Math.PI; star(22 + Math.cos(a) * 14, 22 + Math.sin(a) * 9, 2.4, -t, 0.5 + 0.4 * Math.sin(t * 2 + k)); }
     },
+    water: function (c, t) {
+      function bowl(y) { var u = (y - 9) / 27; return 3.6 + 7.6 * Math.sin(Math.PI * Math.min(1, Math.pow(Math.max(0, u), 0.65) * 0.92 + 0.05)) * (1 - 0.45 * u); }
+      var lvl = 27 - 3.5 * (0.5 + 0.5 * Math.sin(t * 0.8)), cyc = (t * 0.55) % 1, dy = 4 + cyc * cyc * 22;
+      c.beginPath(); for (var y = 9; y <= 36; y += 0.5) c.lineTo(22 - bowl(y), y); for (y = 36; y >= 9; y -= 0.5) c.lineTo(22 + bowl(y), y); c.closePath();
+      c.save(); c.clip(); var g = c.createLinearGradient(0, lvl, 0, 36); g.addColorStop(0, "rgba(" + GOLD + ",0.95)"); g.addColorStop(1, "rgba(" + AMBER + ",0.9)"); c.fillStyle = g;
+      c.beginPath(); c.moveTo(8, 37); for (var x = 8; x <= 36; x += 1) c.lineTo(x, lvl + Math.sin(x * 0.5 + t * 3) * 0.6); c.lineTo(36, 37); c.fill(); c.restore();
+      c.strokeStyle = "rgba(" + CREAM + ",0.75)"; c.lineWidth = 1; c.beginPath(); for (y = 9; y <= 36; y += 0.5) c.lineTo(22 - bowl(y), y); c.stroke(); c.beginPath(); for (y = 9; y <= 36; y += 0.5) c.lineTo(22 + bowl(y), y); c.stroke();
+      c.beginPath(); c.moveTo(18, 39); c.lineTo(26, 39); c.stroke();
+      if (dy < lvl - 1) { c.fillStyle = "rgba(190,225,255,0.9)"; c.beginPath(); c.moveTo(22, dy - 2.6); c.quadraticCurveTo(23.6, dy, 22, dy + 1.4); c.quadraticCurveTo(20.4, dy, 22, dy - 2.6); c.fill(); }
+      else { var rp = Math.min(1, (dy - lvl + 1) / 8); c.strokeStyle = "rgba(255,241,220," + (1 - rp) * 0.8 + ")"; c.beginPath(); c.ellipse(22, lvl, 1 + rp * 5, 0.5 + rp * 1.2, 0, 0, 7); c.stroke(); }
+    },
     scan: function (c, t) {
       c.strokeStyle = "rgba(" + CREAM + ",0.7)"; c.lineWidth = 1.2; c.lineCap = "round"; c.beginPath();
       [[6, 6, 1, 1], [38, 6, -1, 1], [6, 38, 1, -1], [38, 38, -1, -1]].forEach(function (k) { c.moveTo(k[0], k[1] + 6 * k[3]); c.lineTo(k[0], k[1]); c.lineTo(k[0] + 6 * k[2], k[1]); }); c.stroke();

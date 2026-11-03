@@ -105,6 +105,7 @@ describe("root host routing", () => {
     ["/news-sitemap.xml", "", { type: "rewrite", path: "/wa/news-sitemap.xml" }],
     ["/recipes/old-fashioned", "", { type: "rewrite", path: "/wa/recipes/old-fashioned" }],
     ["/producers/Ardbeg", "", { type: "rewrite", path: "/wa/producers/Ardbeg" }],
+    ["/whisky-bars/kentucky", "", { type: "rewrite", path: "/wa/whisky-bars/kentucky" }],
     ["/ratings-reviews/some/old/path", "", { type: "lookup" }],
     ["/magazine/2019/fall", "", { type: "lookup" }],
   ];

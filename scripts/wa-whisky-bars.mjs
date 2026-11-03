@@ -61,7 +61,8 @@ const head = rows[0].map((h) => h.trim().toLowerCase());
 const col = (name) => head.indexOf(name);
 const C = { name: col("name"), addr: col("address"), coord: col("coordinates"), state: col("state"), web: col("website"), desc: col("description"), list: col("whisky list") };
 
-const seen = new Set();
+/* Bars and states share /whisky-bars/<slug>, so a state's slug is taken before any bar's. */
+const seen = new Set(states.features.map((f) => slug(f.properties.name)));
 const bars = [];
 rows.slice(1).forEach((r, i) => {
   const name = (r[C.name] || "").replace(/^[\s*]+/, "").trim(); if (!name) return;
@@ -90,7 +91,7 @@ const out = {
   box: [W, H],
   states: states.features.map((f) => {
     const p = f === pr ? prPath : path;
-    return { name: f.properties.name, d: p(f), box: p.bounds(f).flat().map(r1), bars: used.has(f.properties.name) };
+    return { name: f.properties.name, slug: slug(f.properties.name), d: p(f), box: p.bounds(f).flat().map(r1), bars: used.has(f.properties.name) };
   }).filter((s) => s.d),
   bars,
 };

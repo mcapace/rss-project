@@ -74,6 +74,8 @@
   var D, BARS = [], byId = {}, W = 975, H = 610, view = { x: 0, y: 0, w: W, h: H }, full = { x: 0, y: 0, w: W, h: H };
   var dots = {}, rows = {}, sel = null, here = null, q = "", stateF = "", shown = [], expanded = false;
   var phone = matchMedia("(max-width: 860px)");
+  var BP = window.WA && typeof WA.BASE === "string" ? WA.BASE : "/wa";
+  var pageOf = function (slug) { return BP + "/whisky-bars/" + encodeURIComponent(slug); };
   var map = $("wbMap"), tip = $("wbTip"), card = $("wbCard"), count = $("wbCount"), find = $("wbFind"), stateSel = $("wbState"), nearBtn = $("wbNear"), reset = $("wbReset");
 
   function el(tag, attrs) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
@@ -128,7 +130,7 @@
     var html = "", lastState = "", cap = phone.matches && !expanded && shown.length > 14 ? 12 : Infinity;
     if (sel && cap < Infinity && shown.indexOf(sel) >= cap) cap = shown.indexOf(sel) + 1;
     shown.slice(0, cap).forEach(function (b) {
-      if (!here && b.state !== lastState) { lastState = b.state; html += '<li class="wb-st mono">' + esc(b.state) + '<span>' + BARS.filter(function (x) { return x.state === b.state && (!words.length || shown.indexOf(x) >= 0); }).length + '</span></li>'; }
+      if (!here && b.state !== lastState) { lastState = b.state; html += '<li class="wb-st mono"><a href="' + pageOf(b._st) + '">' + esc(b.state) + '</a><span>' + BARS.filter(function (x) { return x.state === b.state && (!words.length || shown.indexOf(x) >= 0); }).length + '</span></li>'; }
       html += '<li><button type="button" class="wb-row' + (sel && sel.id === b.id ? " is-on" : "") + '" data-id="' + b.id + '" aria-pressed="' + (sel && sel.id === b.id) + '"><span class="wb-row-t"><strong>' + esc(b.name) + '</strong><em>' + esc(b.city + (b.st ? ", " + b.st : "")) + '</em></span>'
         + (here ? '<span class="wb-mi">' + (b._mi < 10 ? b._mi.toFixed(1) : Math.round(b._mi).toLocaleString()) + ' mi</span>' : '<i aria-hidden="true">&rarr;</i>') + "</button></li>";
     });
@@ -142,10 +144,11 @@
     var i = shown.indexOf(b), maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(b.name + ", " + b.addr);
     return '<button type="button" class="wb-x" data-close aria-label="Close">&times;</button>'
       + '<span class="mono">' + esc(b.city + (b.st ? ", " + b.st : "")) + (b._mi != null && here ? " &middot; " + (b._mi < 10 ? b._mi.toFixed(1) : Math.round(b._mi)) + " mi away" : "") + '</span>'
-      + '<h3>' + esc(b.name) + '</h3><p class="wb-addr">' + esc(b.addr) + '</p>' + (b.desc ? '<p class="wb-desc">' + esc(b.desc) + '</p>' : "")
+      + '<h3><a href="' + pageOf(b.slug) + '">' + esc(b.name) + '</a></h3><p class="wb-addr">' + esc(b.addr) + '</p>' + (b.desc ? '<p class="wb-desc">' + esc(b.desc) + '</p>' : "")
       + '<div class="wb-card-act">' + (b.list ? '<a class="pill solid" href="' + esc(b.list) + '" target="_blank" rel="noopener" data-out="list">Whisky list</a>' : "")
       + (b.web ? '<a class="pill' + (b.list ? "" : " solid") + '" href="' + esc(b.web) + '" target="_blank" rel="noopener" data-out="web">Website</a>' : "")
       + '<a class="pill" href="' + maps + '" target="_blank" rel="noopener" data-out="maps">Directions</a><button type="button" class="pill" data-share>Share</button></div>'
+      + '<a class="wb-full" href="' + pageOf(b.slug) + '">The full page on ' + esc(b.name) + ' <i aria-hidden="true">&rarr;</i></a>'
       + (shown.length > 1 && i >= 0 ? '<div class="wb-card-nav"><button type="button" data-step="-1" aria-label="Previous bar">&larr;</button><span class="mono">' + (i + 1) + " of " + shown.length + '</span><button type="button" data-step="1" aria-label="Next bar">&rarr;</button></div>' : "");
   }
 
@@ -273,7 +276,7 @@
     if (s && sel) { var i = shown.indexOf(sel), n = shown[(i + +s.getAttribute("data-step") + shown.length) % shown.length]; select(n); var nb = card.querySelector('[data-step="' + s.getAttribute("data-step") + '"]'); if (nb) nb.focus(); return; }
     var o = e.target.closest("[data-out]"); if (o && sel) track("bars_out", { slug: sel.slug, kind: o.getAttribute("data-out") });
     if (e.target.closest("[data-share]") && sel) {
-      var u = new URL(location.href); u.search = "?bar=" + sel.slug; var btn = e.target.closest("[data-share]");
+      var u = new URL(pageOf(sel.slug), location.href); var btn = e.target.closest("[data-share]");
       if (navigator.share) navigator.share({ title: sel.name + " \u00b7 America\u2019s Top Whisky Bars", url: u.href }).catch(function () {});
       else if (navigator.clipboard) navigator.clipboard.writeText(u.href).then(function () { btn.textContent = "Link copied"; setTimeout(function () { btn.textContent = "Share"; }, 1800); });
     }
@@ -295,7 +298,8 @@
   (window.WA && WA.loadJSON ? WA.loadJSON("whisky-bars.json") : fetch("whisky-bars.json").then(function (r) { return r.json(); })).then(function (d) {
     D = d; W = d.box[0]; H = d.box[1]; full = { x: 0, y: 0, w: W, h: H };
     BARS = d.bars.slice().sort(function (a, b) { return a.state.localeCompare(b.state) || a.city.localeCompare(b.city) || a.name.localeCompare(b.name); });
-    BARS.forEach(function (b) { byId[b.id] = b; b._k = fold([b.name, b.city, b.state, b.st, b.addr].join(" ")); });
+    var stSlug = {}; d.states.forEach(function (s) { stSlug[s.name] = s.slug; });
+    BARS.forEach(function (b) { byId[b.id] = b; b._st = stSlug[b.state] || ""; b._k = fold([b.name, b.city, b.state, b.st, b.addr].join(" ")); });
     var st = new Set(BARS.map(function (b) { return b.state; })), extra = ["District of Columbia", "Puerto Rico"].filter(function (s) { return st.has(s); });
     var dd = document.querySelectorAll("#wbStats dd"); if (dd.length === 3) { dd[0].textContent = BARS.length; dd[1].textContent = st.size - extra.length; dd[2].textContent = extra.map(function (s) { return s === "Puerto Rico" ? "Puerto Rico" : "D.C."; }).join(" & ") || "Coast to coast"; }
     build(); render();

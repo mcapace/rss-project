@@ -126,7 +126,7 @@ Why: picks an editor would choose read better than a nearest-neighbour list, and
 
 ## Search engines
 
-All of these are route handlers under `src/app/wa` and `src/app`, built from the database by `src/lib/wa/feeds.ts` and `listDocs` in `src/lib/wa/seo.ts`. On preview deployments (no delivery) they answer 503.
+All of these are route handlers under `src/app/wa` and `src/app`, built from the database by `src/lib/wa/feeds.ts` and `listDocs` in `src/lib/wa/seo.ts`. On preview deployments (no delivery) they answer 503. The paths below are the development host's; on whiskyadvocate.com (a root host) each is served without `/wa` (`/sitemap.xml`, `/feed.xml`, `/news-sitemap.xml`) and every URL it lists is in the root form (see [seo-and-cutover.md](seo-and-cutover.md)).
 
 | URL | Contents | Cache |
 |---|---|---|
@@ -136,7 +136,7 @@ All of these are route handlers under `src/app/wa` and `src/app`, built from the
 | `/wa/sitemap-pages.xml` | The section pages (`SECTION_PAGES`) | 1 day |
 | `/wa/news-sitemap.xml` | Google News: editorial stories from the last two days, publication named Whisky Advocate, never paid content | 1 minute, swr 1 minute |
 | `/wa/feed.xml` | RSS 2.0: the 50 newest editorial stories with summary, author, section and lead picture | 1 minute, swr 1 minute |
-| `/robots.txt` | Allows search engines and AI answer engines that cite their sources; disallows training-only crawlers (`GPTBot`, `CCBot`, `Google-Extended`, `ClaudeBot` and others) and the private paths (`/cms`, `/admin`, `/api/`, ...); lists both sitemaps | 1 hour |
+| `/robots.txt` | Allows search engines and AI answer engines that cite their sources; disallows training-only crawlers (`GPTBot`, `CCBot`, `Google-Extended`, `ClaudeBot` and others) and the private paths (`/cms`, `/admin`, `/api/`, ...); lists both sitemaps. On a root host the app is closed by whole segment and `/api/media/` and `/api/wa/` stay open (`src/lib/wa/robots.ts`) | 1 hour |
 | `/llms.txt` | A plain map of the site for AI assistants, with the newest stories | |
 
 Rules every list follows:

@@ -16,7 +16,7 @@ flowchart LR
   subgraph Vercel["Vercel: Next.js app (rss-project)"]
     CMS["/cms editorial workspace"]
     API["/api/cms/* routes"]
-    SITE["/wa public site<br/>static pages + server routes"]
+    SITE["Public site: /wa, or the root of whiskyadvocate.com<br/>static pages + server routes"]
     WAAPI["/api/wa/* routes<br/>front, latest, story, meaning, answer, ask"]
     EDGE["Edge proxy<br/>legacy redirects, sessions"]
     CRON["Cron: daily embedding catch-up"]

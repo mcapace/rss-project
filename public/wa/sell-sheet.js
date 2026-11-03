@@ -81,7 +81,7 @@
     var factsTop = H - m - 330;
     font(ctx, 400, 38); ctx.fillStyle = INK2; lines(ctx, wrap(ctx, note, w, Math.max(0, Math.floor((factsTop - 50 - y) / 56))), m, y, 56);
     ctx.fillStyle = RULE; ctx.fillRect(m, factsTop, w, 2);
-    var facts = [['Price', r.p > 0 ? '$' + Math.round(r.p).toLocaleString() : 'Not listed'], ['Strength', r.a ? r.a + '% ABV' : 'Not listed'], ['Producer', r.pr || ''], ['Rated by', r.by || 'Whisky Advocate'], ['Issue', r.issue || (r.d ? String(r.d).slice(0, 4) : '')]];
+    var facts = [['Price', r.p > 0 ? '$' + Math.round(r.p).toLocaleString() : 'Not listed'], ['Strength', r.a ? r.a + '% ABV' : 'Not listed'], ['Producer', r.pr && r.pr !== 'Unknown producer' ? r.pr : ''], ['Rated by', r.by || 'Whisky Advocate'], ['Issue', r.issue || (r.d ? String(r.d).slice(0, 4) : '')]].filter(function (f) { return f[1]; });
     var fw = w / facts.length;
     facts.forEach(function (f, i) {
       var fx = m + i * fw;

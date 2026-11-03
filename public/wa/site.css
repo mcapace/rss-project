@@ -2805,3 +2805,77 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
   .split-news .front .story.lead.has-img.rot-slide .tag { margin-top: 26px; }
 }
 @media (max-width: 860px) { .split-news .front .story.lead.has-img.rot-slide { padding-bottom: 34px; } }
+
+/* In the glass (2026-11-03): an ink flavor-fingerprint card, closest bottles under the compass, a strength gauge, price against score (bottle.html, in-the-glass.js). */
+.glass-grid.glass-x { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+.glass-x .print-card { grid-column: span 8; grid-row: auto; }
+.glass-x .serve-card { grid-column: span 4; }
+.glass-x .compass-card { grid-column: span 5; grid-row: auto; }
+.glass-x .value-card { grid-column: span 7; grid-template-columns: 1fr; grid-template-rows: auto 1fr; align-items: start; gap: 14px; }
+.glass-x .value-plot { display: flex; flex-direction: column; height: 100%; }
+.glass-x .value-plot canvas { flex: 1 1 auto; min-height: 240px; height: auto; }
+.glass-x .print-card { background: radial-gradient(90% 120% at 15% 0%, #2c2620 0%, #1b1714 55%, #110e0b 100%); border: 0; color: #fff6ea; box-shadow: 0 40px 80px -56px rgba(23,18,13,0.9); }
+.glass-x .print-card h3 { color: var(--gold); }
+.print-body { display: grid; grid-template-columns: minmax(220px, 340px) minmax(0, 1fr); gap: 24px; align-items: center; margin-top: 4px; }
+.print-wheel { width: 100%; aspect-ratio: 1; display: block; touch-action: pan-y; }
+.print-copy .big { color: #fffaf2; margin: 0; }
+.print-copy .print-stat { color: var(--gold); font-size: 14px; margin-top: 10px; }
+.print-copy .print-stat:empty { display: none; }
+.print-notes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.print-notes span { padding: 6px 11px; border-radius: 999px; background: rgba(255,246,234,0.08); border: 1px solid rgba(255,246,234,0.14); font-size: 13px; color: #fff6ea; }
+.print-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 0; }
+.print-meters dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,246,234,0.55); }
+.print-meters dd { margin: 6px 0 0; display: grid; gap: 6px; font-size: 13.5px; color: #fff6ea; }
+.pm-dots { display: flex; gap: 4px; }
+.pm-dots i { width: 22px; height: 5px; border-radius: 3px; background: rgba(255,246,234,0.14); }
+.pm-dots i.on { background: var(--gold); }
+.print-key { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 16px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.02em; color: rgba(255,246,234,0.78); }
+.print-key i { display: inline-block; flex: none; }
+.pk-fill { width: 12px; height: 12px; border-radius: 3px; background: linear-gradient(135deg, #e3a443, #7fb6d6); }
+.pk-dash { width: 16px; height: 0; border-top: 1.5px dashed rgba(255,246,234,0.7); margin-left: 8px; }
+.print-found { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,246,234,0.12); display: grid; gap: 10px; }
+.print-found .mono { font-size: 10.5px; letter-spacing: 0.08em; color: rgba(255,246,234,0.55); }
+.print-card .descriptors span { background: rgba(255,246,234,0.06); color: rgba(255,246,234,0.82); }
+.print-card .descriptors span.hot { background: rgba(227,164,67,0.18); color: #f3dcb4; }
+.print-card.no-print .print-body { display: none; }
+.print-card.no-print .print-found { margin-top: 6px; padding-top: 0; border-top: 0; }
+.proof { margin-top: auto; padding-top: 18px; }
+.proof-track { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(90deg, rgba(201,115,29,0.12), rgba(201,115,29,0.22) 50%, rgba(142,74,27,0.3)); margin-top: 26px; }
+.proof-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: linear-gradient(90deg, #e3a443, #c9731d); }
+.proof-mark { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: #fffbf5; border: 3px solid var(--amber); box-shadow: 0 4px 10px -4px rgba(79,42,16,0.5); }
+.proof-mark span { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; }
+.proof-zones { display: flex; margin-top: 10px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.02em; color: var(--ink-3); }
+.proof-zones span { border-left: 1px solid var(--rule); padding-left: 6px; }
+.proof-zones span:first-child { border-left: 0; padding-left: 0; }
+.kin { display: grid; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.kin .mono { font-size: 10.5px; letter-spacing: 0.08em; color: var(--ink-3); }
+.kin ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.kin a { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px; margin: 0 -8px; border-radius: 12px; transition: background-color 160ms; }
+.kin a:hover, .kin a:focus-visible { background: var(--paper-3); }
+.kin b { display: grid; place-items: center; height: 38px; border-radius: 10px; background: var(--paper-3); font-weight: 500; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.kin a:hover b { background: var(--amber); color: #fff; }
+.kin strong { display: block; font-weight: 500; font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kin em { display: block; font-style: normal; font-size: 12.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glass-x .compass-card > p { margin-top: 10px; padding-top: 0; }
+.glass-x .compass-card .compass-map-link { margin-top: 12px; }
+.value-plot canvas { display: block; width: 100%; height: 240px; }
+.value-key { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-top: 4px; }
+.value-key i { display: inline-block; flex: none; }
+.vk-me { width: 10px; height: 10px; border-radius: 50%; background: var(--amber); }
+.vk-line { width: 16px; height: 0; border-top: 1.5px solid rgba(201,115,29,0.75); margin-left: 10px; }
+.value-plot #ladderNote:empty { display: none; }
+@media (max-width: 1100px) {
+  .glass-x .print-card { grid-column: span 12; }
+  .glass-x .serve-card, .glass-x .compass-card { grid-column: span 6; }
+  .glass-x .value-card { grid-column: span 12; }
+}
+@media (max-width: 700px) {
+  .glass-grid.glass-x { grid-template-columns: minmax(0, 1fr); }
+  .glass-x .print-card, .glass-x .serve-card, .glass-x .compass-card, .glass-x .value-card { grid-column: auto; }
+  .print-body { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .print-wheel { max-width: 320px; margin: 0 auto; }
+  .value-plot canvas { height: 220px; }
+}
+.vk-mine { display: inline-flex; align-items: center; gap: 6px; }
+.value-card.no-price .vk-mine { display: none; }
+.value-card.no-price .vk-line { margin-left: 0; }

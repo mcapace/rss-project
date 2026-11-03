@@ -31,17 +31,31 @@
   /* Scroll spy: the last section whose top has passed the line under the mast and the bar is the current one. */
   [].forEach.call(document.querySelectorAll("nav[data-spy]"), function (nav) {
     var links = [].filter.call(nav.querySelectorAll('a[href^="#"]'), function (a) { return a.getAttribute("href").length > 1; });
-    var targets = links.map(function (a) { return document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1))); });
-    var box = nav.querySelector(".cp-nav-links") || nav.closest(".cp-toc") || nav, last = null;
+    var targets = links.map(function (a) {
+      var t = document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));
+      /* A heading inside a sticky section head stays put while its section scrolls, so read the section's top. */
+      return t && t.closest(".cp-sec-head") ? t.closest(".cp-sec") : t;
+    });
+    var box = nav.querySelector(".cp-nav-links") || nav.closest(".cp-toc") || nav, last = null, pinned = null;
     function line() { return mastH() + 90; }
+    /* A clicked link stays current until the reader scrolls on their own (wheel, touch or keys). */
+    links.forEach(function (a) { a.addEventListener("click", function () { pinned = a; update(); }); });
+    function unpin() { if (pinned) { pinned = null; queue(); } }
+    addEventListener("wheel", unpin, { passive: true }); addEventListener("touchmove", unpin, { passive: true });
+    addEventListener("keydown", function (e) { if (/^(Arrow|Page|Home|End| )/.test(e.key) || e.key === " ") unpin(); });
     function update() {
-      var at = -1, y = line();
-      targets.forEach(function (t, i) { if (t && t.getBoundingClientRect().top <= y + 1) at = i; });
-      var a = at >= 0 ? links[at] : null;
-      if (a === last) return; last = a;
-      links.forEach(function (l) { l.classList.remove("on"); l.removeAttribute("aria-current"); });
+      var at = -1, y = line(), tops = targets.map(function (t) { return t ? t.getBoundingClientRect().top : Infinity; });
+      tops.forEach(function (top, i) { if (top <= y + 1) at = i; });
+      /* At the very end of the page the last section is current even if its top never reaches the line. */
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2 && tops[tops.length - 1] < innerHeight) at = tops.length - 1;
+      /* Targets that share a row (two cards side by side) are current together; the first of them carries aria-current. */
+      while (at > 0 && Math.abs(tops[at - 1] - tops[at]) < 4) at--;
+      var on = pinned ? [pinned] : at < 0 ? [] : links.filter(function (l, i) { return Math.abs(tops[i] - tops[at]) < 4; });
+      var a = on[0] || null, key = on.map(function (l) { return links.indexOf(l); }).join();
+      if (key === last) return; last = key;
+      links.forEach(function (l) { l.classList.toggle("on", on.indexOf(l) >= 0); l.removeAttribute("aria-current"); });
       if (!a) return;
-      a.classList.add("on"); a.setAttribute("aria-current", "location");
+      a.setAttribute("aria-current", "location");
       /* Keep the active link in view by scrolling the list itself, never the window. */
       var ar = a.getBoundingClientRect(), br = box.getBoundingClientRect();
       if (box.scrollWidth > box.clientWidth + 1) {

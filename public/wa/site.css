@@ -3617,7 +3617,6 @@ body.cp .app-badges.ios-first .ios, body.cp .app-badges.android-first .android {
 
 /* Cards (Contact) */
 .cp-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
-.cp-card--lead { grid-row: span 3; }
 .cp-card { background: var(--glass); backdrop-filter: blur(18px) saturate(1.25); -webkit-backdrop-filter: blur(18px) saturate(1.25); border: 1px solid var(--glass-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), var(--glass-shadow); border-radius: 20px; padding: 22px 24px; display: grid; gap: 12px; align-content: start; min-width: 0; }
 .cp-card h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; margin: 0; text-wrap: balance; }
 .cp-card p { font-size: 15px; line-height: 1.55; color: var(--ink-2); margin: 0; overflow-wrap: anywhere; }
@@ -3627,11 +3626,15 @@ body.cp .app-badges.ios-first .ios, body.cp .app-badges.android-first .android {
 .cp-card p .cp-value a, .cp-value a { color: var(--ink); text-decoration: none; }
 .cp-card p .cp-value a:hover, .cp-value a:hover { color: var(--copper); }
 .cp-card--lead .cp-value { display: inline; }
-@media (max-width: 860px) { .cp-cards { grid-template-columns: 1fr; } .cp-card--lead { grid-row: auto; } }
+@media (max-width: 860px) { .cp-cards { grid-template-columns: 1fr; } }
 
 /* Copy button */
 .cp-copy.pill { min-height: 28px; padding: 0 10px; font-size: 12px; margin-left: 8px; vertical-align: middle; cursor: pointer; color: var(--ink); text-decoration: none; }
 @media (pointer: coarse) { .cp-copy.pill { min-height: 44px; } }
+/* An address and its Copy button move to a new line together; the button drops under the address only when both cannot fit. */
+.cp-copyable { display: inline-flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 6px; max-width: 100%; }
+.cp-copyable > a, .cp-copyable > span, .cp-copyable > .cp-value { min-width: 0; overflow-wrap: anywhere; }
+.cp-copyable > .cp-copy.pill { flex: none; align-self: center; margin-left: 0; }
 
 /* Addresses */
 .cp-addrs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }

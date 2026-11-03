@@ -16,15 +16,19 @@
   var fmt = function (n) { return n > 0 ? "$" + Math.round(n).toLocaleString() : "Price n/a"; };
   function charScore(r, c) { return c === "smoky" ? r.sm : c === "sweet" ? r.sw : c === "rich" ? r.ri : r.li; }
   function slugOf(r) { return (r.pr + " " + r.n).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
-  // On the live site every story and rating has its own server-rendered page at /wa/<slug>; elsewhere (the artifact copy) the hash pages.
-  var PATHS = !!window.WA_PATHS || /^\/wa\//.test(location.pathname);
-  function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; var s = r && r.slug ? r.slug : (typeof x === "string" ? x : ""); if (PATHS && s && !/^t20-/i.test(s)) return "/wa/" + encodeURIComponent(s); return "bottle.html#" + (s ? encodeURIComponent(s) : x); }
-  function producerHref(name) { return PATHS ? "/wa/producers/" + encodeURIComponent(name) : "producer.html#" + encodeURIComponent(name); }
+  // On the live site every story and rating has its own server-rendered page: /<slug> on whiskyadvocate.com (BASE ""),
+  // /wa/<slug> on the development host (BASE "/wa"); elsewhere (file:, localhost outside /wa, the artifact copy) the hash pages (BASE null).
+  // Page links are always built from BASE, never from a literal "/wa/".
+  var BASE = typeof window.WA_BASE === "string" ? window.WA_BASE : /^\/wa(\/|$)/.test(location.pathname) ? "/wa" : /(^|\.)whiskyadvocate\.com$/i.test(location.hostname) ? "" : null;
+  var PATHS = !!window.WA_PATHS || BASE !== null;
+  if (PATHS && BASE === null) BASE = "/wa";
+  function bottleHref(x) { var r = typeof x === "number" ? (DATA && DATA[x]) : x; var s = r && r.slug ? r.slug : (typeof x === "string" ? x : ""); if (PATHS && s && !/^t20-/i.test(s)) return BASE + "/" + encodeURIComponent(s); return "bottle.html#" + (s ? encodeURIComponent(s) : x); }
+  function producerHref(name) { return PATHS ? BASE + "/producers/" + encodeURIComponent(name) : "producer.html#" + encodeURIComponent(name); }
   // Recipes have their own server-rendered pages on the live site; elsewhere (the artifact copy) the hash page.
-  function recipeHref(slug) { return PATHS ? "/wa/recipes/" + encodeURIComponent(slug) : "cocktail.html#" + encodeURIComponent(slug); }
+  function recipeHref(slug) { return PATHS ? BASE + "/recipes/" + encodeURIComponent(slug) : "cocktail.html#" + encodeURIComponent(slug); }
   var value = function (r) { return r.s - 80 - Math.log((r.p > 0 ? r.p : 60) / 30) * 4; };
 
-  window.WA = { loadJSON: json, data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, recipeHref: recipeHref, value: value, slugOf: slugOf };
+  window.WA = { BASE: BASE, loadJSON: json, data: function () { return DATA; }, fmt: fmt, charScore: charScore, bottleHref: bottleHref, producerHref: producerHref, recipeHref: recipeHref, value: value, slugOf: slugOf };
 
   // Names that reached the archive with HTML entities ("Jacob&#039;s Pardon") read as text everywhere.
   var ENT = document.createElement("textarea");
@@ -179,10 +183,11 @@
   function liveBody(slug, cb) { fetch(LIVE_URL.replace(/latest$/, "story") + "?slug=" + encodeURIComponent(slug)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { cb(j && j.body ? j.body : null); }, function () { cb(null); }); }
   function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return ARTS[k][slug] ? cb(ARTS[k][slug]) : liveBody(slug, cb); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; if (d[slug]) cb(d[slug]); else liveBody(slug, cb); }, function () { liveBody(slug, cb); }); }
   var GLOSSARY = null;
-  function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); json("glossary.json").then(function (d) { GLOSSARY = d; cb(d); }).catch(dataError); }
+  // A term's body can link a /wa/<x> page; at the root (BASE "") that is /<x>, so the link takes no redirect hop.
+  function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); json("glossary.json").then(function (d) { if (BASE === "") d.forEach(function (t) { if (t.body) t.body = t.body.replace(/href="\/wa\//g, 'href="/'); }); GLOSSARY = d; cb(d); }).catch(dataError); }
   var SECTION_HREF = { news: "stories.html#news", features: "stories.html#features", guides: "guides.html", cocktails: "cocktails.html", travel: "travel.html", life: "stories.html#life" };
   function initials(name) { return (name || "WA").split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase(); }
-  function storyHref(st) { return (window.WA_PATHS || /^\/wa\//.test(location.pathname)) ? "/wa/" + encodeURIComponent(st.slug) : "story.html#" + st.slug; }
+  function storyHref(st) { return PATHS ? BASE + "/" + encodeURIComponent(st.slug) : "story.html#" + st.slug; }
   function storyRow(st) { return '<a href="' + storyHref(st) + '">' + (st.hero ? '<img class="th" src="' + st.hero + '" alt="" loading="lazy">' : '<span class="tag">' + SECTION[st.sec] + '</span>') + '<span><span class="nm">' + st.title + '</span><span class="sub">' + (st.dek || SECTION[st.sec] + " · " + st.by) + '</span></span><span class="when">' + when(st.d) + "</span></a>"; }
   function storyCard(st, cls) { return '<a class="story ' + cls + (st.hero ? " has-img" : "") + '" href="' + storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + SECTION[st.sec] + '</span><h3>' + st.title + "</h3><p>" + (st.dek || "") + "</p></a>"; }
   window.WA.editorialCard = function (st, reason) {
@@ -218,7 +223,7 @@
   }
   function hashSlug() { if (window.WA_SLUG) return window.WA_SLUG; var h = (location.hash || "").slice(1); try { h = decodeURIComponent(h); } catch (e) {} return h; }
   // A hash URL (story.html#slug) on the live site becomes the item's own URL without a reload, so links, shares and bookmarks use it.
-  function cleanUrl(slug) { if (!PATHS || window.WA_SLUG || !slug || /^t20-/i.test(slug) || !history.replaceState) return; window.WA_SLUG = slug; try { history.replaceState(null, "", "/wa/" + encodeURIComponent(slug)); } catch (e) {} }
+  function cleanUrl(slug) { if (!PATHS || window.WA_SLUG || !slug || /^t20-/i.test(slug) || !history.replaceState) return; window.WA_SLUG = slug; try { history.replaceState(null, "", BASE + "/" + encodeURIComponent(slug)); } catch (e) {} }
   function find(data, slug) { if (!slug) return null; if (data.bySlug && data.bySlug[slug.toLowerCase()]) return data.bySlug[slug.toLowerCase()]; var l = slug.toLowerCase(); for (var i = 0; i < data.length; i++) if (data[i].slug && data[i].slug.toLowerCase() === l) return data[i]; var n = /^\d+$/.test(slug) ? Number(slug) : NaN; return isNaN(n) ? null : data[n] || null; }
   var COCKTAILS = null, TOP20 = null;
   function cocktails(cb) { if (COCKTAILS) return cb(COCKTAILS); json("cocktails.json").then(function (d) { COCKTAILS = d.filter(WACatalog.validRecipe); cb(COCKTAILS); }).catch(dataError); }
@@ -798,11 +803,13 @@ document.body.appendChild(waAds);
   }
   function scan(all) {
     queued = false;
-    var links = document.querySelectorAll(all ? 'a[href*="story.html#"], a[href^="/wa/"]' : 'a[href*="story.html#"]:not([data-spc]), a[href^="/wa/"]:not([data-spc])');
+    // Clean story links are BASE + "/<slug>": /<slug> on whiskyadvocate.com, /wa/<slug> on the development host.
+    var pre = (WA.BASE === null ? "/wa" : WA.BASE) + "/", clean = new RegExp("^" + pre.replace(/\//g, "\\/") + "[^/?#]+$");
+    var links = document.querySelectorAll(all ? 'a[href*="story.html#"], a[href^="' + pre + '"]' : 'a[href*="story.html#"]:not([data-spc]), a[href^="' + pre + '"]:not([data-spc])');
     for (var i = 0; i < links.length; i++) {
       var a = links[i]; a.setAttribute("data-spc", "");
       if (a.matches(SKIP) || a.closest(SKIP)) continue;
-      var h = a.getAttribute("href"), slug = h.indexOf("story.html#") >= 0 ? h.slice(h.indexOf("#") + 1) : (/^\/wa\/[^/?#.]+$/.test(h) ? h.slice(4) : "");
+      var h = a.getAttribute("href"), slug = h.indexOf("story.html#") >= 0 ? h.slice(h.indexOf("#") + 1) : (clean.test(h) && !/\.(html?|js|json|css|xml|txt|png|jpe?g|gif|webp|svg|ico|mp4)$/i.test(h) ? h.slice(pre.length) : "");
       if (!slug) continue;
       if (key(slug) in paid) place(a);
     }

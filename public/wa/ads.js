@@ -35,7 +35,8 @@
 
   /* Empty slots collapse (2026-11-03): no on-site house-ad fallback, so every impression shown is one Ad Manager served and counted. */
 
-  var home = /\/wa\/?$/.test(location.pathname) || /\/index\.html$/.test(location.pathname);
+  /* Home is "/" on whiskyadvocate.com (the root URL shape) and /wa/ on the development host. */
+  var home = /^(?:\/wa)?\/?$/.test(location.pathname) || /\/index\.html$/.test(location.pathname);
   /* Page -> section ad unit. Any page not listed (about, contact, privacy, newsletter, app, tools, globe, ...) uses "general". */
   var NEW_SITE = "/4054/whiskyadvocate.new";
   var SECTIONS = {
@@ -54,7 +55,8 @@
   var pageFile = (location.pathname.split("/").pop() || "index.html").toLowerCase();
   /* The same templates are also served at clean URLs (src/app/wa): /wa/<slug> is a story, or a bottle (body.rating-page);
      /wa/recipes/<slug> is a recipe; /wa/producers/<name> is a producer page. */
-  var clean = location.pathname.match(/^\/wa\/(?:(recipes|producers)\/)?([^\/.]+)\/?$/);
+  /* At the root of whiskyadvocate.com the same clean URLs have no /wa prefix (/<slug>, /recipes/<slug>, /producers/<name>). */
+  var clean = location.pathname.match(/^(?:\/wa)?\/(?:(recipes|producers)\/)?([^\/.]+)\/?$/);
   var cleanSection = clean ? (clean[1] === "recipes" ? "cocktails" : clean[1] === "producers" ? "producers" : document.body.classList.contains("rating-page") ? "ratings" : "stories") : null;
   var section = home ? "homepage" : (SECTIONS[pageFile] || cleanSection || "general");
   var path = NEW_SITE + "/" + section;

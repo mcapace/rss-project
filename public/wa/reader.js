@@ -99,8 +99,11 @@
       if (!im.getAttribute('src')) return;
       im.setAttribute('data-reader-media',''); im.decoding = 'async';
       var url = new URL(im.src,location.href);
-      if (url.origin === location.origin && /^\/wa\/img\/.*\.(png|jpe?g|webp)$/i.test(url.pathname) && !im.srcset) {
-        im.srcset = [256,384,640,1080].map(function (w) { return '/_next/image?url=' + encodeURIComponent(url.pathname) + '&w=' + w + '&q=75 ' + w + 'w'; }).join(', ');
+      // Site pictures are /img/... at the root of whiskyadvocate.com (WA.BASE "") and /wa/img/... on the development host;
+      // the optimizer reads the file at /wa/img. A static copy served at its own root (hash mode) has no optimizer.
+      var p = url.pathname;
+      if (url.origin === location.origin && (/^\/wa\/img\//.test(p) || (/^\/img\//.test(p) && window.WA && WA.BASE === "")) && /\.(png|jpe?g|webp)$/i.test(p) && !im.srcset) {
+        im.srcset = [256,384,640,1080].map(function (w) { return '/_next/image?url=' + encodeURIComponent('/wa' + url.pathname.replace(/^\/wa(?=\/)/, '')) + '&w=' + w + '&q=75 ' + w + 'w'; }).join(', ');
         im.sizes = '(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 640px';
       }
       if (!im.hasAttribute('loading') && im.getBoundingClientRect().top > innerHeight * 1.5) im.loading = 'lazy';

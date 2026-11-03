@@ -85,7 +85,7 @@ WA.ready(function () {
     document.getElementById("credit").textContent = r.credit || "From " + r.storyTitle;
     var intro = document.getElementById("intro"); if (r.intro) intro.textContent = r.intro; else intro.remove();
     document.getElementById("art").src = r.img; document.getElementById("art").alt = r.name;
-    document.getElementById("storyLink").href = "story.html#" + r.story; document.getElementById("storyLink").textContent = "Read the story: " + r.storyTitle.slice(0, 40) + (r.storyTitle.length > 40 ? "…" : "");
+    document.getElementById("storyLink").href = WA.storyHref({ slug: r.story }); document.getElementById("storyLink").textContent = "Read the story: " + r.storyTitle.slice(0, 40) + (r.storyTitle.length > 40 ? "…" : "");
     var checked = new Set();
     function renderIng() { document.getElementById("ingredients").innerHTML = r.ingredients.map(function (i, index) { var a = WA.amount(i); return '<li class="ingredient-step"><label><input type="checkbox" data-ingredient="' + index + '"' + (checked.has(index) ? ' checked' : '') + '><b>' + WAReader.escape(a ? WA.fmtAmount(a.n * n) + (a.unit ? " " + a.unit : "") : "") + '</b><span>' + WAReader.escape(a ? a.rest : i) + '</span></label></li>'; }).join(""); }
     document.getElementById("ingredients").addEventListener("change", function (e) { var i = Number(e.target.dataset.ingredient); if (e.target.checked) checked.add(i); else checked.delete(i); });

@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var input=document.getElementById('discoveryQuery'), results=document.getElementById('discoveryResults'), status=document.getElementById('discoveryStatus'), more=document.getElementById('discoveryMore'), esc=WAReader.escape;
-  var meaningOf=new Map(), storyBySlug=new Map(), ratingBySlug=new Map(), bottleItem=new Map(); // per search: the stories and bottles /api/wa/meaning matched by meaning
+  var meaningOf=new Map(), storyBySlug=new Map(), ratingBySlug=new Map(), bottleItem=new Map(), producerWords=new Set(); // per search: the stories and bottles /api/wa/meaning matched by meaning
   var index=[], ratings=[], ready=false, limit=12, kind='All', kinds=['All','Bottle','Story','Recipe','Producer'], labels={All:'All',Bottle:'Bottles',Story:'Stories',Recipe:'Recipes',Producer:'Producers'};
   var tabs=document.createElement('div'); tabs.className='discovery-tabs'; tabs.setAttribute('role','group'); tabs.setAttribute('aria-label','Result type'); status.before(tabs);
   // The answer: the question matched by meaning against every rating and story, answered from what was found.
@@ -39,7 +39,12 @@
       var addTo=function(kindName,items){var g=groups.find(function(x){return x.kind===kindName;});items.forEach(function(x){if(x&&!have.has(x.href)){have.add(x.href);g.items.push(x);hits.push(x);added++;}});};
       addTo('Story',near.stories.map(function(slug){return storyBySlug.get(slug);}));
       var okBottles=new Set(WA.apply(intent,near.bottles.map(function(slug){return ratingBySlug.get(slug);}).filter(Boolean)).map(function(r){return r.slug;}));
-      addTo('Bottle',near.bottles.filter(function(slug){return okBottles.has(slug);}).map(function(slug){return bottleItem.get(slug);})); }
+      addTo('Bottle',near.bottles.filter(function(slug){return okBottles.has(slug);}).map(function(slug){return bottleItem.get(slug);}));
+      // A search that names no producer ("something smoky for a cold night") is a description: the bottles closest in meaning lead,
+      // ahead of bottles that only share a word with it ("Cold Brew"). A name search ("ardbeg 10") keeps the word order.
+      var named=WA.nameTerms(q).some(function(t){return producerWords.has(t);});
+      if(!named){ var order=new Map(near.bottles.filter(function(slug){return okBottles.has(slug);}).map(function(slug,i){return [WA.bottleHref(slug),i];})), g=groups.find(function(x){return x.kind==='Bottle';});
+        g.items.sort(function(a,b){var ia=order.has(a.href)?order.get(a.href):1e6, ib=order.has(b.href)?order.get(b.href):1e6; return ia-ib;}); } }
     tabs.innerHTML=kinds.map(function(k){var n=k==='All'?hits.length:groups.find(function(g){return g.kind===k;}).items.length;return '<button type="button" class="pill" data-type="'+k+'" aria-pressed="'+(kind===k)+'">'+labels[k]+(q?' <span>'+n.toLocaleString()+'</span>':'')+'</button>';}).join('');
     status.textContent=q?hits.length.toLocaleString()+' results for “'+q+'”'+(bottles.approximate?' · Includes close bottle-name matches.':'')+(added?' · Includes '+added.toLocaleString()+' found by meaning.':(bottles.approximate?'':'.')):'Search a bottle, ingredient, producer or subject.';
     var visible=groups.filter(function(g){return g.items.length&&(kind==='All'||g.kind===kind);});
@@ -52,7 +57,7 @@
     status.textContent='Loading search…';
     Promise.all(['ratings.json','stories.json','stories-archive.json','cocktails.json'].map(WA.loadJSON)).then(function(sets){
       index=[];storyBySlug=new Map();ratingBySlug=new Map();bottleItem=new Map();var producers=new Set(),seen=new Set();ratings=sets[0].rows.map(function(row){return Object.fromEntries(sets[0].cols.map(function(c,i){return [c,row[i]];}));});
-      ratings.forEach(function(r){producers.add(r.pr);var item={kind:'Bottle',title:r.n,href:WA.bottleHref(r.slug),rating:r,description:r.c+' · '+WA.fmt(r.p)+(r.d?' · Reviewed '+r.d.slice(0,4):'')};index.push(item);ratingBySlug.set(r.slug,r);bottleItem.set(r.slug,item);});
+      ratings.forEach(function(r){producers.add(r.pr);var item={kind:'Bottle',title:r.n,href:WA.bottleHref(r.slug),rating:r,description:r.c+' · '+WA.fmt(r.p)+(r.d?' · Reviewed '+r.d.slice(0,4):'')};index.push(item);ratingBySlug.set(r.slug,r);bottleItem.set(r.slug,item);WA.norm(r.pr).split(' ').forEach(function(w){if(w.length>=3&&!/^(the|and|distillery|distilling|distillers|company|spirits|whisky|whiskey|co)$/.test(w))producerWords.add(w);});});
       sets[1].concat(sets[2]).forEach(function(s){if(seen.has(s.slug))return;seen.add(s.slug);var item={kind:'Story',title:s.title,href:WA.storyHref(s),description:s.dek,date:s.d,hay:WA.norm(s.title+' '+s.dek+' '+(s.tags||[]).join(' '))};index.push(item);storyBySlug.set(s.slug,item);});
       sets[3].filter(WACatalog.validRecipe).forEach(function(r){index.push({kind:'Recipe',title:r.name,href:WA.recipeHref(r.slug),description:r.ingredients.length+' ingredients · '+r.ingredients.slice(0,2).join(', '),date:r.d,hay:WA.norm(r.name+' '+r.ingredients.join(' '))});});
       producers.forEach(function(name){if(name&&name!=='Unknown producer')index.push({kind:'Producer',title:name,href:WA.producerHref(name),description:'Explore the reviews and portfolio',hay:WA.norm(name)});});ready=true;render();

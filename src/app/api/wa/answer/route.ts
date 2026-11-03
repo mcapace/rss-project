@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
+import { visitorKey, withinLimit } from "@/lib/wa/rate-limit";
 import { embedQuery, loadBottles, matchDocuments, priceLimits } from "@/lib/wa/semantic";
 
 export const runtime = "nodejs";
@@ -14,13 +15,6 @@ export const maxDuration = 30;
  */
 const MODEL = process.env.WA_ANSWER_MODEL || "claude-sonnet-5-5";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS" };
-const bucket = new Map<string, { count: number; at: number }>();
-function limited(ip: string) {
-  const now = Date.now(); const hit = bucket.get(ip);
-  if (!hit || now - hit.at > 60_000) { bucket.set(ip, { count: 1, at: now }); return false; }
-  hit.count += 1; return hit.count > 20;
-}
-
 const SCHEMA = {
   type: "object", additionalProperties: false, required: ["answer", "bottles", "stories"],
   properties: {
@@ -36,10 +30,10 @@ export function OPTIONS() { return new NextResponse(null, { status: 204, headers
 export async function GET(request: Request) {
   const q = (new URL(request.url).searchParams.get("q") || "").replace(/\s+/g, " ").trim().slice(0, 200);
   if (q.length < 3) return NextResponse.json({ error: "Ask a question." }, { status: 400, headers: CORS });
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  if (limited(ip)) return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: CORS });
   try {
     const db = cmsDb();
+    // Shared across every server instance: 20 uncached questions a minute per visitor (cached ones never reach here).
+    if (!(await withinLimit(db, `answer:${visitorKey(request)}`, 20, 60))) return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: CORS });
     const embedding = await embedQuery(q, request.signal);
     const [ratingMatches, storyMatches] = await Promise.all([matchDocuments(db, embedding, ["rating"], 80), matchDocuments(db, embedding, ["article"], 12)]);
     const bottles = await loadBottles(db, ratingMatches.map(m => m.document_id));
@@ -54,6 +48,9 @@ export async function GET(request: Request) {
     const headers = { ...CORS, "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" };
     const fallback = { answer: "", bottles: candidates.slice(0, 6).map(b => bottleOut(b.slug)), stories: stories.slice(0, 3).map(s => storyOut(s.slug)) };
     if (!process.env.ANTHROPIC_API_KEY || (!candidates.length && !stories.length)) return NextResponse.json(fallback, { headers });
+    // At most WA_ANSWER_HOURLY (default 600) written answers an hour across the site; past it, readers get the matched
+    // bottles and stories without the written answer, cached briefly so the answer returns once the hour turns.
+    if (!(await withinLimit(db, "answer:claude", Number(process.env.WA_ANSWER_HOURLY) || 600, 3600))) return NextResponse.json(fallback, { headers: { ...CORS, "Cache-Control": "public, s-maxage=300" } });
 
     const list = candidates.map(b => `${b.slug} | ${b.title} | ${b.rating.score ?? "?"} pts | ${b.rating.price ? "$" + b.rating.price : "price n/a"} | ${b.rating.category || ""}${b.rating.issue ? " | " + b.rating.issue : ""}${b.flavor ? " | " + b.flavor.line + " | notes: " + b.flavor.notes.join(", ") : ""}`).join("\n");
     const storyList = stories.map(s => `${s.slug} | ${s.title} | ${String(s.excerpt || "").replace(/\s+/g, " ").slice(0, 200)}`).join("\n");

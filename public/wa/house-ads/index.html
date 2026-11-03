@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>House Ads</title>
+<link rel="icon" href="../favicon.ico">
+<style>
+@font-face{font-family:"Aeonik";src:url("../fonts/Aeonik-Regular.ttf");font-weight:400}
+@font-face{font-family:"Aeonik";src:url("../fonts/Aeonik-Medium.ttf");font-weight:500}
+@font-face{font-family:"JetBrains Mono";src:url("../fonts/jetbrains-mono.woff2")}
+:root{--paper:#f7f3ec;--paper-2:#fffbf5;--paper-3:#efe8dc;--ink:#17120d;--ink-2:#4b3f33;--ink-3:#8b7b6a;--amber:#c9731d;--gold:#e3a443;--rule:rgba(23,18,13,.12);--panel:#1b1b1b;
+  --font:"Aeonik","Helvetica Neue",Arial,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;--gutter:clamp(16px,4vw,56px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+header.top{padding:28px var(--gutter) 0;display:flex;align-items:center;gap:16px}
+header.top svg{width:120px;height:auto}
+.hero{padding:48px var(--gutter) 28px;max-width:1240px}
+.hero h1{font-weight:500;font-size:clamp(36px,6vw,72px);letter-spacing:-.035em;line-height:.98;margin:14px 0 18px}
+.hero p{font-size:18px;line-height:1.5;color:var(--ink-2);max-width:62ch;margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.stat{background:var(--paper-2);border:1px solid var(--rule);border-radius:14px;padding:14px 18px;min-width:150px}
+.stat b{display:block;font-weight:500;font-size:28px;letter-spacing:-.02em}
+section{padding:24px var(--gutter);max-width:1400px}
+h2{font-weight:500;font-size:clamp(26px,3.4vw,40px);letter-spacing:-.025em;margin:6px 0 18px}
+.now{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.now article{background:var(--paper-2);border:1px solid var(--rule);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.now img{width:100%;aspect-ratio:300/250;object-fit:cover;display:block;background:var(--paper-3)}
+.now .body{padding:14px 16px 16px;display:grid;gap:6px;flex:1}
+.now h3{margin:0;font-weight:500;font-size:17px}
+.now .nums{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.verdict{font-size:14px;line-height:1.4;color:var(--ink-2)}
+.verdict.retire{color:#9a3b12}
+.verdict a{color:var(--amber);text-decoration:none;font-weight:500}
+.campaign{border-top:1px solid var(--rule);padding-top:34px;margin-top:22px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px}
+.chead h2{margin:4px 0 6px}
+.chead .dest{font-size:14px;color:var(--ink-2);word-break:break-all}
+.btn{appearance:none;border:0;cursor:pointer;font:500 14px var(--font);background:var(--ink);color:var(--paper);border-radius:999px;padding:11px 18px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+.btn.small{font-size:12.5px;padding:7px 12px}
+.btn:hover{background:var(--amber);color:var(--ink)}
+.stage{background:var(--panel);border-radius:22px;padding:22px;display:flex;flex-wrap:wrap;gap:22px 26px;align-items:flex-start}
+.ad{display:grid;gap:10px;max-width:100%}
+.frame{position:relative;overflow:hidden;border-radius:4px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.frame iframe{border:0;display:block;transform-origin:0 0}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.meta .mono{color:rgba(247,243,236,.62);margin-right:4px}
+.meta .btn{background:rgba(247,243,236,.1);color:#f7f3ec}
+.meta .btn:hover{background:var(--gold);color:var(--ink)}
+.howto{background:var(--paper-2);border:1px solid var(--rule);border-radius:18px;padding:22px 26px;max-width:900px}
+.howto ol{margin:10px 0 0;padding-left:20px;line-height:1.65;color:var(--ink-2)}
+.howto code{font-family:var(--mono);font-size:12.5px;background:var(--paper-3);padding:1px 6px;border-radius:5px}
+footer{padding:40px var(--gutter) 60px;color:var(--ink-3);font-size:13px}
+.replay{position:absolute;right:8px;top:8px;z-index:2;background:rgba(22,20,18,.7);color:#f7f3ec;border:0;border-radius:999px;font:500 11px var(--font);padding:5px 9px;cursor:pointer;opacity:0;transition:opacity .2s}
+.frame:hover .replay{opacity:1}
+@media (max-width:640px){.stage{padding:14px;border-radius:16px}.hero p{font-size:16px}}
+</style>
+</head>
+<body>
+<header class="top"><a href="../index.html" aria-label="Whisky Advocate"><svg id="logo" viewBox="0 0 620 212"></svg></a><span class="mono">House ads</span></header>
+
+<div class="hero">
+  <span class="mono">Ad Manager · /4054/whiskyadvocate</span>
+  <h1>The house ads, rebuilt in the new look</h1>
+  <p id="lede">Every house ad now running on whiskyadvocate.com, with a replacement for each that is worth keeping. Each new ad has a Runway film loop that loads after the page does, lines that change as it plays, and live details: a WhiskyFest countdown, and the newest ratings, stories and cocktails. They are built as HTML5 bundles for Ad Manager in all seven sizes we serve.</p>
+  <div class="stats" id="stats"></div>
+</div>
+
+<section>
+  <span class="mono">Running now</span>
+  <h2>What is in rotation</h2>
+  <p class="verdict" id="window" style="margin:-8px 0 18px"></p>
+  <div class="now" id="now"></div>
+</section>
+
+<section>
+  <span class="mono">The new set</span>
+  <h2>Seven campaigns, seven sizes each</h2>
+  <div class="howto">
+    <strong>Swapping them in Ad Manager</strong>
+    <ol>
+      <li>Download a campaign's zips below (one zip per size, or all sizes at once).</li>
+      <li>In the order <em>Whisky Advocate House ads</em>, line item <em>LIVE WAO Ads</em>: <em>Add creative</em> → <em>HTML5</em> → upload the size's zip. Ad Manager reads its size from the bundle.</li>
+      <li>Ad Manager finds the <code>clickTag</code>; paste the campaign's link (shown under each campaign) as its click-through URL.</li>
+      <li>Deactivate the old creative it replaces. Retire the three marked <em>Retire</em> above outright.</li>
+      <li>Static JPG backups at the exact pixel size are there for any slot or partner that takes images only.</li>
+    </ol>
+  </div>
+  <div id="campaigns"></div>
+</section>
+
+<footer>Built by <code>scripts/house-ads/build.mjs</code> from the Runway loops made by <code>scripts/house-ads/runway.mjs</code>. The newest ratings, stories and cocktails are read from the site's data at build time; rebuild to refresh them. Each bundle is under 950 KB with three subset fonts, a poster and the loop; the film loads only after the page has finished, plays muted, pauses when scrolled away, and everything stops by 30 seconds.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  var fmt = function (n) { return Number(n).toLocaleString("en-US"); };
+  fetch("../logo.svg").then(function (r) { return r.text(); }).then(function (t) { var m = t.match(/<svg[^>]*>([\s\S]*)<\/svg>/); if (m) $("#logo").innerHTML = m[1]; });
+
+  var ORDER = ["970x250", "300x600", "300x250", "970x90", "728x90", "468x60", "320x50"];
+  var NOTE = {
+    whiskyfest: "Counts down live to doors on Friday, November 20 (6:30 PM Eastern), turns to Tonight on the day, and to a thank-you after. End the line item on November 20.",
+    subscribe: "A magazine cover that turns toward the reader on hover, with the $22 offer and the two gifts.",
+    notes: "Shows the newest stories on the site, read at build time.",
+    weekend: "Shows releases our editors rated 90 points or more in the last six weeks, with the score counting up.",
+    cocktails: "Turns through recipes from the cocktail library.",
+    podcast: "A live waveform beside the host's lamp-lit microphone.",
+    ratingsflash: "A light sweep across the line, like the flash in its name. This one now has a click-through: the Cigar Aficionado newsletter page."
+  };
+
+  Promise.all([fetch("manifest.json").then(function (r) { return r.json(); }), fetch("current.json").then(function (r) { return r.json(); })]).then(function (res) {
+    var m = res[0], cur = res[1];
+    var imps = 0, clicks = 0; cur.groups.forEach(function (g) { imps += g.imps; clicks += g.clicks; });
+    $("#stats").innerHTML =
+      '<div class="stat"><span class="mono">Running now</span><b>' + cur.groups.reduce(function (n, g) { return n + g.creatives; }, 0) + '</b>creatives, 10 campaigns</div>' +
+      '<div class="stat"><span class="mono">Impressions</span><b>' + fmt(imps) + '</b>in 13 days</div>' +
+      '<div class="stat"><span class="mono">Click rate</span><b>' + (clicks / imps * 100).toFixed(2) + '%</b>' + fmt(clicks) + ' clicks</div>' +
+      '<div class="stat"><span class="mono">New set</span><b>' + Object.keys(m.campaigns).length * 7 + '</b>HTML5 bundles</div>';
+    $("#window").textContent = cur.window + ". Impressions and clicks are the campaign's totals across all its sizes.";
+    $("#now").innerHTML = cur.groups.map(function (g) {
+      var retire = /^Retire/.test(g.verdict);
+      var target = g.replacement && m.campaigns[g.replacement];
+      return '<article>' + (g.img ? '<img src="' + g.img + '" alt="' + esc(g.label) + '" loading="lazy">' : "") +
+        '<div class="body"><h3>' + esc(g.label) + '</h3><span class="nums">' + fmt(g.imps) + ' imp · ' + g.clicks + ' clicks · ' + (g.imps ? (g.clicks / g.imps * 100).toFixed(2) : "0") + '% · ' + g.creatives + ' sizes</span>' +
+        '<span class="verdict' + (retire ? " retire" : "") + '">' + esc(g.verdict) + (target && !retire ? ' with <a href="#c-' + g.replacement + '">' + esc(target.title) + '</a>' : "") + (target && retire ? '; <a href="#c-' + g.replacement + '">' + esc(target.title) + '</a> covers it' : "") + '</span></div></article>';
+    }).join("");
+
+    var box = $("#campaigns");
+    Object.keys(m.campaigns).forEach(function (id) {
+      var c = m.campaigns[id];
+      var el = document.createElement("div");
+      el.className = "campaign"; el.id = "c-" + id;
+      var sizes = ORDER.filter(function (s) { return c.sizes[s]; });
+      el.innerHTML = '<div class="chead"><div><span class="mono">' + (c.brand === "ca" ? "Cigar Aficionado" : "Whisky Advocate") + '</span><h2>' + esc(c.title) + '</h2>' +
+        '<div class="dest">Click-through: <a href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.url) + '</a></div>' +
+        '<p class="verdict" style="margin:8px 0 0;max-width:70ch">' + esc(NOTE[id] || "") + '</p></div>' +
+        '<button class="btn" data-all="' + id + '">Download all ' + sizes.length + ' sizes</button></div>' +
+        '<div class="stage">' + sizes.map(function (s) {
+          var d = c.sizes[s];
+          return '<div class="ad" data-size="' + s + '"><div class="frame"><button class="replay" type="button">Replay</button><iframe title="' + esc(c.title) + ' ' + s + '" loading="lazy" scrolling="no" data-src="' + id + "/" + s + '/index.html"></iframe></div>' +
+            '<div class="meta"><span class="mono">' + s + ' · ' + Math.round(d.bytes / 1024) + ' KB</span>' +
+            '<button class="btn small" data-zip="' + id + '|' + s + '">HTML5 zip</button>' +
+            '<a class="btn small" href="' + id + "/" + s + '/backup.jpg" download="WA-' + id + "-" + s + '.jpg">JPG</a></div></div>';
+        }).join("") + '</div>';
+      box.appendChild(el);
+    });
+    fit(); addEventListener("resize", fit);
+    if (location.hash) { var target = document.getElementById(location.hash.slice(1)); if (target) target.scrollIntoView(); }
+
+    // Load each ad when it comes near the screen, so the page does not start 49 films at once.
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { var f = e.target; if (!f.src) f.src = f.getAttribute("data-src"); io.unobserve(f); } }); }, { rootMargin: "300px" });
+    [].forEach.call(document.querySelectorAll("iframe[data-src]"), function (f) { io.observe(f); });
+
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest("button"); if (!t) return;
+      if (t.classList.contains("replay")) { var f = t.parentNode.querySelector("iframe"); f.src = f.getAttribute("data-src") + "?r=" + Date.now(); return; }
+      if (t.dataset.zip) { var p = t.dataset.zip.split("|"); zip(t, m, p[0], [p[1]]); }
+      if (t.dataset.all) { zip(t, m, t.dataset.all, ORDER.filter(function (s) { return m.campaigns[t.dataset.all].sizes[s]; })); }
+    });
+  });
+
+  function fit() {
+    [].forEach.call(document.querySelectorAll(".ad"), function (a) {
+      var s = a.getAttribute("data-size").split("x").map(Number), stage = a.parentNode;
+      var room = stage.clientWidth - 44, k = Math.min(1, room / s[0]);
+      var fr = a.querySelector(".frame"), f = a.querySelector("iframe");
+      f.width = s[0]; f.height = s[1]; f.style.transform = k < 1 ? "scale(" + k + ")" : "";
+      fr.style.width = Math.floor(s[0] * k) + "px"; fr.style.height = Math.floor(s[1] * k) + "px";
+    });
+  }
+
+  // A size's zip holds its bundle files at the top level, the way Ad Manager wants them.
+  function zip(btn, m, id, sizes) {
+    var label = btn.textContent; btn.textContent = "Zipping…"; btn.disabled = true;
+    var outer = new JSZip();
+    Promise.all(sizes.map(function (s) {
+      var z = new JSZip(), files = m.campaigns[id].sizes[s].files.filter(function (f) { return f !== "backup.jpg"; });
+      return Promise.all(files.map(function (f) { return fetch(id + "/" + s + "/" + f).then(function (r) { return r.arrayBuffer(); }).then(function (b) { z.file(f, b); }); }))
+        .then(function () { return z.generateAsync({ type: "uint8array", compression: "DEFLATE" }); })
+        .then(function (bytes) { return { s: s, bytes: bytes }; });
+    })).then(function (parts) {
+      if (parts.length === 1) return save(new Blob([parts[0].bytes], { type: "application/zip" }), "WA-" + id + "-" + parts[0].s + ".zip");
+      parts.forEach(function (p) { outer.file("WA-" + id + "-" + p.s + ".zip", p.bytes); outer.file("static/WA-" + id + "-" + p.s + ".jpg", fetch(id + "/" + p.s + "/backup.jpg").then(function (r) { return r.arrayBuffer(); })); });
+      return outer.generateAsync({ type: "blob" }).then(function (b) { save(b, "WA-house-ads-" + id + ".zip"); });
+    }).catch(function (e) { alert("Could not build the zip: " + e.message); })
+      .then(function () { btn.textContent = label; btn.disabled = false; });
+  }
+  function save(blob, name) { var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+})();
+</script>
+</body>
+</html>

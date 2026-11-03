@@ -1,0 +1,173 @@
+{
+ "window": "Oct 20 to Nov 1, 2026 (Ad Manager, order \"Whisky Advocate House ads\", line \"LIVE WAO Ads\")",
+ "groups": [
+  {
+   "label": "WhiskyFest NY 2026",
+   "creatives": 7,
+   "sizes": [
+    "300x250",
+    "300x600",
+    "320x50",
+    "468x60",
+    "728x90",
+    "970x250",
+    "970x90"
+   ],
+   "imps": 22854,
+   "clicks": 26,
+   "dest": "https://www.whiskyfest.com/",
+   "verdict": "Replace",
+   "replacement": "whiskyfest",
+   "img": "current/whiskyfest-ny-2026.jpg"
+  },
+  {
+   "label": "WhiskyFest seminars",
+   "creatives": 6,
+   "sizes": [
+    "300x600",
+    "320x50",
+    "468x60",
+    "728x90",
+    "970x250",
+    "970x90"
+   ],
+   "imps": 35153,
+   "clicks": 38,
+   "dest": "https://www.whiskyfest.com/",
+   "verdict": "Retire: a second WhiskyFest set (files named WF25)",
+   "replacement": "whiskyfest",
+   "img": "current/whiskyfest-seminars.jpg"
+  },
+  {
+   "label": "Subscribe: 1 year for $22",
+   "creatives": 6,
+   "sizes": [
+    "300x250",
+    "300x600",
+    "468x60",
+    "728x90",
+    "970x250",
+    "970x90"
+   ],
+   "imps": 10169,
+   "clicks": 12,
+   "dest": "https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306",
+   "verdict": "Replace",
+   "replacement": "subscribe",
+   "img": "current/subscribe-1-year-for-22.jpg"
+  },
+  {
+   "label": "Whisky Notes",
+   "creatives": 6,
+   "sizes": [
+    "300x250",
+    "320x50",
+    "468x60",
+    "728x90",
+    "970x250",
+    "970x90"
+   ],
+   "imps": 22552,
+   "clicks": 17,
+   "dest": "https://www.winespectator.com/newsletter/whiskyadvocate",
+   "verdict": "Replace",
+   "replacement": "notes",
+   "img": "current/whisky-notes.jpg"
+  },
+  {
+   "label": "Whisky Notes (April 2019)",
+   "creatives": 2,
+   "sizes": [
+    "300x250",
+    "728x90"
+   ],
+   "imps": 4542,
+   "clicks": 0,
+   "dest": null,
+   "verdict": "Retire: 2019 duplicate with no click-through",
+   "replacement": "notes",
+   "img": "current/whisky-notes-april-2019.jpg"
+  },
+  {
+   "label": "Whisky Weekend",
+   "creatives": 6,
+   "sizes": [
+    "300x250",
+    "300x600",
+    "468x60",
+    "728x90",
+    "970x250",
+    "970x90"
+   ],
+   "imps": 11839,
+   "clicks": 8,
+   "dest": "https://www.winespectator.com/newsletter/whiskyadvocate",
+   "verdict": "Replace",
+   "replacement": "weekend",
+   "img": "current/whisky-weekend.jpg"
+  },
+  {
+   "label": "Cocktail Club",
+   "creatives": 3,
+   "sizes": [
+    "300x250",
+    "728x90",
+    "970x250"
+   ],
+   "imps": 5776,
+   "clicks": 7,
+   "dest": "https://newsletters.whiskyadvocate.com/",
+   "verdict": "Replace",
+   "replacement": "cocktails",
+   "img": "current/cocktail-club.jpg"
+  },
+  {
+   "label": "Cigar Aficionado Podcast",
+   "creatives": 4,
+   "sizes": [
+    "300x600",
+    "468x60",
+    "728x90",
+    "970x250"
+   ],
+   "imps": 2576,
+   "clicks": 6,
+   "dest": "https://podcasts.apple.com/us/podcast/cigar-aficionado-podcast/id1896344403",
+   "verdict": "Replace",
+   "replacement": "podcast",
+   "img": "current/cigar-aficionado-podcast.jpg"
+  },
+  {
+   "label": "CA Ratings Flash",
+   "creatives": 5,
+   "sizes": [
+    "300x250",
+    "320x50",
+    "468x60",
+    "728x90",
+    "970x250"
+   ],
+   "imps": 17827,
+   "clicks": 10,
+   "dest": null,
+   "verdict": "Replace: it has no click-through URL, so clicks go nowhere",
+   "replacement": "ratingsflash",
+   "img": "current/ca-ratings-flash.jpg"
+  },
+  {
+   "label": "I am a Whisky Advocate",
+   "creatives": 3,
+   "sizes": [
+    "300x250",
+    "728x90",
+    "970x250"
+   ],
+   "imps": 5777,
+   "clicks": 3,
+   "dest": null,
+   "verdict": "Retire: asks for photos by email and has no click-through",
+   "replacement": null,
+   "img": "current/i-am-a-whisky-advocate.jpg"
+  }
+ ]
+}

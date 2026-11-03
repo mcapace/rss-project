@@ -34,7 +34,8 @@
     if (!v) return false;
     fig.setAttribute('data-video-ready', 'true');
     var cap = fig.querySelector('figcaption'), caption = cap ? cap.textContent.replace(/\s+/g, ' ').trim() : '';
-    var titleEl = doc.getElementById('title'), label = caption || (link.getAttribute('title') || '').trim() || (titleEl ? titleEl.textContent.replace(/\s+/g, ' ').trim() : '') || NAME[v.provider] + ' video';
+    // The story's title when there is no caption: #sourceTitle on a site page's story section, #title on story.html.
+    var titleEl = (fig.closest('#source') && doc.getElementById('sourceTitle')) || doc.getElementById('title'), label = caption || (link.getAttribute('title') || '').trim() || (titleEl ? titleEl.textContent.replace(/\s+/g, ' ').trim() : '') || NAME[v.provider] + ' video';
     fig.classList.add('wa-video');
     fig.setAttribute('data-provider', v.provider);
     if (v.short) fig.setAttribute('data-short', 'true');
@@ -70,17 +71,19 @@
     if (cap) fig.insertBefore(cap, link);
     return true;
   }
-  /** Upgrade every video figure under root (default: each .prose on the page). Safe to call again; returns how many it upgraded. */
+  /** Upgrade every video figure under root (default: each .prose on the page but story.html's #prose). Safe to call again;
+      returns how many it upgraded. */
   function upgrade(scope) {
     var doc = (scope && scope.ownerDocument) || root.document; if (!doc) return 0;
-    var figs = (scope || doc).querySelectorAll(scope ? 'figure[data-embed="video"]' : '.prose figure[data-embed="video"]'), n = 0;
+    var figs = (scope || doc).querySelectorAll(scope ? 'figure[data-embed="video"]' : '.prose:not(#prose) figure[data-embed="video"]'), n = 0;
     Array.prototype.forEach.call(figs, function (fig) { if (upgradeOne(fig, doc)) n++; });
     return n;
   }
   var api = { videoFor: videoFor, playerSrc: playerSrc, upgrade: upgrade };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.WAVideo = api;
-  // Prose the server rendered (a site page's story section) is upgraded once the page is parsed; story.html calls
-  // upgrade(prose) again after it fills the prose itself.
+  // Prose the server rendered (a site page's story section) is upgraded once the page is parsed. story.html's #prose is
+  // left to story.html, which always fills it again and then calls upgrade(prose): upgrading the server's copy first
+  // would put a player on the page that the refill wipes out while it plays (a slow phone takes seconds to refill).
   if (root.document) { if (root.document.readyState === 'loading') root.document.addEventListener('DOMContentLoaded', function () { upgrade(); }); else upgrade(); }
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,0 +1,38 @@
+{
+  "style": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces.",
+  "shapes": {
+    "wide":     { "still": "1808:768", "video": "1584:672", "frame": "The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space." },
+    "portrait": { "still": "1080:1920", "video": "720:1280", "frame": "The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space." },
+    "rect":     { "still": "1168:880", "video": "1104:832", "frame": "The subject sits in the right half of the frame; the left side falls away into soft dark negative space." }
+  },
+  "campaigns": {
+    "whiskyfest": {
+      "scene": "A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh.",
+      "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses."
+    },
+    "subscribe": {
+      "scene": "A heavy crystal tumbler of amber whisky on a dark walnut reading desk beside a window at golden hour, a beam of low sun passing through the glass and throwing a warm amber caustic onto the wood.",
+      "motion": "The sunbeam drifts slowly across the desk; the caustic light inside the glass ripples gently; dust motes float."
+    },
+    "notes": {
+      "scene": "Amber whisky pouring in a smooth ribbon into a crystal rocks glass over a single clear ice sphere, black background, rim light catching the stream.",
+      "motion": "Slow-motion pour; the ribbon of whisky twists and splashes softly around the ice sphere; the camera is locked off."
+    },
+    "weekend": {
+      "scene": "A row of unlabeled whisky bottles of different shapes on a dark wooden back-bar shelf, late sun raking through the amber liquid.",
+      "motion": "The camera tracks slowly sideways along the shelf; the sunlight sweeps through the bottles and the glow moves from one to the next."
+    },
+    "cocktails": {
+      "scene": "A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar.",
+      "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe."
+    },
+    "podcast": {
+      "scene": "A vintage broadcast microphone on a dark leather and wood lounge table under a warm brass lamp, a cigar resting in a crystal ashtray beside it with a thin ribbon of smoke rising, no people.",
+      "motion": "The smoke ribbon curls and drifts upward through the lamp light; the lamp glow breathes softly; the camera is locked off."
+    },
+    "ratingsflash": {
+      "scene": "A premium cigar with a glowing ember resting on the edge of a heavy crystal ashtray, ribbons of blue-grey smoke curling through a single beam of warm light, black background.",
+      "motion": "The ember pulses gently; the smoke ribbons curl and fold slowly upward through the beam; the camera is locked off."
+    }
+  }
+}

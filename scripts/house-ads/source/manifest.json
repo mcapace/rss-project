@@ -1,0 +1,254 @@
+{
+ "notes-rect": {
+  "hash": "0048d5c0d9b4",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. Amber whisky pouring in a smooth ribbon into a crystal rocks glass over a single clear ice sphere, black background, rim light catching the stream. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "Slow-motion pour; the ribbon of whisky twists and splashes softly around the ice sphere; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "5e1e75c2-62fa-46c0-9034-6ce8ed02b8ff",
+   "loop": "570a01a0-5acc-44cd-9922-baca7b2eb404"
+  },
+  "at": "2026-11-03T02:52:58.605Z"
+ },
+ "whiskyfest-portrait": {
+  "hash": "9d361e2b313e",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "ce4d5e58-3f24-4664-91c5-cc13b6b915f2",
+   "loop": "b124cedb-92b5-4a0e-8553-14d7f5aca7e0"
+  },
+  "at": "2026-11-03T02:54:05.455Z"
+ },
+ "whiskyfest-wide": {
+  "hash": "9052c4113df0",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "790fdeff-c981-4d50-a83d-7dd9b0202e5e",
+   "loop": "636e658a-8b7b-47a0-a947-8dce25f77521"
+  },
+  "at": "2026-11-03T02:54:26.309Z"
+ },
+ "subscribe-wide": {
+  "hash": "3d51cf43554a",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A heavy crystal tumbler of amber whisky on a dark walnut reading desk beside a window at golden hour, a beam of low sun passing through the glass and throwing a warm amber caustic onto the wood. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "The sunbeam drifts slowly across the desk; the caustic light inside the glass ripples gently; dust motes float. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "ea2ac004-d206-4c1c-b4e5-82e4ee080465",
+   "loop": "5c33015b-75f7-40ac-abe1-403ddddbc14f"
+  },
+  "at": "2026-11-03T02:54:51.376Z"
+ },
+ "whiskyfest-rect": {
+  "hash": "9073ceb16d67",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "b687c349-d9dc-42b1-ba9e-f267633ce1dd",
+   "loop": "b97405c6-c3e1-448c-9b0d-5b0b2c4a3c97"
+  },
+  "at": "2026-11-03T02:55:12.184Z"
+ },
+ "subscribe-portrait": {
+  "hash": "ba4d28c808c0",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A heavy crystal tumbler of amber whisky on a dark walnut reading desk beside a window at golden hour, a beam of low sun passing through the glass and throwing a warm amber caustic onto the wood. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "The sunbeam drifts slowly across the desk; the caustic light inside the glass ripples gently; dust motes float. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "2f4fd003-63c8-4879-8aeb-f80d01a33f93",
+   "loop": "a8278e94-9854-44c8-bb26-da34559a6795"
+  },
+  "at": "2026-11-03T02:55:30.143Z"
+ },
+ "subscribe-rect": {
+  "hash": "33531fe1f539",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A heavy crystal tumbler of amber whisky on a dark walnut reading desk beside a window at golden hour, a beam of low sun passing through the glass and throwing a warm amber caustic onto the wood. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "The sunbeam drifts slowly across the desk; the caustic light inside the glass ripples gently; dust motes float. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "ca179ce1-3561-4182-9dae-42c3da6081c1",
+   "loop": "5d48f10c-fe7a-4ed6-93d5-833945c63ef7"
+  },
+  "at": "2026-11-03T02:55:51.050Z"
+ },
+ "notes-wide": {
+  "hash": "540f22c7e02f",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. Amber whisky pouring in a smooth ribbon into a crystal rocks glass over a single clear ice sphere, black background, rim light catching the stream. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "Slow-motion pour; the ribbon of whisky twists and splashes softly around the ice sphere; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "ef9245fa-1b40-4f78-8138-9a168abf0ade",
+   "loop": "2b977d45-d1bb-429b-a887-f899ba62581a"
+  },
+  "at": "2026-11-03T02:56:15.752Z"
+ },
+ "notes-portrait": {
+  "hash": "e2d184678ce0",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. Amber whisky pouring in a smooth ribbon into a crystal rocks glass over a single clear ice sphere, black background, rim light catching the stream. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "Slow-motion pour; the ribbon of whisky twists and splashes softly around the ice sphere; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "1a07fd11-e340-469d-86e8-bb5b64357877",
+   "loop": "5e867e87-0b44-47e8-b8d8-ba035b2ff40a"
+  },
+  "at": "2026-11-03T02:56:31.027Z"
+ },
+ "weekend-wide": {
+  "hash": "691431e21f84",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A row of unlabeled whisky bottles of different shapes on a dark wooden back-bar shelf, late sun raking through the amber liquid. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "The camera tracks slowly sideways along the shelf; the sunlight sweeps through the bottles and the glow moves from one to the next. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "15d55fee-3b10-4f10-be53-535bdf6b24c0",
+   "loop": "81def8f3-9de9-4b06-be8b-0375a06cb0dd"
+  },
+  "at": "2026-11-03T02:56:59.401Z"
+ },
+ "weekend-portrait": {
+  "hash": "eef3eabf3c97",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A row of unlabeled whisky bottles of different shapes on a dark wooden back-bar shelf, late sun raking through the amber liquid. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "The camera tracks slowly sideways along the shelf; the sunlight sweeps through the bottles and the glow moves from one to the next. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "bba6f0b8-6133-422b-a019-a777ed526eb0",
+   "loop": "fed60cc7-8efb-41d1-8657-2e978cac0a19"
+  },
+  "at": "2026-11-03T02:57:20.402Z"
+ },
+ "weekend-rect": {
+  "hash": "420caef938a0",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A row of unlabeled whisky bottles of different shapes on a dark wooden back-bar shelf, late sun raking through the amber liquid. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "The camera tracks slowly sideways along the shelf; the sunlight sweeps through the bottles and the glow moves from one to the next. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "f4470fc7-c04e-4bfe-88aa-f635dbc4cbfa",
+   "loop": "644ff43d-231b-44de-a624-6b9d7f5bd866"
+  },
+  "at": "2026-11-03T02:57:45.452Z"
+ },
+ "cocktails-wide": {
+  "hash": "7df9ba708a5c",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "f5ccac49-e49a-4bfe-b8da-82931d608618",
+   "loop": "5d7a0862-b25e-4591-a6ca-b24684377fc5"
+  },
+  "at": "2026-11-03T02:58:10.623Z"
+ },
+ "cocktails-portrait": {
+  "hash": "f4257ba519fc",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "2378eaae-91b0-4751-929b-a3868d4780d2",
+   "loop": "8dc7043f-029d-4a68-b1e5-cba7ddca13d9"
+  },
+  "at": "2026-11-03T02:58:34.609Z"
+ },
+ "cocktails-rect": {
+  "hash": "6f1dc7a6edd2",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "a99c36f5-0d70-474b-b5fc-a7bc680d68b4",
+   "loop": "ccd8114c-81e1-4b5a-9bac-c812008b6470"
+  },
+  "at": "2026-11-03T02:58:55.349Z"
+ },
+ "podcast-wide": {
+  "hash": "4c76aa1008db",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A vintage broadcast microphone on a dark leather and wood lounge table under a warm brass lamp, a cigar resting in a crystal ashtray beside it with a thin ribbon of smoke rising, no people. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "The smoke ribbon curls and drifts upward through the lamp light; the lamp glow breathes softly; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "95cb85c5-cd43-4ac7-abfa-b4a72a9a1355",
+   "loop": "25399de2-f1ca-4598-80be-71b427c9431b"
+  },
+  "at": "2026-11-03T02:59:14.747Z"
+ },
+ "podcast-portrait": {
+  "hash": "f2a0dd4e4ea9",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A vintage broadcast microphone on a dark leather and wood lounge table under a warm brass lamp, a cigar resting in a crystal ashtray beside it with a thin ribbon of smoke rising, no people. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "The smoke ribbon curls and drifts upward through the lamp light; the lamp glow breathes softly; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "a8710b53-8c05-4d85-abc0-c37b62bf1e7a",
+   "loop": "235272a5-4405-48dc-923a-0c26059b0f02"
+  },
+  "at": "2026-11-03T02:59:30.091Z"
+ },
+ "podcast-rect": {
+  "hash": "fc529c142e61",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A vintage broadcast microphone on a dark leather and wood lounge table under a warm brass lamp, a cigar resting in a crystal ashtray beside it with a thin ribbon of smoke rising, no people. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "The smoke ribbon curls and drifts upward through the lamp light; the lamp glow breathes softly; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "744e4bf4-9d38-4a4d-8b15-616e3d9c16d7",
+   "loop": "273fa461-b67b-4360-b051-4aac524f2053"
+  },
+  "at": "2026-11-03T02:59:48.536Z"
+ },
+ "ratingsflash-wide": {
+  "hash": "4a2f5f8223dc",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A premium cigar with a glowing ember resting on the edge of a heavy crystal ashtray, ribbons of blue-grey smoke curling through a single beam of warm light, black background. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "The ember pulses gently; the smoke ribbons curl and fold slowly upward through the beam; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "a199ec49-dcd3-4729-acea-de18e58642fa",
+   "loop": "c95a5b87-f6c5-433d-874d-95825aff1fab"
+  },
+  "at": "2026-11-03T03:00:09.744Z"
+ },
+ "ratingsflash-portrait": {
+  "hash": "631ef621b816",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A premium cigar with a glowing ember resting on the edge of a heavy crystal ashtray, ribbons of blue-grey smoke curling through a single beam of warm light, black background. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "The ember pulses gently; the smoke ribbons curl and fold slowly upward through the beam; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "f7eec8d1-c3dc-42a3-af84-c5928e5aeca1",
+   "loop": "ff43189d-e168-4248-966c-6b8d13c48ada"
+  },
+  "at": "2026-11-03T03:00:24.082Z"
+ },
+ "ratingsflash-rect": {
+  "hash": "63801a8074d6",
+  "prompts": {
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A premium cigar with a glowing ember resting on the edge of a heavy crystal ashtray, ribbons of blue-grey smoke curling through a single beam of warm light, black background. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "The ember pulses gently; the smoke ribbons curl and fold slowly upward through the beam; the camera is locked off. Slow, seamless, cinematic; no cuts, no text, no new objects."
+  },
+  "tasks": {
+   "still": "def4b7de-ef0e-4588-ae05-80a46666ce66",
+   "loop": "bad4ca29-6c14-424e-be0f-81d8c1856ed9"
+  },
+  "at": "2026-11-03T03:00:49.499Z"
+ }
+}

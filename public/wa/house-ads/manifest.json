@@ -1,0 +1,642 @@
+{
+  "built": "2026-11-03T03:16:23.939Z",
+  "campaigns": {
+    "whiskyfest": {
+      "title": "WhiskyFest New York",
+      "url": "https://www.whiskyfest.com/",
+      "brand": "wa",
+      "sizes": {
+        "970x250": {
+          "bytes": 619035,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 450508,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 292300,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 263182,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 247808,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 148129,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 110821,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    },
+    "subscribe": {
+      "title": "Subscribe",
+      "url": "https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=27430",
+      "brand": "wa",
+      "sizes": {
+        "970x250": {
+          "bytes": 270794,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 716667,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 253402,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 124976,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 122533,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 82432,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 69635,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    },
+    "notes": {
+      "title": "Whisky Notes",
+      "url": "https://www.winespectator.com/newsletter/whiskyadvocate",
+      "brand": "wa",
+      "sizes": {
+        "970x250": {
+          "bytes": 237379,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 318837,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 179603,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 106652,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 109778,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 82116,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 73135,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    },
+    "weekend": {
+      "title": "Whisky Weekend",
+      "url": "https://www.winespectator.com/newsletter/whiskyadvocate",
+      "brand": "wa",
+      "sizes": {
+        "970x250": {
+          "bytes": 352506,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 397590,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 180987,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 167338,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 169272,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 114775,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 92294,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    },
+    "cocktails": {
+      "title": "Cocktail Club",
+      "url": "https://newsletters.whiskyadvocate.com/",
+      "brand": "wa",
+      "sizes": {
+        "970x250": {
+          "bytes": 416137,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 425075,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 318694,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 174959,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 173063,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 117788,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 98753,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    },
+    "podcast": {
+      "title": "The Cigar Aficionado Podcast",
+      "url": "https://podcasts.apple.com/us/podcast/cigar-aficionado-podcast/id1896344403",
+      "brand": "ca",
+      "sizes": {
+        "970x250": {
+          "bytes": 324705,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 230355,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 121322,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 139355,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 169554,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 106964,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 86384,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    },
+    "ratingsflash": {
+      "title": "Ratings Flash",
+      "url": "https://www.winespectator.com/newsletter/cigaraficionado",
+      "brand": "ca",
+      "sizes": {
+        "970x250": {
+          "bytes": 199704,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x600": {
+          "bytes": 389411,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "300x250": {
+          "bytes": 163013,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "970x90": {
+          "bytes": 93702,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "728x90": {
+          "bytes": 95412,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 25
+        },
+        "468x60": {
+          "bytes": 75871,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        },
+        "320x50": {
+          "bytes": 68690,
+          "files": [
+            "aeonik-400.woff2",
+            "aeonik-500.woff2",
+            "index.html",
+            "loop.mp4",
+            "mono.woff2",
+            "poster.jpg"
+          ],
+          "crf": 26
+        }
+      }
+    }
+  }
+}

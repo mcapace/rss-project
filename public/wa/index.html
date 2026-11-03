@@ -126,7 +126,7 @@
       <h2 class="d2">Point your phone at a shelf.<br><em>The scores land on the bottles.</em></h2>
       <ol class="timeline" id="scanSteps">
         <li data-step="1"><i></i><div><strong>Photograph the shelf</strong><span>Any shelf, any light, labels facing you.</span></div></li>
-        <li data-step="2"><i></i><div><strong>Every label is read</strong><span>The bottles are matched to the 8,217 ratings.</span></div></li>
+        <li data-step="2"><i></i><div><strong>Every label is read</strong><span>The bottles are matched to our <span id="scanCount">8,225</span> ratings.</span></div></li>
         <li data-step="3"><i></i><div><strong>Scores land, best value lights up</strong><span>Tap a score for the full note.</span></div></li>
       </ol>
       <div class="actions"><label class="pill solid" for="scanFile" style="cursor: pointer">Scan a shelf</label><input id="scanFile" type="file" accept="image/*" capture="environment" hidden><span class="muted" id="scanStatus" style="font-size: 13px"></span></div>
@@ -146,6 +146,8 @@
           <div class="shelf" id="scanShelf" style="display:none"></div>
           <div class="island"></div>
           <div class="status"><span>9:41</span><span class="status-right"><i class="sig"></i><i class="wifi"></i><i class="bat"></i></span></div>
+          <div class="cam-top"><i class="cam-flash"></i><span class="cam-mode">Shelf scan</span><i class="cam-hd">HD</i></div>
+          <div class="cam-bottom"><span class="cam-modes"><span>Photo</span><b>Scan</b><span>Label</span></span><i class="cam-shutter"></i></div>
           <div class="cap" id="scanCap"><span class="mono">Shelf scan</span><strong id="demoCapText">Example scan</strong></div>
         </div>
       </div>
@@ -212,6 +214,7 @@ WA.ready(function (data) {
     var phone = document.getElementById("demoPhone"), marks = document.getElementById("demoMarks"), capText = document.getElementById("demoCapText");
     var DEMO = [{ x: 0.05, y: 0.28, w: 0.17, h: 0.42, s: 92 }, { x: 0.22, y: 0.28, w: 0.15, h: 0.42, s: 88 }, { x: 0.37, y: 0.28, w: 0.16, h: 0.42, s: 94, best: true }, { x: 0.53, y: 0.28, w: 0.15, h: 0.42, s: 90 }, { x: 0.68, y: 0.28, w: 0.14, h: 0.42, s: 86 }, { x: 0.82, y: 0.28, w: 0.14, h: 0.42, s: 91 }];
     function build() { marks.innerHTML = ""; }
+    if (window.WA && WA.archive) WA.archive(function (data) { var c = document.getElementById("scanCount"); if (c && data && data.length) c.textContent = data.length.toLocaleString(); });
     var PHASES = [[0, "Shelf scan", 700], [1, "Reading labels…", 2400], [2, "Six bottles found", 1500], [3, "Best value: 94 points · $45", 3800]];
     var k = 0;
     var stepsEl = document.getElementById("scanSteps");

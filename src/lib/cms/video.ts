@@ -9,7 +9,7 @@ export type VideoRef = {
   id: string;
   /** A YouTube Short plays in a 9:16 frame. */
   short: boolean;
-  /** The privacy-enhanced player address, without autoplay. */
+  /** The privacy-enhanced player address, without autoplay (an unlisted Vimeo video keeps its ?h= hash). */
   embed: string;
   /** The provider's own page for the video. */
   watch: string;
@@ -18,6 +18,7 @@ export type VideoRef = {
 };
 
 const YOUTUBE_ID = /^[\w-]{6,}$/;
+const VIMEO_HASH = /^[0-9a-f]{6,}$/i;
 
 /** The video a YouTube or Vimeo link points at, or null for anything else. */
 export function videoFor(url: string): VideoRef | null {
@@ -33,9 +34,12 @@ export function videoFor(url: string): VideoRef | null {
     return { provider: "youtube", id, short: host !== "youtu.be" && /^\/shorts\//.test(parsed.pathname), embed: `https://www.youtube-nocookie.com/embed/${id}`, watch: `https://www.youtube.com/watch?v=${id}`, thumb: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` };
   }
   if (host === "vimeo.com" || host === "player.vimeo.com") {
-    const id = parsed.pathname.match(/(\d{6,})/)?.[1];
-    if (!id) return null;
-    return { provider: "vimeo", id, short: false, embed: `https://player.vimeo.com/video/${id}`, watch: `https://vimeo.com/${id}`, thumb: null };
+    const m = parsed.pathname.match(/(\d{6,})(?:\/([0-9a-f]{6,}))?/i);
+    if (!m) return null;
+    const id = m[1];
+    // An unlisted video only plays with its privacy hash: vimeo.com/<id>/<hash> or ?h=<hash> on either host.
+    const hash = [m[2], parsed.searchParams.get("h")].find(h => h && VIMEO_HASH.test(h)) || "";
+    return { provider: "vimeo", id, short: false, embed: `https://player.vimeo.com/video/${id}${hash ? `?h=${hash}` : ""}`, watch: `https://vimeo.com/${id}${hash ? `/${hash}` : ""}`, thumb: null };
   }
   return null;
 }

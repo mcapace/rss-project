@@ -5,7 +5,7 @@
    videoFor() holds the same rules as src/lib/cms/video.ts (the editor's embedFor); a unit test checks that they agree. */
 (function (root) {
   'use strict';
-  var YOUTUBE_ID = /^[\w-]{6,}$/;
+  var YOUTUBE_ID = /^[\w-]{6,}$/, VIMEO_HASH = /^[0-9a-f]{6,}$/i;
   function videoFor(url) {
     var parsed;
     try { parsed = new URL(String(url == null ? '' : url).trim()); } catch { return null; }
@@ -18,14 +18,16 @@
       return { provider: 'youtube', id: id, short: host !== 'youtu.be' && /^\/shorts\//.test(parsed.pathname), embed: 'https://www.youtube-nocookie.com/embed/' + id, watch: 'https://www.youtube.com/watch?v=' + id, thumb: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' };
     }
     if (host === 'vimeo.com' || host === 'player.vimeo.com') {
-      m = parsed.pathname.match(/(\d{6,})/);
+      m = parsed.pathname.match(/(\d{6,})(?:\/([0-9a-f]{6,}))?/i);
       if (!m) return null;
-      return { provider: 'vimeo', id: m[1], short: false, embed: 'https://player.vimeo.com/video/' + m[1], watch: 'https://vimeo.com/' + m[1], thumb: null };
+      // An unlisted video only plays with its privacy hash: vimeo.com/<id>/<hash> or ?h=<hash> on either host.
+      var hash = [m[2], parsed.searchParams.get('h')].filter(function (h) { return h && VIMEO_HASH.test(h); })[0] || '';
+      return { provider: 'vimeo', id: m[1], short: false, embed: 'https://player.vimeo.com/video/' + m[1] + (hash ? '?h=' + hash : ''), watch: 'https://vimeo.com/' + m[1] + (hash ? '/' + hash : ''), thumb: null };
     }
     return null;
   }
   /** The player's address once the reader has pressed play. playsinline keeps an iPhone from opening the film fullscreen. */
-  function playerSrc(v) { return v.provider === 'youtube' ? v.embed + '?autoplay=1&playsinline=1&rel=0' : v.embed + '?autoplay=1&playsinline=1&dnt=1'; }
+  function playerSrc(v) { var sep = v.embed.indexOf('?') >= 0 ? '&' : '?'; return v.provider === 'youtube' ? v.embed + sep + 'autoplay=1&playsinline=1&rel=0' : v.embed + sep + 'autoplay=1&playsinline=1&dnt=1'; }
   var NAME = { youtube: 'YouTube', vimeo: 'Vimeo' };
   // As WA.playEmbed in site.js: on Safari and phones the click does not survive the iframe load, so a YouTube film is
   // started through the YouTube player API once it is ready (WA.loadYT, preloaded on hover or touch).

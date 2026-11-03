@@ -18,6 +18,8 @@ const CASES: [string, { provider: "youtube" | "vimeo"; id: string; short?: boole
   ["https://vimeo.com/123456789", { provider: "vimeo", id: "123456789" }],
   ["https://vimeo.com/channels/staffpicks/123456789", { provider: "vimeo", id: "123456789" }],
   ["https://player.vimeo.com/video/123456789?h=abc", { provider: "vimeo", id: "123456789" }],
+  ["https://vimeo.com/123456789/a1b2c3d4e5", { provider: "vimeo", id: "123456789" }],
+  ["https://player.vimeo.com/video/123456789?h=a1b2c3d4e5&badge=0", { provider: "vimeo", id: "123456789" }],
   // Not a video this site can play: stays a plain link.
   ["https://www.youtube.com/channel/UCFU0H8ZHCXPMAMQGOkjbxFg", null],
   ["https://www.youtube.com/watch?v=bad", null],
@@ -46,6 +48,14 @@ describe("video links", () => {
   it("builds the privacy-enhanced player, the watch page and the still", () => {
     expect(videoFor("https://youtu.be/dQw4w9WgXcQ")).toEqual({ provider: "youtube", id: "dQw4w9WgXcQ", short: false, embed: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ", watch: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", thumb: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" });
     expect(videoFor("https://vimeo.com/123456789")).toEqual({ provider: "vimeo", id: "123456789", short: false, embed: "https://player.vimeo.com/video/123456789", watch: "https://vimeo.com/123456789", thumb: null });
+  });
+
+  it("keeps an unlisted Vimeo video's privacy hash, from the path or ?h=, and drops anything that is not a hash", () => {
+    const want = { embed: "https://player.vimeo.com/video/123456789?h=a1b2c3d4e5", watch: "https://vimeo.com/123456789/a1b2c3d4e5" };
+    expect(videoFor("https://vimeo.com/123456789/a1b2c3d4e5")).toMatchObject(want);
+    expect(videoFor("https://player.vimeo.com/video/123456789?h=a1b2c3d4e5&badge=0")).toMatchObject(want);
+    expect(page.playerSrc(page.videoFor("https://vimeo.com/123456789/a1b2c3d4e5")!)).toBe("https://player.vimeo.com/video/123456789?h=a1b2c3d4e5&autoplay=1&playsinline=1&dnt=1");
+    expect(videoFor("https://player.vimeo.com/video/123456789?h=%22onload%3D")).toMatchObject({ embed: "https://player.vimeo.com/video/123456789" });
   });
 
   it("the story page's copy (public/wa/video.js) agrees with the server's on every case", () => {

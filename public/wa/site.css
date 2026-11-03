@@ -2788,3 +2788,7 @@ main { min-height: 100vh; min-height: 100dvh; }
   #scanSteps li[data-on="true"]:not(:last-child)::after { animation: none; transform: scaleY(1); }
   .demo-phone[data-phase="0"] .viewfinder::after { animation: none; }
 }
+
+/* Text wrapping (2026-11-03): headings and short titles balance their lines; running text avoids a lone last word (site.js joins the last two words as well). */
+body { text-wrap-style: pretty; }
+h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .score-rank, .nm, li strong, .lens strong, .tool-row strong, .scan-chip span { text-wrap-style: balance; }

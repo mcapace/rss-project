@@ -835,3 +835,35 @@ WA.canvasTips = function (canvas, points, html, href) {
   });
   st.hide = hide; canvas.__tips = st;
 };
+
+/* No lone last word: the last two words of a heading or paragraph share a line (a no-break space between them), on load and as pages render more. */
+(function () {
+  var SEL = "h1, h2, h3, h4, h5, p, li, dd, td, th, summary, figcaption, blockquote, strong, .sub, .nm, .dek, .cat";
+  var SKIP = "script, style, textarea, pre, code, form, select, nav, svg, [contenteditable], [role=listbox], .ad, .chat-panel, #waChat";
+  function fix(el) {
+    if (el.closest(SKIP)) return;
+    var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), t, last = null;
+    while ((t = w.nextNode())) if (/\S/.test(t.data)) last = t;
+    if (!last || last.data.indexOf("\u00a0") >= 0) return;
+    var m = /(\S+) +(\S+)\s*$/.exec(last.data);
+    if (!m || m[1].length + m[2].length > 20 || el.textContent.trim().split(/\s+/).length < 3) return;
+    var cut = m.index + m[1].length;
+    last.data = last.data.slice(0, cut) + "\u00a0" + last.data.slice(cut).replace(/^ +/, "");
+  }
+  function run(root) {
+    if (root.nodeType !== 1) return;
+    if (root.matches(SEL)) fix(root);
+    var els = root.querySelectorAll(SEL);
+    for (var i = 0; i < els.length; i++) fix(els[i]);
+  }
+  var pending = [], queued = false;
+  function flush() { queued = false; var list = pending; pending = []; for (var i = 0; i < list.length; i++) if (list[i].isConnected) run(list[i]); }
+  function start() {
+    run(document.body);
+    new MutationObserver(function (records) {
+      for (var i = 0; i < records.length; i++) { var a = records[i].addedNodes; for (var j = 0; j < a.length; j++) if (a[j].nodeType === 1) pending.push(a[j]); else if (a[j].nodeType === 3 && records[i].target.nodeType === 1) pending.push(records[i].target); }
+      if (pending.length && !queued) { queued = true; requestAnimationFrame(flush); }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();

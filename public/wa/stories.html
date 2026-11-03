@@ -57,7 +57,9 @@ WA.ready(function (data) {
     function render(sec, reset) {
       var tag = /^tag=/.test(sec) ? decodeURIComponent(sec.slice(4)).toLowerCase() : "", by = /^by=/.test(sec) ? decodeURIComponent(sec.slice(3)).toLowerCase() : "";
       rows = all.filter(function (s) { return by ? (s.by || "").toLowerCase() === by : tag ? (s.tags || []).concat([s.title, s.q || ""]).join(" ").toLowerCase().indexOf(tag) >= 0 : sec === "all" || s.sec === sec; });
-      if (reset) { shown = 0; document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").textContent = by ? "Stories by " + decodeURIComponent(sec.slice(3)) : tag ? decodeURIComponent(sec.slice(4)) : (TITLE[sec] || "Stories"); var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : ""; }
+      if (reset) { shown = 0; document.getElementById("picks").classList.toggle("few", rows.length < 3); document.getElementById("picks").innerHTML = rows.slice(0, 3).map(function (st) { return '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + WA.SECTION[st.sec] + " · " + WA.when(st.d) + '</span><h3>' + st.title + '</h3><p class="why">' + (st.dek || "") + '</p><p class="by">' + st.by + (st.min ? " · " + st.min + " min" : "") + "</p></a>"; }).join(""); document.getElementById("sectionTitle").textContent = by ? "Stories by " + decodeURIComponent(sec.slice(3)) : tag ? decodeURIComponent(sec.slice(4)) : (TITLE[sec] || "Stories"); var SL = { guides: "guides.html", travel: "travel.html", cocktails: "cocktails.html" }; document.getElementById("sectionLink").innerHTML = SL[sec] ? '<a class="pill" href="' + SL[sec] + '">Open ' + TITLE[sec] + "</a>" : (tag || by) ? '<p class="muted tag-count">' + rows.length + (rows.length === 1 ? " story" : " stories") + ' · <a href="stories.html">All stories</a></p>' : "";
+        /* A tag or byline page: the section chips would drop the filter, so they hide; a tag that names bottles we rated shows those ratings below. */
+        document.getElementById("sectionBar").hidden = !!(tag || by); if (window.WA_TAG_RATINGS) WA_TAG_RATINGS(tag ? decodeURIComponent(sec.slice(4)) : ""); }
       var next = rows.slice(3 + shown, 3 + shown + 30); shown += next.length;
       document.getElementById("list").innerHTML += next.map(WA.storyRow).join(""); if (window.WAAds) WAAds.seat(document.getElementById("list"), 12, "stories");
       /* The list's space is reserved only while it loads: a tag or byline with three stories or fewer leaves it empty, and it then takes no room. */
@@ -73,7 +75,26 @@ WA.ready(function (data) {
     go((location.hash || "").slice(1)); addEventListener("hashchange", function () { go((location.hash || "").slice(1)); });
   });
   var fresh = data.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 10);
-  document.getElementById("ratings").innerHTML = fresh.map(function (r) { return '<a href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="sub">' + r.c + " · " + r.pr + '</span></span><span class="when">' + WA.fmt(r.p) + "</span></a>"; }).join("");
+  var ratingsHead = document.querySelector("#ratings").previousElementSibling, headHtml = ratingsHead.innerHTML;
+  function ratingRows(list) { return list.map(function (r) { return '<a href="' + WA.bottleHref(r) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="sub">' + r.c + " · " + r.pr + '</span></span><span class="when">' + WA.fmt(r.p) + "</span></a>"; }).join(""); }
+  /* On a tag page, ratings from the whole archive whose name or producer holds every word of the tag replace "Rated this week"
+     (newest first, up to 10). Links use each rating's slug, since loading the archive replaces the recent list the indexes point into. */
+  var wantTag = "";
+  window.WA_TAG_RATINGS = function (tag) {
+    wantTag = tag || "";
+    if (!wantTag || !WA.archive) return showTagRatings(wantTag, []);
+    WA.archive(function (all) {
+      if ((tag || "") !== wantTag) return;
+      var words = wantTag.toLowerCase().split(/\s+/).filter(Boolean);
+      showTagRatings(wantTag, all.filter(function (r) { var n = (r.n + " " + (r.pr || "")).toLowerCase(); return words.every(function (w) { return n.indexOf(w) >= 0; }); }).sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 10));
+    });
+  };
+  function showTagRatings(tag, hits) {
+    if (hits.length) { ratingsHead.innerHTML = '<div><span class="mono">Our ratings</span><h2 class="d2" style="margin-top:10px"></h2></div><a class="pill" href="finder.html">All ratings</a>'; ratingsHead.querySelector("h2").textContent = tag; document.getElementById("ratings").innerHTML = ratingRows(hits); }
+    else { ratingsHead.innerHTML = headHtml; document.getElementById("ratings").innerHTML = ratingRows(fresh); }
+  }
+  var h0 = (location.hash || "").slice(1);
+  if (/^tag=/.test(h0)) WA_TAG_RATINGS(decodeURIComponent(h0.slice(4))); else document.getElementById("ratings").innerHTML = ratingRows(fresh);
 });
 </script>
 </body>

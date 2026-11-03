@@ -2792,3 +2792,16 @@ main { min-height: 100vh; min-height: 100dvh; }
 /* Text wrapping (2026-11-03): headings and short titles balance their lines; running text avoids a lone last word (site.js joins the last two words as well). */
 body { text-wrap-style: pretty; }
 h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .score-rank, .nm, li strong, .lens strong, .tool-row strong, .scan-chip span { text-wrap-style: balance; }
+
+/* Top-stories rotator (2026-11-03): every slide keeps the lead layout and the slides share one grid cell, so the outgoing story fades out as it looked (it had dropped to a full-bleed photo while fading). */
+.split-news .rot-stage { display: grid; }
+.split-news .front .story.lead.has-img.rot-slide { grid-area: 1 / 1; position: relative; inset: auto; height: auto; min-height: 0; grid-template-rows: auto auto auto auto; }
+.split-news .front .story.lead.has-img.rot-slide img { min-height: 0; height: auto; aspect-ratio: 16 / 9; }
+@media (min-width: 901px) {
+  .split-news .front .story.lead.has-img.rot-slide { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 26px; row-gap: 12px; align-content: start; padding: 0 26px 0 0; }
+  .split-news .front .story.lead.has-img.rot-slide > :last-child { margin-bottom: 58px; }
+  .split-news .front .story.lead.has-img.rot-slide img { grid-column: 1; grid-row: 1 / -1; align-self: stretch; height: 100%; min-height: 330px; aspect-ratio: auto; }
+  .split-news .front .story.lead.has-img.rot-slide > :not(img) { grid-column: 2; }
+  .split-news .front .story.lead.has-img.rot-slide .tag { margin-top: 26px; }
+}
+@media (max-width: 860px) { .split-news .front .story.lead.has-img.rot-slide { padding-bottom: 34px; } }

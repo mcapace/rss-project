@@ -7,7 +7,9 @@
   function mastH() { return mast ? mast.offsetHeight : 64; }
   function setMast() { root.style.setProperty("--mast-h", mastH() + "px"); }
   setMast(); addEventListener("resize", setMast); addEventListener("load", setMast);
-  if (mast && "ResizeObserver" in window) new ResizeObserver(setMast).observe(mast);
+  /* The mast tightens its padding once the page scrolls, which changes only its border box. */
+  if (mast && "ResizeObserver" in window) new ResizeObserver(setMast).observe(mast, { box: "border-box" });
+  if (mast) mast.addEventListener("transitionend", setMast);
 
   /* Sibling row: on phones, centre the current page's link inside the row without moving the page. */
   var fam = document.querySelector(".cp-family"), cur = fam && fam.querySelector('[aria-current="page"]');

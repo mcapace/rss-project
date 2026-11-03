@@ -93,7 +93,7 @@
       return !pantry.some(function (c) { return selected.indexOf(c[0]) >= 0 && c[1].test(text); });
     });
   }
-  var api = {norm:norm,nameTerms:nameTerms,nameScore:nameScore,understand:understand,apply:apply,pantry:pantry,validRecipe:validRecipe,missingIngredients:missingIngredients};
+  var api = {norm:norm,distance:distance,nameTerms:nameTerms,nameScore:nameScore,understand:understand,apply:apply,pantry:pantry,validRecipe:validRecipe,missingIngredients:missingIngredients};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.WACatalog = api;
 })(typeof window !== 'undefined' ? window : globalThis);

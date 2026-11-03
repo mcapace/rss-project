@@ -2638,3 +2638,7 @@ main { min-height: 100vh; min-height: 100dvh; }
   .ds-suggest .mono { grid-column: 1 / -1; }
   .ds-sort { width: 100%; justify-content: flex-end; }
 }
+
+/* ---- Amber stages (2026-11-02): the flavor map and distillery globe sit on the site's amber instead of dark brown ---- */
+.fmap-stage { background: radial-gradient(120% 90% at 30% 20%, #e3a443 0%, #c9731d 55%, #a85a16 100%); }
+.globe-stage { background: radial-gradient(90% 80% at 50% 45%, #e3a443 0%, #c9731d 60%, #a85a16 100%); }

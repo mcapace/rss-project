@@ -73,7 +73,7 @@
     var fs = 'precision mediump float; varying vec3 v_col; varying float v_state; varying float v_gain;' +
       'void main() { float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0) discard;' +
       ' if (v_state > 1.5) { float ring = smoothstep(0.62, 0.72, d) * (1.0 - smoothstep(0.86, 1.0, d)); float core = 1.0 - smoothstep(0.18, 0.3, d); gl_FragColor = vec4(vec3(1.0, 0.93, 0.8) * (ring + core), ring + core); return; }' +
-      ' float a = v_state < 0.5 ? 0.06 : v_gain; float glow = exp(-d * d * 6.0) * 0.35 + (1.0 - smoothstep(0.25, 0.45, d)) * 0.6; gl_FragColor = vec4(v_col * glow * a, glow * a); }';
+      ' float a = v_state < 0.5 ? 0.1 : min(1.0, v_gain + 0.25); float dot = 1.0 - smoothstep(0.78, 0.98, d); float core = 1.0 - smoothstep(0.42, 0.62, d); vec3 c = mix(vec3(0.16, 0.09, 0.04), v_col, core); gl_FragColor = vec4(c * dot * a, dot * a); }';
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
     prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
@@ -81,7 +81,7 @@
     ['a_pos', 'a_from', 'a_col', 'a_state'].forEach(function (n) { loc[n] = gl.getAttribLocation(prog, n); });
     ['u_view', 'u_t', 'u_size', 'u_gain'].forEach(function (n) { loc[n] = gl.getUniformLocation(prog, n); });
     buf = gl.createBuffer();
-    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     return true;
   }
 
@@ -108,19 +108,19 @@
     g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.clearRect(0, 0, W, H);
     var c = toScreen(CX, CY), s = base() * view.k;
     g2.lineWidth = 1;
-    [0.33, 0.66, 1].forEach(function (f, i) { g2.beginPath(); g2.arc(c[0], c[1], RIM * f * s, 0, Math.PI * 2); g2.strokeStyle = i === 2 ? 'rgba(255,236,210,0.22)' : 'rgba(255,236,210,0.08)'; g2.stroke(); });
-    for (var i = 0; i < WHEEL.length; i++) { var a = angleOf(WHEEL[i]) + Math.PI / WHEEL.length; g2.beginPath(); g2.moveTo(c[0] + Math.cos(a) * RIM * 0.12 * s, c[1] + Math.sin(a) * RIM * 0.12 * s); g2.lineTo(c[0] + Math.cos(a) * RIM * s, c[1] + Math.sin(a) * RIM * s); g2.strokeStyle = 'rgba(255,236,210,0.07)'; g2.stroke(); }
+    [0.33, 0.66, 1].forEach(function (f, i) { g2.beginPath(); g2.arc(c[0], c[1], RIM * f * s, 0, Math.PI * 2); g2.strokeStyle = i === 2 ? 'rgba(255,248,235,0.55)' : 'rgba(255,248,235,0.25)'; g2.stroke(); });
+    for (var i = 0; i < WHEEL.length; i++) { var a = angleOf(WHEEL[i]) + Math.PI / WHEEL.length; g2.beginPath(); g2.moveTo(c[0] + Math.cos(a) * RIM * 0.12 * s, c[1] + Math.sin(a) * RIM * 0.12 * s); g2.lineTo(c[0] + Math.cos(a) * RIM * s, c[1] + Math.sin(a) * RIM * s); g2.strokeStyle = 'rgba(255,248,235,0.2)'; g2.stroke(); }
     // The hub: a quiet disc in the middle where the most balanced bottles begin.
     var hub = RIM * HUB * 0.9 * s, glow = g2.createRadialGradient(c[0], c[1], 0, c[0], c[1], hub);
-    glow.addColorStop(0, 'rgba(255,214,160,0.10)'); glow.addColorStop(0.7, 'rgba(255,214,160,0.04)'); glow.addColorStop(1, 'rgba(255,214,160,0)');
+    glow.addColorStop(0, 'rgba(255,250,240,0.42)'); glow.addColorStop(0.75, 'rgba(255,250,240,0.18)'); glow.addColorStop(1, 'rgba(255,250,240,0.06)');
     g2.fillStyle = glow; g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.fill();
-    g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.strokeStyle = 'rgba(255,236,210,0.16)'; g2.stroke();
+    g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.strokeStyle = 'rgba(255,248,235,0.6)'; g2.stroke();
     if (hub > 22) {
       var big = Math.round(Math.max(13, Math.min(28, hub * 0.28)));
-      g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff3e2';
+      g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#17120d';
       var face = getComputedStyle(document.body).fontFamily;
       g2.font = '500 ' + big + 'px ' + face; g2.fillText('Balanced', c[0], c[1] - (hub > 58 ? big * 0.32 : 0));
-      if (hub > 58) { g2.fillStyle = 'rgba(255,236,210,0.62)'; g2.font = '400 ' + Math.round(Math.max(11, big * 0.42)) + 'px ' + face; g2.fillText('No one flavor leads', c[0], c[1] + big * 0.62); }
+      if (hub > 58) { g2.fillStyle = 'rgba(23,18,13,0.7)'; g2.font = '400 ' + Math.round(Math.max(11, big * 0.42)) + 'px ' + face; g2.fillText('No one flavor leads', c[0], c[1] + big * 0.62); }
     }
   }
   if (document.fonts) document.fonts.ready.then(function () { dirty = true; });
@@ -147,7 +147,7 @@
     gl.uniform1f(loc.u_t, t); gl.uniform1f(loc.u_gain, Math.min(1, 0.42 + 0.2 * view.k));
     gl.uniform1f(loc.u_size, Math.max(4.5, Math.min(22, 4.2 * Math.sqrt(view.k) * Math.min(W, H) / 700)) * dpr);
     gl.drawArrays(gl.POINTS, 0, pts.length);
-    if (selected >= 0 && t >= 1) { gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); var p = pts[selected]; drawOne(p); gl.blendFunc(gl.ONE, gl.ONE); }
+    if (selected >= 0 && t >= 1) drawOne(pts[selected]);
     place();
   }
   // The selected bottle: a ring, drawn from a one-point buffer so the main buffer stays untouched.

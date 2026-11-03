@@ -76,13 +76,23 @@ WA.ready(function (data) {
   });
   var fresh = data.slice().sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 10);
   var ratingsHead = document.querySelector("#ratings").previousElementSibling, headHtml = ratingsHead.innerHTML;
-  function ratingRows(list) { return list.map(function (r) { return '<a href="' + WA.bottleHref(data.indexOf(r)) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="sub">' + r.c + " · " + r.pr + '</span></span><span class="when">' + WA.fmt(r.p) + "</span></a>"; }).join(""); }
-  /* On a tag page, ratings whose name holds every word of the tag replace "Rated this week" (newest first, up to 10). */
+  function ratingRows(list) { return list.map(function (r) { return '<a href="' + WA.bottleHref(r) + '"><span class="sc score-type">' + r.s + '</span><span><span class="nm">' + r.n + '</span><span class="sub">' + r.c + " · " + r.pr + '</span></span><span class="when">' + WA.fmt(r.p) + "</span></a>"; }).join(""); }
+  /* On a tag page, ratings from the whole archive whose name or producer holds every word of the tag replace "Rated this week"
+     (newest first, up to 10). Links use each rating's slug, since loading the archive replaces the recent list the indexes point into. */
+  var wantTag = "";
   window.WA_TAG_RATINGS = function (tag) {
-    var words = (tag || "").toLowerCase().split(/\s+/).filter(Boolean), hits = words.length ? data.filter(function (r) { var n = (r.n + " " + (r.pr || "")).toLowerCase(); return words.every(function (w) { return n.indexOf(w) >= 0; }); }).sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 10) : [];
+    wantTag = tag || "";
+    if (!wantTag || !WA.archive) return showTagRatings(wantTag, []);
+    WA.archive(function (all) {
+      if ((tag || "") !== wantTag) return;
+      var words = wantTag.toLowerCase().split(/\s+/).filter(Boolean);
+      showTagRatings(wantTag, all.filter(function (r) { var n = (r.n + " " + (r.pr || "")).toLowerCase(); return words.every(function (w) { return n.indexOf(w) >= 0; }); }).sort(function (a, b) { return (b.d || "").localeCompare(a.d || "") || b.s - a.s; }).slice(0, 10));
+    });
+  };
+  function showTagRatings(tag, hits) {
     if (hits.length) { ratingsHead.innerHTML = '<div><span class="mono">Our ratings</span><h2 class="d2" style="margin-top:10px"></h2></div><a class="pill" href="finder.html">All ratings</a>'; ratingsHead.querySelector("h2").textContent = tag; document.getElementById("ratings").innerHTML = ratingRows(hits); }
     else { ratingsHead.innerHTML = headHtml; document.getElementById("ratings").innerHTML = ratingRows(fresh); }
-  };
+  }
   var h0 = (location.hash || "").slice(1);
   if (/^tag=/.test(h0)) WA_TAG_RATINGS(decodeURIComponent(h0.slice(4))); else document.getElementById("ratings").innerHTML = ratingRows(fresh);
 });

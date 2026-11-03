@@ -1,14 +1,31 @@
 {
   "style": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces.",
   "shapes": {
-    "wide":     { "still": "1808:768", "video": "1584:672", "frame": "The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space." },
-    "portrait": { "still": "1080:1920", "video": "720:1280", "frame": "The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space." },
-    "rect":     { "still": "1168:880", "video": "1104:832", "frame": "The subject sits in the right half of the frame; the left side falls away into soft dark negative space." }
+    "wide": {
+      "still": "1808:768",
+      "video": "1584:672",
+      "frame": "The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space."
+    },
+    "portrait": {
+      "still": "1080:1920",
+      "video": "720:1280",
+      "frame": "The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space."
+    },
+    "rect": {
+      "still": "1168:880",
+      "video": "1104:832",
+      "frame": "The subject sits in the right half of the frame; the left side falls away into soft dark negative space."
+    }
   },
   "campaigns": {
     "whiskyfest": {
-      "scene": "A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh.",
-      "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses."
+      "scene": "A grand evening whisky festival in a dark hotel ballroom, low close shot along a long tasting table with a white cloth: a row of whisky glasses that are exactly the glasses in @glencairn, identical shape and proportions (tulip bowl on a short solid base), clear and unmarked, each holding amber whisky; warm chandeliers far behind melting into golden bokeh.",
+      "motion": "A very slow push-in along the row of glasses; the glasses stay perfectly rigid and keep their exact shape; only the chandelier bokeh shimmers and soft glints of light travel across the glass and whisky.",
+      "reference": {
+        "file": "source/glencairn-ref.png",
+        "tag": "glencairn",
+        "note": "Whisky Advocate studio photograph wa_1312_5749_a_0092 (a dozen Glencairn glasses), so the generated glasses keep the real shape"
+      }
     },
     "subscribe": {
       "scene": "A heavy crystal tumbler of amber whisky on a dark walnut reading desk beside a window at golden hour, a beam of low sun passing through the glass and throwing a warm amber caustic onto the wood.",

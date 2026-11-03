@@ -12,28 +12,28 @@
   "at": "2026-11-03T02:52:58.605Z"
  },
  "whiskyfest-portrait": {
-  "hash": "9d361e2b313e",
+  "hash": "30c86293f24a",
   "prompts": {
-   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
-   "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses. Slow, seamless, cinematic; no cuts, no text, no new objects."
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A grand evening whisky festival in a dark hotel ballroom, low close shot along a long tasting table with a white cloth: a row of whisky glasses that are exactly the glasses in @glencairn, identical shape and proportions (tulip bowl on a short solid base), clear and unmarked, each holding amber whisky; warm chandeliers far behind melting into golden bokeh. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "A very slow push-in along the row of glasses; the glasses stay perfectly rigid and keep their exact shape; only the chandelier bokeh shimmers and soft glints of light travel across the glass and whisky. Slow, seamless, cinematic; no cuts, no text, no new objects."
   },
   "tasks": {
-   "still": "ce4d5e58-3f24-4664-91c5-cc13b6b915f2",
-   "loop": "b124cedb-92b5-4a0e-8553-14d7f5aca7e0"
+   "still": "e88a05ea-2c81-4f56-9123-bb543dc61114",
+   "loop": "ab228b79-84f5-45fe-9af9-ebfc285d93b7"
   },
-  "at": "2026-11-03T02:54:05.455Z"
+  "at": "2026-11-03T15:27:42.813Z"
  },
  "whiskyfest-wide": {
-  "hash": "9052c4113df0",
+  "hash": "824b95670f72",
   "prompts": {
-   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
-   "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses. Slow, seamless, cinematic; no cuts, no text, no new objects."
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A grand evening whisky festival in a dark hotel ballroom, low close shot along a long tasting table with a white cloth: a row of whisky glasses that are exactly the glasses in @glencairn, identical shape and proportions (tulip bowl on a short solid base), clear and unmarked, each holding amber whisky; warm chandeliers far behind melting into golden bokeh. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "A very slow push-in along the row of glasses; the glasses stay perfectly rigid and keep their exact shape; only the chandelier bokeh shimmers and soft glints of light travel across the glass and whisky. Slow, seamless, cinematic; no cuts, no text, no new objects."
   },
   "tasks": {
-   "still": "790fdeff-c981-4d50-a83d-7dd9b0202e5e",
-   "loop": "636e658a-8b7b-47a0-a947-8dce25f77521"
+   "still": "e75288d6-4ead-4bff-8d18-03f2218943d7",
+   "loop": "c73327bb-2d48-4e79-a67f-6602331ec3d7"
   },
-  "at": "2026-11-03T02:54:26.309Z"
+  "at": "2026-11-03T15:27:22.560Z"
  },
  "subscribe-wide": {
   "hash": "3d51cf43554a",
@@ -48,16 +48,16 @@
   "at": "2026-11-03T02:54:51.376Z"
  },
  "whiskyfest-rect": {
-  "hash": "9073ceb16d67",
+  "hash": "9dda338c716d",
   "prompts": {
-   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A long tasting table at a grand evening whisky festival in a hotel ballroom: rows of tulip-shaped nosing glasses holding amber whisky on a white cloth, chandeliers far behind melting into warm golden bokeh. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
-   "motion": "The camera glides slowly along the table; chandelier bokeh shimmers; light glints travel across the glasses. Slow, seamless, cinematic; no cuts, no text, no new objects."
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A grand evening whisky festival in a dark hotel ballroom, low close shot along a long tasting table with a white cloth: a row of whisky glasses that are exactly the glasses in @glencairn, identical shape and proportions (tulip bowl on a short solid base), clear and unmarked, each holding amber whisky; warm chandeliers far behind melting into golden bokeh. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "A very slow push-in along the row of glasses; the glasses stay perfectly rigid and keep their exact shape; only the chandelier bokeh shimmers and soft glints of light travel across the glass and whisky. Slow, seamless, cinematic; no cuts, no text, no new objects."
   },
   "tasks": {
-   "still": "b687c349-d9dc-42b1-ba9e-f267633ce1dd",
-   "loop": "b97405c6-c3e1-448c-9b0d-5b0b2c4a3c97"
+   "still": "391a415c-2c97-4abe-aa72-2ef36ed7f120",
+   "loop": "1f75c7da-38b9-4514-ae62-95e3ccfb1f6e"
   },
-  "at": "2026-11-03T02:55:12.184Z"
+  "at": "2026-11-03T15:27:00.921Z"
  },
  "subscribe-portrait": {
   "hash": "ba4d28c808c0",

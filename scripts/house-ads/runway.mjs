@@ -37,8 +37,9 @@ for (const [id, c] of Object.entries(spec.campaigns)) {
     if (onlyShape && !onlyShape.includes(shape)) continue;
     const still = `${spec.style} ${c.scene} ${s.frame}`;
     const motion = `${c.motion} Slow, seamless, cinematic; no cuts, no text, no new objects.`;
-    const hash = createHash('sha256').update(JSON.stringify([still, motion, s.still, s.video])).digest('hex').slice(0, 12);
-    items.push({ name: `${id}-${shape}`, still, motion, stillRatio: s.still, videoRatio: s.video, hash });
+    const hash = createHash('sha256').update(JSON.stringify([still, motion, s.still, s.video, c.reference?.file ?? ''])).digest('hex').slice(0, 12);
+    const ref = c.reference ? { path: join(here, c.reference.file), tag: c.reference.tag } : null;
+    items.push({ name: `${id}-${shape}`, still, motion, stillRatio: s.still, videoRatio: s.video, hash, ref });
   }
 }
 const todo = items.filter((i) => force || manifest[i.name]?.hash !== i.hash || !existsSync(join(out, `${i.name}.mp4`)));
@@ -77,7 +78,10 @@ async function download(url, path) {
 
 async function make(item) {
   const stillPath = join(out, `${item.name}.png`);
-  const still = await run('/text_to_image', { model: 'gen4_image', promptText: item.still, ratio: item.stillRatio });
+  // A campaign can name a reference photograph (gen4_image referenceImages, called by its @tag in the prompt).
+  const body = { model: 'gen4_image', promptText: item.still, ratio: item.stillRatio };
+  if (item.ref) body.referenceImages = [{ uri: `data:image/png;base64,${readFileSync(item.ref.path).toString('base64')}`, tag: item.ref.tag }];
+  const still = await run('/text_to_image', body);
   await download(still.url, stillPath);
   console.log('  still', item.name);
   const uri = `data:image/png;base64,${readFileSync(stillPath).toString('base64')}`;

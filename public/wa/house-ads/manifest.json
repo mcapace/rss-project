@@ -1,5 +1,5 @@
 {
-  "built": "2026-11-03T03:16:23.939Z",
+  "built": "2026-11-03T15:28:38.102Z",
   "campaigns": {
     "whiskyfest": {
       "title": "WhiskyFest New York",
@@ -7,7 +7,7 @@
       "brand": "wa",
       "sizes": {
         "970x250": {
-          "bytes": 619035,
+          "bytes": 409743,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -19,7 +19,7 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 450508,
+          "bytes": 287728,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -31,7 +31,7 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 292300,
+          "bytes": 195440,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -43,7 +43,7 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 263182,
+          "bytes": 163315,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -55,7 +55,7 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 247808,
+          "bytes": 171119,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -67,7 +67,7 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 148129,
+          "bytes": 121812,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -79,7 +79,7 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 110821,
+          "bytes": 104159,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -94,14 +94,15 @@
     },
     "subscribe": {
       "title": "Subscribe",
-      "url": "https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=27430",
+      "url": "https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306",
       "brand": "wa",
       "sizes": {
         "970x250": {
-          "bytes": 270794,
+          "bytes": 296253,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "cover.jpg",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -110,10 +111,11 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 716667,
+          "bytes": 736791,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "cover.jpg",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -122,10 +124,11 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 253402,
+          "bytes": 264066,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "cover.jpg",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -134,10 +137,11 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 124976,
+          "bytes": 131291,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "cover.jpg",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -146,10 +150,11 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 122533,
+          "bytes": 128848,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "cover.jpg",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -158,7 +163,7 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 82432,
+          "bytes": 82954,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -170,7 +175,7 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 69635,
+          "bytes": 70157,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -189,7 +194,7 @@
       "brand": "wa",
       "sizes": {
         "970x250": {
-          "bytes": 237379,
+          "bytes": 237900,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -201,7 +206,7 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 318837,
+          "bytes": 319358,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -213,7 +218,7 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 179603,
+          "bytes": 180124,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -225,7 +230,7 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 106652,
+          "bytes": 107173,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -237,7 +242,7 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 109778,
+          "bytes": 110299,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -249,7 +254,7 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 82116,
+          "bytes": 82637,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -261,7 +266,7 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 73135,
+          "bytes": 73656,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -280,7 +285,7 @@
       "brand": "wa",
       "sizes": {
         "970x250": {
-          "bytes": 352506,
+          "bytes": 353027,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -292,7 +297,7 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 397590,
+          "bytes": 398111,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -304,7 +309,7 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 180987,
+          "bytes": 181508,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -316,7 +321,7 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 167338,
+          "bytes": 167859,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -328,7 +333,7 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 169272,
+          "bytes": 169793,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -340,7 +345,7 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 114775,
+          "bytes": 115296,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -352,7 +357,7 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 92294,
+          "bytes": 92815,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -371,7 +376,7 @@
       "brand": "wa",
       "sizes": {
         "970x250": {
-          "bytes": 416137,
+          "bytes": 416658,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -383,7 +388,7 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 425075,
+          "bytes": 425596,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -395,7 +400,7 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 318694,
+          "bytes": 319215,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -407,7 +412,7 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 174959,
+          "bytes": 175480,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -419,7 +424,7 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 173063,
+          "bytes": 173584,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -431,7 +436,7 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 117788,
+          "bytes": 118309,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -443,7 +448,7 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 98753,
+          "bytes": 99274,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
@@ -462,10 +467,11 @@
       "brand": "ca",
       "sizes": {
         "970x250": {
-          "bytes": 324705,
+          "bytes": 336734,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -474,10 +480,11 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 230355,
+          "bytes": 242383,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -486,10 +493,11 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 121322,
+          "bytes": 133350,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -498,10 +506,11 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 139355,
+          "bytes": 151384,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -510,10 +519,11 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 169554,
+          "bytes": 181582,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -522,10 +532,11 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 106964,
+          "bytes": 118992,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -534,10 +545,11 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 86384,
+          "bytes": 98412,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -553,10 +565,11 @@
       "brand": "ca",
       "sizes": {
         "970x250": {
-          "bytes": 199704,
+          "bytes": 211733,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -565,10 +578,11 @@
           "crf": 25
         },
         "300x600": {
-          "bytes": 389411,
+          "bytes": 401439,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -577,10 +591,11 @@
           "crf": 25
         },
         "300x250": {
-          "bytes": 163013,
+          "bytes": 175041,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -589,10 +604,11 @@
           "crf": 25
         },
         "970x90": {
-          "bytes": 93702,
+          "bytes": 105731,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -601,10 +617,11 @@
           "crf": 25
         },
         "728x90": {
-          "bytes": 95412,
+          "bytes": 107440,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -613,10 +630,11 @@
           "crf": 25
         },
         "468x60": {
-          "bytes": 75871,
+          "bytes": 87899,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",
@@ -625,10 +643,11 @@
           "crf": 26
         },
         "320x50": {
-          "bytes": 68690,
+          "bytes": 80718,
           "files": [
             "aeonik-400.woff2",
             "aeonik-500.woff2",
+            "ca-logo.png",
             "index.html",
             "loop.mp4",
             "mono.woff2",

@@ -66,7 +66,7 @@ const campaigns = {
     data: { doors: '2026-11-20T18:30:00-05:00', day: '2026-11-20' },
   },
   subscribe: {
-    title: 'Subscribe', brand: 'wa', url: 'https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=27430',
+    title: 'Subscribe', brand: 'wa', url: 'https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306',
     eyebrow: 'Subscribe', short: 'Subscribe',
     lines: ['A year of Whisky Advocate for $22', 'Plus 2 free gifts: our tote and the Whisky Dictionary', 'Every rating. Every review. Every issue.'],
     mini: ['1 year for $22', 'Plus 2 free gifts', 'Every rating, every issue'],
@@ -179,14 +179,16 @@ function page(id, c, sizeName, size) {
   const [bx, by, bw, bh] = size.box;
   const small = size.kind === 'mini' || size.kind === 'strip';
   const lines = small && c.mini ? c.mini : c.lines;
-  const brand = c.brand === 'wa' ? logo : '<span class="mark ca">Cigar<br>Aficionado</span>';
+  const brand = c.brand === 'wa' ? logo : '<img class="mark ca" src="ca-logo.png" alt="Cigar Aficionado">';
   const ad = { id, size: sizeName, kind: size.kind, widget: c.widget, data: c.data ?? {}, lines: lines.length };
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="ad.size" content="width=${w},height=${h}">
 <meta name="viewport" content="width=${w},height=${h}">
 <title>${esc(c.title)} ${sizeName}</title>
-<script>var clickTag = "${c.url}";</script>
+<script>var clickTag = "${c.url}";
+/* Served as a hosted tag, the click URL comes in the query: index.html?clickTag=%%CLICK_URL_ESC%%<escaped landing page> */
+(function(){var m=/[?&]clickTag=([^&]+)/.exec(location.search);if(m){try{clickTag=decodeURIComponent(m[1]);}catch(e){}}})();</script>
 <style>
 @font-face{font-family:A;src:url(aeonik-400.woff2) format("woff2");font-weight:400;font-display:block}
 @font-face{font-family:A;src:url(aeonik-500.woff2) format("woff2");font-weight:500;font-display:block}
@@ -203,7 +205,8 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .film:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none}
 .grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.10;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
 .mark{display:block;color:var(--cream);width:100%;height:auto}
-.mark.ca{font:500 11px/1 M,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--cream)}
+.mark.ca{width:100%;height:auto}
+.billboard .ca-brand{width:150px}.halfpage .ca-brand{width:150px}.rect .ca-brand{width:112px}
 .brand{position:absolute;z-index:5}
 .eyebrow{font:400 10px/1.2 M,ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lines{position:relative;z-index:5}
@@ -228,10 +231,11 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .wave span{width:3px;border-radius:2px;background:var(--gold);height:30%;animation:wv 1.1s ease-in-out infinite alternate}
 @keyframes wv{to{height:100%}}
 .cover{position:absolute;z-index:6;perspective:700px}
-.cover .sheet{width:100%;height:100%;background:var(--cream);border-radius:3px;box-shadow:0 18px 40px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);transform:rotateY(-14deg) rotateX(4deg);transform-origin:left center;transition:transform .9s cubic-bezier(.2,.7,.1,1);overflow:hidden;display:flex;flex-direction:column}
-.cover .sheet .mark{color:#17120d;padding:7% 8% 4%}
-.cover .sheet .ph{flex:1;background:url(poster.jpg) 70% center/cover;margin:0 8% 8%}
-.cover .sheet .k{color:#4b3f33;padding:0 8% 6%;font-size:7px}
+.cover .sheet{position:relative;width:100%;height:100%;background:var(--cream);border-radius:3px;box-shadow:0 18px 40px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);transform:rotateY(-14deg) rotateX(4deg);transform-origin:left center;transition:transform .9s cubic-bezier(.2,.7,.1,1);overflow:hidden;display:flex;flex-direction:column}
+.cover .sheet img{width:100%;height:100%;object-fit:cover;display:block}
+.cover .sheet:after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.38) 46%,transparent 60%);background-size:260% 100%;background-position:130% 0;pointer-events:none}
+.cover .sheet.gloss:after{animation:gl 1.6s ease .4s both}
+@keyframes gl{to{background-position:-40% 0}}
 #ad:hover .cover .sheet{transform:rotateY(-4deg) rotateX(1deg)}
 .flash{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(227,164,67,.22) 50%,transparent 65%);background-size:300% 100%;background-position:120% 0}
 .flash.go{animation:fl 2.4s ease}
@@ -245,7 +249,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .billboard .lines p{font-size:34px;line-height:1.08}
 .billboard .cta{left:30px;bottom:24px;height:38px;padding:0 18px;font-size:15px}
 .billboard .chip{right:22px;bottom:22px}
-.billboard .cover{right:auto;left:556px;top:26px;width:132px;height:176px}
+.billboard .cover{right:auto;left:560px;top:24px;width:154px;height:202px}
 .halfpage .film:before{background:linear-gradient(180deg,var(--ink) 0,var(--ink) 22%,rgba(22,20,18,.7) 36%,rgba(22,20,18,0) 56%,rgba(22,20,18,0) 66%,rgba(22,20,18,.9) 92%)}
 .halfpage .brand{left:24px;top:24px;width:112px}
 .halfpage .eyebrow{position:absolute;z-index:5;left:24px;top:76px;right:24px}
@@ -253,7 +257,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .halfpage .lines p{font-size:28px;line-height:1.1}
 .halfpage .cta{left:24px;bottom:24px;height:40px;padding:0 18px;font-size:15px}
 .halfpage .chip{left:24px;right:24px;bottom:78px}
-.halfpage .cover{left:150px;top:300px;width:124px;height:166px}
+.halfpage .cover{left:146px;top:290px;width:130px;height:171px}
 .rect .film:before{background:linear-gradient(180deg,rgba(22,20,18,.85) 0,rgba(22,20,18,.25) 28%,rgba(22,20,18,0) 44%,rgba(22,20,18,.72) 58%,var(--ink) 100%)}
 .rect .brand{left:18px;top:16px;width:84px}
 .rect .eyebrow{display:none}
@@ -263,7 +267,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .rect .chip{right:12px;top:12px;border-radius:10px}
 .rect .count{gap:8px;padding:7px 10px}.rect .n{font-size:16px}.rect .k{font-size:7.5px}
 .rect .tick{padding:7px 10px;max-width:150px}.rect .tick b{font-size:11px}
-.rect .cover{right:18px;top:28px;width:78px;height:104px}
+.rect .cover{right:16px;top:20px;width:84px;height:110px}
 .rect .wave{height:30px;padding:0 10px;gap:2px}
 /* strips and minis are a grid row, so a long line can never run under the button */
 .strip,.mini{display:grid!important;align-items:center;column-gap:${w > 900 ? 20 : 16}px;padding:0 ${w > 400 ? 16 : 8}px 0 ${w > 900 ? 22 : w > 400 ? 14 : 10}px}
@@ -286,11 +290,8 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .mini .lines p{font-size:${w > 400 ? 15 : 13}px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mini .cta{grid-column:3;height:${w > 400 ? 28 : 26}px;padding:0 ${w > 400 ? 12 : 10}px;font-size:${w > 400 ? 12 : 11.5}px}
 #widget:empty{display:none}
-.strip .brand.ca-brand,.mini .brand.ca-brand{width:auto}
-.strip .mark.ca{font-size:${w > 900 ? 11 : 9.5}px;letter-spacing:.14em}
-.mini .mark.ca{font-size:${w > 400 ? 8 : 7}px;letter-spacing:.1em;line-height:1.15}
-.rect .cover .k{display:none}
-.cover .k{white-space:nowrap;overflow:hidden}
+.strip .brand.ca-brand{width:${w > 900 ? 116 : 100}px}.mini .brand.ca-brand{width:${w > 400 ? 76 : 60}px}
+.strip .cover{position:relative;grid-column:4;grid-row:1/-1;width:${w > 900 ? 58 : 52}px;height:${w > 900 ? 76 : 68}px}
 @media (prefers-reduced-motion:reduce){.lines p,.tick b,.film video{transition:none!important;filter:none!important}.wave span{animation:none}}
 </style></head>
 <body>
@@ -341,8 +342,9 @@ if(AD.kind!=="mini"){
     var showC=function(){w.innerHTML='<span class="k">On the list</span><b>'+esc(C[ci++%C.length])+'</b>';}; showC(); swap=showC;
   }else if(AD.widget==="wave"&&AD.kind!=="strip"){
     w.className="chip wave"; var bars="";for(var i=0;i<(big?22:12);i++)bars+='<span style="animation-delay:-'+(i*137%900)/1000+'s;animation-duration:'+(0.7+(i*53%60)/100)+'s"></span>';w.innerHTML=bars;
-  }else if(AD.widget==="cover"&&AD.kind!=="strip"){
-    w.className="cover"; w.innerHTML='<div class="sheet">'+ad.querySelector(".brand").innerHTML+'<div class="ph"></div><span class="k">Ratings · Reviews</span></div>';
+  }else if(AD.widget==="cover"){
+    w.className="cover"; w.innerHTML='<div class="sheet"><img src="cover.jpg" alt="The Whisky Advocate magazine"></div>';
+    if(!still)setTimeout(function(){var sh=w.querySelector(".sheet");if(sh)sh.classList.add("gloss");},600);
   }
 }
 if(w.className==="chip tick"&&AD.kind==="halfpage"){w.style.minHeight="64px";}
@@ -401,7 +403,12 @@ for (const [id, c] of Object.entries(campaigns)) {
     const [W0, H0] = sh('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', loopIn]).trim().split(',').map(Number);
     const focus = await focusOf(stillIn);
     fontFiles.forEach((f) => copyFileSync(join(fontCache, f), join(dir, f)));
+    // Cigar Aficionado's white logo (from the company logo folder), for the two CA campaigns.
+    if (c.brand === 'ca') copyFileSync(join(here, 'source/ca-logo.png'), join(dir, 'ca-logo.png'));
     writeFileSync(join(dir, 'index.html'), page(id, c, sizeName, size));
+    // The subscribe ads carry the real magazine cover, at twice the size it is shown.
+    const coverWidth = { billboard: 308, halfpage: 260, rect: 168, strip: 116 }[size.kind];
+    if (c.widget === 'cover' && coverWidth) await sharp(join(here, 'source/cover.jpg')).resize({ width: coverWidth }).jpeg({ quality: 82, mozjpeg: true }).toFile(join(dir, 'cover.jpg'));
     let crf = size.kind === 'mini' ? 26 : 25, total = 0;
     for (;;) {
       encode(loopIn, join(dir, 'loop.mp4'), [W0, H0], focus, size, crf);

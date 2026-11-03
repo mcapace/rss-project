@@ -10,7 +10,7 @@
 
 <link rel="stylesheet" href="site.css">
 </head>
-<body>
+<body class="cp cp-newsletter">
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <div class="ad ad-billboard ad-above" data-slot="wa_above_nav" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <header class="mast">
@@ -20,18 +20,27 @@
 </header>
 
 
-<section class="band" style="padding-top: 28px">
-  <div class="chan-head"><h1 class="d1">Newsletters</h1><p class="muted" style="margin-top:8px;max-width:56ch">Four letters from the editors. Pick the ones you want, and they arrive from Whisky Advocate, never from anyone else.</p></div>
+<main id="main-content" class="cp-main">
+<section class="band cp-band">
+  <div class="read-frame">
+  <nav class="cp-family" aria-label="Company pages"><a href="about.html">About</a><a href="contact.html">Contact</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html">Retailer club</a><a href="newsletter.html" aria-current="page">Newsletters</a><a href="app.html">WhiskyFest app</a><a href="privacy.html">Privacy policy</a></nav>
+  <header class="cp-hero"><span class="mono cp-eyebrow">Whisky Advocate</span><h1 class="d1">Newsletters</h1><p class="cp-dek">Four letters from the editors. Pick the ones you want, and they arrive from Whisky Advocate, never from anyone else.</p></header>
   <form class="nl" id="nlForm" novalidate>
+  <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">1</span>Your email</legend>
     <div class="nl-fields nl-email glass">
         <label class="wide"><span>Email</span><input name="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-describedby="nlStatus"></label>
     </div>
-    <div class="nl-lists" role="group" aria-label="Newsletters">
+  </fieldset>
+  <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">2</span>Pick your letters</legend>
+    <p class="cp-picked mono" id="nlPicked" role="status" aria-live="polite"></p>
+    <div class="nl-lists">
       <label class="nl-card" data-list="notes"><input type="checkbox" name="lists" value="notes" checked><span class="nl-check"></span><span class="nl-art nl-art-notes"></span><span class="nl-body"><span class="mono">Twice a month</span><strong>WhiskyNotes</strong><span>The latest releases, the newest ratings and what the editors are drinking.</span><a href="https://assets.winespectator.com/newsletters/images/WhiskyNotesSample.pdf" target="_blank" rel="noopener">See a sample</a></span></label>
       <label class="nl-card" data-list="weekend"><input type="checkbox" name="lists" value="weekend" checked><span class="nl-check"></span><span class="nl-art nl-art-weekend"></span><span class="nl-body"><span class="mono">Fridays</span><strong>Whisky Weekend</strong><span>The editors' roundup of the week's new releases, in time for the weekend.</span></span></label>
       <label class="nl-card" data-list="cocktails"><input type="checkbox" name="lists" value="cocktails"><span class="nl-check"></span><span class="nl-art nl-art-cocktails"></span><span class="nl-body"><span class="mono">For the trade · once a month</span><strong>Cocktail Club</strong><span>For bartenders and buyers: classic and new whisky cocktails, with the recipes, the videos and the bottles behind them.</span><a href="https://assets.winespectator.com/newsletters/images/WhiskyAdvocateCocktailClub.pdf" target="_blank" rel="noopener">See a sample</a></span></label>
       <label class="nl-card" data-list="offers"><input type="checkbox" name="lists" value="offers"><span class="nl-check"></span><span class="nl-art nl-art-offers"></span><span class="nl-body"><span class="mono">As needed</span><strong>Offers &amp; Promotions</strong><span>WhiskyFest announcements, new products and offers from selected partners.</span></span></label>
     </div>
+  </fieldset>
+  <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">3</span>Sign up</legend>
     <div class="nl-fields glass">
       <label><span>ZIP or postal code (optional)</span><input name="zip" inputmode="numeric" autocomplete="postal-code"></label>
       <label><span>Industry (optional)</span><select name="industry"><option value="">Just a whisky lover</option><option>Consumer</option><option>Importer</option><option>Distiller</option><option>Wine/Spirits Distributor</option><option>Independent Retailer (Wine/Spirits/Beer)</option><option>Chain Retailer (Wine/Spirits/Beer)</option><option>Restaurant</option><option>Bar</option><option>Hotel</option><option>Club (Private, Country)</option><option>Duty Free Operator</option><option>Media/PR</option><option>Finance</option><option>Winery</option><option>Brewer</option><option>Beer Distributor</option><option>Cigar Retailer</option><option>Cigar Distributor</option><option>Cigar Manufacturer</option><option>Other</option></select></label>
@@ -39,8 +48,11 @@
       <p class="wide muted" style="font-size:12.5px;margin:0">By signing up you agree that M. Shanken Communications, Inc. may process your information under its <a href="privacy.html">privacy policy</a>.</p>
       <div class="wide actions"><button type="submit" class="pill solid" id="nlGo">Sign up</button><span class="muted" id="nlStatus" role="status" aria-live="polite" style="font-size:13px"></span></div>
     </div>
-  </form>
+    </fieldset>
+</form>
+  </div>
 </section>
+</main>
 <script src="catalog-core.js"></script>
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
@@ -73,5 +85,6 @@
 
 
 <script>WA.ready(function () {});</script>
+<script src="cp.js"></script>
 </body>
 </html>

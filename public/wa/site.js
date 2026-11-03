@@ -900,3 +900,77 @@ WA.canvasTips = function (canvas, points, html, href) {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
+
+/* Homepage tool icons (2026-11-03): each tool in the "Explore by taste" list draws a tiny live version of itself on a canvas: the
+   flavor wheel, a turning globe, a breathing palate radar, the Ask sparkle and a scanning viewfinder. Faster on hover, paused off
+   screen, a still frame under reduced motion. */
+(function () {
+  var list = document.querySelector(".split-tools"); if (!list) return;
+  var still = matchMedia("(prefers-reduced-motion: reduce)").matches, S = 44, items = [];
+  var AMBER = "201,115,29", GOLD = "227,164,67", CREAM = "255,236,210";
+  function rnd(seed) { return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
+  var R = rnd(7), DOTS = [], PAL = ["227,164,67", "116,196,255", "232,120,140", "140,220,160", "255,206,120"];
+  for (var i = 0; i < 46; i++) DOTS.push({ a: R() * Math.PI * 2, r: 4 + Math.sqrt(R()) * 12, c: PAL[Math.floor(R() * PAL.length)], p: R() * 6, s: 0.5 + R() * 0.9 });
+  var GLOBE = []; for (var la = -75; la <= 75; la += 12.5) for (var lo = 0; lo < 360; lo += 12) GLOBE.push([la * Math.PI / 180, lo * Math.PI / 180]);
+  var LIGHTS = [[57, -4], [53, -7], [37, -85], [38, -78], [36, 138], [43, 141], [-35, 149]].map(function (p) { return [p[0] * Math.PI / 180, p[1] * Math.PI / 180]; });
+  var draw = {
+    map: function (c, t) {
+      c.strokeStyle = "rgba(" + CREAM + ",0.16)"; c.lineWidth = 1; c.beginPath(); c.arc(22, 22, 17, 0, 7); c.stroke();
+      c.strokeStyle = "rgba(" + CREAM + ",0.07)"; c.beginPath(); for (var k = 0; k < 12; k++) { var a = k * Math.PI / 6; c.moveTo(22 + Math.cos(a) * 6, 22 + Math.sin(a) * 6); c.lineTo(22 + Math.cos(a) * 17, 22 + Math.sin(a) * 17); } c.stroke();
+      DOTS.forEach(function (d, j) { var a = d.a + Math.sin(t * 0.45 * d.s + d.p) * 0.12, r = d.r + Math.sin(t * 0.7 + j) * 0.8; c.fillStyle = "rgba(" + d.c + "," + (0.55 + 0.35 * Math.sin(t * d.s + d.p)) + ")"; c.beginPath(); c.arc(22 + Math.cos(a) * r, 22 + Math.sin(a) * r, 0.9, 0, 7); c.fill(); });
+      var ha = 0.9 + Math.sin(t * 0.3) * 0.4, hx = 22 + Math.cos(ha) * 11, hy = 22 + Math.sin(ha) * 11, pu = (t * 0.8) % 1;
+      c.fillStyle = "rgb(" + AMBER + ")"; c.beginPath(); c.arc(hx, hy, 2, 0, 7); c.fill();
+      c.strokeStyle = "rgba(" + GOLD + "," + (1 - pu) * 0.8 + ")"; c.beginPath(); c.arc(hx, hy, 2 + pu * 5, 0, 7); c.stroke();
+    },
+    globe: function (c, t) {
+      var g = c.createRadialGradient(18, 18, 2, 22, 22, 18); g.addColorStop(0, "rgba(" + GOLD + ",0.16)"); g.addColorStop(1, "rgba(" + GOLD + ",0)"); c.fillStyle = g; c.beginPath(); c.arc(22, 22, 17, 0, 7); c.fill();
+      var rot = t * 0.35, tilt = 0.35, ct = Math.cos(tilt), st = Math.sin(tilt);
+      function proj(p) { var x = Math.cos(p[0]) * Math.sin(p[1] + rot), y = Math.sin(p[0]), z = Math.cos(p[0]) * Math.cos(p[1] + rot); var y2 = y * ct - z * st, z2 = y * st + z * ct; return [22 + x * 16, 22 - y2 * 16, z2]; }
+      GLOBE.forEach(function (p) { var q = proj(p); if (q[2] <= 0) return; c.fillStyle = "rgba(" + CREAM + "," + (0.12 + q[2] * 0.5) + ")"; c.fillRect(q[0] - 0.5, q[1] - 0.5, 1, 1); });
+      LIGHTS.forEach(function (p, j) { var q = proj(p); if (q[2] <= 0.05) return; var f = 0.7 + 0.3 * Math.sin(t * 2 + j); var gl = c.createRadialGradient(q[0], q[1], 0, q[0], q[1], 4.5); gl.addColorStop(0, "rgba(255,214,140," + q[2] * f + ")"); gl.addColorStop(1, "rgba(" + AMBER + ",0)"); c.fillStyle = gl; c.beginPath(); c.arc(q[0], q[1], 4.5, 0, 7); c.fill(); });
+      c.strokeStyle = "rgba(" + CREAM + ",0.28)"; c.lineWidth = 0.8; c.beginPath(); c.arc(22, 22, 16.5, 0, 7); c.stroke();
+    },
+    palate: function (c, t) {
+      function pt(k, r) { var a = -Math.PI / 2 + k * Math.PI / 3; return [22 + Math.cos(a) * r, 22 + Math.sin(a) * r]; }
+      c.strokeStyle = "rgba(" + CREAM + ",0.14)"; c.lineWidth = 0.8;
+      [17, 11.5, 6].forEach(function (r) { c.beginPath(); for (var k = 0; k <= 6; k++) { var p = pt(k % 6, r); k ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); } c.stroke(); });
+      c.beginPath(); for (var k = 0; k < 3; k++) { var a = pt(k, 17), b = pt(k + 3, 17); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); } c.stroke();
+      var vs = []; for (k = 0; k < 6; k++) vs.push(pt(k, 17 * (0.5 + 0.38 * Math.sin(t * 0.9 + k * 1.7) * Math.sin(t * 0.37 + k))));
+      c.beginPath(); vs.forEach(function (p, j) { j ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); }); c.closePath();
+      var g = c.createRadialGradient(22, 22, 0, 22, 22, 17); g.addColorStop(0, "rgba(" + GOLD + ",0.5)"); g.addColorStop(1, "rgba(" + AMBER + ",0.18)"); c.fillStyle = g; c.fill();
+      c.strokeStyle = "rgba(" + GOLD + ",0.95)"; c.lineWidth = 1.1; c.stroke();
+      c.fillStyle = "#fff1dc"; vs.forEach(function (p) { c.beginPath(); c.arc(p[0], p[1], 1.2, 0, 7); c.fill(); });
+    },
+    ask: function (c, t) {
+      var pu = 0.75 + 0.25 * Math.sin(t * 1.6), g = c.createRadialGradient(22, 22, 0, 22, 22, 18);
+      g.addColorStop(0, "rgba(255,220,150," + 0.45 * pu + ")"); g.addColorStop(1, "rgba(" + AMBER + ",0)"); c.fillStyle = g; c.beginPath(); c.arc(22, 22, 18, 0, 7); c.fill();
+      function star(x, y, r, rot, a) { c.save(); c.translate(x, y); c.rotate(rot); c.beginPath(); for (var k = 0; k < 4; k++) { c.rotate(Math.PI / 2); c.moveTo(0, -r); c.quadraticCurveTo(r * 0.12, -r * 0.12, r, 0); c.quadraticCurveTo(r * 0.12, r * 0.12, 0, r); } c.fillStyle = "rgba(255,241,220," + a + ")"; c.fill(); c.restore(); }
+      star(22, 22, 9.5 + pu, t * 0.25, 0.95);
+      for (var k = 0; k < 2; k++) { var a = t * 0.9 + k * Math.PI; star(22 + Math.cos(a) * 14, 22 + Math.sin(a) * 9, 2.4, -t, 0.5 + 0.4 * Math.sin(t * 2 + k)); }
+    },
+    scan: function (c, t) {
+      c.strokeStyle = "rgba(" + CREAM + ",0.7)"; c.lineWidth = 1.2; c.lineCap = "round"; c.beginPath();
+      [[6, 6, 1, 1], [38, 6, -1, 1], [6, 38, 1, -1], [38, 38, -1, -1]].forEach(function (k) { c.moveTo(k[0], k[1] + 6 * k[3]); c.lineTo(k[0], k[1]); c.lineTo(k[0] + 6 * k[2], k[1]); }); c.stroke();
+      var y = 22 + Math.sin(t * 1.5) * 12;
+      [[13, 18], [22, 14], [31, 20]].forEach(function (b) { var near = Math.max(0, 1 - Math.abs(y - 26) / 14), x = b[0], top = b[1]; c.fillStyle = "rgba(" + CREAM + "," + (0.18 + near * 0.25) + ")"; c.beginPath(); c.rect(x - 1, top, 2, 4); c.rect(x - 3, top + 4, 6, 33 - top - 4); c.fill(); });
+      var g = c.createLinearGradient(0, y - 6, 0, y + 1); g.addColorStop(0, "rgba(" + AMBER + ",0)"); g.addColorStop(1, "rgba(" + GOLD + ",0.35)"); c.fillStyle = g; c.fillRect(8, y - 6, 28, 7);
+      c.strokeStyle = "rgba(255,206,120,0.95)"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(8, y); c.lineTo(36, y); c.stroke();
+    }
+  };
+  list.querySelectorAll(".tool-row").forEach(function (row) {
+    var kind = (row.className.match(/nc-(\w+)/) || [])[1], orb = row.querySelector(".tool-orb"); if (!draw[kind] || !orb) return;
+    var cv = document.createElement("canvas"), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = cv.height = S * dpr; orb.appendChild(cv); orb.classList.add("is-live");
+    var it = { c: cv.getContext("2d"), f: draw[kind], t: Math.random() * 10, speed: 1, target: 1, dpr: dpr };
+    row.addEventListener("pointerenter", function () { it.target = 2.6; }); row.addEventListener("pointerleave", function () { it.target = 1; });
+    row.addEventListener("focus", function () { it.target = 2.6; }); row.addEventListener("blur", function () { it.target = 1; });
+    items.push(it);
+  });
+  if (!items.length) return;
+  function paint(it) { var c = it.c; c.setTransform(it.dpr, 0, 0, it.dpr, 0, 0); c.clearRect(0, 0, S, S); it.f(c, it.t); }
+  if (still) { items.forEach(function (it) { it.t = 2; paint(it); }); return; }
+  var on = false, raf = 0, last = 0;
+  function loop(now) { var dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; items.forEach(function (it) { it.speed += (it.target - it.speed) * 0.08; it.t += dt * it.speed; paint(it); }); raf = on ? requestAnimationFrame(loop) : 0; }
+  new IntersectionObserver(function (e) { on = e[0].isIntersecting && !document.hidden; if (on && !raf) { last = 0; raf = requestAnimationFrame(loop); } }).observe(list);
+  document.addEventListener("visibilitychange", function () { if (document.hidden) on = false; else if (!raf) { on = true; last = 0; raf = requestAnimationFrame(loop); } });
+  items.forEach(paint);
+})();

@@ -3201,3 +3201,14 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 .tl-feat-water img { -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 72%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 72%, transparent 100%); }
 @media (max-width: 1100px) { .tl-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; } .tl-row { grid-template-columns: 40px minmax(0, 1fr); } .tl-row .tico { width: 40px; height: 40px; } .tl-arr { display: none; } }
 @media (max-width: 860px) { .tl-groups { grid-template-columns: 1fr; gap: 36px; } }
+
+/* Homepage tool icons (2026-11-03): the gradient orbs become dark glass tiles holding a live canvas per tool (site.js). */
+.tool-row { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; }
+.tool-row .tool-orb.is-live { position: relative; width: 44px; height: 44px; border-radius: 13px; background: radial-gradient(120% 120% at 30% 20%, #2b2925 0%, #151412 70%); box-shadow: inset 0 0 0 1px rgba(255,236,210,0.12), inset 0 1px 0 rgba(255,236,210,0.10), 0 10px 22px -14px rgba(0,0,0,0.9); overflow: hidden; transition: box-shadow 260ms, transform 300ms cubic-bezier(.2,.8,.2,1); }
+.tool-row .tool-orb.is-live canvas { display: block; width: 44px; height: 44px; }
+.tool-row .tool-orb.is-live::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(160deg, rgba(255,255,255,0.08), transparent 40%); pointer-events: none; }
+.tool-row:hover .tool-orb.is-live, .tool-row:focus-visible .tool-orb.is-live { transform: translateY(-1px) scale(1.05); box-shadow: inset 0 0 0 1px rgba(227,164,67,0.45), 0 0 0 4px rgba(201,115,29,0.10), 0 12px 26px -12px rgba(201,115,29,0.55); }
+
+/* Nav weight (2026-11-03): section links and tools in Aeonik Bold, full ink. */
+.mast nav a, .mast nav a[aria-current="page"], .mast .tools .pill { font-weight: 700; letter-spacing: -0.005em; }
+.mast nav a, .mast .tools .pill:not(.solid) { color: var(--ink); }

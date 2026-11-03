@@ -1,12 +1,10 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { requireCmsUser } from "@/lib/cms/auth-server";
 import { assertBrand, CmsError } from "@/lib/cms/access";
 import { cmsDb, databaseError } from "@/lib/cms/db";
 import { cmsFailure, cmsJson } from "@/lib/cms/http";
 import { searchLibraryFiles } from "@/lib/cms/media-library-server";
 import { CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES, type CmsBrand } from "@/lib/cms/types";
-import { getS3Client } from "@/lib/s3";
+import { allowedMediaKey, mediaRenditionUrl } from "@/lib/media/keys";
 import { reciprocalRankFusion } from "@/lib/editorial/rank";
 import type { SearchDocumentHit, SearchMediaHit, SearchResponse } from "@/lib/editorial/search-types";
 import { embeddingsConfigured, semanticMatches } from "@/lib/editorial/server/embeddings";
@@ -87,13 +85,12 @@ export async function GET(request: Request) {
       } catch { semantic = false; }
     }
     const bucket = process.env.S3_BUCKET;
-    const client = bucket && mediaHits.length ? getS3Client() : null;
-    const signed: SearchMediaHit[] = await Promise.all(mediaHits.map(async hit => {
-      const key = hit.s3_key;
-      const allowed = client && typeof key === "string" && hit.issue_uuid && key.startsWith(`cms/print/${hit.brand}/${hit.issue_uuid}/`) && !key.split("/").some(part => part === "..");
-      const preview_url = allowed ? await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 }).catch(() => null) : null;
-      return { ...hit, preview_url };
-    }));
+    const signed: SearchMediaHit[] = mediaHits.map(hit => {
+      // Every allowed key (print, re-hosted legacy, upload) previews through the platform's rendition route: a small,
+      // cached thumbnail instead of a presigned original. Signing only print keys left every migrated image blank.
+      if (!bucket || !allowedMediaKey(hit.s3_key, hit.brand, hit.issue_uuid)) return { ...hit, preview_url: null };
+      return { ...hit, preview_url: mediaRenditionUrl(hit.document_id, hit.media_index, 480) };
+    });
 
     return cmsJson({ query: q, documents: documentHits, media: signed, keywords: keywords.data ?? [], library, semantic } satisfies SearchResponse);
   } catch (error) { return cmsFailure(error); }

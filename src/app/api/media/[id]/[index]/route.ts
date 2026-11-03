@@ -7,17 +7,12 @@ import { deliveryEnabled } from "@/lib/cms/runtime-config";
 import { isUuid } from "@/lib/cms/validation";
 import type { CmsJsonObject } from "@/lib/cms/types";
 import { getS3Client } from "@/lib/s3";
+import { allowedMediaKey } from "@/lib/media/keys";
 import { cropOf, focalOf, parseAspect, renderRendition, type RenditionFormat } from "@/lib/media/renditions";
 
 export const runtime = "nodejs";
 
 const FORMATS = new Set<RenditionFormat>(["webp", "avif", "jpeg", "png"]);
-
-/** A media item may be a content-addressed print asset or a re-hosted legacy image. */
-function allowedKey(key: unknown, brand: string, issue: string | null): key is string {
-  if (typeof key !== "string" || key.split("/").some(part => part === "." || part === "..")) return false;
-  return (issue !== null && key.startsWith(`cms/print/${brand}/${issue}/`)) || key.startsWith(`cms/legacy/${brand}/`) || key.startsWith(`cms/uploads/${brand}/`);
-}
 
 /**
  * Stable image URL for a document's attached media, with on-the-fly renditions:
@@ -42,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
     const media = Array.isArray(document.metadata?.media) ? (document.metadata.media as CmsJsonObject[]) : [];
     const item = media[index];
-    if (!item || typeof item !== "object" || !allowedKey(item.s3_key, document.brand, document.issue_uuid)) throw new CmsError(404, "Image not found.");
+    if (!item || typeof item !== "object" || !allowedMediaKey(item.s3_key, document.brand, document.issue_uuid)) throw new CmsError(404, "Image not found.");
     const bucket = process.env.S3_BUCKET;
     if (!bucket) throw new CmsError(503, "Image storage has not been connected yet.", "setup_required");
 

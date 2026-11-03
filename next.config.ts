@@ -7,6 +7,11 @@ const nextConfig: NextConfig = {
     "/wa/recipes/[slug]": ["./public/wa/cocktail.html", "./public/wa/cocktails.json"],
     "/wa/producers/[name]": ["./public/wa/producer.html", "./public/wa/ratings.json"],
   },
+  // The development hosts (*.vercel.app) stay out of search results, so they never compete with whiskyadvocate.com.
+  // A custom production domain does not match, so pages there are indexable as soon as the domain points here.
+  async headers() {
+    return [{ source: "/:path*", has: [{ type: "host", value: "(?<host>.*)\\.vercel\\.app" }], headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+  },
   async redirects() {
     // The Whisky Advocate concept site is static files under public/wa; the folder itself opens its home page.
     // /wa/house-ads would otherwise reach the /wa/[slug] story route.

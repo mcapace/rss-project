@@ -93,9 +93,17 @@ export async function liveStories(): Promise<{ stories: StoryEntry[]; removed: s
   if (published.error) throw new Error(published.error.message);
   if (takenDown.error) throw new Error(takenDown.error.message);
   const stories = ((published.data || []) as Row[]).map(entryOf);
+  // A slug is only removed when no published document still carries it (an unpublished duplicate never hides a live story).
+  const downSlugs = [...new Set(((takenDown.data || []) as { slug: string }[]).map(row => row.slug))];
+  const stillLive = new Set<string>();
+  for (let i = 0; i < downSlugs.length; i += 100) {
+    const { data, error } = await cmsDb().from("cms_documents").select("slug").eq("brand", "wa").eq("publication_state", "published").in("slug", downSlugs.slice(i, i + 100));
+    if (error) throw new Error(error.message);
+    for (const row of (data || []) as { slug: string }[]) stillLive.add(row.slug.toLowerCase());
+  }
   return {
     stories,
-    removed: ((takenDown.data || []) as { slug: string }[]).map(row => row.slug),
+    removed: downSlugs.filter(slug => !stillLive.has(slug.toLowerCase())),
     sponsored: stories.filter(s => s.sp).map(s => (s.spBy ? { slug: s.slug, by: s.spBy } : { slug: s.slug })),
   };
 }

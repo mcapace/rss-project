@@ -2749,3 +2749,7 @@ main { min-height: 100vh; min-height: 100dvh; }
 .shelf-bottle:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 24px 40px -24px rgba(23, 18, 13, 0.4); }
 @media (max-width: 960px) { .shelf-row { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 60px), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 60px), transparent 100%); } }
 .scan #scanStatus { color: #f3dcb4; }
+
+/* ---- Amber stages (2026-11-02): the flavor map and distillery globe sit on the site's amber instead of dark brown ---- */
+.fmap-stage { background: radial-gradient(120% 90% at 30% 20%, #e3a443 0%, #c9731d 55%, #a85a16 100%); }
+.globe-stage { background: radial-gradient(90% 80% at 50% 45%, #e3a443 0%, #c9731d 60%, #a85a16 100%); }

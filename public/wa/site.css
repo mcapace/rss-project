@@ -2898,3 +2898,37 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
   .gx-plot { min-height: 240px; }
 }
 .gx-hub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,246,234,0.4); pointer-events: none; }
+
+/* Nav bar (2026-11-03): the whisky wave stays behind two frosted-glass groups, section links on the left and the tools on the right
+   with Subscribe the one solid button; the bar slims and firms up once the page scrolls (site.js sets data-scrolled). */
+.mast { padding-block: 12px; transition: padding 240ms ease, box-shadow 240ms ease; border-bottom: 0; }
+.mast::after { background: linear-gradient(180deg, rgba(247,243,236,0.28), rgba(247,243,236,0.42)); transition: background-color 240ms ease; }
+.mast[data-scrolled="true"] { padding-block: 8px; box-shadow: 0 1px 0 rgba(23,18,13,0.06), 0 14px 32px -24px rgba(60,35,15,0.55); }
+.mast[data-scrolled="true"]::after { background: linear-gradient(180deg, rgba(247,243,236,0.62), rgba(247,243,236,0.72)); }
+.mast .burger { width: 42px; height: 42px; border-radius: 50%; background: rgba(255,251,245,0.78); border: 1px solid rgba(255,255,255,0.8); box-shadow: inset 0 1px 0 #fff, 0 8px 22px -14px rgba(60,35,15,0.5); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); transition: transform 160ms ease, background-color 160ms; }
+.mast .burger:hover { background: #fffbf5; transform: scale(1.04); }
+.mast nav, .mast .tools { padding: 4px; border-radius: 999px; background: rgba(255,251,245,0.74); border: 1px solid rgba(255,255,255,0.8); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 24px -16px rgba(60,35,15,0.5); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); }
+.mast nav { gap: 2px; align-items: center; }
+.mast nav a { display: inline-flex; align-items: center; height: 34px; padding: 0 13px; border-radius: 999px; font-size: 13.5px; font-weight: 500; white-space: nowrap; color: var(--ink-2); text-shadow: none; transition: background-color 160ms, color 160ms; }
+.mast nav a:hover { background: rgba(23,18,13,0.06); color: var(--ink); }
+.mast nav a[aria-current="page"] { background: var(--ink); color: var(--paper); box-shadow: none; padding-bottom: 0; }
+.mast .tools { gap: 2px; }
+.mast .tools .pill { height: 34px; padding: 0 13px; font-size: 13.5px; white-space: nowrap; flex: none; }
+.mast .tools .pill:not(.solid) { background: transparent; border-color: transparent; box-shadow: none; color: var(--ink-2); text-shadow: none; transition: background-color 160ms, color 160ms; }
+.mast .tools .pill:not(.solid):hover, .mast .tools .pill[aria-current="page"]:not(.solid) { background: rgba(23,18,13,0.06); color: var(--ink); }
+.mast .tools .pill.solid { order: 9; padding: 0 16px; box-shadow: 0 6px 16px -10px rgba(23,18,13,0.7); }
+.mast .tools .fest-pill { gap: 8px; color: var(--copper); }
+.mast .tools .fest-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 0 rgba(201,115,29,0.5); animation: fest-dot 2.4s ease-out infinite; }
+@keyframes fest-dot { 0% { box-shadow: 0 0 0 0 rgba(201,115,29,0.5); } 70%, 100% { box-shadow: 0 0 0 7px rgba(201,115,29,0); } }
+.mast .search-btn::after { content: attr(data-key); margin-left: 4px; padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(23,18,13,0.12); background: rgba(255,255,255,0.6); font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); line-height: 1.3; }
+.mast .search-btn:not([data-key])::after { display: none; }
+@media (hover: none), (max-width: 1500px) { .mast .search-btn::after { display: none; } }
+@media (max-width: 1500px) { .mast .tools a[href="tools.html"], .mast .tools a[href^="https://store."] { display: none; } }
+@media (min-width: 901px) and (max-width: 1100px) { .mast nav a { padding: 0 9px; font-size: 13px; } .mast nav { gap: 0; } }
+@media (min-width: 901px) and (max-width: 1000px) { .mast nav a { padding: 0 7px; } }
+@media (max-width: 900px) {
+  .mast nav { display: none; }
+  .mast .tools { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; gap: 6px; }
+  .mast .tools .pill:not(.solid) { background: rgba(255,251,245,0.82); border: 1px solid rgba(255,255,255,0.8); }
+}
+@media (prefers-reduced-motion: reduce) { .mast .tools .fest-pill::before { animation: none; } }

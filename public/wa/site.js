@@ -867,3 +867,17 @@ WA.canvasTips = function (canvas, points, html, href) {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
+
+/* Nav bar: slimmer once the page scrolls; the search button shows its keyboard shortcut. */
+(function () {
+  function start() {
+    var mast = document.querySelector(".mast"); if (!mast) return;
+    var on = null;
+    function check() { var s = scrollY > 8; if (s !== on) { on = s; mast.setAttribute("data-scrolled", String(s)); } }
+    addEventListener("scroll", check, { passive: true }); check();
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    function key() { var b = mast.querySelector(".search-btn"); if (b) b.setAttribute("data-key", mac ? "⌘K" : "Ctrl K"); else setTimeout(key, 200); }
+    key();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();

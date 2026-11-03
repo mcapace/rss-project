@@ -2547,6 +2547,7 @@ main { min-height: 100vh; min-height: 100dvh; }
   .panel.sell { grid-template-columns: 1fr; gap: 20px; }
   .sell-preview { padding: 14px; }
   .sell-preview canvas { max-height: 460px; width: auto; max-width: 100%; }
+}
 
 /* ---- Home front page: news on the left, Ask Whisky Advocate and the taste tools beside it, both above the fold (2026-11-03) ---- */
 .front-split { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; padding-top: 28px; }

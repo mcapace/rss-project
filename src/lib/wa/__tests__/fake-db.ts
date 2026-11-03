@@ -2,7 +2,8 @@
  * A small in-memory stand-in for the supabase-js client, for tests that must never reach a database. It applies the
  * filters the public routes use (eq, neq, in, is, not is, lte, gte, lt, gt, ilike, or, including filters on an
  * embedded relation such as cms_documents!inner) to fixture rows, and answers rpc calls from handlers. Selects are not
- * parsed: fixture rows already carry every field (and alias) the code reads.
+ * parsed: fixture rows already carry every field (and alias) the code reads. `maxRows` caps every response the way
+ * PostgREST does (1,000 rows on the real API, whatever limit or range asks for).
  */
 type Row = Record<string, unknown>;
 type Pred = (row: Row) => boolean;
@@ -66,7 +67,7 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: null }> {
   private take: number | null = null;
   private skip = 0;
   private one: "maybe" | "single" | null = null;
-  constructor(private rows: Row[], private call: FromCall) {}
+  constructor(private rows: Row[], private call: FromCall, private maxRows = Infinity) {}
 
   private add(column: string, pred: (value: unknown) => boolean, label: string) {
     this.call.filters.push(label);
@@ -111,7 +112,7 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: null }> {
         return list.some(item => preds.every(p => p(item)));
       });
     }
-    out = out.slice(this.skip, this.take == null ? undefined : this.skip + this.take);
+    out = out.slice(this.skip, this.take == null ? undefined : this.skip + this.take).slice(0, this.maxRows);
     if (this.one) return { data: out[0] ?? null, error: null };
     return { data: out, error: null };
   }
@@ -120,7 +121,7 @@ class FakeQuery implements PromiseLike<{ data: unknown; error: null }> {
   }
 }
 
-export function fakeDb(tables: Record<string, Row[]>, rpcs: Record<string, (args: Record<string, unknown>) => unknown> = {}) {
+export function fakeDb(tables: Record<string, Row[]>, rpcs: Record<string, (args: Record<string, unknown>) => unknown> = {}, options: { maxRows?: number } = {}) {
   const rpcCalls: RpcCall[] = [];
   const fromCalls: FromCall[] = [];
   return {
@@ -136,7 +137,7 @@ export function fakeDb(tables: Record<string, Row[]>, rpcs: Record<string, (args
     from: (table: string) => {
       const call: FromCall = { table, filters: [] };
       fromCalls.push(call);
-      return new FakeQuery(tables[table] ?? [], call);
+      return new FakeQuery(tables[table] ?? [], call, options.maxRows);
     },
   };
 }

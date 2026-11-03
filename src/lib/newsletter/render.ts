@@ -4,6 +4,7 @@
  * can be tested and reused by the preview.
  */
 import type { CmsBrand } from "@/lib/cms/types";
+import { replaceVideoEmbeds } from "@/lib/cms/video";
 
 export const BRAND_INK: Record<CmsBrand, string> = { wa: "#3d5a80", ws: "#6f1d2b", ca: "#b45309", mw: "#1b4332" };
 export const BRAND_NAMES: Record<CmsBrand, string> = { wa: "Whisky Advocate", ws: "Wine Spectator", ca: "Cigar Aficionado", mw: "Market Watch" };
@@ -16,6 +17,7 @@ export type NewsletterInput = {
   title: string; byline: string; excerpt: string; section: string; html: string; url: string | null;
 };
 
+const textSafe = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const escape = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /**
@@ -54,10 +56,24 @@ export function newsletterBody(html: string): { body: string; truncated: boolean
   return { body, truncated: body.length < html.length };
 }
 
+/**
+ * Email cannot play a video, so a video figure stays a link: for YouTube the video's still, linked to the video, above a
+ * "Watch on YouTube" link and the caption; for Vimeo (no still without an API call) the link alone. Never an iframe.
+ */
+export function emailVideos(html: string, ink: string = BRAND_INK.wa, title = ""): string {
+  return replaceVideoEmbeds(html, video => {
+    const provider = video.provider === "youtube" ? "YouTube" : "Vimeo";
+    const still = video.thumb ? `<a class="video-still" href="${escape(video.href)}" style="display:block;padding:0;background:none;text-decoration:none"><img src="${escape(video.thumb)}" alt="${escape(video.caption || title ? `Play video: ${video.caption || title}` : "Play video")}" width="552" style="display:block;width:100%;max-width:552px;height:auto;border:0"></a>` : "";
+    const link = `<a href="${escape(video.href)}" style="display:block;padding:${still ? "10px 0 0" : "36px 16px"};text-align:center;background:${still ? "none" : "#f4f4f5"};color:${ink};font:700 14px Arial,sans-serif;text-decoration:none">Watch on ${provider}</a>`;
+    return `<figure data-embed="video" style="margin:20px 0">${still}${link}${video.caption ? `<figcaption>${escape(video.caption)}</figcaption>` : ""}</figure>`;
+  });
+}
+
 export function renderNewsletterHtml(input: NewsletterInput): string {
   const ink = BRAND_INK[input.brand];
   const name = BRAND_NAMES[input.brand];
-  const { body, truncated } = newsletterBody(input.html);
+  const parts = newsletterBody(input.html);
+  const body = emailVideos(parts.body, ink, input.title), truncated = parts.truncated;
   const cta = input.url ? `<a class="cta" href="${escape(input.url)}" style="display:block;margin:28px 0 0;padding:14px;text-align:center;background:${ink};color:#fff;font:700 14px Arial,sans-serif;text-decoration:none">Read the full story</a>` : "";
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(input.subject)}</title>
 <style>body{margin:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif}.wrap{width:100%;max-width:600px;margin:0 auto;background:#fff}.bar{background:${ink};color:#fff;padding:18px 24px;font:700 14px/1 Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase}.inner{padding:24px}
@@ -73,6 +89,8 @@ ${input.preheader ? `<div class="preheader">${escape(input.preheader)}</div>` : 
 }
 
 export function renderNewsletterText(input: NewsletterInput): string {
-  const text = newsletterBody(input.html).body.replace(/<\/(p|h2|h3|li|blockquote)>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\n{3,}/g, "\n\n").trim();
+  // A video has no words of its own in plain text, so its caption and address stand in for it.
+  const body = replaceVideoEmbeds(newsletterBody(input.html).body, video => `<p>${textSafe(video.caption ? `${video.caption}: ` : "")}Watch the video at ${textSafe(video.href)}</p>`);
+  const text = body.replace(/<\/(p|h2|h3|li|blockquote)>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\n{3,}/g, "\n\n").trim();
   return [`${BRAND_NAMES[input.brand]} · ${KIND_LABELS[input.kind]}`, "", input.title, input.excerpt, input.byline ? `By ${input.byline}` : "", "", text, input.url ? `\nRead the full story: ${input.url}` : ""].filter(line => line !== undefined).join("\n").trim();
 }

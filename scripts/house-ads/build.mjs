@@ -254,7 +254,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .halfpage .cta{left:24px;bottom:24px;height:40px;padding:0 18px;font-size:15px}
 .halfpage .chip{left:24px;right:24px;bottom:78px}
 .halfpage .cover{left:150px;top:300px;width:124px;height:166px}
-.rect .film:before{background:linear-gradient(180deg,rgba(22,20,18,.85) 0,rgba(22,20,18,.25) 28%,rgba(22,20,18,0) 44%,rgba(22,20,18,.55) 62%,var(--ink) 100%)}
+.rect .film:before{background:linear-gradient(180deg,rgba(22,20,18,.85) 0,rgba(22,20,18,.25) 28%,rgba(22,20,18,0) 44%,rgba(22,20,18,.72) 58%,var(--ink) 100%)}
 .rect .brand{left:18px;top:16px;width:84px}
 .rect .eyebrow{display:none}
 .rect .lines{position:absolute;left:18px;right:16px;bottom:62px;height:56px}
@@ -320,6 +320,7 @@ if(AD.kind!=="mini"){
     var doors=new Date(AD.data.doors).getTime();
     var day=function(){return new Date(new Date().toLocaleString("en-US",{timeZone:"America/New_York"})).toISOString().slice(0,10);};
     var draw=function(){
+      if(/[?&]static=1/.test(location.search)){ w.className="chip tick"; w.innerHTML='<span class="k">Friday, Nov 20</span><b>New York Marriott Marquis</b>'; return; }
       var ms=doors-Date.now();
       if(ms<=0||day()===AD.data.day){ w.className="chip tick"; w.innerHTML=ms>-6*36e5?'<span class="k">Tonight</span><b>Doors 6:30 PM</b>':'<span class="k">Thank you</span><b>See you next year</b>'; return; }
       var d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),s=Math.floor(ms%6e4/1e3);
@@ -341,7 +342,7 @@ if(AD.kind!=="mini"){
   }else if(AD.widget==="wave"&&AD.kind!=="strip"){
     w.className="chip wave"; var bars="";for(var i=0;i<(big?22:12);i++)bars+='<span style="animation-delay:-'+(i*137%900)/1000+'s;animation-duration:'+(0.7+(i*53%60)/100)+'s"></span>';w.innerHTML=bars;
   }else if(AD.widget==="cover"&&AD.kind!=="strip"){
-    w.className="cover"; w.innerHTML='<div class="sheet">'+ad.querySelector(".brand").innerHTML+'<div class="ph"></div><span class="k">Ratings · Reviews · Stories</span></div>';
+    w.className="cover"; w.innerHTML='<div class="sheet">'+ad.querySelector(".brand").innerHTML+'<div class="ph"></div><span class="k">Ratings · Reviews</span></div>';
   }
 }
 if(w.className==="chip tick"&&AD.kind==="halfpage"){w.style.minHeight="64px";}

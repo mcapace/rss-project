@@ -16,7 +16,7 @@ const sharp = require('sharp');
     for (const size of Object.keys(c.sizes)) {
       const [w, h] = size.split('x').map(Number);
       const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
-      await page.goto(`http://localhost:8765/wa/house-ads/${id}/${size}/index.html`);
+      await page.goto(`http://localhost:8765/wa/house-ads/${id}/${size}/index.html?static=1`);
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(600);
       const png = await page.screenshot();

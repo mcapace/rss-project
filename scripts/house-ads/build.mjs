@@ -342,10 +342,11 @@ if(AD.kind!=="mini"){
     var showC=function(){w.innerHTML='<span class="k">On the list</span><b>'+esc(C[ci++%C.length])+'</b>';}; showC(); swap=showC;
   }else if(AD.widget==="wave"&&AD.kind!=="strip"){
     w.className="chip wave"; var bars="";for(var i=0;i<(big?22:12);i++)bars+='<span style="animation-delay:-'+(i*137%900)/1000+'s;animation-duration:'+(0.7+(i*53%60)/100)+'s"></span>';w.innerHTML=bars;
-  }else if(AD.widget==="cover"){
+  }${c.widget === 'cover' && size.kind !== 'mini' ? `else if(AD.widget==="cover"){
+    /* Only bundles that ship cover.jpg mention it: Ad Manager rejects a bundle that names a file it does not contain. */
     w.className="cover"; w.innerHTML='<div class="sheet"><img src="cover.jpg" alt="The Whisky Advocate magazine"></div>';
     if(!still)setTimeout(function(){var sh=w.querySelector(".sheet");if(sh)sh.classList.add("gloss");},600);
-  }
+  }` : ''}
 }
 if(w.className==="chip tick"&&AD.kind==="halfpage"){w.style.minHeight="64px";}
 /* the sequence: a line every 3.2 s, the widget turns with it, everything stops by 30 s on the first line */

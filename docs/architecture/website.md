@@ -2,7 +2,7 @@
 
 The new Whisky Advocate site lives in the same Next.js app as the CMS. Most of it is static files in `public/wa`: HTML pages, one shared script (`site.js`), one stylesheet (`site.css`) and JSON data files exported from the CMS. Around that static core sit server-rendered pages (one URL per story, rating, recipe and producer) and a set of small JSON routes under `/api/wa` for anything that must be live or needs a model.
 
-Today the site runs on the development host, `https://rss-project-ten.vercel.app/wa`. That host sends `X-Robots-Tag: noindex, nofollow` (set in `next.config.ts` for every `*.vercel.app` host), so it never competes with whiskyadvocate.com in search. The move to the real domain is covered in [seo-and-cutover.md](seo-and-cutover.md).
+Today the site runs on the development host, `https://rss-project-ten.vercel.app/wa`. On whiskyadvocate.com (a root host, `WA_ROOT_HOSTS`) the same deployment serves it at the root: `/`, `/<slug>`, `/stories.html`, `/recipes/<slug>`, with the paths below minus their `/wa` (the routing is in [seo-and-cutover.md](seo-and-cutover.md)). The development host sends `X-Robots-Tag: noindex, nofollow` (set in `next.config.ts` for every `*.vercel.app` host), so it never competes with whiskyadvocate.com in search. The move to the real domain is covered in [seo-and-cutover.md](seo-and-cutover.md).
 
 ## How a request is served
 
@@ -12,6 +12,7 @@ flowchart LR
   E -->|"/wa/*.html, *.js, *.css, *.json"| S["Static files<br/>public/wa"]
   E -->|"/wa/&lt;slug&gt;, /wa/recipes/&lt;slug&gt;,<br/>/wa/producers/&lt;name&gt;"| R["Server pages<br/>src/app/wa"]
   E -->|"/api/wa/*"| A["JSON routes<br/>src/app/api/wa"]
+  E -->|"whiskyadvocate.com: / and /&lt;path&gt; rewritten to /wa/..."| S
   E -->|"old whiskyadvocate.com paths"| P["Redirect engine<br/>cms_resolve_redirect"]
   R --> DB[("Supabase Postgres<br/>cms_documents, cms_embeddings")]
   A --> DB
@@ -123,11 +124,12 @@ sequenceDiagram
 
 - Title, meta description (158 characters), canonical URL, Open Graph and Twitter tags, and `robots` (`noindex, follow` for documents marked no-index).
 - JSON-LD: `NewsArticle` or `Article` (or `AdvertiserContentArticle` with a `sponsor` when paid) with authors, dates, publisher and the entities a story is about; a `BreadcrumbList`; `Review` with a 0 to 100 `Rating` for bottles.
-- The canonical origin is `WA_SITE_ORIGIN` when set (the production domain), else the request's host. Paths are under `BASE = "/wa"`.
+- The site's shape comes from the request host (`siteFor` in `src/lib/wa/site-host.ts`): on a root host the origin is `WA_SITE_ORIGIN` when set, else `https://whiskyadvocate.com`, and paths have no prefix; on any other host the request's own origin and `/wa`. Every builder takes that `{ origin, base }`, and the page gets `window.WA_BASE` for `site.js`.
+- A story whose `metadata.page_file` names a top-level `public/wa` page ("Served by site page" in the CMS) is answered with that page at the story's URL, its canonical and `og:url` set to that URL (`sitePage`). The water tool (`water.html`) is served this way at `/how-to-water-your-whisky`.
 
 On preview deployments (no database delivery, `deliveryEnabled()` false) `/wa/<slug>` falls back to the exported files (`exportedPage`), so previews still show content.
 
-Why server pages: the static `story.html#slug` reader cannot carry per-story head tags, so search engines would see one page. A real URL per story with its own title, description, canonical and structured data is what keeps search traffic. `site.js` links to `/wa/<slug>` on the live host and keeps the hash pages for the artifact copy.
+Why server pages: the static `story.html#slug` reader cannot carry per-story head tags, so search engines would see one page. A real URL per story with its own title, description, canonical and structured data is what keeps search traffic. `site.js` links to `WA.BASE + "/<slug>"` on the live hosts (`/<slug>` on whiskyadvocate.com, `/wa/<slug>` on the development host) and keeps the hash pages for the artifact copy (`WA.BASE` null). Page links in `public/wa` use `WA.BASE`, never a literal `"/wa/"`; `/api/wa/...` fetches stay as they are on both hosts.
 
 ## The `/api/wa` routes
 
@@ -192,7 +194,7 @@ Every `form.nl-strip` and the newsletter page post `{ email, lists, source }` to
 
 ## Watch out for
 
-- Relative URLs in pages resolve against the page path. On clean URLs (`/wa/<slug>`) that is `/wa/`, but on `/wa/recipes/<slug>` it is `/wa/recipes/`; shared scripts resolve their sibling files from their own script URL (see `SCRIPT_SRC` in `ads.js`).
+- Relative URLs in pages resolve against the page path. On clean URLs (`/wa/<slug>`, or `/<slug>` at the root) that is the site's folder, but on `/recipes/<slug>` it is one level down, so the recipe and producer pages carry `<base href="${base}/">`; shared scripts resolve their sibling files from their own script URL (see `SCRIPT_SRC` in `ads.js`).
 - Story pages are cached two minutes at the edge with a day of stale-while-revalidate, so a correction shows on the next request after two minutes.
-- `/wa/house-ads` would reach the story route; `next.config.ts` redirects it to `/wa/house-ads/index.html`.
+- `/wa/house-ads` would reach the story route; `next.config.ts` redirects it to `/wa/house-ads/index.html` (on a root host the proxy sends `/house-ads` there instead).
 - The live merge covers stories with `published_at`. Imported stories edited in the CMS keep their exported list entry (title, dek, picture) until the export runs again; their pages are live.

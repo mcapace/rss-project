@@ -1,6 +1,7 @@
 import "server-only";
 import { sponsorship } from "@/lib/cms/sponsored";
-import { BASE, PUBLISHER, docDates, heroOf, isNoIndex, listDocs, xmlEsc, type WaDoc } from "./seo";
+import { PUBLISHER, docDates, heroOf, isNoIndex, listDocs, xmlEsc, type WaDoc } from "./seo";
+import type { WaSite } from "./site-host";
 
 /** Sitemaps, the Google News sitemap, the RSS feed and llms.txt for the Whisky Advocate site (2026-11-01). */
 
@@ -23,10 +24,10 @@ export function urlEntry(loc: string, lastmod: string | null, extra = ""): strin
   return `<url><loc>${xmlEsc(loc)}</loc>${lastmod ? `<lastmod>${xmlEsc(lastmod)}</lastmod>` : ""}${extra}</url>`;
 }
 
-export function storyEntry(origin: string, d: WaDoc): string {
+export function storyEntry(site: WaSite, d: WaDoc): string {
   const dates = docDates(d);
-  const hero = heroOf(d, origin);
-  return urlEntry(`${origin}${BASE}/${encodeURIComponent(d.slug)}`, dates.modified ?? dates.published, hero ? `<image:image><image:loc>${xmlEsc(hero)}</image:loc></image:image>` : "");
+  const hero = heroOf(d, site.origin);
+  return urlEntry(`${site.origin}${site.base}/${encodeURIComponent(d.slug)}`, dates.modified ?? dates.published, hero ? `<image:image><image:loc>${xmlEsc(hero)}</image:loc></image:image>` : "");
 }
 
 export function urlset(entries: string[], ns = ""): string {
@@ -36,10 +37,16 @@ export const IMAGE_NS = ` xmlns:image="http://www.google.com/schemas/sitemap-ima
 export const NEWS_NS = ` xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"`;
 
 /** Google News: editorial stories from the last two days, with the publication named Whisky Advocate. Paid content is left out. */
-export function newsEntry(origin: string, d: WaDoc): string {
+export function newsEntry(site: WaSite, d: WaDoc): string {
   const dates = docDates(d);
-  const hero = heroOf(d, origin);
-  return `<url><loc>${xmlEsc(`${origin}${BASE}/${encodeURIComponent(d.slug)}`)}</loc><news:news><news:publication><news:name>${PUBLISHER}</news:name><news:language>en</news:language></news:publication><news:publication_date>${xmlEsc(dates.published ?? "")}</news:publication_date><news:title>${xmlEsc(d.title)}</news:title></news:news>${hero ? `<image:image><image:loc>${xmlEsc(hero)}</image:loc></image:image>` : ""}</url>`;
+  const hero = heroOf(d, site.origin);
+  return `<url><loc>${xmlEsc(`${site.origin}${site.base}/${encodeURIComponent(d.slug)}`)}</loc><news:news><news:publication><news:name>${PUBLISHER}</news:name><news:language>en</news:language></news:publication><news:publication_date>${xmlEsc(dates.published ?? "")}</news:publication_date><news:title>${xmlEsc(d.title)}</news:title></news:news>${hero ? `<image:image><image:loc>${xmlEsc(hero)}</image:loc></image:image>` : ""}</url>`;
+}
+
+/** The sitemap index: the story, rating and page sitemaps and the Google News sitemap, at this host's shape. */
+export const SITEMAPS = ["sitemap-stories.xml", "sitemap-ratings.xml", "sitemap-pages.xml", "news-sitemap.xml"];
+export function sitemapIndex(site: WaSite, today = new Date().toISOString().slice(0, 10)): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${SITEMAPS.map(m => `<sitemap><loc>${xmlEsc(`${site.origin}${site.base}/${m}`)}</loc><lastmod>${today}</lastmod></sitemap>`).join("\n")}\n</sitemapindex>\n`;
 }
 
 export function rfc822(iso: string | null): string { return iso ? new Date(iso).toUTCString() : new Date().toUTCString(); }

@@ -18,6 +18,35 @@ export type NewsletterInput = {
 
 const escape = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+/**
+ * An email has no base URL, so every link and picture in the body must be absolute. Same-site paths are made absolute
+ * against the site's origin in that site's shape: at the root (base "", whiskyadvocate.com once it points here) a stored
+ * /wa/<x> link is /<x>; under /wa (the development host, until the cutover) /wa links stay and a relative link is /wa/<x>.
+ */
+export function absoluteEmailLinks(html: string, origin: string, base: "" | "/wa" = ""): string {
+  const site = origin.replace(/\/+$/, "");
+  return html.replace(/(\s(?:href|src)=)(["'])([^"']*)\2/gi, (match, attr: string, quote: string, value: string) => {
+    const v = value.trim();
+    if (!v || v.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(v)) return match;
+    if (v.startsWith("//")) return `${attr}${quote}https:${v}${quote}`;
+    let path = v.startsWith("/") ? v : `${base}/${v.replace(/^\.\//, "")}`;
+    if (!base && /^\/wa(?=[/?#]|$)/i.test(path)) path = path.replace(/^\/wa(?:\/(?:index\.html)?)?(?=[?#]|$)/i, "/").replace(/^\/wa\//i, "/");
+    return `${attr}${quote}${site}${path}${quote}`;
+  });
+}
+
+/**
+ * Where a Whisky Advocate email sends readers. Once whiskyadvocate.com points at this app (WA_ROOT_LIVE, `live`), the
+ * story's current slug at the root origin, with the body's links in the root form. Before that the domain is still the
+ * old site, which has none of the stories made in the new CMS, so the email keeps the story's public URL, else the
+ * development host's /wa address (PUBLIC_SITE_URL), and the body's links stay on that host.
+ */
+export function waEmailTarget(doc: { slug: string | null; public_url: string | null; path: string | null }, env: { live: boolean; rootOrigin: string; siteUrl: string }): { url: string | null; origin: string | null; base: "" | "/wa" } {
+  const siteUrl = env.siteUrl.replace(/\/+$/, "");
+  if (env.live) return { url: doc.slug ? `${env.rootOrigin.replace(/\/+$/, "")}/${encodeURIComponent(doc.slug)}` : null, origin: env.rootOrigin, base: "" };
+  return { url: doc.public_url ?? (siteUrl && doc.path ? `${siteUrl}${doc.path}` : null), origin: siteUrl || null, base: "/wa" };
+}
+
 /** The email keeps the lede and the first section; the rest stays on the site. */
 export function newsletterBody(html: string): { body: string; truncated: boolean } {
   const parts = html.split(/(?=<h2)/i);

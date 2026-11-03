@@ -694,6 +694,45 @@ describe("publishing from the workspace", () => {
     expect(again.metadata.unpublished_at).toBeUndefined();
   });
 
+  it("keeps a migrated story's slug exactly, dots included, and still makes one from the headline when there is none", async () => {
+    const mixed = await ingest(morweb("Posts:keep-1", { title: "Forty Creek", slug: "Forty-Creek-Three-Grain-Twentieth-Anniversary-40", publication_state: "draft", published_at: null }));
+    expect((await publish(mixed.document_id, 1)).slug).toBe("Forty-Creek-Three-Grain-Twentieth-Anniversary-40");
+    const dotted = await ingest(morweb("Posts:keep-2", { title: "Macallan record", slug: "Blockbuster-Macallan-Bottle-Sells-for-2.7-million", publication_state: "draft", published_at: null }));
+    expect((await publish(dotted.document_id, 1)).slug).toBe("Blockbuster-Macallan-Bottle-Sells-for-2.7-million");
+    const underscore = await ingest(morweb("Posts:keep-3", { title: "Glenmorangie", slug: "Glenmorangie-25-Year-Old_Pommard-Wine-Cask-Finish", publication_state: "draft", published_at: null }));
+    expect((await publish(underscore.document_id, 1)).slug).toBe("Glenmorangie-25-Year-Old_Pommard-Wine-Cask-Finish");
+    const empty = await draft("Posts:keep-4", "Made From The Headline");
+    expect((await publish(empty, 1)).slug).toBe("made-from-the-headline");
+    const invalid = await ingest(morweb("Posts:keep-5", { title: "Spaces", slug: "Has Spaces In It", publication_state: "draft", published_at: null }));
+    expect((await publish(invalid.document_id, 1)).slug).toBe("has-spaces-in-it");
+  });
+
+  it("still gives a kept slug that another story has a -2", async () => {
+    const first = await ingest(morweb("Posts:keep-6", { title: "One", slug: "Rye-Whiskeys-to-Try", publication_state: "draft", published_at: null }));
+    expect((await publish(first.document_id, 1)).slug).toBe("Rye-Whiskeys-to-Try");
+    const second = await ingest(morweb("Posts:keep-7", { title: "Two", slug: "rye-whiskeys-to-try", publication_state: "draft", published_at: null }));
+    expect((await publish(second.document_id, 1)).slug).toBe("rye-whiskeys-to-try-2");
+  });
+
+  it("keeps a slug whose fixed-target redirect row points at the story itself", async () => {
+    await db.exec("RESET ROLE; INSERT INTO public.cms_redirects (brand, legacy_host, legacy_path, target_path, status, source) VALUES ('wa','whiskyadvocate.com','/Foo-Story','/wa/Foo-Story',301,'import'), ('wa','whiskyadvocate.com','/Bar-Story','/Bar-Story/',301,'import'), ('wa','whiskyadvocate.com','/Baz-Story','/wa/Somewhere-Else',301,'import'); SET ROLE service_role;");
+    const foo = await ingest(morweb("Posts:keep-8", { title: "Foo", slug: "Foo-Story", publication_state: "draft", published_at: null }));
+    expect((await publish(foo.document_id, 1)).slug).toBe("Foo-Story");
+    const bar = await ingest(morweb("Posts:keep-9", { title: "Bar", slug: "Bar-Story", publication_state: "draft", published_at: null }));
+    expect((await publish(bar.document_id, 1)).slug).toBe("Bar-Story");
+    // An old address that sends readers somewhere else is still taken.
+    const baz = await ingest(morweb("Posts:keep-10", { title: "Baz", slug: "Baz-Story", publication_state: "draft", published_at: null }));
+    expect((await publish(baz.document_id, 1)).slug).toBe("Baz-Story-2");
+  });
+
+  it("never keeps a slug that a site file, a feed or an app prefix would shadow at the root", async () => {
+    const cases: [string, string][] = [["feed.xml", "feed-xml"], ["stories.html", "stories-html"], ["robots.txt", "robots-txt"], ["cms", "cms-2"], ["Login", "Login-2"], ["wa", "wa-2"], ["fonts", "fonts-2"], ["img", "img-2"]];
+    for (const [index, [slug, expected]] of cases.entries()) {
+      const created = await ingest(morweb(`Posts:reserved-${index}`, { title: `Reserved ${index}`, slug, publication_state: "draft", published_at: null }));
+      expect((await publish(created.document_id, 1)).slug).toBe(expected);
+    }
+  });
+
   it("is closed to browser roles", async () => {
     for (const role of ["anon", "authenticated"]) {
       await db.exec(`SET ROLE ${role}`);

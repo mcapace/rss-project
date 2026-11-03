@@ -35,7 +35,7 @@
 
 <section class="band">
   <div id="housePicks" hidden style="margin-bottom: 34px"><div class="band-head"><div><span class="mono">Where to start</span><h2 class="d2" style="margin-top:10px">The bottles to know the house by.</h2><p class="rec-line"></p></div></div><div class="rail"></div></div>
-  <div class="band-head"><div><span class="mono">Portfolio</span><h2 class="d2" style="margin-top:10px">Every bottle we have rated.</h2></div><a class="pill" id="sellSheet" href="/wa/industry.html#sheet">Export as sell sheet</a></div>
+  <div class="band-head"><div><span class="mono">Portfolio</span><h2 class="d2" style="margin-top:10px">Every bottle we have rated.</h2></div><a class="pill" id="sellSheet" href="industry.html#sheet">Export as sell sheet</a></div>
   <div class="portfolio-controls"><label>Sort reviews <select id="portfolioSort"><option value="score">Highest score</option><option value="new">Newest review</option><option value="price">Lowest price</option></select></label><label>Budget <select id="portfolioBudget"><option value="0">Any price</option><option value="60">Up to $60</option><option value="100">Up to $100</option><option value="200">Up to $200</option></select></label><p id="portfolioCount" role="status"></p></div>
   <div class="rail" id="bottles"></div>
 </section>
@@ -91,7 +91,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   var ranked = Object.keys(byProducer).sort(function (a, b) { return byProducer[b].length - byProducer[a].length || a.localeCompare(b); });
   function show() {
     var name = WA.hashName(); if (!name || !byProducer[name]) { document.getElementById("name").textContent = "Producer not found"; return; }
-    document.getElementById("sellSheet").href = (WA.PATHS ? "/wa/" : "") + "industry.html#portfolio=" + encodeURIComponent(name);
+    document.getElementById("sellSheet").href = (WA.PATHS ? WA.BASE + "/" : "") + "industry.html#portfolio=" + encodeURIComponent(name);
     var rows = byProducer[name].slice().sort(function (a, b) { return (a.d || "").localeCompare(b.d || ""); });
     document.title = name + " · Whisky Advocate";
     current = name; extras(name);

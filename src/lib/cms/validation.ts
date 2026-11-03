@@ -2,6 +2,7 @@ import { CmsError } from "./access";
 import { CMS_BRANDS, CMS_DOCUMENT_KINDS, CMS_PUBLICATION_STATES, type CmsBrand, type CmsDocument, type CmsDocumentPatch, type CmsJsonObject, type CmsReviewGate } from "./types";
 import { sanitizeCmsHtml } from "./html";
 import { validateOrganization } from "./organization";
+import { PAGE_FILE_PATTERN } from "@/lib/wa/site-host";
 
 export function textValue(value: unknown, name: string, max = 500, required = false): string {
   if (typeof value !== "string" || value.length > max || (required && !value.trim())) {
@@ -52,6 +53,9 @@ export function documentPatch(input: Record<string, unknown>, current?: Pick<Cms
       if (metadata.organization !== undefined) {
         try { validateOrganization(metadata.organization); }
         catch (error) { throw new CmsError(422, error instanceof Error ? error.message : "Invalid content organization."); }
+      }
+      if (metadata.page_file !== undefined && metadata.page_file !== null && (typeof metadata.page_file !== "string" || !PAGE_FILE_PATTERN.test(metadata.page_file))) {
+        throw new CmsError(422, "Served by site page must be the file name of a page of the site, such as water.html, or empty.");
       }
       const rating = metadata.rating;
       if (rating !== null && rating !== undefined && (typeof rating !== "object" || Array.isArray(rating))) {

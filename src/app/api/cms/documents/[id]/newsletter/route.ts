@@ -6,7 +6,8 @@ import { sanitizeCmsHtml } from "@/lib/cms/html";
 import { cmsFailure, cmsJson } from "@/lib/cms/http";
 import { canonicalPath } from "@/lib/cms/redirects";
 import { brazeConfigured, dispatchNewsletter } from "@/lib/newsletter/braze-server";
-import { NEWSLETTER_KINDS, renderNewsletterHtml, renderNewsletterText, type NewsletterKind } from "@/lib/newsletter/render";
+import { absoluteEmailLinks, NEWSLETTER_KINDS, renderNewsletterHtml, renderNewsletterText, waEmailTarget, type NewsletterKind } from "@/lib/newsletter/render";
+import { rootOrigin, waRootLive } from "@/lib/wa/site-host";
 import type { NewsletterSend } from "@/lib/editorial/platform-types";
 
 type Context = { params: Promise<{ id: string }> };
@@ -54,9 +55,14 @@ export async function POST(request: Request, context: Context) {
 
     const site = (process.env.PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
     const path = canonicalPath(document);
-    const url = document.public_url ?? (site && path ? `${site}${path}` : null);
+    // Whisky Advocate: once whiskyadvocate.com points here (WA_ROOT_LIVE, set at the cutover) the email links the current
+    // slug at the root (an imported story's public_url can name an older capitalization); before that the old site still
+    // answers there, so it keeps the public URL or the development host's /wa address. Body links are made absolute.
+    const wa = document.brand === "wa";
+    const target = wa ? waEmailTarget({ slug: document.slug, public_url: document.public_url, path }, { live: waRootLive(), rootOrigin: rootOrigin(), siteUrl: site }) : null;
+    const url = target ? target.url : document.public_url ?? (site && path ? `${site}${path}` : null);
     const section = typeof document.metadata.section === "string" ? document.metadata.section : "";
-    const input = { brand: document.brand, kind: kind as NewsletterKind, subject, preheader, title: document.title, byline: document.byline, excerpt: document.excerpt, section, html: sanitizeCmsHtml(document.body_html), url };
+    const input = { brand: document.brand, kind: kind as NewsletterKind, subject, preheader, title: document.title, byline: document.byline, excerpt: document.excerpt, section, html: target?.origin ? absoluteEmailLinks(sanitizeCmsHtml(document.body_html), target.origin, target.base) : sanitizeCmsHtml(document.body_html), url };
     const html = renderNewsletterHtml(input);
     const text = renderNewsletterText(input);
 

@@ -105,6 +105,9 @@ describe("CMS request boundaries", () => {
       expect(() => documentPatch(patch)).toThrow(CmsError);
     }
     expect(() => documentPatch({ metadata: { rating: { score: 101 } } })).toThrow(CmsError);
+    for (const page_file of ["/water.html", "Water.html", "water", "../x.html", 3]) expect(() => documentPatch({ metadata: { page_file } })).toThrow(CmsError);
+    expect(documentPatch({ metadata: { page_file: "water.html" } }).metadata?.page_file).toBe("water.html");
+    expect(documentPatch({ metadata: { page_file: null } }).metadata?.page_file).toBeNull();
     expect(() => documentPatch({ metadata: { rating: { price: -1 } } })).toThrow(CmsError);
     for (const rating of ["invalid", [], 90, true]) {
       expect(() => documentPatch({ metadata: { rating } })).toThrow(CmsError);

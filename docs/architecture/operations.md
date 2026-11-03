@@ -24,7 +24,7 @@ flowchart TB
 ```
 
 - **Vercel, project `rss-project`.** One Next.js 16 app serves the CMS (`/cms`, `/api/cms`), the public site (`/wa`, static files in `public/wa` plus server routes under `src/app/wa` and `/api/wa`), the delivery and feed APIs, and the legacy redirect proxy (`src/proxy.ts`). `main` deploys to production at `rss-project-ten.vercel.app`; every pull request gets a preview.
-- **The dev host is kept out of search.** `next.config.ts` sends `X-Robots-Tag: noindex, nofollow` on every `*.vercel.app` host, so the development site never competes with whiskyadvocate.com. A custom production domain does not match that rule, so it is indexable as soon as it points here. Canonical URLs use `WA_SITE_ORIGIN` when set.
+- **The dev host is kept out of search.** `next.config.ts` sends `X-Robots-Tag: noindex, nofollow` on every `*.vercel.app` host, so the development site never competes with whiskyadvocate.com. A custom production domain does not match that rule, so it is indexable as soon as it points here. Canonical URLs follow the request host: root hosts (`WA_ROOT_HOSTS`) use `WA_SITE_ORIGIN` or `https://whiskyadvocate.com` with no `/wa`; other hosts their own origin with `/wa`.
 - **Vercel project `worker`.** A second project linked to the same repository. Its Ignored Build Step is `exit 0`, so it never builds and its pull request check reports "Canceled by Ignored Build Step", which GitHub treats as passing. The print worker itself (`worker/`, Python) runs in GitHub Actions, not on Vercel.
 - **Supabase project `itludqxofwurjwtbgkcl`.** Postgres (content, catalog, redirects, embeddings with pgvector), Auth (editor sign-in), Realtime (live co-editing).
 - **AWS S3.** One bucket (`S3_BUCKET`) holds print PDFs, extracted images and the re-hosted legacy media. Legacy files are content-addressed (`cms/legacy/<brand>/<sha256>.<ext>`) so each file is stored once. The app serves them through `/api/media/...` (CMS and story images, with renditions) and `/api/wa/asset`.
@@ -81,9 +81,11 @@ Environment variables are set in Vercel (and GitHub secrets for the workflows). 
 | `BRAZE_REST_API_KEY` | The public site's newsletter sign-up form (`/api/wa/newsletter`). |
 | `PUBLIC_SITE_URL` | Absolute links in newsletter emails. |
 | `ELEVENLABS_API_KEY`, `WA_TTS_VOICE`, `WA_TTS_MODEL` | "Listen" on story pages. |
-| `WA_SITE_ORIGIN` | The origin used in canonical URLs and structured data (the production domain). |
+| `WA_ROOT_HOSTS` | Comma list of hosts that get the root URL shape (the site at `/`, no `/wa`). Default `whiskyadvocate.com,www.whiskyadvocate.com`. Read per request by the proxy and routes, and at build time by `next.config.ts`, so a change needs a redeploy. Only `whiskyadvocate.com` and its subdomains count (others are ignored: the proxy matcher and the static pages know no other root host); rehearse on `staging.whiskyadvocate.com`. Never add the development host. |
+| `WA_ROOT_LIVE` | Set to `1` at the DNS cutover, once whiskyadvocate.com points here: Whisky Advocate newsletters then link `https://whiskyadvocate.com/<slug>`. Unset, they link the story's public URL or `PUBLIC_SITE_URL` + `/wa/<slug>`. |
+| `WA_SITE_ORIGIN` | The canonical origin on root hosts (default `https://whiskyadvocate.com`). It never applies to other hosts, which use their own origin. |
 | `REDIRECTS_AT_EDGE` | Set to `false` to stop the proxy answering legacy URLs. |
-| `REDIRECT_HOST_ALIASES` | `staging.host=legacy.host,...`: lets a staging host answer as whiskyadvocate.com, to test old URLs before the domain moves. |
+| `REDIRECT_HOST_ALIASES` | `staging.host=legacy.host,...`: lets a staging host answer as whiskyadvocate.com, to test old URLs before the domain moves (the proxy, the story route's misses and `/api/redirects/resolve`). |
 | `LEGACY_RSS_HOSTS` | Hosts the legacy RSS reader may fetch. |
 | `GITHUB_TOKEN`, `GITHUB_REPO`, `GITHUB_WORKFLOW_REF` | Lets `/api/process` dispatch the print workflow. |
 | `CMS_IMPORT_SUPABASE_URL`, `CMS_IMPORT_SERVICE_ROLE_KEY` | Maintenance and import scripts (in GitHub secrets, mapped from `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`). |

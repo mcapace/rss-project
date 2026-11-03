@@ -21,7 +21,6 @@
   var gl, prog, buf, loc = {}, dpr = 1, W = 0, H = 0, dirty = true;
 
   var WHEEL = ['smoke', 'maritime', 'herbal', 'grain', 'fresh_fruit', 'floral', 'tropical', 'sweet', 'spice', 'oak', 'nutty', 'dried_fruit'], RIM = 420, HUB = 0.2, CX = 500, CY = 500;
-  var SERIF = '"Instrument Serif", Georgia, serif';
   function angleOf(axis) { return -Math.PI / 2 + WHEEL.indexOf(axis) * Math.PI * 2 / WHEEL.length; }
   // Each bottle's pull toward every flavor is how far it stands above the average bottle on that flavor.
   function wheel(list) {
@@ -117,13 +116,14 @@
     g2.fillStyle = glow; g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.fill();
     g2.beginPath(); g2.arc(c[0], c[1], hub, 0, Math.PI * 2); g2.strokeStyle = 'rgba(255,236,210,0.16)'; g2.stroke();
     if (hub > 22) {
-      var big = Math.round(Math.max(14, Math.min(34, hub * 0.34)));
+      var big = Math.round(Math.max(13, Math.min(28, hub * 0.28)));
       g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.fillStyle = '#fff3e2';
-      g2.font = 'italic ' + big + 'px ' + SERIF; g2.fillText('Balanced', c[0], c[1] - (hub > 58 ? big * 0.32 : 0));
-      if (hub > 58) { g2.fillStyle = 'rgba(255,236,210,0.62)'; g2.font = '400 ' + Math.round(Math.max(11, big * 0.46)) + 'px ' + getComputedStyle(document.body).fontFamily; g2.fillText('No one flavor leads', c[0], c[1] + big * 0.62); }
+      var face = getComputedStyle(document.body).fontFamily;
+      g2.font = '500 ' + big + 'px ' + face; g2.fillText('Balanced', c[0], c[1] - (hub > 58 ? big * 0.32 : 0));
+      if (hub > 58) { g2.fillStyle = 'rgba(255,236,210,0.62)'; g2.font = '400 ' + Math.round(Math.max(11, big * 0.42)) + 'px ' + face; g2.fillText('No one flavor leads', c[0], c[1] + big * 0.62); }
     }
   }
-  if (document.fonts) document.fonts.load('italic 24px "Instrument Serif"').then(function () { dirty = true; }, function () {});
+  if (document.fonts) document.fonts.ready.then(function () { dirty = true; });
 
   function resize() {
     var r = stage.getBoundingClientRect(); dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;

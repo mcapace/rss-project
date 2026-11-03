@@ -2522,5 +2522,6 @@ main { min-height: 100vh; min-height: 100dvh; }
 @media (max-width: 720px) {
   .video-card .who, .nl-body a { padding-block: 7px; }
   .nl-body a { display: inline-block; }
-  .nl-consent input { width: 22px; height: 22px; flex: none; }
+  .nl-consent { grid-template-columns: 24px 1fr; }
+  .nl-fields .nl-consent input[type=checkbox] { width: 22px; height: 22px; }
 }

@@ -6,6 +6,7 @@ import { getCmsDocument } from "@/lib/cms/documents-server";
 import { cmsFailure, cmsJson } from "@/lib/cms/http";
 import { CMS_BRANDS, CMS_DOCUMENT_KINDS } from "@/lib/cms/types";
 import { getS3Client } from "@/lib/s3";
+import { allowedMediaKey } from "@/lib/media/keys";
 import type { AssistChatMessage, AssistDocument } from "@/lib/editorial/assist-types";
 import { analyzeSeoGeo, chatAboutDocument, describeImage } from "@/lib/editorial/server/assist";
 
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
       const media = Array.isArray(document.metadata.media) ? document.metadata.media : [];
       const item = media[index];
       const key = item && typeof item === "object" && !Array.isArray(item) ? (item as Record<string, unknown>).s3_key : null;
-      if (typeof key !== "string" || !key.startsWith(`cms/print/${document.brand}/${document.issue_uuid}/`) || key.split("/").some(part => part === "..")) throw new CmsError(404, "That image is not attached to this document.", "not_found");
+      if (!allowedMediaKey(key, document.brand, document.issue_uuid ?? null)) throw new CmsError(404, "That image is not attached to this document.", "not_found");
       const bucket = process.env.S3_BUCKET;
       if (!bucket) throw new CmsError(503, "Image storage has not been connected yet.", "setup_required");
       const url = await getSignedUrl(getS3Client(), new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 });

@@ -5,6 +5,7 @@ import { getCmsDocument } from "@/lib/cms/documents-server";
 import { CmsError } from "@/lib/cms/access";
 import { cmsJson, cmsFailure } from "@/lib/cms/http";
 import { getS3Client } from "@/lib/s3";
+import { allowedMediaKey, mediaRenditionUrl } from "@/lib/media/keys";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,8 +20,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const media = await Promise.all(candidates.map(async (item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return null;
       const key = item.s3_key;
-      // Sign only the content-addressed print assets associated with this document.
-      if (typeof key !== "string" || !key.startsWith(`cms/print/${document.brand}/${document.issue_uuid}/`) || key.split("/").some(p => p === ".." || p === ".")) return null;
+      if (!allowedMediaKey(key, document.brand, document.issue_uuid ?? null)) return null;
+      // Print assets are signed as before. Images re-hosted from the old site and editor uploads preview through the
+      // rendition route (same origin, so the crop tool and the palette reader can read the pixels).
+      if (!key.startsWith("cms/print/")) return { ...item, index, preview_url: mediaRenditionUrl(document.id, index, 1600) };
       const url = await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 300 });
       return { ...item, index, preview_url: url };
     }));

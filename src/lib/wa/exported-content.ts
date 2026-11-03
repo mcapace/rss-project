@@ -34,7 +34,7 @@ export async function exportedPage(slug: string, site: WaSite): Promise<string |
   const st = stories.find(s => s.slug.toLowerCase() === slug.toLowerCase());
   if (!st) return null;
   const bodies = await data<Record<string,string>>(`articles/${shard(st.slug)}.json`);
-  const body = cleanBody(sanitizeHtml(bodies[st.slug] || `<p>${esc(st.dek)}</p>`, { allowedTags:sanitizeHtml.defaults.allowedTags.concat(["img"]), allowedAttributes:{...sanitizeHtml.defaults.allowedAttributes,img:["src","alt","width","height","loading"]} }), site.base);
+  const body = cleanBody(sanitizeHtml(bodies[st.slug] || `<p>${esc(st.dek)}</p>`, { allowedTags:sanitizeHtml.defaults.allowedTags.concat(["img"]), allowedAttributes:{...sanitizeHtml.defaults.allowedAttributes,img:["src","alt","width","height","loading"],figure:["data-embed"]} }), site.base);
   const v: StoryView = { slug:st.slug,title:st.title,description:st.dek,section:st.sec,sectionLabel:st.sec,authors:st.by ? st.by.split(/,\s*/) : [],byline:st.by,published:st.d ? st.d + "T12:00:00Z" : null,modified:null,day:st.d,hero:absolute(st.hero,site.origin),tags:st.tags || [],body,words:body.replace(/<[^>]+>/g," ").split(/\s+/).length,sponsored:!!st.sp || !!st.sponsored || /sponsor/i.test(st.by) || st.tags.some(t=>/^sponsored/i.test(t)),sponsor:st.sponsor || (typeof st.sp === "string" ? st.sp : ""),noindex:false,kind:"article" };
   return renderStory(await template("story.html"),v,site);
 }

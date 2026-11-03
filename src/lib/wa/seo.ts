@@ -4,6 +4,7 @@ import path from "node:path";
 import { cmsDb } from "@/lib/cms/db";
 import { leadImagePath } from "@/lib/cms/lead-image";
 import { sponsorship } from "@/lib/cms/sponsored";
+import { videoEmbeds } from "@/lib/cms/video";
 import { onlyLive } from "./live";
 import { PAGE_FILE_PATTERN, type WaSite } from "./site-host";
 
@@ -279,6 +280,9 @@ export function storyJsonLd(v: StoryView, site: WaSite): unknown[] {
     isAccessibleForFree: true,
   };
   if (v.sponsored) article.sponsor = { "@type": "Organization", name: v.sponsor || "Advertiser" };
+  // YouTube videos the editors embedded (a VideoObject needs a still, and Vimeo has none without an API call).
+  const videos = v.published ? videoEmbeds(v.body).filter(x => x.thumb).slice(0, 5) : [];
+  if (videos.length) article.video = videos.map(x => ({ "@type": "VideoObject", name: clip(x.caption || v.title, 110), description: metaDescription(x.caption || v.description || v.title), thumbnailUrl: [x.thumb], embedUrl: x.embed, uploadDate: v.published }));
   const crumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
     { "@type": "ListItem", position: 1, name: PUBLISHER, item: `${origin}${base}/` },
     { "@type": "ListItem", position: 2, name: v.sectionLabel, item: `${origin}${base}/stories.html#${v.section}` },
@@ -416,7 +420,9 @@ export async function sitePage(file: string | null, v: StoryView, site: WaSite):
   const tool = /\bid="wtFind"/.test(html);
   const section = sourceSection(v, site, tool ? { water: "#wtFind", perfect: /\bid="wtPerfect"/.test(html) ? "#wtPerfect" : "#wtFind" } : null);
   const at = html.search(/<section class="nl-band"|<footer\b/);
-  return at >= 0 ? html.slice(0, at) + section + "\n" + html.slice(at) : html.replace(/<\/body>/i, section + "\n</body>");
+  // A video in the story plays here too: video.js upgrades the story's prose once the page is parsed.
+  const tail = /<figure\b[^>]*\bdata-embed=["']video["']/i.test(v.body) ? `${section}\n<script src="video.js" defer></script>` : section;
+  return at >= 0 ? html.slice(0, at) + tail + "\n" + html.slice(at) : html.replace(/<\/body>/i, tail + "\n</body>");
 }
 
 /** Links whose target is the story's own address (relative, /wa/, or on whiskyadvocate.com) become "#source". */

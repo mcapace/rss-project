@@ -210,7 +210,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .brand{position:absolute;z-index:5}
 .eyebrow{font:400 10px/1.2 M,ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lines{position:relative;z-index:5}
-.lines p{position:absolute;left:0;right:0;top:0;font-weight:500;letter-spacing:-.015em;opacity:0;transform:translateY(.45em);filter:blur(3px);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.7,.1,1),filter .6s}
+.lines p{position:absolute;left:0;right:0;top:0;font-weight:500;text-wrap:balance;letter-spacing:-.015em;opacity:0;transform:translateY(.45em);filter:blur(3px);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.7,.1,1),filter .6s}
 .lines p.on{opacity:1;transform:none;filter:none}
 .lines p.off{opacity:0;transform:translateY(-.3em);filter:blur(2px)}
 .lines p em{font-style:normal;color:var(--gold)}

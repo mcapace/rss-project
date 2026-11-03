@@ -53,10 +53,11 @@ export async function recipePage(slug: string, site: WaSite): Promise<string | n
   return html;
 }
 
-export async function producerPage(name: string, site: WaSite): Promise<string | null> {
+/** A producer's page from ratings.json, without the ratings in `removed` (lowercased slugs taken down since the export). */
+export async function producerPage(name: string, site: WaSite, removed: ReadonlySet<string> = new Set()): Promise<string | null> {
   const { origin, base } = site;
   const ratings = await data<{cols:string[]; rows:unknown[][]}>("ratings.json");
-  const rows = ratings.rows.map(row => Object.fromEntries(ratings.cols.map((c,i)=>[c,row[i]])) as Rating).filter(r=>r.pr === name);
+  const rows = ratings.rows.map(row => Object.fromEntries(ratings.cols.map((c,i)=>[c,row[i]])) as Rating).filter(r=>r.pr === name && !removed.has(String(r.slug).toLowerCase()));
   if (!rows.length || name === "Unknown producer") return null;
   const canonical = `${origin}${base}/producers/${encodeURIComponent(name)}`;
   const description = `${rows.length} published Whisky Advocate ratings for ${name}. Explore the portfolio and tasting notes.`;

@@ -86,11 +86,13 @@ The static index only knows what the last export saw. So that a story is on the 
 
 - `GET /api/wa/latest` (`src/app/api/wa/latest/route.ts`, built by `src/lib/wa/live-stories.ts`) returns:
   - `stories`: every story with `published_at` set and due (the CMS publish step stamps it), newest first, up to 300, in the same shape as `stories.json`. Section and dek follow the export script's rules, with the editor's section winning.
-  - `removed`: slugs taken off the site in the last 120 days, so the static index stops listing them.
+  - `removed`: story slugs that `stories.json` or `stories-archive.json` still list whose documents (kinds `article` and `legacy_record`) are no longer live, so the pages stop showing them.
+  - `removedRatings`: the same for ratings: slugs `ratings.json` still lists whose `rating` documents are no longer live.
   - `sponsored`: the paid stories among them, for `ads.js`.
-- `site.js` fetches it once per page (`live()`) and `mergeLive` puts the live entries first, drops removed slugs and duplicates, and sorts by day. `discovery.js` does the same for the search page.
+- **The takedown rule** (`takenDownOf` in `src/lib/wa/live-stories.ts`): the two lists are public (CORS `*`), so they only ever name slugs the public static files already show. The route reads the slug column of every non-live document of those kinds (any state but published and due: unpublished, draft, review, archived, or published with a time still ahead), all of them, 1,000 rows a request in id order (PostgREST caps each response at 1,000, and review ratings from print intake run to thousands), keeps only the slugs in the static files (`publicIndex`: the three files read from disk once per instance, traced into the route's bundle by `outputFileTracingIncludes` in `next.config.ts`), and drops any slug a live document of the same kinds still carries. A draft or review item that was never published is in no static file, so its slug (usually its headline) never reaches the list. There is no time window: a story moved back to review a year after the export is still taken off. If the static files cannot be read, both lists are empty (logged) and the live stories still go out.
+- `site.js` fetches it once per page (`live()`). `mergeLive` puts the live entries first, drops removed slugs and duplicates, and sorts by day; the archive (`stories-archive.json`, loaded for `{ all: true }`) loses the removed slugs and the live entries' slugs too (`dropTaken`), so the header search, `storyBySlug`, related lists and every archive page agree. A removed story is therefore not found by `story.html`, which asks `/api/wa/story` (live documents only) and shows its not-found message instead of the exported body. `data.json` and `ratings.json` lose `removedRatings` (`ratingsGone`, `dropRatings`): `WA.archive` waits for the list before it hands the ratings over, and so does `WA.ready` when the page's callback takes the data (`cb.length`; the pages that render ratings from it). The page's chrome (entrance, ask bar, header) and a callback that takes nothing start as soon as `data.json` is in, and `WA.data()` drops the removed ratings when the list arrives, before any later lookup or ask-bar answer. So the finder, the flavor map, bottle search and the rest never show a rating taken down after the export. `discovery.js` applies all three lists on the search page.
 - A story's body comes from its article shard, else from `/api/wa/story` (`liveBody`).
-- If the route fails, the page uses the static index alone.
+- If the route fails or times out (8 s), the page uses the static files alone, as before the lists existed: nothing is dropped. The ratings wait is capped at 1.5 s (`RATINGS_WAIT_MS`) and only the pages that render ratings take it, so a slow route never holds a page long; past that the page renders every rating, and `WA.data()` still loses the removed ones once the list arrives. Old pages that do not know `removedRatings` ignore it.
 
 ```mermaid
 sequenceDiagram
@@ -105,12 +107,14 @@ sequenceDiagram
     CDN-->>P: live list
   else
     CDN->>L: miss
-    L->>DB: published stories with published_at due, recently unpublished slugs
+    L->>DB: published stories with published_at due, slugs of non-live stories and ratings
     DB-->>L: rows
-    L-->>CDN: stories, removed, sponsored (s-maxage=60)
+    L->>L: keep only slugs in stories.json, stories-archive.json, ratings.json
+    L-->>CDN: stories, removed, removedRatings, sponsored (s-maxage=60)
     CDN-->>P: live list
   end
   P->>P: mergeLive: live first, drop removed and duplicates, sort by day
+  P->>P: archive, data.json, ratings.json: drop removed and removedRatings
   P->>P: render cards, a story body from its shard, else /api/wa/story
 ```
 
@@ -120,7 +124,7 @@ sequenceDiagram
 |---|---|---|
 | `/wa/<slug>` (`src/app/wa/[slug]/route.ts`) | `story.html` for stories and pages, `bottle.html` for ratings | Reads the published document (`loadDoc` in `src/lib/wa/seo.ts`), skipping scheduled ones. Product reviews redirect to `club.html`, glossary entries to the glossary. A differently capitalised slug 301s to the canonical one. Cached `s-maxage=120, stale-while-revalidate=86400`. |
 | `/wa/recipes/<slug>` | `cocktail.html` | Built from `cocktails.json` (`recipePage` in `src/lib/wa/exported-content.ts`). Cached 10 minutes. |
-| `/wa/producers/<name>` | `producer.html` | Built from `ratings.json` (`producerPage`). Cached 10 minutes. |
+| `/wa/producers/<name>` | `producer.html` | Built from `ratings.json` (`producerPage`), without the ratings taken down since the export (`removedRatingSlugs` in `live-stories.ts`, the same rule as `removedRatings`, kept a minute per instance; none where delivery does not read the CMS). Cached 10 minutes; a minute when the takedowns could not be read. |
 
 `src/lib/wa/seo.ts` writes the head of each page:
 
@@ -138,10 +142,10 @@ Why server pages: the static `story.html#slug` reader cannot carry per-story hea
 | Route | Does | Cache | Limit |
 |---|---|---|---|
 | `GET /api/wa/front` | The home rotator's five positions: pins from `/cms/front`, the newest stories elsewhere (`resolveFront`). Merges CMS-dated and imported stories by date. A pin whose story is not live (scheduled, or taken down) gives its position to the newest story, like an ended pin. | `s-maxage=60, swr=300` | none |
-| `GET /api/wa/latest` | Stories published from the CMS since the export, removed slugs, sponsored list (above). | `s-maxage=60, swr=300` | none |
+| `GET /api/wa/latest` | Stories published from the CMS since the export, removed story and rating slugs (only ones the static files list), sponsored list (above). | `s-maxage=60, swr=300` | none |
 | `GET /api/wa/story?slug=` | One published story's index entry and body, for stories not in the export. | `s-maxage=300, swr=3600` | none |
 | `GET /api/wa/meaning?q=` | Stories and ratings close in meaning to the query (no model call). See [indexing-and-search.md](indexing-and-search.md). | `s-maxage=86400, swr=604800` | 40 a minute per visitor (shared) |
-| `GET /api/wa/answer?q=` | The search page's written answer from matched ratings and stories (Claude). | `s-maxage=86400, swr=604800` | 20 a minute per visitor, and `WA_ANSWER_HOURLY` (default 600) written answers an hour site-wide |
+| `GET /api/wa/answer?q=` | The search page's written answer from matched ratings and stories (Claude). | `s-maxage=3600, swr=3600` (short, so a cached answer does not keep citing a story or rating taken down) | 20 a minute per visitor, and `WA_ANSWER_HOURLY` (default 600) written answers an hour site-wide |
 | `POST /api/wa/ask` | The Ask chat on every page: Claude answers from the bottles the page's own search found plus meaning matches. Nothing stored. Model `WA_ASK_MODEL`. | none | 12 a minute per address (per instance) |
 | `POST /api/wa/recommend` | Bottle picks for a story, cocktail, bottle or producer page, with a line of why. Cached by content and candidates in the `wa_recommendations` table, so a page costs one model call until it changes. Model `WA_RECOMMEND_MODEL`. | `s-maxage=600` on a stored hit | none |
 | `GET /api/wa/similar?slug=` | Stories like this one by embedding (`wa_match_documents`), live stories only. Empty until embedded, and for a story not live yet. | `s-maxage=300` when empty | none |

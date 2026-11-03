@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     "/wa/[slug]": ["./public/wa/*.html", "./public/wa/story.html", "./public/wa/bottle.html", "./public/wa/ratings.json", "./public/wa/stories*.json", "./public/wa/notes/*.json", "./public/wa/articles/*.json"],
     "/wa/recipes/[slug]": ["./public/wa/cocktail.html", "./public/wa/cocktails.json"],
     "/wa/producers/[name]": ["./public/wa/producer.html", "./public/wa/ratings.json"],
+    // The takedown lists are cut from the public static files (src/lib/wa/live-stories.ts publicIndex).
+    "/api/wa/latest": ["./public/wa/stories.json", "./public/wa/stories-archive.json", "./public/wa/ratings.json"],
     "/wa/whisky-bars/[slug]": ["./public/wa/whisky-bar.html", "./public/wa/whisky-bars.json"],
     "/wa/sitemap-pages.xml": ["./public/wa/whisky-bars.json"],
   },

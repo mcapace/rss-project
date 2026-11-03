@@ -45,7 +45,9 @@ export async function GET(request: Request) {
     const stories = storyMatches.map(m => storyById.get(m.document_id)).filter((s): s is NonNullable<typeof s> => !!s).slice(0, 8);
     const bottleOut = (slug: string, why = "") => { const b = candidates.find(c => c.slug === slug); return b && { slug: b.slug, title: b.title, score: b.rating.score ?? null, price: b.rating.price ?? null, category: b.rating.category || "", line: b.flavor?.line || "", why }; };
     const storyOut = (slug: string) => { const s = stories.find(x => x.slug === slug); return s && { slug: s.slug, title: s.title, excerpt: String(s.excerpt || "").slice(0, 220) }; };
-    const headers = { ...CORS, "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" };
+    // An hour at the edge and an hour stale at most (was a day and a week): a cached answer can cite a story or rating
+    // that has since been taken down, so it must not outlive the takedown by long.
+    const headers = { ...CORS, "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=3600" };
     const fallback = { answer: "", bottles: candidates.slice(0, 6).map(b => bottleOut(b.slug)), stories: stories.slice(0, 3).map(s => storyOut(s.slug)) };
     if (!process.env.ANTHROPIC_API_KEY || (!candidates.length && !stories.length)) return NextResponse.json(fallback, { headers });
     // At most WA_ANSWER_HOURLY (default 600) written answers an hour across the site; past it, readers get the matched

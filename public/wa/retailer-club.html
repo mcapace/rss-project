@@ -10,7 +10,7 @@
 
 <link rel="stylesheet" href="site.css">
 </head>
-<body>
+<body class="cp cp-club">
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <div class="ad ad-billboard ad-above" data-slot="wa_above_nav" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <header class="mast">
@@ -19,39 +19,62 @@
   <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="band" style="padding-top: 28px">
+<main id="main-content" class="cp-main">
+<section class="band cp-band">
   <div class="read-frame">
-  <div class="chan-head"><h1 class="d1">Retailer club</h1><p class="muted" style="margin-top:8px">For stores that sell whisky and want to carry the magazine.</p></div>
-  <div class="contact-grid">
-    <div class="prose">
-      <p class="drop">Stores in the Whisky Advocate retailer club receive copies of each issue for their shelves, a listing on the <a href="retailers.html">Where to buy</a> page, and the Buying Guide ratings for the bottles they carry. Membership is free for licensed retailers in the United States.</p>
-      <h2>What you get</h2>
-      <ul>
+  <nav class="cp-family" aria-label="Company pages"><a href="about.html">About</a><a href="contact.html">Contact</a><a href="retailers.html">Where to buy</a><a href="retailer-club.html" aria-current="page">Retailer club</a><a href="newsletter.html">Newsletters</a><a href="app.html">WhiskyFest app</a><a href="privacy.html">Privacy policy</a></nav>
+  <header class="cp-hero cp-hero--split">
+    <div class="cp-hero-copy"><span class="mono cp-eyebrow">Whisky Advocate</span><h1 class="d1">Retailer club</h1><p class="cp-dek">For stores that sell whisky and want to carry the magazine.</p></div>
+    <figure class="cp-figure"><img src="img/shelf.jpg" width="720" height="787" alt="" fetchpriority="high"></figure>
+  </header>
+  <div class="prose cp-lede">
+    <p class="drop">Stores in the Whisky Advocate retailer club receive copies of each issue for their shelves, a listing on the <a href="retailers.html">Where to buy</a> page, and the Buying Guide ratings for the bottles they carry. Membership is free for licensed retailers in the United States.</p>
+  </div>
+
+  <section class="cp-sec">
+    <div class="cp-sec-head"><span class="cp-num" aria-hidden="true">01</span><h2 class="d3">What you get</h2></div>
+    <div class="cp-sec-body">
+      <ul class="cp-benefits">
         <li><strong>Copies of every issue</strong> for the counter, with a display card.</li>
         <li><strong>A listing</strong> with your address, phone and website on Where to buy.</li>
         <li><strong>Shelf talkers</strong> for the whiskies the panel rated, with the score and the note.</li>
         <li><strong>The Top 20</strong> each December, ready to display.</li>
       </ul>
-      <h2 id="join">Join</h2>
-      <form class="club-form" id="clubForm">
-        <label><span>Store name</span><input name="store" required></label>
-        <label><span>Contact name</span><input name="contact" required></label>
-        <label><span>Email</span><input name="email" type="email" required></label>
-        <label><span>Phone</span><input name="phone" type="tel"></label>
-        <label class="wide"><span>Street address</span><input name="address" required></label>
-        <label><span>City</span><input name="city" required></label>
-        <label><span>State</span><input name="state" required></label>
-        <label><span>ZIP</span><input name="zip" required></label>
-        <label><span>Website</span><input name="web" type="url" placeholder="https://"></label>
-        <label class="wide"><span>Anything else</span><textarea name="notes" rows="3"></textarea></label>
-        <div class="actions wide"><button class="pill solid" type="submit">Send the request</button><span class="muted" id="clubStatus" style="font-size:13px">Opens an email to the retailer desk with your details.</span></div>
-      </form>
     </div>
-    <aside class="contact-aside">
-      <div class="glass card-pad"><span class="mono">Questions</span><p class="muted" style="margin:8px 0 0;font-size:14px"><a href="mailto:whiskyadvocate@mshanken.com">whiskyadvocate@mshanken.com</a><br>800-610-6258</p></div>
-      <div class="glass card-pad"><span class="mono">Already a member</span><p class="muted" style="margin:8px 0 12px;font-size:14px">Check your listing and tell us what changed.</p><a class="pill" href="retailers.html">Where to buy</a></div>
-    </aside>
-  </div>
+  </section>
+
+  <section class="cp-sec">
+    <div class="cp-sec-head"><span class="cp-num" aria-hidden="true">02</span><h2 class="d3" id="join">Join</h2></div>
+    <div class="cp-sec-body">
+      <div class="cp-join">
+        <form class="cp-form" id="clubForm">
+          <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">1</span>Your store</legend><div class="cp-fields">
+            <label><span>Store name<em class="cp-req" aria-hidden="true">Required</em></span><input name="store" autocomplete="organization" required></label>
+            <label><span>Website</span><input name="web" type="url" placeholder="https://" autocomplete="url"></label>
+          </div></fieldset>
+          <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">2</span>Contact</legend><div class="cp-fields">
+            <label><span>Contact name<em class="cp-req" aria-hidden="true">Required</em></span><input name="contact" autocomplete="name" required></label>
+            <label><span>Email<em class="cp-req" aria-hidden="true">Required</em></span><input name="email" type="email" autocomplete="email" required></label>
+            <label><span>Phone</span><input name="phone" type="tel" autocomplete="tel"></label>
+          </div></fieldset>
+          <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">3</span>Address</legend><div class="cp-fields">
+            <label class="wide"><span>Street address<em class="cp-req" aria-hidden="true">Required</em></span><input name="address" autocomplete="street-address" required></label>
+            <label><span>City<em class="cp-req" aria-hidden="true">Required</em></span><input name="city" autocomplete="address-level2" required></label>
+            <label><span>State<em class="cp-req" aria-hidden="true">Required</em></span><input name="state" autocomplete="address-level1" required></label>
+            <label><span>ZIP<em class="cp-req" aria-hidden="true">Required</em></span><input name="zip" autocomplete="postal-code" required></label>
+          </div></fieldset>
+          <fieldset class="cp-step"><legend><span class="cp-num" aria-hidden="true">4</span>Notes</legend><div class="cp-fields">
+            <label class="wide"><span>Anything else</span><textarea name="notes" rows="3"></textarea></label>
+          </div></fieldset>
+          <div class="cp-actions"><button class="pill solid" type="submit">Send the request</button><span class="muted" id="clubStatus" role="status" aria-live="polite">Opens an email to the retailer desk with your details.</span></div>
+        </form>
+        <aside class="cp-aside">
+          <div class="cp-card"><span class="mono">Questions</span><p><span class="cp-copyable"><a href="mailto:whiskyadvocate@mshanken.com">whiskyadvocate@mshanken.com</a><button class="cp-copy pill" type="button" data-copy="whiskyadvocate@mshanken.com" aria-label="Copy email whiskyadvocate@mshanken.com">Copy</button></span><br><a href="tel:+18006106258">800-610-6258</a></p></div>
+          <div class="cp-card"><span class="mono">Already a member</span><p>Check your listing and tell us what changed.</p><a class="pill" href="retailers.html">Where to buy</a></div>
+        </aside>
+      </div>
+    </div>
+  </section>
   </div>
 </section>
 <script src="catalog-core.js"></script>
@@ -70,6 +93,8 @@ document.getElementById("clubForm").addEventListener("submit", function (e) {
   <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
 </section>
+</main>
+<p class="cp-live cp-sr" role="status" aria-live="polite"></p>
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><div class="social" aria-label="Whisky Advocate on social media"><a href="https://www.instagram.com/whiskyadvocate/" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg></a><a href="https://www.facebook.com/whiskyadvocate" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.2c0-.9.3-1.5 1.5-1.5h1.5V5.1c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7h2.9z" fill="currentColor"/></svg></a><a href="https://twitter.com/whiskyadvocate" aria-label="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l6.3 8.4L4.3 20h2.2l4.8-5.9L15.8 20H20l-6.6-8.8L19 4h-2.2l-4.4 5.4L8.2 4H4z" fill="currentColor"/></svg></a><a href="https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.3 5 12 5 12 5s-6.3 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.7 19 12 19 12 19s6.3 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3L10 15z" fill="currentColor"/></svg></a></div><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="ninety.html">90+ Club</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="flavor-map.html">Flavor map</a><a href="globe.html">Distillery globe</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
@@ -79,5 +104,6 @@ document.getElementById("clubForm").addEventListener("submit", function (e) {
 
 
 <script>WA.ready(function () {});</script>
+<script src="cp.js"></script>
 </body>
 </html>

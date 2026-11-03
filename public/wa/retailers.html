@@ -10,7 +10,7 @@
 
 <link rel="stylesheet" href="site.css">
 </head>
-<body>
+<body class="cp cp-retailers">
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <div class="ad ad-billboard ad-above" data-slot="wa_above_nav" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <header class="mast">
@@ -19,11 +19,30 @@
   <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="band" style="padding-top: 28px">
-  <div class="chan-head"><h1 class="d1">Where to buy</h1><p class="muted" style="margin-top:8px">Stores that carry Whisky Advocate. Pick a state or type a store or a city.</p></div>
-  <div class="ret-bar"><input id="retQ" type="search" placeholder="Store or city" autocomplete="off"><select id="retState"><option value="">All states</option></select><span class="muted" id="retCount"></span></div>
-  <div class="ret-grid" id="retGrid"></div>
-  <div class="actions" style="margin-top:24px"><span class="muted" style="font-size:14px">Do you sell the magazine? </span><a class="pill solid" href="retailer-club.html">Join the retailer club</a></div>
+<main id="main-content" class="cp-main">
+<section class="band cp-band">
+  <div class="read-frame">
+  <nav class="cp-family" aria-label="Company pages"><a href="about.html">About</a><a href="contact.html">Contact</a><a href="retailers.html" aria-current="page">Where to buy</a><a href="retailer-club.html">Retailer club</a><a href="newsletter.html">Newsletters</a><a href="app.html">WhiskyFest app</a><a href="privacy.html">Privacy policy</a></nav>
+  <header class="cp-hero"><span class="mono cp-eyebrow">Whisky Advocate</span><h1 class="d1">Where to buy</h1><p class="cp-dek">Stores that carry Whisky Advocate. Pick a state or type a store or a city.</p></header>
+  <dl class="cp-facts" id="retFacts" hidden><div><dt>Stores</dt><dd id="retFactStores"></dd></div><div><dt>US states and DC</dt><dd id="retFactUS"></dd></div><div><dt>Other countries</dt><dd id="retFactIntl"></dd></div></dl>
+  <div class="cp-finder filter-bar">
+    <div class="cp-finder-inner">
+      <label class="cp-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span class="cp-sr">Store or city</span><input id="retQ" type="search" placeholder="Store or city" autocomplete="off"></label>
+      <span class="cp-div" aria-hidden="true"></span>
+      <label><span class="cp-sr">State or country</span><select id="retState"><option value="">All states</option></select></label>
+      <button id="retClear" class="pill" type="button" hidden>Clear</button>
+      <span id="retCount" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+  <div class="cp-results">
+    <nav class="cp-index" id="retIndex" aria-label="States"></nav>
+    <div id="retGrid"></div>
+  </div>
+  <div class="cp-cta">
+    <div><p class="cp-cta-eyebrow">Retailer club</p><p class="cp-cta-line">Do you sell the magazine?</p></div>
+    <div class="cp-cta-go"><a class="pill cp-primary" href="retailer-club.html">Join the retailer club</a></div>
+  </div>
+  </div>
 </section>
 <script src="catalog-core.js"></script>
 <script src="site.js"></script>
@@ -33,27 +52,64 @@
 WA.ready(function () {
   fetch("retailers.json").then(function (r) { return r.json(); }).then(function (data) {
     var sel = document.getElementById("retState"), q = document.getElementById("retQ"), grid = document.getElementById("retGrid"), count = document.getElementById("retCount");
-    data.forEach(function (s) { var o = document.createElement("option"); o.value = s.state; o.textContent = s.state.replace(/, US$/, ""); sel.appendChild(o); });
+    var clear = document.getElementById("retClear"), index = document.getElementById("retIndex"), facts = document.getElementById("retFacts");
+    function displayName(st) { return st.replace(/, US$/, ""); }
+    function slug(name) { return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+    function byName(x, y) { return displayName(x.state).localeCompare(displayName(y.state)); }
+    var us = data.filter(function (s) { return /, US$/.test(s.state); }).sort(byName);
+    var intl = data.filter(function (s) { return !/, US$/.test(s.state); }).sort(byName);
+    [["United States", us], ["Outside the US", intl]].forEach(function (g) {
+      if (!g[1].length) return;
+      var og = document.createElement("optgroup"); og.label = g[0];
+      g[1].forEach(function (s) { var o = document.createElement("option"); o.value = s.state; o.textContent = displayName(s.state); og.appendChild(o); });
+      sel.appendChild(og);
+    });
+    var total = 0; data.forEach(function (s) { total += s.stores.length; });
+    document.getElementById("retFactStores").textContent = total;
+    document.getElementById("retFactUS").textContent = us.length;
+    document.getElementById("retFactIntl").textContent = intl.length;
+    facts.hidden = false;
     function tel(p) { return p && p.length === 10 ? "(" + p.slice(0, 3) + ") " + p.slice(3, 6) + "-" + p.slice(6) : p; }
     function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function hi(raw, term) {
+      raw = String(raw); if (!term) return esc(raw);
+      var low = raw.toLowerCase(), out = "", i = 0, at;
+      while ((at = low.indexOf(term, i)) >= 0) { out += esc(raw.slice(i, at)) + "<mark>" + esc(raw.slice(at, at + term.length)) + "</mark>"; i = at + term.length; }
+      return out + esc(raw.slice(i));
+    }
     function render() {
-      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [], openAll = !!(term || st) || window.innerWidth > 900;
-      data.forEach(function (s) {
-        if (st && s.state !== st) return;
-        var stores = s.stores.filter(function (x) { return !term || (x.name + " " + x.city).toLowerCase().indexOf(term) >= 0; });
-        if (!stores.length) return; n += stores.length;
-        out.push('<details class="ret-state"' + (openAll ? " open" : "") + '><summary><span class="d3">' + esc(s.state.replace(/, US$/, "")) + ' <span class="muted">' + stores.length + "</span></span></summary><div class=\"ret-list\">" + stores.map(function (x) {
-          var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website</a>' : "";
-          var ph = x.phone ? '<a href="tel:' + esc(x.phone) + '">' + esc(tel(x.phone)) + "</a>" : "";
-          return '<div class="ret-card glass"><strong>' + esc(x.name) + "</strong><span>" + esc(x.city) + "</span><span class=\"ret-links\">" + ph + web + "</span></div>";
-        }).join("") + "</div></details>");
+      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [], links = [], openAll = !!(term || st) || window.innerWidth > 900;
+      [["United States", us], ["Outside the US", intl]].forEach(function (g, gi) {
+        var shown = [];
+        g[1].forEach(function (s) {
+          if (st && s.state !== st) return;
+          var stores = s.stores.filter(function (x) { return !term || (x.name + " " + x.city).toLowerCase().indexOf(term) >= 0; });
+          if (!stores.length) return; n += stores.length;
+          var name = displayName(s.state), id = "ret-" + slug(name);
+          shown.push('<details class="ret-state cp-state" id="' + id + '"' + (openAll ? " open" : "") + '><summary class="cp-state-head"><h2 class="d3">' + esc(name) + '</h2><span class="cp-count">' + stores.length + '</span><span class="cp-chev" aria-hidden="true"></span></summary><div class="cp-stores">' + stores.map(function (x) {
+            var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website<span class="cp-sr"> (opens in a new tab)</span></a>' : "";
+            var ph = x.phone ? '<a href="tel:' + esc(String(x.phone).split("/")[0].replace(/[^\d+]/g, "")) + '">' + esc(tel(x.phone)) + "</a>" : "";
+            return '<div class="cp-store"><strong>' + hi(x.name, term) + '</strong><span class="cp-city">' + hi(x.city, term) + '</span><span class="cp-links">' + ph + web + "</span></div>";
+          }).join("") + "</div></details>");
+          links.push('<a href="#' + id + '"><span>' + esc(name) + '</span><span class="mono">' + stores.length + "</span></a>");
+        });
+        if (!shown.length) return;
+        if (gi === 1) { out.push('<p class="cp-divider mono">Outside the US</p>'); }
+        out.push(shown.join(""));
+        links.splice(links.length - shown.length, 0, '<span class="mono">' + g[0] + "</span>");
       });
       grid.innerHTML = out.join("") || '<p class="muted">No stores match.</p>';
-      count.textContent = n + (n === 1 ? " store" : " stores");
+      index.innerHTML = links.join("");
+      count.textContent = n + (n === 1 ? " store" : " stores") + (st ? " in " + displayName(st) : "") + (term ? " matching “" + q.value.trim() + "”" : "");
+      clear.hidden = !(term || st);
     }
     q.addEventListener("input", render); sel.addEventListener("change", render);
-    var h = decodeURIComponent(location.hash.slice(1)); if (h) { sel.value = h; }
+    clear.addEventListener("click", function () { q.value = ""; sel.value = ""; render(); q.focus(); });
+    var h = decodeURIComponent(location.hash.slice(1));
+    if (h && [].some.call(sel.options, function (o) { return o.value === h; })) { sel.value = h; }
     render();
+    WA.stickyFilters(document.querySelector(".cp-finder"));
+    if (/^ret-/.test(h)) { var t = document.getElementById(h); if (t) { t.scrollIntoView(); if (document.readyState !== "complete") addEventListener("load", function () { if (location.hash.slice(1) === h) t.scrollIntoView(); }, { once: true }); } }
   });
 });
 </script>
@@ -61,6 +117,7 @@ WA.ready(function () {
   <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
 </section>
+</main>
 <footer class="site">
   <div><a class="foot-logo" href="index.html"><img src="logo.svg" alt="Whisky Advocate" width="620" height="212"></a><div class="social" aria-label="Whisky Advocate on social media"><a href="https://www.instagram.com/whiskyadvocate/" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor"/></svg></a><a href="https://www.facebook.com/whiskyadvocate" aria-label="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 21v-7h2.4l.4-3h-2.8V9.2c0-.9.3-1.5 1.5-1.5h1.5V5.1c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8V11H8v3h2.6v7h2.9z" fill="currentColor"/></svg></a><a href="https://twitter.com/whiskyadvocate" aria-label="X" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l6.3 8.4L4.3 20h2.2l4.8-5.9L15.8 20H20l-6.6-8.8L19 4h-2.2l-4.4 5.4L8.2 4H4z" fill="currentColor"/></svg></a><a href="https://www.youtube.com/channel/UCSNVtQgcKnSqZF3qXT_aQFg" aria-label="YouTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.3 5 12 5 12 5s-6.3 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.7 19 12 19 12 19s6.3 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3L10 15z" fill="currentColor"/></svg></a></div><a href="finder.html">Ratings</a><a href="stories.html#news">News</a><a href="stories.html#features">Features</a><a href="guides.html">Guides</a><a href="cocktails.html">Cocktails</a><a href="travel.html">Travel</a><a href="top20.html">Top 20</a><a href="ninety.html">90+ Club</a><a href="video.html">Video</a></div>
   <div><h4>Tools</h4><a href="tools.html">All tools</a><a href="finder.html">Ratings search</a><a href="flavor-map.html">Flavor map</a><a href="globe.html">Distillery globe</a><a href="index.html#scan">Shelf scan</a><a href="cocktails.html">Cocktail cabinet</a><a href="producers.html">Producers</a><a href="guides.html#glossaryBand">Glossary</a><a href="industry.html">Industry</a></div>
@@ -70,5 +127,6 @@ WA.ready(function () {
 
 
 <script>WA.ready(function () {});</script>
+<script src="cp.js"></script>
 </body>
 </html>

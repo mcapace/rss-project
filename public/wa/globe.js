@@ -31,7 +31,7 @@
       'void main() { float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0 || v_a < 0.01) discard;' +
       ' if (v_mode < 0.5) { float a = (1.0 - smoothstep(0.55, 1.0, d)) * v_a; gl_FragColor = vec4(v_col * a, a); return; }' +
       ' if (v_mode > 1.5) { float ring = smoothstep(0.62, 0.72, d) * (1.0 - smoothstep(0.86, 1.0, d)); gl_FragColor = vec4(vec3(1.0, 0.94, 0.82) * ring * v_a, ring * v_a); return; }' +
-      ' float dot = 1.0 - smoothstep(0.62, 0.92, d); float core = 1.0 - smoothstep(0.3, 0.5, d); vec3 c = mix(vec3(0.16, 0.09, 0.04), v_col, core); gl_FragColor = vec4(c * dot * v_a, dot * v_a); }';
+      ' float glow = exp(-d * d * 4.0) * 0.6 + (1.0 - smoothstep(0.22, 0.4, d)) * 0.75; gl_FragColor = vec4(v_col * glow * v_a, glow * v_a); }';
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
     prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
@@ -88,7 +88,7 @@
     gl.uniform4f(loc.u_rot, Math.cos(rad(view.yaw)), Math.sin(rad(view.yaw)), Math.cos(rad(view.pitch)), Math.sin(rad(view.pitch)));
     gl.uniform2f(loc.u_res, W, H); gl.uniform1f(loc.u_R, R); gl.uniform1f(loc.u_D, D); gl.uniform1f(loc.u_t, t); gl.uniform2f(loc.u_off, off.x, off.y); gl.uniform1f(loc.u_k, view.k);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(loc.u_mode, 0); bind(landBuf); gl.drawArrays(gl.POINTS, 0, land);
-    gl.uniform1f(loc.u_mode, 1); bind(placeBuf); gl.drawArrays(gl.POINTS, 0, places.length);
+    gl.blendFunc(gl.ONE, gl.ONE); gl.uniform1f(loc.u_mode, 1); bind(placeBuf); gl.drawArrays(gl.POINTS, 0, places.length);
     if (selected >= 0) { var p = places[selected]; gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); bind(ringBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([p.lat, p.lon, 30 * dpr, 1, 1, 1]), gl.DYNAMIC_DRAW); gl.uniform1f(loc.u_mode, 2); gl.drawArrays(gl.POINTS, 0, 1); }
     halo.style.setProperty('--r', R.toFixed(0) + 'px'); halo.style.setProperty('--x', (W / 2 + off.x).toFixed(0) + 'px'); halo.style.setProperty('--y', (H / 2 + off.y).toFixed(0) + 'px');
     if (hover >= 0) showTip(hover);

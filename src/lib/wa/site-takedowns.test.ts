@@ -119,4 +119,25 @@ describe("site.js drops what /api/wa/latest says was taken down", () => {
     expect(waited).toBeLessThan(2500);
     expect(rows.map(r => r.slug)).toEqual(["rating-kept", "rating-gone"]);
   });
+
+  it("a list that arrives after the wait still takes the ratings out of DATA and the archive, loaded before or after it", async () => {
+    let release!: () => void;
+    routeGate = new Promise<void>(resolve => { release = resolve; });
+    let WA = run();
+    const early = await call<Rating[] & { bySlug: Record<string, Rating> }>(cb => WA.archive(cb));
+    expect(early.map(r => r.slug)).toEqual(["rating-kept", "rating-gone", "Rating-Gone-Too"]);
+    release();
+    await vi.waitFor(() => expect(early.map(r => r.slug)).toEqual(["rating-kept"]));
+    expect(early.bySlug["rating-gone"]).toBeUndefined();
+    expect(WA.data()!.map(r => r.slug)).toEqual(["rating-kept"]);
+
+    // The archive starts loading only after the late list is in: it is built without them.
+    routeGate = new Promise<void>(resolve => { release = resolve; });
+    WA = run();
+    await new Promise<void>(resolve => WA.ready(function () { resolve(); }));
+    await new Promise(resolve => setTimeout(resolve, 1600));
+    release();
+    await vi.waitFor(() => expect(WA.data()!.map(r => r.slug)).toEqual(["rating-kept"]));
+    expect((await call<Rating[]>(cb => WA.archive(cb))).map(r => r.slug)).toEqual(["rating-kept"]);
+  }, 15000);
 });

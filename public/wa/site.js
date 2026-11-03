@@ -55,7 +55,16 @@
   function ratingsGone(cb) {
     var settled = false, timer = setTimeout(function () { finish(null); }, RATINGS_WAIT_MS);
     function finish(d) { if (settled) return; settled = true; clearTimeout(timer); cb(slugSet(d && d.removedRatings)); }
-    live().then(finish, function () { finish(null); });
+    live().then(function (d) { if (settled) lateRatings(slugSet(d && d.removedRatings)); else finish(d); }, function () { finish(null); });
+  }
+  /* The list arrived after the wait ran out: those ratings still leave DATA and the archive (in place, so pages that hold
+     them see it on their next lookup), and LATE_GONE keeps them out of an archive that is still loading. */
+  var LATE_GONE = {};
+  function lateRatings(set) {
+    var keys = Object.keys(set); if (!keys.length) return;
+    keys.forEach(function (k) { LATE_GONE[k] = 1; });
+    if (ARCHIVE) { for (var i = ARCHIVE.length - 1; i >= 0; i--) { var k = String(ARCHIVE[i].slug).toLowerCase(); if (set[k]) { ARCHIVE.splice(i, 1); delete ARCHIVE.bySlug[k]; } } }
+    if (Array.isArray(DATA) && DATA !== ARCHIVE) DATA = dropRatings(DATA, set);
   }
   function dropRatings(rows, gone) { return Array.isArray(rows) ? rows.filter(function (r) { return !(r && r.slug && gone[String(r.slug).toLowerCase()]); }) : rows; }
 
@@ -229,7 +238,7 @@
     if (ARCHIVE) return cb(ARCHIVE);
     Promise.all([json("ratings.json"), new Promise(ratingsGone)]).then(function (x) {
       var d = x[0], at = d.cols.indexOf("slug"), gone = x[1];
-      ARCHIVE = d.rows.filter(function (row) { return !gone[String(row[at]).toLowerCase()]; }).map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = typeof row[i] === "string" && row[i].indexOf("&") >= 0 ? unentText(row[i]) : row[i]; }); o.t = ""; return o; });
+      ARCHIVE = d.rows.filter(function (row) { var k = String(row[at]).toLowerCase(); return !gone[k] && !LATE_GONE[k]; }).map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = typeof row[i] === "string" && row[i].indexOf("&") >= 0 ? unentText(row[i]) : row[i]; }); o.t = ""; return o; });
       ARCHIVE.words = d.words || []; window.WA.WORDS = ARCHIVE.words;
       var bySlug = {}; ARCHIVE.forEach(function (r) { bySlug[r.slug.toLowerCase()] = r; });
       ARCHIVE.bySlug = bySlug; DATA = ARCHIVE; cb(ARCHIVE);

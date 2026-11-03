@@ -50,8 +50,8 @@ describe("video links", () => {
 
   it("the story page's copy (public/wa/video.js) agrees with the server's on every case", () => {
     for (const [url] of CASES) expect(page.videoFor(url), url).toEqual(videoFor(url));
-    expect(page.playerSrc(videoFor("https://youtu.be/dQw4w9WgXcQ")!)).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0");
-    expect(page.playerSrc(videoFor("https://vimeo.com/123456789")!)).toBe("https://player.vimeo.com/video/123456789?autoplay=1&dnt=1");
+    expect(page.playerSrc(videoFor("https://youtu.be/dQw4w9WgXcQ")!)).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&playsinline=1&rel=0");
+    expect(page.playerSrc(videoFor("https://vimeo.com/123456789")!)).toBe("https://player.vimeo.com/video/123456789?autoplay=1&playsinline=1&dnt=1");
   });
 
   it("the editor's embedFor reads the same rules", () => {

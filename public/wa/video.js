@@ -24,9 +24,20 @@
     }
     return null;
   }
-  /** The player's address once the reader has pressed play. */
-  function playerSrc(v) { return v.provider === 'youtube' ? v.embed + '?autoplay=1&rel=0' : v.embed + '?autoplay=1&dnt=1'; }
+  /** The player's address once the reader has pressed play. playsinline keeps an iPhone from opening the film fullscreen. */
+  function playerSrc(v) { return v.provider === 'youtube' ? v.embed + '?autoplay=1&playsinline=1&rel=0' : v.embed + '?autoplay=1&playsinline=1&dnt=1'; }
   var NAME = { youtube: 'YouTube', vimeo: 'Vimeo' };
+  // As WA.playEmbed in site.js: on Safari and phones the click does not survive the iframe load, so a YouTube film is
+  // started through the YouTube player API once it is ready (WA.loadYT, preloaded on hover or touch).
+  function inlineApi() { var nav = root.navigator || {}; return !!(root.WA && root.WA.loadYT) && (/Apple/.test(nav.vendor || '') || /Mobi/.test(nav.userAgent || '')); }
+  function plainFrame(doc, v, label) {
+    var f = doc.createElement('iframe');
+    f.src = playerSrc(v); f.title = 'Video: ' + label; f.loading = 'lazy';
+    f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+    f.setAttribute('allowfullscreen', ''); f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    return f;
+  }
+  function focusIn(f) { try { f.focus(); } catch { /* focus is a courtesy */ } }
 
   function upgradeOne(fig, doc) {
     if (fig.getAttribute('data-video-ready')) return false;
@@ -54,13 +65,25 @@
     icon.innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" focusable="false"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>';
     btn.appendChild(icon);
     frame.appendChild(btn);
+    function warm() { if (v.provider === 'youtube' && inlineApi()) root.WA.loadYT().catch(function () {}); }
+    btn.addEventListener('pointerover', warm, { passive: true, once: true });
+    btn.addEventListener('touchstart', warm, { passive: true, once: true });
+    btn.addEventListener('focus', warm, { once: true });
     btn.addEventListener('click', function () {
-      var f = doc.createElement('iframe');
-      f.src = playerSrc(v); f.title = 'Video: ' + label; f.loading = 'lazy';
-      f.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
-      f.setAttribute('allowfullscreen', ''); f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-      frame.replaceChildren(f); fig.classList.add('is-playing');
-      try { f.focus(); } catch { /* focus is a courtesy */ }
+      if (fig.classList.contains('is-playing')) return;
+      fig.classList.add('is-playing');
+      if (root.WA && root.WA.track) root.WA.track('video_play', { src: v.embed, provider: v.provider });
+      if (v.provider === 'youtube' && inlineApi()) {
+        var ph = doc.createElement('div'); frame.replaceChildren(ph);
+        root.WA.loadYT().then(function () {
+          new root.YT.Player(ph, { width: '100%', height: '100%', videoId: v.id, host: 'https://www.youtube-nocookie.com',
+            playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
+            events: { onReady: function (e) { e.target.playVideo(); var f = e.target.getIframe && e.target.getIframe(); if (f) { f.title = 'Video: ' + label; focusIn(f); } } } });
+        }).catch(function () { var f = plainFrame(doc, v, label); frame.replaceChildren(f); focusIn(f); });
+        return;
+      }
+      var f = plainFrame(doc, v, label);
+      frame.replaceChildren(f); focusIn(f);
     });
     // The figure reads: player, caption, then the provider's link for anyone who would rather watch there.
     fig.insertBefore(frame, fig.firstChild);

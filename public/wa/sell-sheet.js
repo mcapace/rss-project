@@ -3,7 +3,7 @@
    Open industry.html#sheet=<slug> or industry.html#portfolio=<producer> to start on a bottle or a house. */
 (function () {
   'use strict';
-  var DPI = 200, INK = '#17120d', INK2 = '#4b3f33', INK3 = '#8b7b6a', AMBER = '#c9731d', PAPER = '#fffbf5', RULE = 'rgba(23,18,13,0.14)';
+  var DPI = 200, INK = '#17120d', INK2 = '#4b3f33', INK3 = '#8b7b6a', AMBER = '#172a5c', PAPER = '#fffbf5', RULE = 'rgba(23,18,13,0.14)';
   var SANS = 'Aeonik, "Helvetica Neue", Arial, sans-serif', MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
   var SIZES = { talker: [4, 6], sheet: [8.5, 11], portfolio: [8.5, 11] };
   var NAMES = { talker: 'Shelf talker · 4 × 6 in', sheet: 'Sell sheet · Letter', portfolio: 'Portfolio sheet · Letter' };

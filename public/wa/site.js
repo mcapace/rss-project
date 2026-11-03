@@ -389,7 +389,7 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
       h.fillStyle = "#8b7b6a"; h.textAlign = "left"; h.fillText(l[0], x0, l[2]);
     });
     h.textBaseline = "alphabetic";
-    if (highlight) { var hp = compassPoint(highlight, cx, cy, rad); h.beginPath(); h.arc(hp.x, hp.y, 7, 0, Math.PI * 2); h.fillStyle = "#17120d"; h.fill(); h.beginPath(); h.arc(hp.x, hp.y, 11, 0, Math.PI * 2); h.strokeStyle = "#c9731d"; h.lineWidth = 1.5; h.stroke(); }
+    if (highlight) { var hp = compassPoint(highlight, cx, cy, rad); h.beginPath(); h.arc(hp.x, hp.y, 7, 0, Math.PI * 2); h.fillStyle = "#17120d"; h.fill(); h.beginPath(); h.arc(hp.x, hp.y, 11, 0, Math.PI * 2); h.strokeStyle = "#172a5c"; h.lineWidth = 1.5; h.stroke(); }
     return { points: pts, cx: cx, cy: cy, rad: rad };
   }
   window.WA.drawCompass = drawCompass; window.WA.family = family; window.WA.dot = dot; window.WA.legend = legend; window.WA.FAMILIES = FAMILIES; window.WA.setupCanvas = setupCanvas; window.WA.compassPoint = compassPoint;

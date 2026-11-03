@@ -25,6 +25,7 @@ import { SiteCard } from "./SiteCard";
 import { useCollaboration } from "./collab/useCollaboration";
 import { ACCESS_TIERS, requiredTier, type AccessTier } from "@/lib/delivery/paywall";
 import { PreviewMatrix } from "./PreviewMatrix";
+import { PAGE_FILE_PATTERN } from "@/lib/wa/site-host";
 import { Button, Card, Empty, Field, IconButton, LinkButton, Notice, Pill, Segmented, Skeleton, SkeletonRows, Switch } from "./ui";
 
 type Draft = Pick<CmsDocument, "title" | "byline" | "body_html" | "body_json" | "excerpt" | "slug" | "public_url" | "publication_state" | "metadata">;
@@ -475,6 +476,13 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
           </div>
         </Field>
         <Field label="Public URL" htmlFor="ed-url"><input id="ed-url" className="ed-input" type="url" value={draft.public_url ?? ""} onChange={event => update({ public_url: event.target.value })} placeholder="https://" /></Field>
+        {document.brand === "wa" && (() => {
+          const pageFile = typeof draft.metadata.page_file === "string" ? draft.metadata.page_file : "";
+          const invalid = pageFile !== "" && !PAGE_FILE_PATTERN.test(pageFile);
+          return <Field label="Served by site page" htmlFor="ed-page-file" hint={invalid ? "Not a page name: use the lowercase file name of a top-level page of the site, such as water.html (no slash, no folder). The story shows until it is valid, and the save is refused." : "Optional. The file name of a page of the site, such as water.html: the story's address then shows that page (with the story's canonical, share card and structured data) instead of the story. A name with no such page shows the story. Leave empty to show the story."}>
+            <input id="ed-page-file" className="ed-input" aria-invalid={invalid || undefined} value={pageFile} onChange={event => updateMeta({ page_file: event.target.value.trim() || null })} placeholder="water.html" spellCheck={false} />
+          </Field>;
+        })()}
         <Field label="Tags" htmlFor="ed-tags" hint="Comma separated."><input id="ed-tags" className="ed-input" value={stringList(draft.metadata.tags).join(", ")} onChange={event => updateMeta({ tags: event.target.value.split(",").map(tag => tag.trim()).filter(Boolean) })} placeholder="Bourbon, Collecting" /></Field>
         {document.kind === "article" && (() => {
           const sp = sponsorship(draft.metadata, draft.byline);

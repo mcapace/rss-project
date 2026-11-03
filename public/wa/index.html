@@ -21,11 +21,20 @@
 </header>
 
 <h1 class="sr-only">Whisky Advocate: whisky ratings, reviews, news and cocktails</h1>
-<section class="ask-band" aria-label="Ask Whisky Advocate">
+<!-- Front page: the news leads on the left; Ask Whisky Advocate and the taste tools sit beside it, so both are above the fold. -->
+<section class="band front-split" aria-label="Front page">
+  <div class="split-news">
+    <div class="band-head"><div><span class="mono">Latest</span><h2 class="d2" style="margin-top:10px">News</h2></div><a class="pill" href="stories.html#news">All news</a></div>
+    <div class="front" id="front"></div>
+  </div>
+  <aside class="split-ask" aria-labelledby="splitAskTitle">
+    <span class="mono">Ask Whisky Advocate</span>
+    <h2 id="splitAskTitle">Describe what you are after.</h2>
+    <p class="split-lede">A bottle, a budget or a moment. Answers come from our ratings.</p>
       <div class="ask">
         <form id="askForm" autocomplete="off">
           <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z"/></svg>
-          <input id="askInput" type="text" placeholder="A sherried Speyside under $90 for a winter night" aria-label="Ask anything about whisky">
+          <input id="askInput" type="text" placeholder="Sherried Speyside under $90" aria-label="Ask anything about whisky">
           <button type="button" class="mic" aria-label="Ask by voice" title="Ask by voice"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
           <button type="submit" class="go">Ask</button>
         </form>
@@ -36,27 +45,20 @@
           <button type="button">Japanese whisky worth the price</button>
         </div>
       </div>
+    <div class="split-tools">
+      <span class="mono">Explore by taste</span>
+      <a class="tool-row nc-map" href="flavor-map.html"><span class="tool-orb" aria-hidden="true"></span><span class="tool-copy"><strong>Flavor map</strong><span>Every bottle we rate, placed by taste</span></span><i aria-hidden="true">&rarr;</i></a>
+      <a class="tool-row nc-globe" href="globe.html"><span class="tool-orb" aria-hidden="true"></span><span class="tool-copy"><strong>Distillery globe</strong><span>473 houses, where the whisky is made</span></span><i aria-hidden="true">&rarr;</i></a>
+      <a class="tool-row nc-palate" href="shelf.html#palate"><span class="tool-orb" aria-hidden="true"></span><span class="tool-copy"><strong>Your palate</strong><span>Save three bottles, see what you like</span></span><i aria-hidden="true">&rarr;</i></a>
+      <a class="tool-row nc-ask" href="#ask" data-open-chat><span class="tool-orb" aria-hidden="true"></span><span class="tool-copy"><strong>Ask for a flight</strong><span>A bottle, a flight or a comparison</span></span><i aria-hidden="true">&rarr;</i></a>
+      <a class="tool-row nc-scan" href="#scan"><span class="tool-orb" aria-hidden="true"></span><span class="tool-copy"><strong>Scan in the store</strong><span>Point your phone at a shelf</span></span><i aria-hidden="true">&rarr;</i></a>
+    </div>
+    <a class="split-all" href="tools.html">All tools <span aria-hidden="true">&rarr;</span></a>
+  </aside>
 </section>
 
 <section class="hero after-stage">
   <div class="ask"><div class="answer" id="answer" aria-live="polite"><div class="answer-head" id="answerFacets"></div><div class="answer-body"><div class="answer-text" id="answerText"></div><div class="answer-picks" id="answerPicks"></div></div></div></div>
-</section>
-
-
-<section class="band new-band" aria-labelledby="newTitle">
-  <div class="band-head"><div><span class="mono">New</span><h2 class="d2" id="newTitle" style="margin-top:10px">Explore whisky by taste</h2></div><a class="pill" href="tools.html">All tools</a></div>
-  <div class="new-grid">
-    <a class="new-card nc-map" href="flavor-map.html"><span class="mono">Flavor map</span><strong>Every bottle we rate, placed by how it tastes</strong><span>Find one you love and see what sits beside it.</span><i aria-hidden="true">&rarr;</i></a>
-    <a class="new-card nc-globe" href="globe.html"><span class="mono">Distillery globe</span><strong>473 houses, where the whisky is made</strong><span>Turn the globe and tap a light for its best bottles.</span><i aria-hidden="true">&rarr;</i></a>
-    <a class="new-card nc-palate" href="shelf.html#palate"><span class="mono">Your palate</span><strong>Save three bottles, see what you like</strong><span>My Shelf works out your taste and suggests what to try next.</span><i aria-hidden="true">&rarr;</i></a>
-    <a class="new-card nc-ask" href="#ask" data-open-chat><span class="mono">Ask Whisky Advocate</span><strong>Ask for a bottle, a flight or a comparison</strong><span>Answers cite our ratings, with buy and save buttons.</span><i aria-hidden="true">&rarr;</i></a>
-    <a class="new-card nc-scan" href="#scan"><span class="mono">Scan in the store</span><strong>Point your phone at a shelf</strong><span>The scores land on the bottles, best value lit up.</span><i aria-hidden="true">&rarr;</i></a>
-  </div>
-</section>
-
-<section class="band">
-  <div class="band-head"><div><span class="mono">Latest</span><h2 class="d2" style="margin-top:10px">News</h2></div><a class="pill" href="stories.html#news">All news</a></div>
-  <div class="front" id="front"></div>
 </section>
 
 <div class="ad ad-billboard" data-slot="wa_home_billboard" aria-label="Advertisement"><span>Advertisement</span><i>970 × 250 billboard · 728 × 90 leaderboard · 320 × 50 mobile</i></div>

@@ -2521,3 +2521,58 @@ main { min-height: 100vh; min-height: 100dvh; }
 
 /* ---- Newsletter page: the email field comes first, above the letters (2026-11-03) ---- */
 .nl-fields.nl-email { grid-template-columns: 1fr; padding: 18px 24px; max-width: 560px; }
+
+/* ---- Home front page: news on the left, Ask Whisky Advocate and the taste tools beside it, both above the fold (2026-11-03) ---- */
+.front-split { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; padding-top: 28px; }
+.split-news { min-width: 0; }
+.split-news .front.rotator, .split-news .front { grid-template-columns: minmax(0, 1fr); }
+.split-news .rot-stage { min-height: 0; }
+.split-news .front .story.lead.has-img.rot-slide.on { position: relative; height: auto; min-height: 0; grid-template-rows: auto auto auto auto; }
+.split-news .front .story.lead.has-img.rot-slide.on img { min-height: 0; height: auto; aspect-ratio: 16 / 9; }
+.split-ask .ask { width: 100%; min-width: 0; }
+.split-ask .ask form { width: 100%; box-sizing: border-box; }
+.split-ask .ask input { min-width: 0; }
+.split-ask { position: sticky; top: 88px; display: grid; gap: 14px; padding: 24px 22px 20px; border-radius: 24px; color: #fff6ea;
+  background: radial-gradient(120% 70% at 15% 0%, #3a2414 0%, #1a100a 58%, #0d0806 100%); box-shadow: 0 30px 70px -44px rgba(23, 18, 13, 0.9); }
+.split-ask > .mono, .split-tools > .mono { color: var(--gold, #e3a443); font-size: 11px; letter-spacing: 0.09em; }
+.split-ask h2 { font-size: 26px; font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; }
+.split-lede { color: rgba(255, 238, 214, 0.72); font-size: 14px; line-height: 1.45; margin-top: -4px; }
+.split-ask .ask form { min-height: 52px; padding: 6px 6px 6px 14px; gap: 8px; }
+.split-ask .ask input { font-size: 15px; }
+.split-ask .ask .go { height: 40px; padding: 0 16px; }
+.split-ask .ask .mic { width: 36px; height: 36px; }
+.split-ask .suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.split-ask .suggest button { background: rgba(255, 246, 234, 0.08); border-color: rgba(255, 236, 210, 0.18); color: rgba(255, 246, 234, 0.86); font-size: 12px; text-align: left; }
+.split-ask .suggest button:hover { border-color: var(--amber); color: #fff6ea; }
+.split-ask .suggest > *:nth-child(n+3) { display: none; }
+.split-tools { display: grid; gap: 4px; margin-top: 6px; padding-top: 14px; border-top: 1px solid rgba(255, 236, 210, 0.14); }
+.split-tools > .mono { margin-bottom: 4px; }
+.tool-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 8px; margin: 0 -8px; border-radius: 14px; color: #fff6ea; transition: background 160ms; }
+.tool-row:hover, .tool-row:focus-visible { background: rgba(255, 246, 234, 0.07); }
+.tool-orb { width: 34px; height: 34px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.22); }
+.tool-row.nc-map .tool-orb { background: radial-gradient(circle at 65% 65%, rgba(116, 196, 255, 0.75), transparent 60%), radial-gradient(circle at 30% 30%, rgba(255, 170, 70, 0.85), transparent 55%), #24160d; }
+.tool-row.nc-globe .tool-orb { background: radial-gradient(circle at 40% 40%, rgba(255, 196, 110, 0.9), transparent 60%), #24160d; }
+.tool-row.nc-palate .tool-orb { background: conic-gradient(from 30deg, rgba(227, 164, 67, 0.9), rgba(190, 90, 60, 0.7), rgba(227, 164, 67, 0.9)); }
+.tool-row.nc-ask .tool-orb { background: radial-gradient(circle, rgba(255, 220, 150, 0.9), transparent 62%), #24160d; }
+.tool-row.nc-scan .tool-orb { background: radial-gradient(circle at 40% 60%, rgba(140, 220, 160, 0.7), transparent 55%), radial-gradient(circle at 65% 30%, rgba(255, 170, 70, 0.75), transparent 50%), #24160d; }
+.tool-copy { display: grid; gap: 1px; min-width: 0; }
+.tool-copy strong { font-weight: 500; font-size: 15px; }
+.tool-copy span { color: rgba(255, 238, 214, 0.62); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tool-row i { font-style: normal; color: rgba(255, 238, 214, 0.55); transition: transform 160ms, color 160ms; }
+.tool-row:hover i { transform: translateX(3px); color: var(--gold, #e3a443); }
+.split-all { justify-self: start; font-size: 13px; color: rgba(255, 238, 214, 0.8); }
+.split-all:hover { color: var(--gold, #e3a443); }
+@media (max-width: 1100px) { .front-split { grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; } }
+@media (max-width: 900px) {
+  .front-split { grid-template-columns: minmax(0, 1fr); }
+  .split-ask { position: static; }
+  .split-news .rot-stage { min-height: 0; }
+}
+/* In the front page's news column the lead story is newspaper-style: photo on the left, headline and summary beside it, so the headline sits above the fold. */
+@media (min-width: 901px) {
+  .split-news .front .story.lead.has-img.rot-slide.on { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 26px; row-gap: 12px; align-content: start; padding: 0 26px 46px 0; }
+  .split-news .front .story.lead.has-img.rot-slide.on img { grid-column: 1; grid-row: 1 / -1; height: 100%; min-height: 330px; aspect-ratio: auto; }
+  .split-news .front .story.lead.has-img.rot-slide.on > :not(img) { grid-column: 2; }
+  .split-news .front .story.lead.has-img.rot-slide.on .tag { margin-top: 26px; }
+  .split-news .front .rot-slide h3 { font-size: clamp(24px, 2.1vw, 32px); }
+}

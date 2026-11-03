@@ -2702,3 +2702,13 @@ a.mention { text-decoration-color: rgba(23, 42, 92,0.4); }
 .scan-chip b { background: #172a5c; }
 .chip-b b { background: #0a1229; }
 @media (min-width: 981px) { .chip-a { right: -2%; top: 18%; } .chip-b { left: -4%; bottom: auto; top: 62%; } }
+
+/* ---- Ratings shelves without hard edges: room for the card shadows inside the scrolling row, softer shadows, and the row
+   fading out at its right end (and a touch at its left) instead of cutting cards off (2026-11-03) ---- */
+.shelf-row { padding: 18px 14px 46px; margin: -8px -14px -28px; scroll-padding-left: 14px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 140px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 140px), transparent 100%); }
+.shelf-bottle { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 18px 34px -24px rgba(23, 18, 13, 0.32); }
+.shelf-bottle:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 24px 40px -24px rgba(23, 18, 13, 0.4); }
+@media (max-width: 960px) { .shelf-row { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 60px), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 60px), transparent 100%); } }
+.scan #scanStatus { color: #c9d8fb; }

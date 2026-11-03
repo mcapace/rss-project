@@ -135,14 +135,14 @@ Why server pages: the static `story.html#slug` reader cannot carry per-story hea
 
 | Route | Does | Cache | Limit |
 |---|---|---|---|
-| `GET /api/wa/front` | The home rotator's five positions: pins from `/cms/front`, the newest stories elsewhere (`resolveFront`). Merges CMS-dated and imported stories by date. | `s-maxage=60, swr=300` | none |
+| `GET /api/wa/front` | The home rotator's five positions: pins from `/cms/front`, the newest stories elsewhere (`resolveFront`). Merges CMS-dated and imported stories by date. A pin whose story is not live (scheduled, or taken down) gives its position to the newest story, like an ended pin. | `s-maxage=60, swr=300` | none |
 | `GET /api/wa/latest` | Stories published from the CMS since the export, removed slugs, sponsored list (above). | `s-maxage=60, swr=300` | none |
 | `GET /api/wa/story?slug=` | One published story's index entry and body, for stories not in the export. | `s-maxage=300, swr=3600` | none |
 | `GET /api/wa/meaning?q=` | Stories and ratings close in meaning to the query (no model call). See [indexing-and-search.md](indexing-and-search.md). | `s-maxage=86400, swr=604800` | 40 a minute per visitor (shared) |
 | `GET /api/wa/answer?q=` | The search page's written answer from matched ratings and stories (Claude). | `s-maxage=86400, swr=604800` | 20 a minute per visitor, and `WA_ANSWER_HOURLY` (default 600) written answers an hour site-wide |
 | `POST /api/wa/ask` | The Ask chat on every page: Claude answers from the bottles the page's own search found plus meaning matches. Nothing stored. Model `WA_ASK_MODEL`. | none | 12 a minute per address (per instance) |
 | `POST /api/wa/recommend` | Bottle picks for a story, cocktail, bottle or producer page, with a line of why. Cached by content and candidates in the `wa_recommendations` table, so a page costs one model call until it changes. Model `WA_RECOMMEND_MODEL`. | `s-maxage=600` on a stored hit | none |
-| `GET /api/wa/similar?slug=` | Stories like this one by embedding (`cms_match_embeddings`). Empty until embedded. | `s-maxage=300` when empty | none |
+| `GET /api/wa/similar?slug=` | Stories like this one by embedding (`wa_match_documents`), live stories only. Empty until embedded, and for a story not live yet. | `s-maxage=300` when empty | none |
 | `GET /api/wa/bottles-like?slug=` | Ratings closest by note, re-ranked by flavor profile and spread across houses (`rankSimilar`). | `s-maxage=3600, swr=86400` | none |
 | `POST /api/wa/shelf-scan` | A photo of a shelf: Claude reads the labels, each is matched to a published rating. Nothing stored. | `no-store` | 12 a minute per address (per instance) |
 | `POST /api/wa/newsletter` | Sign-up: writes the profile and subscription groups to Braze (`BRAZE_REST_ENDPOINT`, `BRAZE_REST_API_KEY`). | none | 10 a minute per address (per instance) |

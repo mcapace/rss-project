@@ -140,7 +140,8 @@ Databank's brands and yearly volumes in thousands of 9-liter cases (`cms_databan
 - `cms_catalog_lookup` serves the editor's typeahead (producers, regions, varieties, tasters) through `/api/cms/catalog`.
 - `cms_search_ratings` is faceted search over score, price, vintage, region, variety, producer and taster at once, with a
   total for paging; `cms_rating_facets` returns the counts for the filters. Both serve `/api/cms/ratings` and the CMS's
-  Ratings search page.
+  Ratings search page, and the public ratings API with `p_live` (from `20261103190000_cms_ratings_live.sql`), which keeps
+  only live ratings before the total, the paging and the facets, so a scheduled rating is not counted early.
 - Row level security is tied to the user's JWT (`cms_jwt_brands()` reads `app_metadata.cms_role` and `cms_brands`), so a
   user-scoped client only sees its own publications. Ratings and documents are written only through service-role
   functions, so revision history cannot be skipped.
@@ -264,7 +265,8 @@ wrappers, and Morweb-era captions in alt text with the photographer appended in 
   twelve flavor axes scored 0 to 10, body and finish 1 to 5, the main flavors as plain words and one line in the house
   voice. It is resumable: ratings that already have the current version are skipped. Needs `ANTHROPIC_API_KEY`;
   `WA_FLAVOR_MODEL` picks the model. Run locally with `--apply --development-target <host> [--concurrency 8]`.
-- `scripts/wa-export-flavor.ts` writes `public/wa/flavor.json`: each profile in compact form with a 2D position from a
+- `scripts/wa-export-flavor.ts` writes `public/wa/flavor.json` from live ratings only (a scheduled rating waits for its
+  time): each profile in compact form with a 2D position from a
   seeded UMAP, so bottles that taste alike sit together and the layout is stable between runs. The flavor map, "bottles
   like this" and the palate profile read it.
 

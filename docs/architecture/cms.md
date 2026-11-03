@@ -138,7 +138,7 @@ Status on 2026-11-03: the code is live, but its two migrations (`20261103160000_
   - Records a `publish` or `unpublish` revision. Unpublishing stores `metadata.unpublished_at`.
 - **API:** `POST /api/cms/documents/[id]/publish` with `{ expected_revision, publish_at? }` (at most a year ahead); `DELETE` with `{ expected_revision }` takes it down. The database's own messages ("Before publishing, add the story text") are passed to the editor.
 - **Editor:** the Publishing panel shows a checklist (headline and text required; byline, section, summary and lead image recommended), then Publish now, Schedule for the planned time, Publish now instead, or Unpublish / Cancel schedule. Unsaved edits are saved first. A published story shows its address; saved edits to it go live within a few minutes.
-- **Scheduled stories stay hidden** until their time in every public read: `cms_public_documents`, `/wa/<slug>`, `/api/wa/story`, the delivery API, the home rotator, the sitemaps and feeds, and `/api/wa/latest`.
+- **Scheduled stories stay hidden** until their time in every public read: `cms_public_documents`, `/wa/<slug>`, `/api/wa/story`, the delivery API (documents, ratings, media), the home rotator and its pins, the sitemaps and feeds, `/api/wa/latest`, search by meaning (`wa_match_documents`, live only from `20261103180000_wa_match_live_only.sql`, and re-checked in code before that), answers, Ask, similar stories and bottles, and the shelf scan. One definition, `src/lib/wa/live.ts`: published, and `published_at` empty or past.
 
 ```mermaid
 stateDiagram-v2
@@ -212,7 +212,7 @@ Why: suggestions are applied by the editor into the draft, so nothing changes wi
 
 The public home page's news rotator has five positions (`src/lib/cms/front-server.ts`, table `cms_front_slots`).
 
-- A position with a row is pinned to a document (with a label: sponsored, from the archive, editors' pick) until it is cleared or its `ends_at` passes.
+- A position with a row is pinned to a document (with a label: sponsored, from the archive, editors' pick) until it is cleared or its `ends_at` passes. On the site a pin also needs its story live: a scheduled pin (an editor can pin a story ahead of its time) or a story taken down shows the newest story in that position until it is live again. `/cms/front` still shows the pin.
 - Every other position shows the newest published story in order, skipping pinned ones. Imported stories are dated by the old site's date and CMS stories by `published_at`; both lists are read and merged by date.
 - Editors manage it at `/cms/front`; `SiteCard.tsx` also offers a pin control on the document page.
 - The site reads it from `/api/wa/front`, cached a minute.

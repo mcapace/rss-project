@@ -88,7 +88,7 @@ WA.ready(function () {
           var name = displayName(s.state), id = "ret-" + slug(name);
           shown.push('<details class="ret-state cp-state" id="' + id + '"' + (openAll ? " open" : "") + '><summary class="cp-state-head"><h2 class="d3">' + esc(name) + '</h2><span class="cp-count">' + stores.length + '</span><span class="cp-chev" aria-hidden="true"></span></summary><div class="cp-stores">' + stores.map(function (x) {
             var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website<span class="cp-sr"> (opens in a new tab)</span></a>' : "";
-            var ph = x.phone ? '<a href="tel:' + esc(String(x.phone).replace(/[^\d+]/g, "")) + '">' + esc(tel(x.phone)) + "</a>" : "";
+            var ph = x.phone ? '<a href="tel:' + esc(String(x.phone).split("/")[0].replace(/[^\d+]/g, "")) + '">' + esc(tel(x.phone)) + "</a>" : "";
             return '<div class="cp-store"><strong>' + hi(x.name, term) + '</strong><span class="cp-city">' + hi(x.city, term) + '</span><span class="cp-links">' + ph + web + "</span></div>";
           }).join("") + "</div></details>");
           links.push('<a href="#' + id + '"><span>' + esc(name) + '</span><span class="mono">' + stores.length + "</span></a>");
@@ -109,7 +109,7 @@ WA.ready(function () {
     if (h && [].some.call(sel.options, function (o) { return o.value === h; })) { sel.value = h; }
     render();
     WA.stickyFilters(document.querySelector(".cp-finder"));
-    if (/^ret-/.test(h)) { var t = document.getElementById(h); if (t) t.scrollIntoView(); }
+    if (/^ret-/.test(h)) { var t = document.getElementById(h); if (t) { t.scrollIntoView(); if (document.readyState !== "complete") addEventListener("load", function () { if (location.hash.slice(1) === h) t.scrollIntoView(); }, { once: true }); } }
   });
 });
 </script>

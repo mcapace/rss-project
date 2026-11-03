@@ -3754,6 +3754,7 @@ body.cp .cp-finder { margin-bottom: 18px; }
 .cp-index a .mono { margin: 0; font-size: 11.5px; color: var(--ink-2); display: inline; }
 @media (max-width: 1099px) { .cp-results { display: block; } .cp-index { display: none; } }
 body.cp .cp-state { margin: 0 0 32px; }
+body.cp.cp-retailers .cp-state { scroll-margin-top: calc(var(--mast-h, 64px) + var(--finder-h, 0px) + 20px); }
 body.cp .cp-state-head { list-style: none; display: flex; align-items: baseline; gap: 12px; padding: 0 0 12px; border-bottom: 1px solid var(--ink); cursor: pointer; justify-content: flex-start; }
 body.cp .cp-state-head::-webkit-details-marker { display: none; }
 body.cp .ret-state .cp-state-head::after { content: none; display: none; }

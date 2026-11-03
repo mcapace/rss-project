@@ -11,6 +11,14 @@
   if (mast && "ResizeObserver" in window) new ResizeObserver(setMast).observe(mast, { box: "border-box" });
   if (mast) mast.addEventListener("transitionend", setMast);
 
+  /* Where to buy: the sticky finder's height, so a state heading reached by a link clears it (0 where it is static). */
+  var finder = document.querySelector(".cp-finder");
+  if (finder) {
+    var setFinder = function () { root.style.setProperty("--finder-h", (getComputedStyle(finder).position === "sticky" ? finder.offsetHeight : 0) + "px"); };
+    setFinder(); addEventListener("resize", setFinder); addEventListener("load", setFinder);
+    if ("ResizeObserver" in window) new ResizeObserver(setFinder).observe(finder);
+  }
+
   /* Sibling row: on phones, centre the current page's link inside the row without moving the page. */
   var fam = document.querySelector(".cp-family"), cur = fam && fam.querySelector('[aria-current="page"]');
   function centreFamily() {

@@ -2956,3 +2956,7 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 .mast nav a[aria-current="page"] { font-weight: 500; color: var(--ink); }
 @media (min-width: 901px) and (max-width: 1100px) { .mast nav a { padding: 0 9px; } }
 @media (min-width: 901px) and (max-width: 1000px) { .mast nav a { padding: 0 7px; } }
+
+/* Section links get the tools' frosted pill (2026-11-03): each link blurs the wave behind its own rounded shape, the same faint
+   see-through pill the right-side buttons have. */
+.mast nav a { height: 36px; border: 1px solid transparent; border-radius: 999px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }

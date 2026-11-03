@@ -2960,3 +2960,28 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 /* Section links get the tools' frosted pill (2026-11-03): each link blurs the wave behind its own rounded shape, the same faint
    see-through pill the right-side buttons have. */
 .mast nav a { height: 36px; border: 1px solid transparent; border-radius: 999px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+/* Tool icons (2026-11-03): a drawn line illustration per tool card in ink, with one amber detail that moves on hover. */
+.start a:has(.tico) { position: relative; padding-right: 84px; }
+.start a .tico { position: absolute; top: 16px; right: 16px; width: 56px; height: 56px; padding: 3px; border-radius: 16px; background: radial-gradient(120% 120% at 30% 20%, #fffaf2 0%, #f3e8d8 100%); box-shadow: inset 0 0 0 1px rgba(142,74,27,0.10), 0 10px 22px -16px rgba(60,35,15,0.55); fill: none; stroke: var(--ink); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; transition: transform 300ms cubic-bezier(.2,.8,.2,1), box-shadow 300ms; }
+.start a .tico .faint { stroke: rgba(23,18,13,0.28); }
+.start a .tico .dots circle { fill: var(--ink-3); stroke: none; }
+.start a .tico .ac { stroke: var(--amber); }
+.start a .tico .ac.thin { stroke-width: 0.9; }
+.start a .tico .ac-f { fill: var(--amber); stroke: none; }
+.start a .tico .ac-fill { fill: rgba(201,115,29,0.22); stroke: var(--amber); }
+.start a .tico .ac-t { fill: var(--copper); stroke: none; font-family: var(--mono); font-size: 6.5px; font-weight: 600; }
+.start a .tico * { transform-box: fill-box; transform-origin: center; transition: transform 420ms cubic-bezier(.2,.8,.2,1), opacity 300ms; }
+.start a:hover .tico { transform: translateY(-2px) rotate(-3deg); box-shadow: inset 0 0 0 1px rgba(201,115,29,0.35), 0 14px 26px -16px rgba(142,74,27,0.6); }
+.start a:hover .tico .ring { transform: scale(1.35); opacity: 0.4; }
+.start a:hover .tico .glow { transform: translate(1.5px, -1px); }
+.start a:hover .tico .ac-fill { transform: scale(1.08); }
+.start a:hover .tico .scan { transform: translateY(-9px); }
+.start a:hover .tico .thin, .start a:hover .tico circle.ac { transform: rotate(45deg); }
+.start a:hover .tico .liq { transform: translateY(-1px); }
+.start a:hover .tico .drop { transform: translateY(3px); }
+.start a:hover .tico .ribbon { transform: translateY(2px); }
+.start a:hover .tico .spark { transform: rotate(90deg) scale(1.1); }
+.start a:hover .tico .spark2 { transform: rotate(-90deg) scale(1.2); }
+@media (max-width: 600px) { .start a:has(.tico) { padding-right: 72px; } .start a .tico { width: 46px; height: 46px; padding: 2px; border-radius: 13px; } }
+@media (prefers-reduced-motion: reduce) { .start a .tico, .start a .tico * { transition: none; } }

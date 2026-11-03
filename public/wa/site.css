@@ -2879,3 +2879,4 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 .vk-mine { display: inline-flex; align-items: center; gap: 6px; }
 .value-card.no-price .vk-mine { display: none; }
 .value-card.no-price .vk-line { margin-left: 0; }
+.print-card .print-key { color: rgba(255,246,234,0.78); }

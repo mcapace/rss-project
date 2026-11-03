@@ -66,7 +66,7 @@ const campaigns = {
     data: { doors: '2026-11-20T18:30:00-05:00', day: '2026-11-20' },
   },
   subscribe: {
-    title: 'Subscribe', brand: 'wa', url: 'https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=27430',
+    title: 'Subscribe', brand: 'wa', url: 'https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306',
     eyebrow: 'Subscribe', short: 'Subscribe',
     lines: ['A year of Whisky Advocate for $22', 'Plus 2 free gifts: our tote and the Whisky Dictionary', 'Every rating. Every review. Every issue.'],
     mini: ['1 year for $22', 'Plus 2 free gifts', 'Every rating, every issue'],
@@ -179,14 +179,16 @@ function page(id, c, sizeName, size) {
   const [bx, by, bw, bh] = size.box;
   const small = size.kind === 'mini' || size.kind === 'strip';
   const lines = small && c.mini ? c.mini : c.lines;
-  const brand = c.brand === 'wa' ? logo : '<span class="mark ca">Cigar<br>Aficionado</span>';
+  const brand = c.brand === 'wa' ? logo : '<img class="mark ca" src="ca-logo.png" alt="Cigar Aficionado">';
   const ad = { id, size: sizeName, kind: size.kind, widget: c.widget, data: c.data ?? {}, lines: lines.length };
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="ad.size" content="width=${w},height=${h}">
 <meta name="viewport" content="width=${w},height=${h}">
 <title>${esc(c.title)} ${sizeName}</title>
-<script>var clickTag = "${c.url}";</script>
+<script>var clickTag = "${c.url}";
+/* Served as a hosted tag, the click URL comes in the query: index.html?clickTag=%%CLICK_URL_ESC%%<escaped landing page> */
+(function(){var m=/[?&]clickTag=([^&]+)/.exec(location.search);if(m){try{clickTag=decodeURIComponent(m[1]);}catch(e){}}})();</script>
 <style>
 @font-face{font-family:A;src:url(aeonik-400.woff2) format("woff2");font-weight:400;font-display:block}
 @font-face{font-family:A;src:url(aeonik-500.woff2) format("woff2");font-weight:500;font-display:block}
@@ -203,7 +205,8 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .film:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none}
 .grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.10;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
 .mark{display:block;color:var(--cream);width:100%;height:auto}
-.mark.ca{font:500 11px/1 M,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--cream)}
+.mark.ca{width:100%;height:auto}
+.billboard .ca-brand{width:150px}.halfpage .ca-brand{width:150px}.rect .ca-brand{width:112px}
 .brand{position:absolute;z-index:5}
 .eyebrow{font:400 10px/1.2 M,ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lines{position:relative;z-index:5}
@@ -287,9 +290,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .mini .lines p{font-size:${w > 400 ? 15 : 13}px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mini .cta{grid-column:3;height:${w > 400 ? 28 : 26}px;padding:0 ${w > 400 ? 12 : 10}px;font-size:${w > 400 ? 12 : 11.5}px}
 #widget:empty{display:none}
-.strip .brand.ca-brand,.mini .brand.ca-brand{width:auto}
-.strip .mark.ca{font-size:${w > 900 ? 11 : 9.5}px;letter-spacing:.14em}
-.mini .mark.ca{font-size:${w > 400 ? 8 : 7}px;letter-spacing:.1em;line-height:1.15}
+.strip .brand.ca-brand{width:${w > 900 ? 116 : 100}px}.mini .brand.ca-brand{width:${w > 400 ? 76 : 60}px}
 .strip .cover{position:relative;grid-column:4;grid-row:1/-1;width:${w > 900 ? 58 : 52}px;height:${w > 900 ? 76 : 68}px}
 @media (prefers-reduced-motion:reduce){.lines p,.tick b,.film video{transition:none!important;filter:none!important}.wave span{animation:none}}
 </style></head>
@@ -402,6 +403,8 @@ for (const [id, c] of Object.entries(campaigns)) {
     const [W0, H0] = sh('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', loopIn]).trim().split(',').map(Number);
     const focus = await focusOf(stillIn);
     fontFiles.forEach((f) => copyFileSync(join(fontCache, f), join(dir, f)));
+    // Cigar Aficionado's white logo (from the company logo folder), for the two CA campaigns.
+    if (c.brand === 'ca') copyFileSync(join(here, 'source/ca-logo.png'), join(dir, 'ca-logo.png'));
     writeFileSync(join(dir, 'index.html'), page(id, c, sizeName, size));
     // The subscribe ads carry the real magazine cover, at twice the size it is shown.
     const coverWidth = { billboard: 308, halfpage: 260, rect: 168, strip: 116 }[size.kind];

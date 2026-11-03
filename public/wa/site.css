@@ -3238,3 +3238,30 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 .picks3.few { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
 .tag-count { margin: 0; font-size: 14px; }
 .tag-count a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Story videos (2026-11-03): video.js turns a CMS video figure into a click-to-play player. A 16:9 frame (9:16 for a
+   YouTube Short) with the site's figure radius, the video's still or a cask-brown poster with the caption, an ink play
+   button that turns amber on hover and focus, the caption below, then the provider's link. The player loads on click. */
+.prose figure.wa-video { margin: 1.8em 0 2em; }
+.prose .wa-video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; background: var(--cask); }
+.prose .wa-video[data-short="true"] .wa-video-frame { width: min(100%, 360px); aspect-ratio: 9 / 16; margin: 0 auto; }
+.prose .wa-video-frame iframe { position: absolute; inset: 0; display: block; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; aspect-ratio: auto; }
+.prose .wa-video-play { position: absolute; inset: 0; display: block; width: 100%; height: 100%; padding: 0; margin: 0; border: 0; border-radius: inherit; background: transparent; color: var(--paper); cursor: pointer; font: inherit; text-align: left; }
+/* The ring is drawn above the still (an outline would sit under the positioned picture). */
+.prose .wa-video-play:focus-visible { outline: none; }
+.prose .wa-video-play:focus-visible::after { content: ""; position: absolute; inset: 6px; z-index: 2; border: 3px solid var(--gold); border-radius: 11px; pointer-events: none; }
+.prose .wa-video-frame iframe:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+.prose .wa-video-play img.wa-video-thumb { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border-radius: 0; object-fit: cover; mix-blend-mode: normal; transition: transform 400ms cubic-bezier(.2,.8,.2,1), filter 200ms; }
+.prose .wa-video-play:hover img.wa-video-thumb, .prose .wa-video-play:focus-visible img.wa-video-thumb { transform: scale(1.02); filter: brightness(0.92); }
+.prose .wa-video-poster { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: clamp(16px, 3vw, 28px); background: radial-gradient(70% 90% at 80% 20%, rgba(227,164,67,0.35), transparent 70%), linear-gradient(160deg, var(--copper), var(--cask) 70%); }
+.prose .wa-video-brand { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,251,245,0.78); }
+.prose .wa-video-words { max-width: 34ch; font-size: clamp(16px, 2.2vw, 22px); font-weight: 500; line-height: 1.2; letter-spacing: -0.01em; color: var(--paper-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.prose .wa-video.has-thumb .wa-video-poster { visibility: hidden; }
+.prose .wa-video-icon { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 68px; height: 68px; margin: -34px 0 0 -34px; border-radius: 50%; background: var(--ink); color: var(--paper); box-shadow: 0 14px 34px -12px rgba(23,18,13,0.7); transition: background-color 160ms, transform 200ms; }
+.prose .wa-video-icon svg { margin-left: 3px; }
+.prose .wa-video-play:hover .wa-video-icon, .prose .wa-video-play:focus-visible .wa-video-icon { background: var(--amber); transform: scale(1.06); }
+.prose .wa-video figcaption { padding: 10px 2px 0; }
+.prose .wa-video[data-short="true"] { text-align: center; }
+.prose a.wa-video-link { display: inline-block; margin-top: 6px; padding: 2px; font-size: 13px; }
+@media (max-width: 640px) { .prose .wa-video-icon { width: 56px; height: 56px; margin: -28px 0 0 -28px; } }
+@media (prefers-reduced-motion: reduce) { .prose .wa-video-play img.wa-video-thumb, .prose .wa-video-icon { transition: none; } .prose .wa-video-play:hover img.wa-video-thumb, .prose .wa-video-play:hover .wa-video-icon, .prose .wa-video-play:focus-visible .wa-video-icon { transform: none; } }

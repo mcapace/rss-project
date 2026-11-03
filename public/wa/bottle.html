@@ -231,6 +231,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
     var wrap = document.getElementById("valuePlot"); if (!wrap || !window.WAGlass) return;
     wrap.closest(".value-card").classList.toggle("no-price", !(r.p > 0));
     valuePts = WAGlass.valuePlot(wrap, r, data);
+    if (!wrap.__ro && window.ResizeObserver) { var queued = 0, last = ""; wrap.__ro = new ResizeObserver(function () { var size = wrap.clientWidth + "x" + wrap.clientHeight; if (size === last) return; last = size; cancelAnimationFrame(queued); queued = requestAnimationFrame(function () { if (cur) plotValue(cur); }); }); wrap.__ro.observe(wrap); }
     var over = wrap.querySelector(".vp-ink");
     if (valuePts && WA.canvasTips) WA.canvasTips(over, function () { return valuePts; }, function (x) { return "<strong>" + (x.slug === r.slug ? "This bottle · " : "") + x.s + " points · " + fmt(x.p) + "</strong><br>" + x.n; }, function (x) { return x.slug === r.slug ? null : WA.bottleHref(x); });
   }

@@ -266,7 +266,7 @@
 
   // ---- Value: the category's price and score as a glowing density field (WebGL splats), the best score at each price and this bottle drawn crisp on top.
   var SPLAT_VS = "attribute vec2 a_pos; attribute float a_w; uniform vec2 u_res; uniform float u_size; varying float v_w; void main() { gl_Position = vec4(a_pos / u_res * 2.0 - 1.0, 0.0, 1.0); gl_Position.y = -gl_Position.y; gl_PointSize = u_size; v_w = a_w; }";
-  var SPLAT_FS = "precision mediump float; varying float v_w; void main() { vec2 q = gl_PointCoord - 0.5; float a = exp(-dot(q, q) * 14.0) * 0.07 * v_w; gl_FragColor = vec4(vec3(0.95, 0.6, 0.24) * a, a); }";
+  var SPLAT_FS = "precision mediump float; varying float v_w; void main() { vec2 q = gl_PointCoord - 0.5; float d = dot(q, q); float a = (exp(-d * 30.0) * 0.16 + exp(-d * 260.0) * 0.5) * v_w; if (d > 0.25) discard; gl_FragColor = vec4(vec3(0.95, 0.6, 0.24) * a, a); }";
   function valuePlot(wrap, r, data) {
     var peers = data.filter(function (x) { return x.c === r.c && x.p > 0 && x.s >= 70; }), gl = wrap.querySelector("canvas.vp-gl"), over = wrap.querySelector("canvas.vp-ink");
     if (peers.length < 8) { wrap.hidden = true; return null; }
@@ -277,7 +277,7 @@
     var smin = 78, smax = 100;
     function X(p) { return L + (Math.log(Math.max(Math.exp(lo), Math.min(Math.exp(hi), p))) - lo) / (hi - lo) * W; }
     function Y(s) { return T + (1 - (Math.max(smin, s) - smin) / (smax - smin)) * H; }
-    peers = peers.filter(function (x) { var l = Math.log(x.p); return l >= lo && l <= hi; });
+    peers = peers.filter(function (x) { var l = Math.log(x.p); return l >= lo && l <= hi && x.s >= smin; });
     function jit(x) { var h = 0; for (var i = 0; i < x.n.length; i++) h = (h * 31 + x.n.charCodeAt(i)) % 9973; return (h / 9973 - 0.5) * 0.9; }
     var g = context(gl);
     if (g) {
@@ -289,7 +289,7 @@
       g.useProgram(P);
       g.bindBuffer(g.ARRAY_BUFFER, b1); g.bufferData(g.ARRAY_BUFFER, pos, g.STATIC_DRAW); var l1 = g.getAttribLocation(P, "a_pos"); g.enableVertexAttribArray(l1); g.vertexAttribPointer(l1, 2, g.FLOAT, false, 0, 0);
       g.bindBuffer(g.ARRAY_BUFFER, b2); g.bufferData(g.ARRAY_BUFFER, w, g.STATIC_DRAW); var l2 = g.getAttribLocation(P, "a_w"); g.enableVertexAttribArray(l2); g.vertexAttribPointer(l2, 1, g.FLOAT, false, 0, 0);
-      g.uniform2f(g.getUniformLocation(P, "u_res"), gl.width, gl.height); g.uniform1f(g.getUniformLocation(P, "u_size"), Math.min(64, 30 * gf.d));
+      g.uniform2f(g.getUniformLocation(P, "u_res"), gl.width, gl.height); g.uniform1f(g.getUniformLocation(P, "u_size"), Math.min(48, 22 * gf.d));
       g.drawArrays(g.POINTS, 0, peers.length);
     }
     var c = over.getContext("2d"); c.setTransform(f.d, 0, 0, f.d, 0, 0); c.clearRect(0, 0, f.w, f.h);

@@ -2753,3 +2753,38 @@ main { min-height: 100vh; min-height: 100dvh; }
 /* ---- Amber stages (2026-11-02): the flavor map and distillery globe sit on the site's amber instead of dark brown ---- */
 .fmap-stage { background: radial-gradient(120% 90% at 30% 20%, #e3a443 0%, #c9731d 55%, #a85a16 100%); }
 .globe-stage { background: radial-gradient(90% 80% at 50% 45%, #e3a443 0%, #c9731d 60%, #a85a16 100%); }
+
+/* Scan steps (2026-11-03): numbered markers; the rail runs only between steps and fills over the time the phone spends on each;
+   the active step sits on a soft card; the phone flashes when the shot is taken. Colours for the ink scan panel. */
+#scanSteps { counter-reset: scanstep; width: 100%; max-width: 460px; margin: 8px 0 4px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+#scanSteps::before, #scanSteps::after { display: none; }
+#scanSteps li { counter-increment: scanstep; grid-template-columns: 36px 1fr; gap: 14px; padding: 0 0 14px; }
+#scanSteps li:last-child { padding-bottom: 0; }
+#scanSteps li:not(:last-child)::before, #scanSteps li:not(:last-child)::after { content: ""; position: absolute; left: 17px; top: 46px; bottom: 6px; width: 2px; border-radius: 2px; background: rgba(255,255,255,0.14); }
+#scanSteps li:not(:last-child)::after { background: var(--gold); transform: scaleY(0); transform-origin: top; }
+#scanSteps li[data-on="true"]:not(:last-child)::after { animation: scanstep-fill var(--dur, 2000ms) linear forwards; }
+#scanSteps li[data-done="true"]:not(:last-child)::after { transform: scaleY(1); }
+@keyframes scanstep-fill { to { transform: scaleY(1); } }
+#scanSteps li i { display: grid; width: 36px; height: 36px; margin-top: 4px; border: 1.5px solid rgba(255,255,255,0.22); background: #1b1b1b; transform: none; transition: border-color 400ms, background-color 400ms, box-shadow 500ms; }
+#scanSteps li i::before, #scanSteps li i::after { grid-area: 1 / 1; transition: opacity 300ms, transform 400ms cubic-bezier(0.22,1,0.36,1); }
+#scanSteps li i::after { content: "0" counter(scanstep); width: auto; height: auto; border-radius: 0; background: none; transform: none; font-family: var(--mono); font-style: normal; font-size: 12px; letter-spacing: 0.02em; color: rgba(244,241,234,0.6); }
+#scanSteps li i::before { content: ""; width: 11px; height: 6px; border-left: 2px solid #1b1b1b; border-bottom: 2px solid #1b1b1b; transform: translateY(-2px) rotate(-45deg) scale(0.4); opacity: 0; }
+#scanSteps li[data-on="true"] i { border-color: var(--gold); background: #1b1b1b; animation: scanstep-ring 1.8s ease-out infinite; }
+#scanSteps li[data-on="true"] i::after { color: var(--gold); background: none; transform: none; }
+#scanSteps li[data-done="true"] i { border-color: var(--gold); background: var(--gold); box-shadow: none; animation: none; }
+#scanSteps li[data-done="true"] i::after { opacity: 0; transform: scale(0.6); background: none; }
+#scanSteps li[data-done="true"] i::before { opacity: 1; transform: translateY(-2px) rotate(-45deg) scale(1); }
+@keyframes scanstep-ring { 0% { box-shadow: 0 0 0 0 rgba(227,164,67,0.45); } 70%, 100% { box-shadow: 0 0 0 10px rgba(227,164,67,0); } }
+#scanSteps li > div { padding: 10px 14px 11px; margin: -2px 0 0; border-radius: 16px; border: 1px solid transparent; transition: background-color 500ms, border-color 500ms; }
+#scanSteps li[data-on="true"] > div { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); }
+#scanSteps li strong { font-size: 17px; color: rgba(255,250,242,0.72); transition: color 400ms; }
+#scanSteps li[data-on="true"] strong, #scanSteps li[data-done="true"] strong { color: #fffaf2; }
+#scanSteps li > div > span { font-size: 14px; color: rgba(244,241,234,0.62); }
+.demo-phone .viewfinder::after { content: ""; position: absolute; inset: 0; z-index: 4; background: #fff; opacity: 0; pointer-events: none; }
+.demo-phone[data-phase="0"] .viewfinder::after { animation: scan-shutter 700ms ease-out 450ms both; }
+@keyframes scan-shutter { 0% { opacity: 0; } 12% { opacity: 0.85; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #scanSteps li[data-on="true"] i { animation: none; }
+  #scanSteps li[data-on="true"]:not(:last-child)::after { animation: none; transform: scaleY(1); }
+  .demo-phone[data-phase="0"] .viewfinder::after { animation: none; }
+}

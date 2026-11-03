@@ -67,16 +67,32 @@
 
 <section class="band" id="tasting">
   <div class="band-head"><div><span class="mono">In the glass</span><h2 class="d2" style="margin-top:10px">How it tastes, how to drink it, what it costs.</h2></div></div>
-  <div class="glass-grid glass-x">
-    <div class="verdict print-card no-print" id="printCard"><h3>Flavor fingerprint</h3>
-      <div class="print-body"><canvas class="print-wheel" aria-label="Flavor fingerprint"></canvas>
-        <div class="print-copy"><p class="big" data-print-line></p><p class="print-stat" data-print-stat></p><div class="print-notes" data-print-notes></div>
-          <dl class="print-meters"><div><dt>Body</dt><dd data-print-body></dd></div><div><dt>Finish</dt><dd data-print-finish></dd></div></dl>
-          <p class="print-key"><i class="pk-fill"></i>This bottle <i class="pk-dash"></i><span data-print-avg>Category average</span></p></div></div>
-      <div class="print-found"><span class="mono">In the note</span><div class="descriptors" id="descriptors"></div></div></div>
-    <div class="verdict serve-card"><h3>How to drink it</h3><p class="big" id="serveBig"></p><p id="serveNote"></p><div class="proof" id="proof" hidden></div></div>
-    <div class="verdict compass-card"><h3>Where it sits</h3><canvas class="compass-mini" id="compass" aria-label="Flavor compass with this bottle marked"></canvas><p>The black dot is this bottle, placed by its note. Faint dots are every other rating since 2022.</p><div class="kin" id="kin" hidden><span class="mono">Tastes closest to</span><ol></ol></div><a class="compass-map-link" id="flavorMapLink" href="flavor-map.html">See it on the flavor map</a></div>
-    <div class="verdict value-card"><div><h3>Value</h3><p class="big" id="valueBig"></p><p id="valueNote"></p></div><div class="value-plot"><canvas id="valuePlot" aria-label="Price against score for this category"></canvas><p class="value-key"><span class="vk-mine"><i class="vk-me"></i> This bottle</span><i class="vk-line"></i>Best score at each price</p><p id="ladderNote"></p></div></div>
+  <div class="gx">
+    <div class="gx-print no-print" id="printCard">
+      <div class="gx-wheel"><canvas class="print-wheel" aria-label="Flavor fingerprint"></canvas><div class="gx-labels" data-print-labels></div><div class="gx-readout" data-print-readout hidden></div></div>
+      <div class="gx-copy">
+        <span class="gx-kick">Flavor fingerprint</span>
+        <p class="gx-line" data-print-line></p>
+        <p class="gx-stat" data-print-stat></p>
+        <div class="gx-notes" data-print-notes></div>
+        <dl class="gx-meters"><div><dt>Body</dt><dd data-print-body></dd></div><div><dt>Finish</dt><dd data-print-finish></dd></div><div><dt>Strength</dt><dd data-print-abv></dd></div></dl>
+        <div class="gx-serve"><span class="gx-kick">How to drink it</span><p class="gx-serve-big" id="serveBig"></p><p class="gx-serve-note" id="serveNote"></p></div>
+        <p class="gx-key"><i class="gk-fill"></i>This bottle<i class="gk-dash"></i><span data-print-avg>Category average</span></p>
+      </div>
+      <div class="gx-found"><span class="gx-kick">In the note</span><div class="descriptors" id="descriptors"></div></div>
+    </div>
+    <div class="gx-card gx-where">
+      <div class="gx-head"><span class="gx-kick">Where it sits</span><a class="gx-link" id="flavorMapLink" href="flavor-map.html">Open the flavor map</a></div>
+      <div class="gx-map" id="whereMap" hidden><canvas aria-label="This bottle among every rating on the flavor map"></canvas><div class="gx-rim" data-rim></div><span class="gx-hub">Balanced</span></div>
+      <div class="kin" id="kin" hidden><span class="gx-kick">Tastes closest to</span><ol></ol></div>
+    </div>
+    <div class="gx-card gx-value value-card">
+      <div class="gx-head"><span class="gx-kick">Value</span></div>
+      <p class="gx-big" id="valueBig"></p><p class="gx-note" id="valueNote"></p>
+      <div class="gx-plot" id="valuePlot"><canvas class="vp-gl"></canvas><canvas class="vp-ink" aria-label="Price against score for this category"></canvas></div>
+      <p class="gx-key gx-key-value"><span class="vk-mine"><i class="vk-me"></i>This bottle</span><i class="vk-line"></i>Best score at each price<i class="vk-cloud"></i>Where the category clusters</p>
+      <p class="gx-note" id="ladderNote"></p>
+    </div>
   </div>
   <p class="scale-note" id="scaleNote" hidden></p>
 </section>
@@ -194,32 +210,29 @@ WA.ready(function (recent) { WA.archive(function (data) {
   // The flavor compass, with a card for the bottle under the pointer.
   var compassRes = null, kinSlugs = {}, glassSeen = false, valuePts = null;
   function compass(r) {
-    var c = document.getElementById("compass"), res = compassRes = WA.drawCompass(c, data.filter(function (x) { return x.d >= "2022" || x === r || (x.slug && (x.slug === r.slug || kinSlugs[x.slug])); }), r);
+    var c = document.getElementById("compass"); if (!c) return;
+    var res = compassRes = WA.drawCompass(c, data.filter(function (x) { return x.d >= "2022" || x === r || (x.slug && (x.slug === r.slug || kinSlugs[x.slug])); }), r);
     if (WA.canvasTips) WA.canvasTips(c, function () { return res.points; }, function (x) { var me = x === r || (x.slug && x.slug === r.slug); return "<strong>" + (me ? "This bottle · " : "") + x.s + " points</strong>" + (x.p ? " · " + fmt(x.p) : "") + "<br>" + x.n + '<span class="ctip-sub">' + x.c + "</span>"; }, function (x) { return x === r || !x.slug || x.slug === r.slug ? null : WA.bottleHref(x); });
   }
-  // A bottle from "Tastes closest to" is ringed on the compass, with a line back to this one.
-  function markKin(x) {
-    if (!cur) return; compass(cur);
-    if (!x || !compassRes) return;
-    var p = compassRes.points.filter(function (q) { return q.r === x; })[0], me = compassRes.points.filter(function (q) { return q.r === cur || (q.r.slug && q.r.slug === cur.slug); })[0], g = document.getElementById("compass").getContext("2d");
-    if (!p) return;
-    if (me) { g.beginPath(); g.moveTo(me.x, me.y); g.lineTo(p.x, p.y); g.setLineDash([3, 3]); g.strokeStyle = "rgba(201,115,29,0.8)"; g.lineWidth = 1.2; g.stroke(); g.setLineDash([]); }
-    g.beginPath(); g.arc(p.x, p.y, 6, 0, Math.PI * 2); g.fillStyle = "#c9731d"; g.fill(); g.beginPath(); g.arc(p.x, p.y, 10, 0, Math.PI * 2); g.strokeStyle = "rgba(201,115,29,0.6)"; g.lineWidth = 1.5; g.stroke();
-  }
-  // The fingerprint, closest bottles and strength gauge; flavor profiles load once the band is near the screen.
+  var where = null;
   function inGlass(r) {
     if (!window.WAGlass) return;
-    WAGlass.proof(document.getElementById("proof"), r.a);
-    function go() { WAGlass.load(function (st) { if (!st || cur !== r) return; WAGlass.fingerprint(document.getElementById("printCard"), r, data); kinSlugs = {}; (WAGlass.kin(document.getElementById("kin"), r, data, markKin) || []).forEach(function (x) { kinSlugs[x.slug] = true; }); compass(r); }); }
+    function go() { WAGlass.load(function (st) {
+      if (!st || cur !== r) return;
+      WAGlass.fingerprint(document.getElementById("printCard"), r, data);
+      var kinList = WAGlass.kin(document.getElementById("kin"), r, data, function (x) { if (where) where.highlight(x); });
+      where = WAGlass.whereMap(document.getElementById("whereMap"), r, data, kinList);
+    }); }
     if (glassSeen) return go();
     var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); glassSeen = true; go(); } }, { rootMargin: "600px 0px" });
     io.observe(document.getElementById("tasting"));
   }
   function plotValue(r) {
-    var c = document.getElementById("valuePlot"); if (!c || !window.WAGlass) return;
-    c.closest(".value-card").classList.toggle("no-price", !(r.p > 0));
-    valuePts = WAGlass.valuePlot(c, r, data);
-    if (valuePts && WA.canvasTips) WA.canvasTips(c, function () { return valuePts; }, function (x) { return "<strong>" + (x.slug === r.slug ? "This bottle · " : "") + x.s + " points · " + fmt(x.p) + "</strong><br>" + x.n; }, function (x) { return x.slug === r.slug ? null : WA.bottleHref(x); });
+    var wrap = document.getElementById("valuePlot"); if (!wrap || !window.WAGlass) return;
+    wrap.closest(".value-card").classList.toggle("no-price", !(r.p > 0));
+    valuePts = WAGlass.valuePlot(wrap, r, data);
+    var over = wrap.querySelector(".vp-ink");
+    if (valuePts && WA.canvasTips) WA.canvasTips(over, function () { return valuePts; }, function (x) { return "<strong>" + (x.slug === r.slug ? "This bottle · " : "") + x.s + " points · " + fmt(x.p) + "</strong><br>" + x.n; }, function (x) { return x.slug === r.slug ? null : WA.bottleHref(x); });
   }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
   function filmFor(entry) {
@@ -410,7 +423,7 @@ WA.ready(function (recent) { WA.archive(function (data) {
   }
   addEventListener("scroll", markNav, { passive: true }); markNav();
   if (window.ResizeObserver) new ResizeObserver(function () { markNav(); }).observe(document.body);
-  addEventListener("hashchange", show); addEventListener("resize", function () { if (!cur) return; compass(cur); plotValue(cur); var pc = document.getElementById("printCard"); if (pc && pc._redraw) pc._redraw(); });
+  addEventListener("hashchange", show); addEventListener("resize", function () { if (!cur) return; compass(cur); plotValue(cur); var pc = document.getElementById("printCard"); if (pc && pc._redraw) pc._redraw(); if (where) where.redraw(); });
   if (!/^t20-/.test(WA.hashSlug() || "")) show();
 }); });
 </script>

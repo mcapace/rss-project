@@ -34,11 +34,30 @@
   var ENT = document.createElement("textarea");
   function unentText(v) { if (typeof v !== "string" || v.indexOf("&") < 0) return v; ENT.innerHTML = v; return ENT.value; }
   function unent(o) { if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) o[i] = typeof o[i] === "string" ? unentText(o[i]) : unent(o[i]); } else if (o && typeof o === "object") { for (var k in o) o[k] = typeof o[k] === "string" ? unentText(o[k]) : unent(o[k]); } return o; }
-  function loaded(cb) {
+  /* early(DATA) runs as soon as data.json is in; late(DATA), when given, once the takedown list has settled (below),
+     with the removed ratings gone. DATA itself loses them then either way, for lookups made later. */
+  function loaded(early, late) {
     var el = document.getElementById("data");
-    if (el) { DATA = JSON.parse(el.textContent); cb(DATA); return; }
-    json("data.json").then(function (d) { DATA = unent(d); cb(DATA); }).catch(dataError);
+    (el ? Promise.resolve(JSON.parse(el.textContent)) : json("data.json").then(unent)).then(function (d) {
+      DATA = d;
+      var gone = new Promise(ratingsGone).then(function (set) { if (DATA === d) DATA = dropRatings(d, set); return DATA; });
+      early(DATA);
+      if (late) return gone.then(late);
+    }).catch(dataError);
   }
+  /* Ratings taken down since the export (2026-11-03): /api/wa/latest's removedRatings names the slugs ratings.json and
+     data.json still carry whose documents are no longer live. A page that renders ratings (its WA.ready callback takes
+     the data) and the archive wait for it before they use them; every other page starts at once. The wait is capped
+     (RATINGS_WAIT_MS) so a slow route never holds a page long; a failure or a timeout keeps every rating, as before
+     the list existed, and DATA still drops them once the list arrives. */
+  var RATINGS_WAIT_MS = 1500;
+  function slugSet(list) { var set = {}; (list || []).forEach(function (s) { set[String(s).toLowerCase()] = 1; }); return set; }
+  function ratingsGone(cb) {
+    var settled = false, timer = setTimeout(function () { finish(null); }, RATINGS_WAIT_MS);
+    function finish(d) { if (settled) return; settled = true; clearTimeout(timer); cb(slugSet(d && d.removedRatings)); }
+    live().then(finish, function () { finish(null); });
+  }
+  function dropRatings(rows, gone) { return Array.isArray(rows) ? rows.filter(function (r) { return !(r && r.slug && gone[String(r.slug).toLowerCase()]); }) : rows; }
 
   /* Entrance, home only: a quiet loader, then a layered scene with a WebGL whisky field under it.
      The scene plays itself in for the first moments and then belongs to the scroll. */
@@ -155,26 +174,33 @@
   var STORY_ARCHIVE = null, STORY_ARCHIVE_WAIT = null, STORIES_WAIT = null;
   function stories(cb, opts) {
     var all = opts && opts.all;
-    function done() { if (!all) return cb(STORIES); if (STORY_ARCHIVE) return cb(STORIES.concat(STORY_ARCHIVE)); if (!STORY_ARCHIVE_WAIT) STORY_ARCHIVE_WAIT = json("stories-archive.json").then(function (d) { STORY_ARCHIVE = d; return d; }); STORY_ARCHIVE_WAIT.then(function () { cb(STORIES.concat(STORY_ARCHIVE)); }).catch(dataError); }
+    function done() { if (!all) return cb(STORIES); if (STORY_ARCHIVE) return cb(STORIES.concat(STORY_ARCHIVE)); if (!STORY_ARCHIVE_WAIT) STORY_ARCHIVE_WAIT = Promise.all([json("stories-archive.json"), live()]).then(function (x) { STORY_ARCHIVE = dropTaken(x[0], x[1]); return STORY_ARCHIVE; }); STORY_ARCHIVE_WAIT.then(function () { cb(STORIES.concat(STORY_ARCHIVE)); }).catch(dataError); }
     if (STORIES) return done();
     if (!STORIES_WAIT) STORIES_WAIT = Promise.all([json("stories.json"), live()]).then(function (x) { STORIES = mergeLive(x[0], x[1]); return STORIES; });
     STORIES_WAIT.then(done).catch(dataError);
   }
   /* Stories published from the CMS (2026-11-03): /api/wa/latest has the ones the static export has not caught up with,
      in the same shape, and the slugs taken down since. They are merged over the index (the live copy wins), so a new
-     story is on the home page and in the lists within about a minute of publishing. A failure leaves the static index. */
+     story is on the home page and in the lists within about a minute of publishing. The removed slugs come off the
+     archive too (dropTaken), so the header search, story lookups and related lists never show a story taken down after
+     the export. A failure leaves the static index. */
   var LIVE_URL = (location.hostname === "localhost" || /claude\.ai|claudeusercontent/.test(location.hostname) || location.protocol === "file:") ? "https://rss-project-ten.vercel.app/api/wa/latest" : "/api/wa/latest";
   var LIVE = null;
   function live() {
-    if (!LIVE) LIVE = fetch(LIVE_URL, { signal: AbortSignal.timeout(8000) }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) { return d && Array.isArray(d.stories) ? d : { stories: [], removed: [], sponsored: [] }; });
+    if (!LIVE) LIVE = fetch(LIVE_URL, { signal: AbortSignal.timeout(8000) }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) { d = d && Array.isArray(d.stories) ? d : { stories: [], removed: [], removedRatings: [], sponsored: [] }; if (!Array.isArray(d.removed)) d.removed = []; if (!Array.isArray(d.removedRatings)) d.removedRatings = []; return d; });
     return LIVE;
   }
   function mergeLive(list, fresh) {
-    var gone = {}, seen = {};
-    (fresh.removed || []).forEach(function (s) { gone[String(s).toLowerCase()] = 1; });
+    var gone = slugSet(fresh.removed), seen = {};
     fresh.stories.forEach(function (s) { seen[s.slug.toLowerCase()] = 1; });
     var kept = list.filter(function (s) { var k = s.slug.toLowerCase(); return !gone[k] && !seen[k]; });
     return fresh.stories.filter(function (s) { return !gone[s.slug.toLowerCase()]; }).concat(kept).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
+  }
+  // The archive without the removed slugs and without the stories the live list carries (its copy wins, in STORIES).
+  function dropTaken(list, fresh) {
+    var drop = slugSet(fresh.removed);
+    fresh.stories.forEach(function (s) { drop[s.slug.toLowerCase()] = 1; });
+    return (list || []).filter(function (s) { return !drop[String(s.slug).toLowerCase()]; });
   }
   WA.liveStories = live;
   function storyBySlug(slug, cb) { stories(function (recent) { var k = String(slug).toLowerCase(), hit = recent.filter(function (s) { return s.slug.toLowerCase() === k; })[0]; if (hit) return cb(hit, recent); stories(function (all) { cb(all.filter(function (s) { return s.slug.toLowerCase() === k; })[0] || null, all); }, { all: true }); }); }
@@ -201,8 +227,9 @@
   var ARCHIVE = null, NOTES = {};
   function archive(cb) {
     if (ARCHIVE) return cb(ARCHIVE);
-    json("ratings.json").then(function (d) {
-      ARCHIVE = d.rows.map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = typeof row[i] === "string" && row[i].indexOf("&") >= 0 ? unentText(row[i]) : row[i]; }); o.t = ""; return o; });
+    Promise.all([json("ratings.json"), new Promise(ratingsGone)]).then(function (x) {
+      var d = x[0], at = d.cols.indexOf("slug"), gone = x[1];
+      ARCHIVE = d.rows.filter(function (row) { return !gone[String(row[at]).toLowerCase()]; }).map(function (row) { var o = {}; d.cols.forEach(function (c, i) { o[c] = typeof row[i] === "string" && row[i].indexOf("&") >= 0 ? unentText(row[i]) : row[i]; }); o.t = ""; return o; });
       ARCHIVE.words = d.words || []; window.WA.WORDS = ARCHIVE.words;
       var bySlug = {}; ARCHIVE.forEach(function (r) { bySlug[r.slug.toLowerCase()] = r; });
       ARCHIVE.bySlug = bySlug; DATA = ARCHIVE; cb(ARCHIVE);
@@ -422,7 +449,11 @@ window.WA.shop = shop; window.WA.productFor = productFor; window.WA.buyHref = bu
   window.WA.hashIndex = function () { var h = (location.hash || "").replace("#", ""); var i = parseInt(h, 10); return isNaN(i) ? null : i; };
   window.WA.hashName = function () { if (window.WA_PRODUCER) return window.WA_PRODUCER; var h = (location.hash || "").replace("#", ""); return h ? decodeURIComponent(h) : null; };
 
-  window.WA.ready = function (cb) { loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastPour(); mastState(); ambient(); parallax(); cb(d); }); };
+  // The page's chrome never waits on the takedown list; a callback that takes the ratings (cb.length) does, capped.
+  window.WA.ready = function (cb) {
+    var takes = cb.length > 0;
+    loaded(function (d) { entrance(); askBar(); reveal(); transitions(); mastPour(); mastState(); ambient(); parallax(); if (!takes) cb(d); }, takes ? cb : null);
+  };
 })();
 
 /* Newsletter sign-up: every form on the site posts to the site's own route, which writes to Braze. */

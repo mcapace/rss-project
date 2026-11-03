@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Export every published Whisky Advocate article from the CMS into the static site's
 stories.json and articles/<shard>.json. Runs SQL through the Supabase management API
-(the session proxy adds the credential; nothing is stored here)."""
+(the session proxy adds the credential; nothing is stored here).
+
+Only live stories are exported: published, and published_at empty (imported stories) or already past, the rule in
+src/lib/wa/live.ts. A scheduled story (published with a time still ahead) joins the static index only on the first
+export after its time; until then it is on no public surface."""
 import json, re, sys, os, html, datetime, urllib.request
 from collections import Counter, defaultdict
 REF = "itludqxofwurjwtbgkcl"; WEB = sys.argv[1] if len(sys.argv) > 1 else "/tmp/ga/web"
@@ -27,7 +31,7 @@ else:
         page = q(f"""select id, slug, title, byline, excerpt, body_html, metadata->'seo'->>'description' as seo, metadata->'seo'->'previous'->>'description' as seo_prev, (metadata->'seo') ? 'previous' as seo_replaced, metadata->'sponsored' as sponsored, metadata->'categories' as cats, metadata->'tags' as tags, metadata->'ai_tags' as ai_tags, metadata->>'ai_summary' as ai_summary, metadata->'ai_search' as ai_search,
           metadata->'legacy_dates'->>'published_date' as d, metadata->'legacy_media'->>'thumb_file' as thumb, metadata->'legacy_media'->>'banner' as banner,
           metadata->'lead_image' as lead, (select min(i.n - 1) from jsonb_array_elements(case when jsonb_typeof(metadata->'media') = 'array' then metadata->'media' else '[]'::jsonb end) with ordinality as i(m, n) where i.m->>'is_lead' = 'true') as lead_index
-          from cms_documents where brand='wa' and kind in ('article','legacy_record') and publication_state='published' and slug is not null order by id limit 120 offset {off}""")
+          from cms_documents where brand='wa' and kind in ('article','legacy_record') and publication_state='published' and (published_at is null or published_at <= now()) and slug is not null order by id limit 120 offset {off}""")
         rows += page; off += 120; print("fetched", len(rows), file=sys.stderr)
         if len(page) < 120: break
     if CACHE: json.dump(rows, open(CACHE, "w"))

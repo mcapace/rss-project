@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * public/wa/flavor.json: every published rating's flavor profile (metadata.flavor, from wa-flavor-profiles.ts)
+ * public/wa/flavor.json: every live rating's flavor profile (published, and published_at empty or past) (metadata.flavor, from wa-flavor-profiles.ts)
  * in a compact form, with a 2D position from UMAP over the profiles so bottles that taste alike sit together.
  * The flavor map draws it; rating pages read a bottle's own row. Seeded, so the layout is stable between runs.
  *
@@ -12,6 +12,7 @@
 import { writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { UMAP } from "umap-js";
+import { liveFilter } from "../src/lib/wa/live";
 import { connectReader } from "./lib/target";
 
 const AXES = ["smoke", "maritime", "sweet", "fresh_fruit", "dried_fruit", "tropical", "floral", "spice", "oak", "grain", "nutty", "herbal"] as const;
@@ -25,10 +26,12 @@ export const encodeFlavor = (f: Flavor) => [...AXES.map(a => f.axes?.[a] ?? 0), 
 async function main() {
   const { values } = parseArgs({ options: { out: { type: "string", default: "public/wa/flavor.json" } }, strict: true });
   const db = connectReader();
+  // Live ratings only (src/lib/wa/live.ts): a scheduled rating stays out of the public file until its time has come.
+  const startedAt = Date.now();
   const rows: { slug: string; flavor: Flavor }[] = [];
   let after = "00000000-0000-0000-0000-000000000000";
   for (;;) {
-    const { data, error } = await db.from("cms_documents").select("id,slug,flavor:metadata->flavor").eq("brand", "wa").eq("kind", "rating").eq("publication_state", "published").not("metadata->flavor", "is", null).gt("id", after).order("id").limit(1000);
+    const { data, error } = await db.from("cms_documents").select("id,slug,flavor:metadata->flavor").eq("brand", "wa").eq("kind", "rating").eq("publication_state", "published").or(liveFilter(startedAt)).not("metadata->flavor", "is", null).gt("id", after).order("id").limit(1000);
     if (error) throw new Error(error.message);
     if (!data?.length) break;
     after = data[data.length - 1].id;

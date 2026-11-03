@@ -3233,3 +3233,8 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 
 /* Stories page: once a tag, byline or section has rendered, an empty list (all of its stories fit in the three picks) takes no room (2026-11-03). */
 #list[data-done]:empty { display: none; }
+
+/* Stories page, tag and byline pages (2026-11-03): one or two picks keep the width of a three-across card instead of stretching, and the story count line. */
+.picks3.few { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.tag-count { margin: 0; font-size: 14px; }
+.tag-count a { text-decoration: underline; text-underline-offset: 3px; }

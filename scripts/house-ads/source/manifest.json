@@ -144,40 +144,40 @@
   "at": "2026-11-03T02:57:45.452Z"
  },
  "cocktails-wide": {
-  "hash": "7df9ba708a5c",
+  "hash": "9ac3bde25885",
   "prompts": {
-   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
-   "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe. Slow, seamless, cinematic; no cuts, no text, no new objects."
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A finished amber stirred cocktail in a chilled cut-crystal coupe with a curl of orange peel on its rim, on a dark marble bar; just behind it a cut-crystal mixing glass full of clear ice with a long copper bar spoon standing still inside the glass, its bowl below the ice; no hands, no people. The subject sits in the right third of the frame; the left two thirds fall away into soft dark negative space.",
+   "motion": "Only the camera moves, a very slow push-in toward the coupe. Everything on the bar stays perfectly still and keeps its exact shape: the spoon stays inside the mixing glass, the liquid keeps its color. A faint chill mist drifts off the coupe and soft glints of light travel across the crystal. Slow, seamless, cinematic; no cuts, no text, no new objects."
   },
   "tasks": {
-   "still": "f5ccac49-e49a-4bfe-b8da-82931d608618",
-   "loop": "5d7a0862-b25e-4591-a6ca-b24684377fc5"
+   "still": "3de76362-26ec-46dd-996c-afb902560e9b",
+   "loop": "0c75fe1e-0f89-435f-9d6d-5b82d57fb131"
   },
-  "at": "2026-11-03T02:58:10.623Z"
+  "at": "2026-11-03T17:44:38.500Z"
  },
  "cocktails-portrait": {
-  "hash": "f4257ba519fc",
+  "hash": "ad5027a093ca",
   "prompts": {
-   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
-   "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe. Slow, seamless, cinematic; no cuts, no text, no new objects."
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A finished amber stirred cocktail in a chilled cut-crystal coupe with a curl of orange peel on its rim, on a dark marble bar; just behind it a cut-crystal mixing glass full of clear ice with a long copper bar spoon standing still inside the glass, its bowl below the ice; no hands, no people. The subject sits in the lower half of the frame; the upper half falls away into soft dark negative space.",
+   "motion": "Only the camera moves, a very slow push-in toward the coupe. Everything on the bar stays perfectly still and keeps its exact shape: the spoon stays inside the mixing glass, the liquid keeps its color. Soft glints of light travel across the crystal. No mist, no smoke, no particles, nothing falling. Slow, seamless, cinematic; no cuts, no text, no new objects."
   },
   "tasks": {
-   "still": "2378eaae-91b0-4751-929b-a3868d4780d2",
-   "loop": "8dc7043f-029d-4a68-b1e5-cba7ddca13d9"
+   "still": "d4cc73cb-6208-4ae5-a49e-9e413a18b8ba",
+   "loop": "a9aef4cc-e299-4037-b3cd-c5e086950125"
   },
-  "at": "2026-11-03T02:58:34.609Z"
+  "at": "2026-11-03T17:46:08.309Z"
  },
  "cocktails-rect": {
-  "hash": "6f1dc7a6edd2",
+  "hash": "08de55f5d839",
   "prompts": {
-   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A bartender's hands, no face, stirring an amber stirred cocktail with a long copper bar spoon in a cut-crystal mixing glass full of clear ice, a chilled coupe and a twist of orange peel beside it on a dark marble bar. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
-   "motion": "The spoon stirs smoothly; the ice turns and catches the light; a faint chill mist drifts off the coupe. Slow, seamless, cinematic; no cuts, no text, no new objects."
+   "still": "Editorial still-life photograph for Whisky Advocate magazine. Warm amber key light, deep ink-black shadows, cream highlights, shallow depth of field, fine 35mm film grain, rich but natural colour, no text, no lettering, no logos, no labels on bottles, no faces. A finished amber stirred cocktail in a chilled cut-crystal coupe with a curl of orange peel on its rim, on a dark marble bar; just behind it a cut-crystal mixing glass full of clear ice with a long copper bar spoon standing still inside the glass, its bowl below the ice; no hands, no people. The subject sits in the right half of the frame; the left side falls away into soft dark negative space.",
+   "motion": "Only the camera moves, a very slow push-in toward the coupe. Everything on the bar stays perfectly still and keeps its exact shape: the spoon stays inside the mixing glass, the liquid keeps its color. A faint chill mist drifts off the coupe and soft glints of light travel across the crystal. Slow, seamless, cinematic; no cuts, no text, no new objects."
   },
   "tasks": {
-   "still": "a99c36f5-0d70-474b-b5fc-a7bc680d68b4",
-   "loop": "ccd8114c-81e1-4b5a-9bac-c812008b6470"
+   "still": "78fc5179-f51c-4087-b3b4-111b2e3fb51b",
+   "loop": "7874c74c-3f11-4c16-87eb-f0685d9df295"
   },
-  "at": "2026-11-03T02:58:55.349Z"
+  "at": "2026-11-03T17:43:56.770Z"
  },
  "podcast-wide": {
   "hash": "4c76aa1008db",

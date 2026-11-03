@@ -134,8 +134,8 @@ All of these are route handlers under `src/app/wa` and `src/app`, built from the
 | `/wa/sitemap-stories.xml` | Every published story and page at `/wa/<slug>`, with its lead picture (image sitemap) | 1 hour, swr 1 day |
 | `/wa/sitemap-ratings.xml` | Every published rating at `/wa/<slug>`, with last modified | 1 hour, swr 1 day |
 | `/wa/sitemap-pages.xml` | The section pages (`SECTION_PAGES`) | 1 day |
-| `/wa/news-sitemap.xml` | Google News: editorial stories from the last two days, publication named Whisky Advocate, never paid content | 5 minutes, swr 15 minutes |
-| `/wa/feed.xml` | RSS 2.0: the 50 newest editorial stories with summary, author, section and lead picture | 10 minutes, swr 1 hour |
+| `/wa/news-sitemap.xml` | Google News: editorial stories from the last two days, publication named Whisky Advocate, never paid content | 1 minute, swr 1 minute |
+| `/wa/feed.xml` | RSS 2.0: the 50 newest editorial stories with summary, author, section and lead picture | 1 minute, swr 1 minute |
 | `/robots.txt` | Allows search engines and AI answer engines that cite their sources; disallows training-only crawlers (`GPTBot`, `CCBot`, `Google-Extended`, `ClaudeBot` and others) and the private paths (`/cms`, `/admin`, `/api/`, ...); lists both sitemaps | 1 hour |
 | `/llms.txt` | A plain map of the site for AI assistants, with the newest stories | |
 

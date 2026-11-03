@@ -159,9 +159,6 @@ if(AD.kind!=="mini"){
     var showC=function(){w.innerHTML='<span class="k">On the list</span><b>'+esc(C[ci++%C.length])+'</b>';}; showC(); swap=showC;
   }else if(AD.widget==="wave"&&AD.kind!=="strip"){
     w.className="chip wave"; var bars="";for(var i=0;i<(big?22:12);i++)bars+='<span style="animation-delay:-'+(i*137%900)/1000+'s;animation-duration:'+(0.7+(i*53%60)/100)+'s"></span>';w.innerHTML=bars;
-  }else if(AD.widget==="cover"){
-    w.className="cover"; w.innerHTML='<div class="sheet"><img src="cover.jpg" alt="The Whisky Advocate magazine"></div>';
-    if(!still)setTimeout(function(){var sh=w.querySelector(".sheet");if(sh)sh.classList.add("gloss");},600);
   }
 }
 if(w.className==="chip tick"&&AD.kind==="halfpage"){w.style.minHeight="64px";}

@@ -8,7 +8,7 @@ export const STORY_KINDS = ["article", "legacy_record", "page", "collection_entr
 export const XML = { "Content-Type": "application/xml; charset=utf-8" };
 export const TEXT = { "Content-Type": "text/plain; charset=utf-8" };
 export const HOURLY = "public, s-maxage=3600, stale-while-revalidate=86400";
-export const NEWS_CACHE = "public, s-maxage=300, stale-while-revalidate=900";
+export const NEWS_CACHE = "public, s-maxage=60, stale-while-revalidate=60";
 
 /** The site's own section pages, in the sitemap beside the stories and ratings. */
 export const SECTION_PAGES = ["", "stories.html", "stories.html#news", "finder.html", "guides.html", "cocktails.html", "travel.html", "top20.html", "video.html", "producers.html", "ninety.html", "tools.html", "newsletter.html", "industry.html", "retailers.html", "retailer-club.html", "about.html", "contact.html", "app.html"].filter(p => !p.includes("#"));

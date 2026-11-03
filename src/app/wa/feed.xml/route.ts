@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       return `<item><title>${xmlEsc(d.title)}</title><link>${xmlEsc(link)}</link><guid isPermaLink="true">${xmlEsc(link)}</guid><pubDate>${rfc822(docDates(d).published)}</pubDate>${d.byline ? `<dc:creator>${xmlEsc(d.byline)}</dc:creator>` : ""}${cats.map(c => `<category>${xmlEsc(c)}</category>`).join("")}<description>${xmlEsc(summary)}</description>${hero ? `<media:content url="${xmlEsc(hero)}" medium="image"/>` : ""}</item>`;
     });
     const body = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>${PUBLISHER}</title><link>${origin}${BASE}/</link><atom:link href="${origin}${BASE}/feed.xml" rel="self" type="application/rss+xml"/><description>Whisky ratings, news, guides and stories from ${PUBLISHER}.</description><language>en-us</language><lastBuildDate>${new Date().toUTCString()}</lastBuildDate>\n${items.join("\n")}\n</channel></rss>\n`;
-    return new Response(body, { headers: { "Content-Type": "application/rss+xml; charset=utf-8", "Cache-Control": "public, s-maxage=600, stale-while-revalidate=3600" } });
+    return new Response(body, { headers: { "Content-Type": "application/rss+xml; charset=utf-8", "Cache-Control": "public, s-maxage=60, stale-while-revalidate=60" } });
   } catch (error) {
     console.error("[wa/feed]", error instanceof Error ? error.message : error);
     return new Response("Feed unavailable", { status: 503, headers: { "Retry-After": "120", "Cache-Control": "no-store" } });

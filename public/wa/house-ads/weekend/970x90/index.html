@@ -22,7 +22,8 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .film:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none}
 .grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.10;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
 .mark{display:block;color:var(--cream);width:100%;height:auto}
-.mark.ca{font:500 11px/1 M,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--cream)}
+.mark.ca{width:100%;height:auto}
+.billboard .ca-brand{width:150px}.halfpage .ca-brand{width:150px}.rect .ca-brand{width:112px}
 .brand{position:absolute;z-index:5}
 .eyebrow{font:400 10px/1.2 M,ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lines{position:relative;z-index:5}
@@ -106,9 +107,7 @@ body{font-family:A,"Helvetica Neue",Arial,sans-serif;color:var(--cream);-webkit-
 .mini .lines p{font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mini .cta{grid-column:3;height:28px;padding:0 12px;font-size:12px}
 #widget:empty{display:none}
-.strip .brand.ca-brand,.mini .brand.ca-brand{width:auto}
-.strip .mark.ca{font-size:11px;letter-spacing:.14em}
-.mini .mark.ca{font-size:8px;letter-spacing:.1em;line-height:1.15}
+.strip .brand.ca-brand{width:116px}.mini .brand.ca-brand{width:76px}
 .strip .cover{position:relative;grid-column:4;grid-row:1/-1;width:58px;height:76px}
 @media (prefers-reduced-motion:reduce){.lines p,.tick b,.film video{transition:none!important;filter:none!important}.wave span{animation:none}}
 </style></head>
@@ -179,9 +178,6 @@ if(AD.kind!=="mini"){
     var showC=function(){w.innerHTML='<span class="k">On the list</span><b>'+esc(C[ci++%C.length])+'</b>';}; showC(); swap=showC;
   }else if(AD.widget==="wave"&&AD.kind!=="strip"){
     w.className="chip wave"; var bars="";for(var i=0;i<(big?22:12);i++)bars+='<span style="animation-delay:-'+(i*137%900)/1000+'s;animation-duration:'+(0.7+(i*53%60)/100)+'s"></span>';w.innerHTML=bars;
-  }else if(AD.widget==="cover"){
-    w.className="cover"; w.innerHTML='<div class="sheet"><img src="cover.jpg" alt="The Whisky Advocate magazine"></div>';
-    if(!still)setTimeout(function(){var sh=w.querySelector(".sheet");if(sh)sh.classList.add("gloss");},600);
   }
 }
 if(w.className==="chip tick"&&AD.kind==="halfpage"){w.style.minHeight="64px";}

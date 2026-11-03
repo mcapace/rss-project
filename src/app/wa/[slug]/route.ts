@@ -25,14 +25,14 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: s
     const html = await exportedPage(slug, origin);
     return new NextResponse(html || notFoundPage(origin, slug), { status: html ? 200 : 404, headers: { ...HTML, "Cache-Control": CACHE } });
   }
-  if (!slug || slug.length > 300 || /[\s<>"]/.test(slug)) return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=300" } });
+  if (!slug || slug.length > 300 || /[\s<>"]/.test(slug)) return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=60" } });
 
   let doc;
   try { doc = await loadDoc(slug); } catch (error) {
     console.error("[wa/slug]", error instanceof Error ? error.message : error);
     return new NextResponse(notFoundPage(origin, slug), { status: 503, headers: { ...HTML, "Retry-After": "60", "Cache-Control": "no-store" } });
   }
-  if (!doc) return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=300" } });
+  if (!doc) return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=60" } });
 
   // One URL per document: a differently capitalized request goes to the canonical slug.
   if (doc.slug !== slug) return NextResponse.redirect(new URL(`${BASE}/${encodeURIComponent(doc.slug)}`, request.url), 301);
@@ -50,5 +50,5 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: s
   if (PAGE_KINDS.has(doc.kind)) {
     return new NextResponse(renderStory(await template("story.html"), storyView(doc, origin), origin), { headers: { ...HTML, "Cache-Control": CACHE } });
   }
-  return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=300" } });
+  return new NextResponse(notFoundPage(origin, slug), { status: 404, headers: { ...HTML, "Cache-Control": "public, s-maxage=60" } });
 }

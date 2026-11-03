@@ -9,7 +9,11 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     // The Whisky Advocate concept site is static files under public/wa; the folder itself opens its home page.
-    return [{ source: "/wa", destination: "/wa/index.html", permanent: false }];
+    // /wa/house-ads would otherwise reach the /wa/[slug] story route.
+    return [
+      { source: "/wa", destination: "/wa/index.html", permanent: false },
+      { source: "/wa/house-ads", destination: "/wa/house-ads/index.html", permanent: false },
+    ];
   },
 };
 

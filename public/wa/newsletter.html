@@ -23,6 +23,9 @@
 <section class="band" style="padding-top: 28px">
   <div class="chan-head"><h1 class="d1">Newsletters</h1><p class="muted" style="margin-top:8px;max-width:56ch">Four letters from the editors. Pick the ones you want, and they arrive from Whisky Advocate, never from anyone else.</p></div>
   <form class="nl" id="nlForm" novalidate>
+    <div class="nl-fields nl-email glass">
+        <label class="wide"><span>Email</span><input name="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-describedby="nlStatus"></label>
+    </div>
     <div class="nl-lists" role="group" aria-label="Newsletters">
       <label class="nl-card" data-list="notes"><input type="checkbox" name="lists" value="notes" checked><span class="nl-check"></span><span class="nl-art nl-art-notes"></span><span class="nl-body"><span class="mono">Twice a month</span><strong>WhiskyNotes</strong><span>The latest releases, the newest ratings and what the editors are drinking.</span><a href="https://assets.winespectator.com/newsletters/images/WhiskyNotesSample.pdf" target="_blank" rel="noopener">See a sample</a></span></label>
       <label class="nl-card" data-list="weekend"><input type="checkbox" name="lists" value="weekend" checked><span class="nl-check"></span><span class="nl-art nl-art-weekend"></span><span class="nl-body"><span class="mono">Fridays</span><strong>Whisky Weekend</strong><span>The editors' roundup of the week's new releases, in time for the weekend.</span></span></label>
@@ -30,7 +33,6 @@
       <label class="nl-card" data-list="offers"><input type="checkbox" name="lists" value="offers"><span class="nl-check"></span><span class="nl-art nl-art-offers"></span><span class="nl-body"><span class="mono">As needed</span><strong>Offers &amp; Promotions</strong><span>WhiskyFest announcements, new products and offers from selected partners.</span></span></label>
     </div>
     <div class="nl-fields glass">
-      <label class="wide"><span>Email</span><input name="email" type="email" required autocomplete="email" placeholder="you@example.com" aria-describedby="nlStatus"></label>
       <label><span>ZIP or postal code (optional)</span><input name="zip" inputmode="numeric" autocomplete="postal-code"></label>
       <label><span>Industry (optional)</span><select name="industry"><option value="">Just a whisky lover</option><option>Consumer</option><option>Importer</option><option>Distiller</option><option>Wine/Spirits Distributor</option><option>Independent Retailer (Wine/Spirits/Beer)</option><option>Chain Retailer (Wine/Spirits/Beer)</option><option>Restaurant</option><option>Bar</option><option>Hotel</option><option>Club (Private, Country)</option><option>Duty Free Operator</option><option>Media/PR</option><option>Finance</option><option>Winery</option><option>Brewer</option><option>Beer Distributor</option><option>Cigar Retailer</option><option>Cigar Distributor</option><option>Cigar Manufacturer</option><option>Other</option></select></label>
       <label class="wide nl-consent"><input type="checkbox" name="eu"><span>EU residents: tick this box to receive media from M. Shanken. You can unsubscribe at any time from the link in the footer of every email.</span></label>

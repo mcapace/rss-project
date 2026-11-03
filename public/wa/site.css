@@ -2517,3 +2517,6 @@ main { min-height: 100vh; min-height: 100dvh; }
   .scale-labels { font-size: 11.5px; }
   .price-ladder-labels { font-size: 11px; }
 }
+
+/* ---- Newsletter page: the email field comes first, above the letters (2026-11-03) ---- */
+.nl-fields.nl-email { grid-template-columns: 1fr; padding: 18px 24px; max-width: 560px; }

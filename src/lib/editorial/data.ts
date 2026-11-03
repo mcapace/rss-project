@@ -68,6 +68,10 @@ export interface EditorialData {
   overview(brand: CmsBrand | null, signal?: AbortSignal): Promise<Overview>;
   getDocument(id: string, signal?: AbortSignal): Promise<{ document: CmsDocument; preview_html: string }>;
   saveDocument(id: string, expectedRevision: number, patch: CmsDocumentPatch): Promise<CmsDocument>;
+  /** Publish to the website now, or at publishAt (a future time schedules it). Fills the slug when empty. */
+  publishDocument(id: string, expectedRevision: number, publishAt?: string | null): Promise<CmsDocument>;
+  /** Take a published story off the website. */
+  unpublishDocument(id: string, expectedRevision: number): Promise<CmsDocument>;
   createDocument(input: { brand: CmsBrand; kind: CmsDocumentKind; title: string }): Promise<CmsDocument>;
   history(id: string, signal?: AbortSignal): Promise<HistoryData>;
   media(id: string, signal?: AbortSignal): Promise<MediaItem[]>;
@@ -152,6 +156,16 @@ export function createLiveData(): EditorialData {
     },
     async saveDocument(id, expectedRevision, patch) {
       const result = await request<{ document: CmsDocument }>(`/api/cms/documents/${encodeURIComponent(id)}`, jsonInit("PATCH", { expected_revision: expectedRevision, patch }));
+      emitter.emit();
+      return result.document;
+    },
+    async publishDocument(id, expectedRevision, publishAt) {
+      const result = await request<{ document: CmsDocument }>(`/api/cms/documents/${encodeURIComponent(id)}/publish`, jsonInit("POST", { expected_revision: expectedRevision, publish_at: publishAt ?? null }));
+      emitter.emit();
+      return result.document;
+    },
+    async unpublishDocument(id, expectedRevision) {
+      const result = await request<{ document: CmsDocument }>(`/api/cms/documents/${encodeURIComponent(id)}/publish`, jsonInit("DELETE", { expected_revision: expectedRevision }));
       emitter.emit();
       return result.document;
     },
@@ -347,6 +361,30 @@ export function createDemoData(storage: Storage | null = typeof window !== "unde
       const next: CmsDocument = { ...current, ...patch, metadata: patch.metadata ?? current.metadata, revision: current.revision + 1, updated_at: now().toISOString() };
       if (patch.slug !== undefined) next.slug = patch.slug || null;
       if (patch.public_url !== undefined) next.public_url = patch.public_url || null;
+      store = { ...store, documents: store.documents.map(doc => doc.id === id ? next : doc), histories: { ...store.histories, [id]: [demoRevision(next), ...(store.histories[id] || [])].slice(0, 30) } };
+      persist();
+      emitter.emit();
+      return structuredClone(next);
+    },
+    async publishDocument(id, expectedRevision, publishAt) {
+      await latency();
+      const current = find(id);
+      if (current.revision !== expectedRevision) throw new DataError(409, "Another editor saved a newer version. Reload before publishing.", "revision_conflict");
+      if (!current.title.trim()) throw new DataError(422, "Before publishing, add a headline", "validation_failed");
+      if (!current.body_html.replace(/<[^>]*>|&nbsp;/g, "").trim()) throw new DataError(422, "Before publishing, add the story text", "validation_failed");
+      const stamp = now().toISOString();
+      const slug = (current.slug || current.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 120) || `story-${current.id.slice(0, 8)}`;
+      const next: CmsDocument = { ...current, slug, publication_state: "published", published_at: publishAt || (current.publication_state === "published" ? current.published_at : null) || stamp, revision: current.revision + 1, updated_at: stamp };
+      store = { ...store, documents: store.documents.map(doc => doc.id === id ? next : doc), histories: { ...store.histories, [id]: [demoRevision(next), ...(store.histories[id] || [])].slice(0, 30) } };
+      persist();
+      emitter.emit();
+      return structuredClone(next);
+    },
+    async unpublishDocument(id, expectedRevision) {
+      await latency();
+      const current = find(id);
+      if (current.revision !== expectedRevision) throw new DataError(409, "Another editor saved a newer version. Reload before unpublishing.", "revision_conflict");
+      const next: CmsDocument = { ...current, publication_state: "unpublished", revision: current.revision + 1, updated_at: now().toISOString() };
       store = { ...store, documents: store.documents.map(doc => doc.id === id ? next : doc), histories: { ...store.histories, [id]: [demoRevision(next), ...(store.histories[id] || [])].slice(0, 30) } };
       persist();
       emitter.emit();

@@ -8,8 +8,8 @@ export const maxDuration = 20;
 
 const PAGE_KINDS = new Set(["article", "legacy_record", "page", "collection_entry", "directory_entry"]);
 const HTML = { "Content-Type": "text/html; charset=utf-8" };
-// Pages change rarely; the edge keeps them ten minutes and serves the old copy for a day while it refreshes.
-const CACHE = "public, s-maxage=600, stale-while-revalidate=86400";
+// The edge keeps a page two minutes (so a saved correction shows quickly) and serves the old copy for a day while it refreshes.
+const CACHE = "public, s-maxage=120, stale-while-revalidate=86400";
 
 /**
  * /wa/<slug>: one Whisky Advocate story, rating or page, rendered on the server with its head tags and

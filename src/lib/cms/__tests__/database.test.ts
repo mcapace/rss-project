@@ -640,3 +640,78 @@ describe("Immutable captured migration sources", () => {
     expect((await db.query<{ id: string }>("SELECT id FROM public.cms_migration_sources")).rows[0].id).toBe(created.id);
   });
 });
+
+describe("publishing from the workspace", () => {
+  async function publish(id: string, revision: number, at: string | null = null) {
+    return (await db.query<{ result: CmsDocument }>("SELECT public.cms_publish_document($1::uuid,$2::integer,$3::timestamptz,'editor@example.test') AS result", [id, revision, at])).rows[0].result;
+  }
+  async function unpublish(id: string, revision: number) {
+    return (await db.query<{ result: CmsDocument }>("SELECT public.cms_unpublish_document($1::uuid,$2::integer,'editor@example.test') AS result", [id, revision])).rows[0].result;
+  }
+  async function draft(key: string, title: string) {
+    const created = await ingest(morweb(key, { title, publication_state: "draft", published_at: null }));
+    return created.document_id;
+  }
+
+  it("publishes a draft with a slug from its headline, a publish time and a 'publish' revision", async () => {
+    const id = await draft("Posts:pub-1", "A Bourbon Worth the Wait!");
+    const published = await publish(id, 1);
+    expect(published).toMatchObject({ publication_state: "published", slug: "a-bourbon-worth-the-wait", revision: 2 });
+    expect(published.published_at).toBeTruthy();
+    const reasons = (await db.query<{ reason: string }>("SELECT reason FROM public.cms_document_revisions WHERE document_id=$1 ORDER BY revision", [id])).rows.map(r => r.reason);
+    expect(reasons[reasons.length - 1]).toBe("publish");
+    // Ordinary saves still cannot publish: everything goes through the checked step.
+    const other = await draft("Posts:pub-2", "Another story");
+    await expect(save(other, 1, { publication_state: "published" })).rejects.toThrow("Publishing is not enabled");
+  });
+
+  it("keeps slugs unique, schedules a future time, and refuses stale versions and empty stories", async () => {
+    const first = await draft("Posts:pub-3", "Same Headline");
+    const second = await draft("Posts:pub-4", "Same Headline");
+    expect((await publish(first, 1)).slug).toBe("same-headline");
+    const later = new Date(Date.now() + 3 * 864e5).toISOString();
+    const scheduled = await publish(second, 1, later);
+    expect(scheduled.slug).toBe("same-headline-2");
+    expect(new Date(scheduled.published_at as string).toISOString()).toBe(later);
+    // A scheduled story is not in the public list until its time.
+    const listed = (await db.query<{ id: string }>("SELECT id FROM public.cms_public_documents('wa','article',NULL,100,NULL)")).rows.map(r => r.id);
+    expect(listed).toContain(first);
+    expect(listed).not.toContain(second);
+    await expect(publish(first, 1)).rejects.toThrow("revision_conflict");
+    const empty = await ingest(morweb("Posts:pub-5", { title: "No text yet", body_html: "<p> </p>", publication_state: "draft", published_at: null }));
+    await expect(publish(empty.document_id, 1)).rejects.toThrow("Before publishing, add the story text");
+  });
+
+  it("unpublishes with an 'unpublish' revision and keeps the first publish time when it goes back up", async () => {
+    const id = await draft("Posts:pub-6", "Down and Back");
+    const up = await publish(id, 1, "2026-10-01T15:00:00Z");
+    const down = await unpublish(id, up.revision);
+    expect(down).toMatchObject({ publication_state: "unpublished", revision: up.revision + 1 });
+    expect(down.metadata.unpublished_at).toBeTruthy();
+    await expect(unpublish(id, down.revision)).rejects.toThrow("not published");
+    const again = await publish(id, down.revision);
+    expect(new Date(again.published_at as string).toISOString()).toBe("2026-10-01T15:00:00.000Z");
+    expect(again.metadata.unpublished_at).toBeUndefined();
+  });
+
+  it("is closed to browser roles", async () => {
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`SET ROLE ${role}`);
+      await expect(db.exec("SELECT public.cms_publish_document(gen_random_uuid(),1,NULL,'x')")).rejects.toThrow("permission denied");
+      await expect(db.exec("SELECT public.cms_unpublish_document(gen_random_uuid(),1,'x')")).rejects.toThrow("permission denied");
+      await db.exec("RESET ROLE");
+    }
+  });
+});
+
+describe("legacy redirects across hosts", () => {
+  it("answers the www host with the rows stored for the bare domain", async () => {
+    await db.exec("RESET ROLE; DELETE FROM public.cms_redirects WHERE legacy_path='/old-story-www'; SET ROLE service_role;");
+    await db.exec("INSERT INTO public.cms_redirects (brand, legacy_host, legacy_path, target_path, status, source) VALUES ('wa','whiskyadvocate.com','/old-story-www','/wa/old-story-www',301,'import')");
+    for (const host of ["whiskyadvocate.com", "www.whiskyadvocate.com", "WWW.WhiskyAdvocate.com"]) {
+      const row = (await db.query<{ target_path: string }>("SELECT target_path FROM public.cms_resolve_redirect('/old-story-www', $1)", [host])).rows[0];
+      expect(row?.target_path).toBe("/wa/old-story-www");
+    }
+    expect((await db.query("SELECT * FROM public.cms_resolve_redirect('/old-story-www', 'winespectator.com')")).rows).toHaveLength(0);
+  });
+});

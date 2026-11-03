@@ -1024,3 +1024,16 @@ html[data-cms-theme="dark"] .ed .ed-logo[data-invert-dark="true"] .ed-logo-light
 .ed-library-facts code { font-size: 12px; background: var(--surface); padding: 1px 5px; border-radius: 5px; }
 .ed-library-keywords { display: flex; flex-wrap: wrap; gap: 5px; }
 .ed-library-keywords .ed-keyword { cursor: default; }
+
+/* Publishing panel (2026-11-03): checklist, live state and the publish, schedule and unpublish actions. */
+.ed-publish { display: grid; gap: 10px; margin: 4px 0 14px; }
+.ed-publish-state { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; font-size: 12.5px; color: var(--muted); }
+.ed-publish-link { display: grid; gap: 3px; margin: 0; font-size: 12.5px; }
+.ed-publish-link a { display: inline-flex; align-items: center; gap: 4px; color: var(--accent, inherit); word-break: break-all; }
+.ed-publish-link small, .ed-publish > small { color: var(--muted); font-size: 12px; }
+.ed-publish-checks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 12.5px; }
+.ed-publish-checks li { display: flex; align-items: center; gap: 5px; }
+.ed-publish-checks li[data-ok="yes"] svg { color: var(--positive, #2f7d4f); }
+.ed-publish-checks li[data-ok="no"] { color: var(--muted); }
+.ed-publish-checks li small { font-size: 11px; opacity: .8; }
+.ed-publish-actions { display: flex; flex-wrap: wrap; gap: 6px; }

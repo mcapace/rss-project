@@ -47,6 +47,13 @@ async function lookupRedirect(request: NextRequest): Promise<{ target: string | 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (pathname !== "/" && !APP_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)) && process.env.REDIRECTS_AT_EDGE !== "false") {
+    // The old site's tag pages (/tag/<name>, /Tag/<name>/) have no one-to-one page here: they open the story list filtered by that tag.
+    const tag = /^\/tag\/([^/]+)\/?$/i.exec(pathname);
+    if (tag) {
+      let name = tag[1];
+      try { name = decodeURIComponent(name); } catch { /* keep as given */ }
+      return NextResponse.redirect(new URL(`/wa/stories.html#tag=${encodeURIComponent(name.replace(/-/g, " ").trim())}`, request.url), 301);
+    }
     const hit = await lookupRedirect(request);
     if (hit?.status === 410) return new NextResponse("This page has been retired.", { status: 410, headers: { "Cache-Control": "public, max-age=3600" } });
     if (hit?.target) {

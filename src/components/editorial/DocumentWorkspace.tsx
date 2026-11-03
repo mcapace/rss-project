@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Activity, ArrowLeft, CalendarClock, Check, Clock, Crop, Eye, FileText, History, ImageIcon, Info, Layers, Palette, PenLine, Radio, RotateCcw, Save, Search, Sparkles, Star, X } from "lucide-react";
+import { Activity, ArrowLeft, Check, Clock, Crop, ExternalLink, Eye, EyeOff, FileText, History, ImageIcon, Info, Layers, Palette, PenLine, Radio, RotateCcw, Save, Search, Send, Sparkles, Star, X } from "lucide-react";
 import type { CmsDocument, CmsDocumentPatch, CmsDocumentRevision, CmsJsonObject, CmsPublicationState } from "@/lib/cms/types";
 import { CONTENT_TYPE_LABELS, SOURCE_SYSTEM_LABELS, reviewReasons, reviewRequired } from "@/lib/cms/organization";
 import { DataError, type MediaItem } from "@/lib/editorial/data";
@@ -148,6 +148,31 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
     } finally { setSaving(false); }
   }, [document, draft, saving, data, toast, collab.provider]);
   useEffect(() => { saveRef.current = save; }, [save]);
+
+  /* Publishing (cms_publish_document): unsaved edits are saved first, then the story goes to the website now, at its
+     planned time, or comes off it. The slug is filled from the headline when empty. */
+  const [publishing, setPublishing] = useState(false);
+  // The clock the publishing panel reads (scheduled or live), ticking each half minute so render stays pure.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => { const timer = setInterval(() => setNowMs(Date.now()), 30_000); return () => clearInterval(timer); }, []);
+  const publish = useCallback(async (mode: "now" | "schedule" | "unpublish") => {
+    if (!document || !draft || saving || publishing) return;
+    setPublishing(true); setError(null);
+    try {
+      let current = document;
+      const patch = patchFor(document, draft);
+      delete patch.publication_state;
+      if (Object.keys(patch).length) current = await data.saveDocument(document.id, document.revision, patch);
+      const when = mode === "schedule" ? scheduleOf(draft.metadata)?.publish_at ?? null : null;
+      const next = mode === "unpublish" ? await data.unpublishDocument(current.id, current.revision) : await data.publishDocument(current.id, current.revision, when);
+      rememberDocument(next); setDocument(next); setDraft(toDraft(next));
+      setLastSaved(next.updated_at); setHistoryToken(value => value + 1);
+      void collab.provider?.flush();
+      toast(mode === "unpublish" ? "Taken off the website" : mode === "schedule" && when ? `Scheduled for ${formatDateTime(when)}` : "Published to the website", "success");
+    } catch (failure) {
+      setError({ message: failure instanceof Error ? failure.message : "The story could not be published.", conflict: failure instanceof DataError && failure.code === "revision_conflict" });
+    } finally { setPublishing(false); }
+  }, [document, draft, saving, publishing, data, toast, collab.provider]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") { event.preventDefault(); saveRef.current(); } };
     window.addEventListener("keydown", onKey);
@@ -390,12 +415,42 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
     <aside className="ed-editor-rail">
       <Card pad={false} className="ed-rail-card still">
         <h3>Publishing <Clock size={14} aria-hidden /></h3>
-        <Field label="State" htmlFor="ed-state">
+        {(() => {
+          const live = document.publication_state === "published";
+          const at = document.published_at ? new Date(document.published_at) : null;
+          const upcoming = live && at && at.getTime() > nowMs;
+          const planned = schedule && new Date(schedule.publish_at).getTime() > nowMs ? schedule.publish_at : null;
+          const hasLead = mediaMeta.some(item => item.is_lead === true) || !!(draft.metadata.lead_image && typeof draft.metadata.lead_image === "object");
+          const checks = [
+            { ok: !!draft.title.trim(), label: "Headline", required: true },
+            { ok: !!stripHtml(draft.body_html).trim(), label: "Story text", required: true },
+            { ok: !!draft.byline.trim(), label: "Byline" },
+            { ok: !!sectionOf(draft.metadata), label: "Section" },
+            { ok: !!draft.excerpt.trim(), label: "Summary" },
+            { ok: hasLead, label: "Lead image" },
+          ];
+          const blocked = gate || checks.some(check => check.required && !check.ok);
+          const busy = publishing || saving;
+          const path = document.slug ? `/wa/${encodeURIComponent(document.slug)}` : null;
+          return <div className="ed-publish">
+            {live && <p className="ed-publish-state"><Pill tone={upcoming ? "scheduled" : "published"}>{upcoming ? "Scheduled" : "On the website"}</Pill>{at && <span>{upcoming ? "Goes live " : "Since "}{formatDateTime(at.toISOString())}</span>}</p>}
+            {live && path && !upcoming && <p className="ed-publish-link"><a href={path} target="_blank" rel="noopener">{path}<ExternalLink size={12} aria-hidden /></a><small>Saved changes go live within a few minutes.</small></p>}
+            {!live && <ul className="ed-publish-checks">{checks.map(check => <li key={check.label} data-ok={check.ok ? "yes" : "no"}>{check.ok ? <Check size={13} aria-hidden /> : <X size={13} aria-hidden />}{check.label}{!check.ok && !check.required ? <small> recommended</small> : null}</li>)}</ul>}
+            <div className="ed-publish-actions">
+              {!live && <Button size="sm" icon={Send} disabled={blocked || busy} onClick={() => void publish(planned ? "schedule" : "now")}>{publishing ? "Publishing…" : planned ? `Schedule for ${formatDateTime(planned)}` : dirty ? "Save and publish" : "Publish now"}</Button>}
+              {!live && planned && <Button size="sm" variant="subtle" disabled={blocked || busy} onClick={() => void publish("now")}>Publish now instead</Button>}
+              {upcoming && <Button size="sm" icon={Send} disabled={busy} onClick={() => void publish("now")}>Publish now</Button>}
+              {live && <Button size="sm" variant="subtle" icon={EyeOff} disabled={busy} onClick={() => { if (window.confirm("Take this story off the website? Its address stops working until it is published again.")) void publish("unpublish"); }}>{upcoming ? "Cancel schedule" : "Unpublish"}</Button>}
+            </div>
+            {!live && gate && <small>Clear the review findings before publishing.</small>}
+            {!live && !document.slug && !draft.slug && <small>The address is made from the headline when you publish.</small>}
+          </div>;
+        })()}
+        {document.publication_state !== "published" && <Field label="Workflow" htmlFor="ed-state">
           <select id="ed-state" className="ed-select" value={draft.publication_state} onChange={event => update({ publication_state: event.target.value as CmsPublicationState })}>
-            {states.map(state => <option key={state} value={state}>{STATE_LABELS[state]}</option>)}
+            {states.filter(state => state !== "published").map(state => <option key={state} value={state}>{STATE_LABELS[state]}</option>)}
           </select>
-          {document.publication_state !== "published" && <small>New content cannot publish from this workspace yet. Set a planned time and send it to review.</small>}
-        </Field>
+        </Field>}
         <Field label="Planned publish time" htmlFor="ed-schedule" hint={schedule ? `Shows on the calendar · ${relativeTime(schedule.publish_at)}` : "Optional. Appears on the schedule and the home desk."}>
           <div style={{ display: "flex", gap: 6 }}>
             <input id="ed-schedule" type="datetime-local" className="ed-input" value={isoToLocalInput(schedule?.publish_at)} onChange={event => { const iso = localInputToIso(event.target.value); updateMeta(metadata => withSchedule(metadata, iso ? { publish_at: iso, ...(schedule?.note ? { note: schedule.note } : {}) } : null)); }} />
@@ -407,7 +462,6 @@ export function DocumentWorkspace({ id, initialTab }: { id: string; initialTab?:
             {ACCESS_TIERS.map(tier => <option key={tier} value={tier}>{tier === "free" ? "Free" : tier === "registered" ? "Registered readers" : "Subscribers"}</option>)}
           </select>
         </Field>
-        {document.published_at && <p style={{ marginTop: 12, fontSize: 12.5, color: "var(--muted)" }}><CalendarClock size={12} aria-hidden style={{ verticalAlign: -1, marginRight: 4 }} />Published {formatDateTime(document.published_at)}</p>}
       </Card>
 
       <Card pad={false} className="ed-rail-card still">

@@ -51,7 +51,8 @@ const DOC_FIELDS = "id,kind,slug,title,byline,excerpt,body_html,metadata,publish
 /** One published Whisky Advocate document by slug, any capitalization. */
 export async function loadDoc(slug: string): Promise<WaDoc | null> {
   const clean = slug.replace(/[%_\\]/g, c => "\\" + c).slice(0, 300);
-  const { data, error } = await cmsDb().from("cms_documents").select(DOC_FIELDS).eq("brand", "wa").eq("publication_state", "published").ilike("slug", clean).limit(2);
+  // A scheduled story is not out until its time.
+  const { data, error } = await cmsDb().from("cms_documents").select(DOC_FIELDS).eq("brand", "wa").eq("publication_state", "published").or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`).ilike("slug", clean).limit(2);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as WaDoc[];
   return rows.find(r => r.slug === slug) ?? rows[0] ?? null;
@@ -63,20 +64,29 @@ export async function loadDoc(slug: string): Promise<WaDoc | null> {
  */
 const LITE = "id,slug,kind,title,byline,excerpt,published_at,updated_at,legacy_dates:metadata->legacy_dates,legacy_media:metadata->legacy_media,lead_image:metadata->lead_image,sponsored:metadata->sponsored,tags:metadata->tags,seo:metadata->seo,legacy_seo:metadata->legacy_seo,ai_summary:metadata->>ai_summary,categories:metadata->categories";
 export async function listDocs(kinds: string[], limit = 60000, order: "newest" | "id" = "newest"): Promise<WaDoc[]> {
+  const now = new Date().toISOString();
+  const toDoc = (row: Record<string, unknown>): WaDoc => {
+    const { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories, ...rest } = row;
+    return { ...(rest as unknown as WaDoc), body_html: null, metadata: { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories } as Meta };
+  };
+  // A scheduled story (published_at still ahead) is not listed until its time.
+  const base = () => cmsDb().from("cms_documents").select(LITE).eq("brand", "wa").eq("publication_state", "published").in("kind", kinds).not("slug", "is", null).or(`published_at.is.null,published_at.lte.${now}`);
   const out: WaDoc[] = [];
   for (let from = 0; from < limit; from += 1000) {
     // Newest-first sorts on a JSON field with no index: fine for the feed's 200 rows, too slow for a whole sitemap, which pages by id.
-    let query = cmsDb().from("cms_documents").select(LITE).eq("brand", "wa").eq("publication_state", "published").in("kind", kinds).not("slug", "is", null);
-    query = order === "newest" ? query.order("metadata->legacy_dates->>published_date", { ascending: false, nullsFirst: false }).order("id") : query.order("id");
+    // Imported stories carry the old site's date; stories published from the CMS (published_at) are read apart and merged below.
+    const query = order === "newest" ? base().is("published_at", null).order("metadata->legacy_dates->>published_date", { ascending: false, nullsFirst: false }).order("id") : base().order("id");
     const { data, error } = await query.range(from, Math.min(from + 999, limit - 1));
     if (error) throw new Error(error.message);
-    for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
-      const { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories, ...rest } = row;
-      out.push({ ...(rest as unknown as WaDoc), body_html: null, metadata: { legacy_dates, legacy_media, lead_image, sponsored, tags, seo, legacy_seo, ai_summary, categories } as Meta });
-    }
+    for (const row of (data ?? []) as unknown as Record<string, unknown>[]) out.push(toDoc(row));
     if (!data || data.length < 1000) break;
   }
-  return out;
+  if (order !== "newest") return out;
+  const { data: fresh, error } = await base().not("published_at", "is", null).order("published_at", { ascending: false }).limit(Math.min(limit, 1000));
+  if (error) throw new Error(error.message);
+  const merged = [...((fresh ?? []) as unknown as Record<string, unknown>[]).map(toDoc), ...out];
+  const when = (doc: WaDoc) => docDates(doc).published || "";
+  return merged.sort((x, y) => when(y).localeCompare(when(x))).slice(0, limit);
 }
 
 const obj = (v: unknown): Meta => (v && typeof v === "object" && !Array.isArray(v) ? v as Meta : {});

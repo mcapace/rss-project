@@ -3265,3 +3265,250 @@ h1, h2, h3, h4, h5, h6, .d1, .d2, .d3, blockquote, figcaption, .dek, .cat, .scor
 .prose a.wa-video-link { display: inline-block; margin-top: 6px; padding: 2px; font-size: 13px; }
 @media (max-width: 640px) { .prose .wa-video-icon { width: 56px; height: 56px; margin: -28px 0 0 -28px; } }
 @media (prefers-reduced-motion: reduce) { .prose .wa-video-play img.wa-video-thumb, .prose .wa-video-icon { transition: none; } .prose .wa-video-play:hover img.wa-video-thumb, .prose .wa-video-play:hover .wa-video-icon, .prose .wa-video-play:focus-visible .wa-video-icon { transform: none; } }
+/* America's Top Whisky Bars (2026-11-03): whisky-bars.html. A full-bleed film hero, an editorial intro, a dark atlas
+   (SVG map of every bar beside a searchable list, with a bar card over the map), the six classic cocktails with a
+   recipe dialog, the film and the sponsors. */
+.wb-page .band > * { max-width: 1320px; margin-inline: auto; }
+.wb-hero { position: relative; display: grid; align-content: end; min-height: clamp(560px, 86vh, 860px); padding: 0 var(--gutter) clamp(36px, 6vh, 64px); overflow: hidden; color: #fff6ea; isolation: isolate; }
+.wb-hero-media { position: absolute; inset: 0; z-index: -1; background: #0b0704; }
+.wb-hero-media img, .wb-hero-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.wb-hero-media video { opacity: 0; transition: opacity 1.2s ease; }
+.wb-hero-media video.is-on { opacity: 1; }
+.wb-hero-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11, 7, 4, 0.28) 0%, rgba(11, 7, 4, 0.2) 35%, rgba(11, 7, 4, 0.78) 72%, rgba(11, 7, 4, 0.96) 100%), radial-gradient(90% 70% at 0% 100%, rgba(11, 7, 4, 0.7), transparent 70%); }
+.wb-hero-copy { max-width: 880px; width: 100%; margin-inline: auto; justify-self: stretch; }
+.wb-hero-copy, .wb-hero-stats { max-width: 1320px; }
+.wb-hero .mono { color: #f3c47a; }
+.wb-hero .d1 { margin-top: 14px; color: #fff6ea; font-size: clamp(46px, 7.4vw, 112px); max-width: 11ch; }
+.wb-hero-dek { margin-top: 18px; max-width: 54ch; font-size: clamp(16px, 1.35vw, 19px); line-height: 1.5; color: rgba(255, 246, 234, 0.82); text-wrap: balance; }
+.wb-hero-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.wb-hero-cta .pill { min-height: 46px; padding: 0 20px; font-size: 14.5px; font-weight: 500; }
+.wb-hero-cta .pill svg, .wb-filters .pill svg { width: 17px; height: 17px; }
+.wb-ghost { background: rgba(255, 246, 234, 0.08); border-color: rgba(255, 236, 210, 0.3); color: #fff6ea; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.wb-ghost:hover { border-color: #f3c47a; background: rgba(255, 246, 234, 0.14); }
+.wb-hero-stats { display: flex; gap: clamp(20px, 4vw, 56px); margin: clamp(36px, 6vh, 64px) auto 0; padding-top: 22px; width: 100%; border-top: 1px solid rgba(255, 236, 210, 0.18); }
+.wb-hero-copy { margin-inline: 0; }
+@media (min-width: 1440px) { .wb-hero-copy { margin-inline: calc((100% - 1320px) / 2); } }
+.wb-hero-stats dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 238, 214, 0.6); }
+.wb-hero-stats dd { margin: 6px 0 0; font-size: clamp(24px, 2.6vw, 36px); font-weight: 500; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+
+.wb-intro { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(24px, 5vw, 80px); align-items: end; }
+.wb-page .wb-intro > * { max-width: none; margin: 0; }
+.wb-intro { max-width: calc(1320px + 2 * var(--gutter)); margin-inline: auto; }
+.wb-intro .d2 { margin-top: 10px; }
+.wb-intro-copy p { font-size: clamp(16px, 1.3vw, 18.5px); line-height: 1.6; max-width: 60ch; }
+.wb-intro-copy p + p { margin-top: 14px; font-size: 15.5px; }
+.wb-intro-copy a { color: var(--copper); text-decoration: underline; text-underline-offset: 3px; }
+
+.wb-explore { padding-top: 0; }
+.wb-explore-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px 32px; margin-bottom: 22px; }
+.wb-explore-head .d2 { margin-top: 10px; }
+.wb-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.wb-find { width: min(300px, 100%); }
+.wb-select { height: 42px; padding: 0 38px 0 16px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%238b7b6a' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center / 16px; font: inherit; font-size: 14.5px; color: var(--ink); appearance: none; -webkit-appearance: none; cursor: pointer; }
+.wb-select:hover, .wb-select:focus-visible { border-color: var(--amber); }
+.wb-filters .pill { min-height: 42px; }
+.wb-filters .pill[aria-busy="true"] { opacity: 0.6; }
+
+.wb-atlas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); height: clamp(560px, 78vh, 820px); border-radius: 26px; overflow: hidden; background: radial-gradient(120% 90% at 30% 20%, #212121 0%, #110a06 55%, #080503 100%); box-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.06), 0 40px 80px -48px rgba(23, 12, 4, 0.6); color: #fff6ea; }
+.wb-map { position: relative; min-width: 0; min-height: 0; scroll-margin-top: 76px; }
+.wb-map svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+.wb-map.is-drag svg { cursor: grabbing; }
+.wb-states path { fill: #1d140d; stroke: rgba(255, 236, 210, 0.13); stroke-width: 0.7px; vector-effect: non-scaling-stroke; stroke-linejoin: round; transition: fill 160ms; }
+.wb-states path.has-bars { fill: #2a1c11; cursor: pointer; }
+.wb-states path.has-bars:hover { fill: #3a2716; }
+.wb-inset { fill: none; stroke: rgba(255, 236, 210, 0.22); stroke-dasharray: 3 3; stroke-width: 0.8px; vector-effect: non-scaling-stroke; }
+.wb-dots { filter: drop-shadow(0 0 3px rgba(243, 181, 90, 0.8)); }
+.wb-dot { fill: #f3b55a; stroke: rgba(255, 246, 234, 0.0); stroke-width: 8px; vector-effect: non-scaling-stroke; paint-order: stroke; cursor: pointer; transition: opacity 200ms, fill 160ms; }
+.wb-dot:hover, .wb-dot.is-hot { fill: #fff3df; }
+.wb-dot.is-dim { opacity: 0.16; pointer-events: none; }
+.wb-dot.is-on { fill: #fff6ea; stroke: rgba(243, 181, 90, 0.55); stroke-width: 6px; animation: wbPulse 1.8s ease-in-out infinite; }
+@keyframes wbPulse { 50% { stroke: rgba(243, 181, 90, 0.15); stroke-width: 12px; } }
+@media (prefers-reduced-motion: reduce) { .wb-dot.is-on { animation: none; } }
+.wb-tip { max-width: 250px; }
+.wb-zoom { left: auto; right: 16px; bottom: auto; top: 16px; }
+.wb-reset { position: absolute; top: 16px; left: 16px; z-index: 2; height: 36px; padding: 0 14px; border: 1px solid rgba(255, 236, 210, 0.18); border-radius: 999px; background: rgba(28, 19, 12, 0.72); color: #fff6ea; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.wb-reset:hover { border-color: #f3c47a; }
+
+.wb-card { position: absolute; left: 18px; bottom: 18px; z-index: 4; width: min(420px, calc(100% - 36px)); max-height: calc(100% - 36px); overflow: auto; padding: 22px 22px 18px; border: 1px solid rgba(255, 236, 210, 0.14); border-radius: 20px; background: rgba(20, 13, 8, 0.86); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8); animation: wbIn 260ms ease both; }
+@keyframes wbIn { from { opacity: 0; transform: translateY(8px); } }
+.wb-card .mono { color: #f3c47a; font-size: 11px; }
+.wb-card h3 { margin: 8px 34px 0 0; font-size: clamp(22px, 1.9vw, 27px); font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
+.wb-addr { margin-top: 6px; font-size: 13.5px; color: rgba(255, 238, 214, 0.6); }
+.wb-desc { margin-top: 12px; font-size: 15px; line-height: 1.55; color: rgba(255, 246, 234, 0.88); text-wrap: pretty; }
+.wb-card-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.wb-card .pill, .wb-dlg-act .pill.wb-dark { background: rgba(255, 246, 234, 0.06); border-color: rgba(255, 236, 210, 0.2); color: #fff6ea; }
+.wb-card .pill:hover { border-color: #f3c47a; }
+.wb-card .pill.solid { background: #f3b55a; border-color: #f3b55a; color: #1a1008; }
+.wb-card .pill.solid:hover { background: #ffc978; }
+.wb-x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255, 246, 234, 0.08); color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.wb-x:hover { background: rgba(255, 246, 234, 0.16); }
+.wb-card-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 236, 210, 0.1); }
+.wb-card-nav .mono { color: rgba(255, 238, 214, 0.55); }
+.wb-card-nav button { width: 34px; height: 34px; border: 1px solid rgba(255, 236, 210, 0.16); border-radius: 50%; background: none; color: #fff6ea; cursor: pointer; }
+.wb-card-nav button:hover { border-color: #f3c47a; }
+
+.wb-list-wrap { min-height: 0; overflow: auto; overscroll-behavior: contain; border-left: 1px solid rgba(255, 236, 210, 0.08); background: rgba(255, 246, 234, 0.025); scrollbar-width: thin; scrollbar-color: rgba(255, 236, 210, 0.2) transparent; }
+.wb-count { position: sticky; top: 0; z-index: 2; margin: 0; padding: 16px 20px 12px; background: linear-gradient(#150e09 70%, rgba(21, 14, 9, 0)); color: rgba(255, 238, 214, 0.6); font-size: 11px; }
+.wb-list { margin: 0; padding: 0 8px 14px; list-style: none; }
+.wb-st { display: flex; justify-content: space-between; padding: 16px 12px 6px; color: #f3c47a; font-size: 11px; }
+.wb-st span { color: rgba(255, 238, 214, 0.4); }
+.wb-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color 140ms; }
+.wb-row:hover { background: rgba(255, 236, 210, 0.06); }
+.wb-row.is-on { background: rgba(243, 181, 90, 0.16); box-shadow: inset 2px 0 0 #f3b55a; }
+.wb-row-t strong { display: block; font-size: 15px; font-weight: 500; line-height: 1.25; }
+.wb-row-t em { display: block; margin-top: 2px; font-size: 13px; font-style: normal; color: rgba(255, 238, 214, 0.55); }
+.wb-row i { font-style: normal; color: rgba(255, 238, 214, 0.3); transition: color 140ms, transform 140ms; }
+.wb-row:hover i, .wb-row.is-on i { color: #f3c47a; transform: translateX(2px); }
+.wb-mi { font-family: var(--mono); font-size: 12px; color: #f3c47a; white-space: nowrap; }
+.wb-empty { padding: 24px 12px; color: rgba(255, 238, 214, 0.7); }
+.wb-empty .pill { margin-top: 12px; background: rgba(255, 246, 234, 0.06); border-color: rgba(255, 236, 210, 0.2); color: #fff6ea; }
+
+.wb-sec-head { margin-bottom: clamp(22px, 3vw, 36px); }
+.wb-page .wb-sec-head { max-width: 1320px; }
+.wb-sec-head .d2 { margin-top: 10px; max-width: 20ch; }
+.wb-sec-head p { margin-top: 12px; font-size: 17px; max-width: 56ch; }
+.wb-drinks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.8vw, 24px); }
+.wb-drink { display: grid; grid-template-rows: auto 1fr; padding: 0; border: 1px solid var(--rule-2); border-radius: 22px; overflow: hidden; background: var(--paper-2); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: box-shadow 220ms, transform 220ms; }
+.wb-drink img { width: 100%; height: auto; aspect-ratio: 6 / 5; object-fit: cover; object-position: 50% 30%; background: #ece7e1; transition: transform 600ms cubic-bezier(.2, .7, .2, 1); }
+.wb-drink:hover { box-shadow: 0 30px 60px -36px rgba(79, 42, 16, 0.45); transform: translateY(-2px); }
+.wb-drink:hover img { transform: scale(1.035); }
+.wb-drink-copy { display: grid; gap: 6px; padding: 18px 20px 20px; }
+.wb-drink-copy strong { font-size: clamp(20px, 1.8vw, 26px); font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+.wb-drink-go { margin-top: 4px; font-size: 13.5px; font-weight: 500; color: var(--copper); }
+.wb-drink-go i { font-style: normal; display: inline-block; transition: transform 160ms; }
+.wb-drink:hover .wb-drink-go i { transform: translateX(3px); }
+
+.wb-drink-dlg { width: min(1000px, calc(100% - 32px)); max-height: min(88vh, 760px); padding: 0; border: 0; border-radius: 26px; background: var(--paper-2); color: var(--ink); overflow: hidden; box-shadow: 0 50px 120px -40px rgba(11, 7, 4, 0.7); }
+.wb-drink-dlg::backdrop { background: rgba(11, 7, 4, 0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.wb-drink-dlg[open] { animation: wbIn 240ms ease both; }
+.wb-dlg-in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); max-height: inherit; }
+.wb-dlg-in > img { width: 100%; height: 100%; min-height: 0; max-height: min(88vh, 760px); object-fit: cover; object-position: 50% 30%; background: #ece7e1; }
+.wb-dlg-copy { position: relative; padding: clamp(24px, 3vw, 40px); overflow: auto; max-height: min(88vh, 760px); }
+.wb-dlg-copy .wb-x { background: var(--paper-3); }
+.wb-dlg-copy .wb-x:hover { background: var(--paper-4); }
+.wb-dlg-copy .d2 { margin: 10px 40px 0 0; font-size: clamp(30px, 3.2vw, 44px); }
+.wb-dlg-copy h3.mono { margin: 26px 0 10px; color: var(--copper); }
+.wb-spec { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+.wb-spec li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+.wb-spec b { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--amber); padding-top: 2px; }
+.wb-method { margin-top: 14px; color: var(--ink-2); font-size: 15px; line-height: 1.6; }
+.wb-dlg-copy p { line-height: 1.6; }
+.wb-dlg-act { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 26px; }
+.wb-dlg-nav { display: flex; gap: 8px; }
+.wb-dlg-nav .pill { width: 42px; justify-content: center; padding: 0; }
+
+.wb-film-band { padding-top: 0; }
+.wb-film { position: relative; aspect-ratio: 16 / 9; border-radius: 26px; overflow: hidden; background: #0b0704; box-shadow: 0 40px 80px -48px rgba(23, 12, 4, 0.6); }
+.wb-film img, .wb-film video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.wb-film:not(.is-playing)::after { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(11, 7, 4, 0.1), rgba(11, 7, 4, 0.55)); pointer-events: none; }
+.wb-play { position: absolute; left: 50%; top: 50%; z-index: 2; display: inline-flex; align-items: center; gap: 14px; padding: 10px 24px 10px 10px; transform: translate(-50%, -50%); border: 1px solid rgba(255, 236, 210, 0.3); border-radius: 999px; background: rgba(20, 13, 8, 0.55); color: #fff6ea; font: inherit; font-size: 16px; font-weight: 500; cursor: pointer; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: background-color 180ms, transform 180ms; }
+.wb-play svg { width: 52px; height: 52px; padding: 14px; border-radius: 50%; background: #f3b55a; color: #1a1008; }
+.wb-play em { margin-left: 6px; font-family: var(--mono); font-size: 12px; font-style: normal; color: rgba(255, 238, 214, 0.7); }
+.wb-play:hover { background: rgba(20, 13, 8, 0.75); transform: translate(-50%, -50%) scale(1.03); }
+.wb-sponsors { margin: clamp(36px, 5vw, 64px) auto 0; text-align: center; }
+.wb-page .wb-sponsors { max-width: 720px; }
+.wb-sponsors img { width: 100%; height: auto; opacity: 0.88; }
+
+@media (max-width: 1100px) { .wb-atlas { grid-template-columns: minmax(0, 1fr) 300px; } }
+@media (max-width: 860px) {
+  .wb-hero { min-height: min(92svh, 760px); }
+  .wb-hero-stats { gap: 22px; }
+  .wb-hero-stats dd { font-size: 22px; }
+  .wb-intro { grid-template-columns: 1fr; gap: 18px; }
+  .wb-filters { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .wb-find { grid-column: 1 / -1; width: 100%; }
+  .wb-select { width: 100%; }
+  .wb-atlas { grid-template-columns: 1fr; height: auto; border-radius: 20px; margin: 0 -8px; }
+  .wb-map { height: 64vh; height: 64svh; min-height: 380px; }
+  .wb-card { left: 10px; right: 10px; bottom: 10px; width: auto; max-height: 72%; padding: 18px 18px 14px; }
+  .wb-card h3 { font-size: 21px; }
+  .wb-desc { font-size: 14.5px; }
+  .wb-list-wrap { overflow: visible; border-left: 0; border-top: 1px solid rgba(255, 236, 210, 0.08); }
+  .wb-count { position: static; background: none; }
+  .wb-drinks { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: min(74vw, 320px); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter) 8px; scrollbar-width: none; }
+  .wb-drinks::-webkit-scrollbar { display: none; }
+  .wb-drink { scroll-snap-align: start; }
+  .wb-dlg-in { grid-template-columns: 1fr; overflow: auto; max-height: 88vh; }
+  .wb-dlg-in > img { max-height: 34vh; height: 34vh; }
+  .wb-dlg-copy { max-height: none; overflow: visible; }
+  .wb-film { border-radius: 18px; margin: 0 -8px; }
+  .wb-play { padding: 8px 18px 8px 8px; font-size: 14px; }
+  .wb-play svg { width: 44px; height: 44px; padding: 12px; }
+}
+
+/* Whisky bars on phones: the map takes the country's shape, the bar card sits under it, and the list opens on twelve bars. */
+.wb-more { padding: 10px 12px 4px; }
+.wb-more .pill { width: 100%; justify-content: center; background: rgba(255, 246, 234, 0.06); border-color: rgba(255, 236, 210, 0.2); color: #fff6ea; }
+@media (max-width: 860px) {
+  .wb-map { height: auto; min-height: 0; }
+  .wb-map svg { position: relative; inset: auto; height: auto; aspect-ratio: 975 / 640; }
+  .wb-zoom { top: 10px; right: 10px; }
+  .wb-zoom button { width: 36px; height: 36px; }
+  .wb-reset { top: 10px; left: 10px; }
+  .wb-card { position: relative; left: auto; right: auto; bottom: auto; width: auto; max-height: none; margin: 0 10px 10px; }
+}
+@media (max-width: 860px) { .wb-map:not(.is-zoomed) .wb-zoom { display: none; } }
+
+/* Whisky bar and state pages (2026-11-03): /whisky-bars/<slug>, rendered by src/lib/wa/bars.ts into whisky-bar.html.
+   The bar's story beside a dark map of its state, then more bars in the state, nearby bars and every state. */
+.wbp-hero { padding-top: 28px; }
+.wbp-crumbs { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; }
+.wbp-crumbs a { color: var(--ink-2); }
+.wbp-crumbs a:hover { color: var(--amber); }
+.wbp-crumbs [aria-current] { color: var(--ink-3); }
+.wbp-grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 72px); align-items: center; margin-top: clamp(20px, 3vw, 36px); }
+.wbp-kicker { color: var(--amber); }
+.wbp-copy .d1 { margin-top: 12px; font-size: clamp(40px, 5.4vw, 82px); max-width: 14ch; }
+.wbp-lede { margin-top: 18px; max-width: 54ch; font-size: clamp(17px, 1.4vw, 20px); line-height: 1.55; color: var(--ink-2); text-wrap: pretty; }
+.wbp-act { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.wbp-act .pill { min-height: 44px; padding: 0 18px; font-size: 14px; }
+.wbp-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px 28px; margin: 32px 0 0; padding-top: 20px; border-top: 1px solid var(--rule); }
+.wbp-facts dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.wbp-facts dd { margin: 6px 0 0; font-size: 15px; line-height: 1.4; }
+.wbp-facts a { color: var(--copper); text-decoration: underline; text-underline-offset: 3px; }
+.wbp-map { position: relative; margin: 0; padding: clamp(14px, 2vw, 24px); border-radius: 26px; background: radial-gradient(120% 90% at 30% 20%, #212121 0%, #110a06 55%, #080503 100%); box-shadow: inset 0 0 0 1px rgba(255, 236, 210, 0.06), 0 40px 80px -48px rgba(23, 12, 4, 0.6); overflow: hidden; }
+.wbp-map svg { display: block; width: 100%; height: auto; }
+.wbp-states path { fill: #1a120c; stroke: rgba(255, 236, 210, 0.12); stroke-width: 0.8px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.wbp-states path.is-here { fill: #2e1f12; stroke: rgba(243, 196, 122, 0.4); }
+.wbp-dots { filter: drop-shadow(0 0 3px rgba(243, 181, 90, 0.8)); }
+.wbp-dot { fill: #f3b55a; transition: fill 160ms; }
+.wbp-dots a:hover .wbp-dot, .wbp-dots a:focus-visible .wbp-dot { fill: #fff3df; }
+.wbp-dot.is-on { fill: #fff6ea; stroke: rgba(243, 181, 90, 0.6); stroke-width: 6px; vector-effect: non-scaling-stroke; animation: wbPulse 1.8s ease-in-out infinite; }
+.wbp-map figcaption { position: absolute; left: 18px; bottom: 14px; font-size: 11px; }
+.wbp-map figcaption a { color: rgba(255, 238, 214, 0.75); }
+.wbp-map figcaption a:hover { color: #f3c47a; }
+.wbp-list { padding-top: 0; }
+.wbp-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 24px; margin-bottom: 22px; }
+.wbp-head > span.mono { flex-basis: 100%; }
+.wbp-head .d2 { margin-right: auto; }
+.wbp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.wbp-card-link { position: relative; display: flex; flex-direction: column; gap: 8px; height: 100%; padding: 22px 22px 20px; border: 1px solid var(--rule-2); border-radius: 20px; background: var(--paper-2); transition: box-shadow 220ms, transform 220ms, border-color 220ms; }
+.wbp-card-link:hover { border-color: var(--rule); box-shadow: 0 26px 50px -34px rgba(79, 42, 16, 0.45); transform: translateY(-2px); }
+.wbp-card-link .mono { color: var(--amber); font-size: 11px; }
+.wbp-card-link h3 { font-size: 22px; font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; }
+.wbp-card-link p { color: var(--ink-2); font-size: 15px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.wbp-go { margin-top: auto; padding-top: 6px; font-size: 13.5px; font-weight: 500; color: var(--copper); }
+.wbp-go b { font-family: var(--mono); font-weight: 400; font-size: 12px; color: var(--ink-3); margin-right: 8px; }
+.wbp-go i { display: inline-block; font-style: normal; transition: transform 160ms; }
+.wbp-card-link:hover .wbp-go i { transform: translateX(3px); }
+.wbp-n { position: absolute; top: 18px; right: 20px; font-size: 28px; font-weight: 500; letter-spacing: -0.03em; color: var(--paper-4); font-variant-numeric: tabular-nums; }
+.wbp-cards-state .wbp-card-link { padding-right: 64px; }
+.wbp-states-band { padding-top: 0; }
+.wbp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.wbp-chips a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper-2); font-size: 13.5px; font-weight: 500; transition: border-color 150ms; }
+.wbp-chips a:hover { border-color: var(--amber); }
+.wbp-chips span { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+@media (max-width: 860px) {
+  .wbp-grid { grid-template-columns: 1fr; }
+  .wbp-map { border-radius: 20px; margin: 0 -8px; }
+  .wbp-act .pill { flex: 1 1 auto; justify-content: center; }
+}
+.wbp-city { fill: rgba(255, 238, 214, 0.78); font-family: var(--font); font-weight: 500; letter-spacing: -0.01em; paint-order: stroke; stroke: rgba(12, 8, 5, 0.85); stroke-width: 3px; vector-effect: non-scaling-stroke; pointer-events: none; }
+.wbp-city tspan { fill: #f3c47a; font-family: var(--mono); font-weight: 400; }
+.wbp-map svg { overflow: visible; }
+.wb-card h3 a:hover { color: #f3c47a; }
+.wb-full { display: inline-block; margin-top: 14px; font-size: 13.5px; font-weight: 500; color: #f3c47a; }
+.wb-full i { display: inline-block; font-style: normal; transition: transform 160ms; }
+.wb-full:hover i { transform: translateX(3px); }
+.wb-st a { color: inherit; }
+.wb-st a:hover { text-decoration: underline; text-underline-offset: 3px; }

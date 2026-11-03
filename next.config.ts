@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     "/wa/producers/[name]": ["./public/wa/producer.html", "./public/wa/ratings.json"],
     // The takedown lists are cut from the public static files (src/lib/wa/live-stories.ts publicIndex).
     "/api/wa/latest": ["./public/wa/stories.json", "./public/wa/stories-archive.json", "./public/wa/ratings.json"],
+    "/wa/whisky-bars/[slug]": ["./public/wa/whisky-bar.html", "./public/wa/whisky-bars.json"],
+    "/wa/sitemap-pages.xml": ["./public/wa/whisky-bars.json"],
   },
   // The development hosts (*.vercel.app) stay out of search results, so they never compete with whiskyadvocate.com.
   // A custom production domain does not match, so pages there are indexable as soon as the domain points here.

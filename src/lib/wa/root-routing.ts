@@ -27,8 +27,8 @@ export const WA_PATH_HEADER = "x-wa-site-path";
 /** The application's own prefixes, matched by whole segment (so /reader.js is a site file, not the /reader app). */
 export const APP_PREFIXES = ["/cms", "/admin", "/api", "/_next", "/login", "/reader", "/share", "/brands-cms"];
 
-/** The four bare templates read their item from the URL hash; on their own they are empty pages, kept out of search. */
-export const BARE_TEMPLATES = new Set(["story.html", "bottle.html", "cocktail.html", "producer.html"]);
+/** The bare templates read their item from the URL hash; on their own they are empty pages, kept out of search. */
+export const BARE_TEMPLATES = new Set(["story.html", "bottle.html", "cocktail.html", "producer.html", "whisky-bar.html"]);
 
 export function isAppPath(pathname: string): boolean {
   return APP_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(prefix + "/"));
@@ -64,7 +64,7 @@ function decoded(segment: string): string {
  *  6. /favicon.ico is the site's (a public/wa name, so rule 5).
  *  7. /tag/<name> : 301 to the story list filtered by that tag.
  *  8. One segment : /wa/<segment>, where the story route (or a sitemap or feed route) answers.
- *  9. /recipes/<x>, /producers/<x> : their /wa routes.
+ *  9. /recipes/<x>, /producers/<x>, /whisky-bars/<x> : their /wa routes.
  * 10. Anything else : the redirect engine ("lookup").
  */
 export function decideRoot(pathname: string, search: string, names: WaStaticNames): RootDecision {
@@ -92,7 +92,7 @@ export function decideRoot(pathname: string, search: string, names: WaStaticName
   if (tag) return { type: "redirect", location: tagLocation("", tag[1]), status: 301 };
 
   if (segments.length === 1 && segments[0]) return { type: "rewrite", path: "/wa" + pathname + search };
-  if (segments.length === 2 && /^(recipes|producers)$/.test(segments[0]) && segments[1]) return { type: "rewrite", path: "/wa" + pathname + search };
+  if (segments.length === 2 && /^(recipes|producers|whisky-bars)$/.test(segments[0]) && segments[1]) return { type: "rewrite", path: "/wa" + pathname + search };
   return { type: "lookup" };
 }
 

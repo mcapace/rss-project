@@ -292,3 +292,27 @@ describe("withoutLegacyControls", () => {
     expect(withoutLegacyControls("<p>Plain.</p>")).toBe("<p>Plain.</p>");
   });
 });
+
+describe("site page review fixes", () => {
+  const water: WaDoc = { ...story, slug: "how-to-water-your-whisky", title: "How to Water Your Whisky", byline: "Charles K. Cowdery", body_html: '<p>Formula.</p>\n<div id="perfect-proof" class="calculator"><div><input placeholder="A" /></div><div><button>Calculate</button></div></div>\n<p>Then.</p>\n<div id="amount-water-to-add"><input /></div>', metadata: { categories: ["Guides"], page_file: "water.html" } };
+  it("points each old calculator at the matching part of the tool", async () => {
+    const html = (await sitePage("water.html", storyView(water, ROOT), ROOT))!;
+    expect(html).toContain('<p class="muted"><a href="#wtPerfect">Use Find your perfect proof on this page.</a></p>');
+    expect(html).toContain('<p class="muted"><a href="#wtFind">Use the calculator at the top of this page.</a></p>');
+    expect(html).toContain('id="wtPerfect"');
+  });
+  it("keeps markup valid when a control sits inside a sentence, and removes controls without pointers off the tool", () => {
+    const out = withoutLegacyControls('<p>Enter proof <input type="number"> then</p>');
+    expect(out).toBe('<p>Enter proof <span class="muted"><a href="#wtFind">Use the calculator at the top of this page.</a></span> then</p>');
+    expect(withoutLegacyControls('<p>A</p><div><input></div><p>B</p>', null)).toBe("<p>A</p>\n<p>B</p>");
+  });
+  it("uses a plain kicker on other pages and keeps a sponsored story's label and disclosure", async () => {
+    const other = (await sitePage("about.html", storyView({ ...story, slug: "about-us" }, ROOT), ROOT))!;
+    expect(other).not.toContain("The guide behind the tool");
+    const paid = (await sitePage("water.html", storyView({ ...water, metadata: { ...water.metadata, sponsored: { on: true, by: "Acme Spirits" } } }, ROOT), ROOT))!;
+    const src = paid.slice(paid.indexOf('id="source"'));
+    expect(src).toContain('<span class="sp-chip">Sponsored</span>');
+    expect(src).toContain("Sponsored by <strong>Acme Spirits</strong>");
+    expect(src).toContain('class="sp-note"');
+  });
+});

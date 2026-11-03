@@ -2,7 +2,7 @@ import { isRootHost, rootPath, samePath } from "./site-host";
 
 /**
  * The proxy's routing decision on a root host (whiskyadvocate.com), as a pure function so every case is unit tested
- * (src/lib/wa/__tests__/root-routing.test.ts). The proxy (src/proxy.ts) carries it out. None of these rules touch the
+ * (src/lib/wa/root-shape.test.ts and src/lib/wa/root-proxy.test.ts). The proxy (src/proxy.ts) carries it out. None of these rules touch the
  * database except "lookup", and they run outside the redirect kill switch: a database outage or REDIRECTS_AT_EDGE=false
  * must never 404 the site.
  */

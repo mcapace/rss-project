@@ -411,7 +411,9 @@ export async function sitePage(file: string | null, v: StoryView, site: WaSite):
   // The story itself follows the page, so the text that earned the URL stays on it; links on the page to the story's
   // own address (the tool's credit line) point down to it instead of at the page itself.
   html = selfLinksToSource(html, v.slug);
-  const section = sourceSection(v, site);
+  // The tool's own words and pointers apply only when the page is the water tool; any other page gets a plain section.
+  const tool = /\bid="wtFind"/.test(html);
+  const section = sourceSection(v, site, tool ? { water: "#wtFind", perfect: /\bid="wtPerfect"/.test(html) ? "#wtPerfect" : "#wtFind" } : null);
   const at = html.search(/<section class="nl-band"|<footer\b/);
   return at >= 0 ? html.slice(0, at) + section + "\n" + html.slice(at) : html.replace(/<\/body>/i, section + "\n</body>");
 }
@@ -427,37 +429,53 @@ function selfLinksToSource(html: string, slug: string): string {
   });
 }
 
+export type ToolPointers = { water: string; perfect: string };
+
 /**
  * The old site's inline widgets (the water story's two calculators: bare inputs and buttons with no script behind them)
- * are dropped from the copy under a site page, whose own tool does the job; each one leaves a pointer to the tool.
+ * are dropped from the copy under a site page. On the water tool each one leaves a pointer to the part of the tool that
+ * does its job (a block whose id or class names the perfect proof points to "Find your perfect proof", the others to
+ * the bottle search); a widget inside a sentence leaves an inline pointer so the markup stays valid. With no pointers
+ * (another site page) the controls are simply removed.
  */
-export function withoutLegacyControls(html: string): string {
-  const MARK = "\u0000";
+export function withoutLegacyControls(html: string, pointers: ToolPointers | null = { water: "#wtFind", perfect: "#wtFind" }): string {
+  const ANY = "\u0000", PERFECT = "\u0001";
   let out = html
-    .replace(/<(button|select|textarea)\b[^>]*>[\s\S]*?<\/\1>/gi, MARK)
-    .replace(/<input\b[^>]*>/gi, MARK);
-  if (!out.includes(MARK)) return html;
+    .replace(/<(button|select|textarea)\b[^>]*>[^<]*(?:<(?!\/?\1\b)[^<]*)*<\/\1>/gi, ANY)
+    .replace(/<input\b[^>]*>/gi, ANY);
+  if (!out.includes(ANY)) return html;
   for (let i = 0; i < 12; i++) {
-    const next = out.replace(/<(div|form|span|p|label|fieldset)\b[^>]*>\s*(?:\u0000\s*)+<\/\1>/gi, MARK);
+    const next = out.replace(/<(div|form|span|p|label|fieldset)\b([^>]*)>([ \t\r\n\u0000\u0001]*)<\/\1>/gi, (tag, _el: string, attrs: string, inner: string) =>
+      /[\u0000\u0001]/.test(inner) ? (/perfect/i.test(attrs) || inner.includes(PERFECT) ? PERFECT : ANY) : tag);
     if (next === out) break;
     out = next;
   }
-  return out.replace(/[\s\u0000]*\u0000[\s\u0000]*/g, '\n<p class="muted"><a href="#wtFind">Use the calculator at the top of this page.</a></p>\n');
+  return out.replace(/[ \t\r\n\u0000\u0001]*[\u0000\u0001][ \t\r\n\u0000\u0001]*/g, (run, at: number, all: string) => {
+    const before = all.slice(0, at).trimEnd(), after = all.slice(at + run.length).trimStart();
+    const block = (before === "" || before.endsWith(">")) && (after === "" || after.startsWith("<"));
+    if (!pointers) return block ? "\n" : " ";
+    const perfect = run.includes(PERFECT);
+    const link = `<a href="${perfect ? pointers.perfect : pointers.water}">${perfect ? "Use Find your perfect proof on this page." : "Use the calculator at the top of this page."}</a>`;
+    return block ? `\n<p class="muted">${link}</p>\n` : ` <span class="muted">${link}</span> `;
+  });
 }
 
 /** The story under a site page: kicker, headline, byline and the cleaned body in the story page's prose style. */
-function sourceSection(v: StoryView, site: WaSite): string {
+function sourceSection(v: StoryView, site: WaSite, pointers: ToolPointers | null): string {
   const date = v.day ? `<span><time datetime="${esc(v.published ?? v.day)}">${esc(longDate(v.day))}</time></span>` : "";
-  const who = v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${site.base}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
+  // A sponsored story keeps its label and disclosure here exactly as renderStory shows them.
+  const who = v.sponsored ? `<span>${v.sponsor ? `Sponsored by <strong>${esc(v.sponsor)}</strong>` : "<strong>Sponsored content</strong>"}</span>` : v.authors.length ? `<span>By ${v.authors.map(a => `<a href="${site.base}/stories.html#by=${encodeURIComponent(a)}" rel="author"><strong>${esc(a)}</strong></a>`).join(", ")}</span>` : "";
+  const kicker = (v.sponsored ? '<span class="sp-chip">Sponsored</span>' : "") + (pointers ? "The guide behind the tool" : esc(v.sectionLabel));
+  const disclosure = v.sponsored ? `<p class="sp-note" role="note">This is paid content, produced with ${esc(v.sponsor || "an advertiser")}. It is not part of Whisky Advocate&rsquo;s editorial coverage, and it does not affect our ratings.</p>` : "";
   return `<section class="band wa-source" id="source" aria-labelledby="sourceTitle">
   <div class="read-frame">
     <div style="max-width: 980px">
-      <span class="tag">The guide behind the tool</span>
+      <span class="tag">${kicker}</span>
       <h2 class="d2" style="margin-top: 12px" id="sourceTitle">${esc(v.title)}</h2>
       ${v.dek ? `<p class="lede" style="margin-top: 14px; max-width: 60ch">${esc(v.dek)}</p>` : ""}
       <p class="byline" style="margin-top: 18px">${who}${date}</p>
     </div>
-    <div class="prose" style="margin-top: 28px">${withoutLegacyControls(v.body)}</div>
+    <div class="prose" style="margin-top: 28px">${disclosure}${withoutLegacyControls(v.body, pointers)}</div>
   </div>
 </section>`;
 }

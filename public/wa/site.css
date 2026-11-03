@@ -2518,5 +2518,13 @@ main { min-height: 100vh; min-height: 100dvh; }
   .price-ladder-labels { font-size: 11px; }
 }
 
+/* ---- Phone tap targets, video and newsletter (2026-11-02) ---- */
+@media (max-width: 720px) {
+  .video-card .who, .nl-body a { padding-block: 7px; }
+  .nl-body a { display: inline-block; }
+  .nl-consent { grid-template-columns: 24px 1fr; }
+  .nl-fields .nl-consent input[type=checkbox] { width: 22px; height: 22px; }
+}
+
 /* ---- Newsletter page: the email field comes first, above the letters (2026-11-03) ---- */
 .nl-fields.nl-email { grid-template-columns: 1fr; padding: 18px 24px; max-width: 560px; }

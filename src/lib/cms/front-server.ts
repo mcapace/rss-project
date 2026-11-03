@@ -18,26 +18,36 @@ export type FrontLabel = keyof typeof FRONT_LABELS;
 export type FrontStory = { id: string; slug: string | null; title: string; byline: string; excerpt: string; section: string; date: string | null; published: boolean; hero: string | null; sponsored: boolean; sponsor: string };
 export type FrontSlot = { position: number; pinned: (FrontStory & { label: FrontLabel; ends_at: string | null; set_by: string; updated_at: string }) | null; fallback: FrontStory | null };
 
-type DocRow = { id: string; slug: string | null; title: string; byline: string; excerpt: string; publication_state: string; metadata: Record<string, unknown> };
+type DocRow = { id: string; slug: string | null; title: string; byline: string; excerpt: string; publication_state: string; published_at?: string | null; metadata: Record<string, unknown> };
 
 function story(row: DocRow): FrontStory {
   const meta = row.metadata || {};
   const dates = (meta.legacy_dates && typeof meta.legacy_dates === "object" ? meta.legacy_dates : {}) as Record<string, unknown>;
-  const date = typeof dates.published_date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.published_date) ? dates.published_date.slice(0, 10) : typeof dates.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.date) ? dates.date.slice(0, 10) : null;
+  const date = typeof dates.published_date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.published_date) ? dates.published_date.slice(0, 10) : typeof dates.date === "string" && /^\d{4}-\d{2}-\d{2}/.test(dates.date) ? dates.date.slice(0, 10) : row.published_at ? row.published_at.slice(0, 10) : null;
   const cats = Array.isArray(meta.categories) ? meta.categories.filter((c): c is string => typeof c === "string") : [];
   const hero = leadImagePath(row.id, meta);
   const sp = sponsorship(meta, row.byline);
   return { id: row.id, slug: row.slug, title: row.title, byline: row.byline, excerpt: row.excerpt, section: cats[0] || "", date, published: row.publication_state === "published", hero, sponsored: sp.on, sponsor: sp.by };
 }
 
-const DOC_FIELDS = "id,slug,title,byline,excerpt,publication_state,metadata";
+const DOC_FIELDS = "id,slug,title,byline,excerpt,publication_state,published_at,metadata";
 
-/** The newest published articles by their publish date, enough to fill the positions after the pinned ones. */
+/**
+ * The newest published articles by their publish date, enough to fill the positions after the pinned ones.
+ * Imported stories carry the old site's date (metadata.legacy_dates); stories published from the CMS carry
+ * published_at. Both are read and merged by date, and a scheduled story waits for its time.
+ */
 export async function newestStories(brand: CmsBrand, count = FRONT_POSITIONS * 3): Promise<FrontStory[]> {
-  const { data, error } = await cmsDb().from("cms_documents").select(DOC_FIELDS).eq("brand", brand).eq("kind", "article").eq("publication_state", "published")
-    .order("metadata->legacy_dates->>published_date", { ascending: false, nullsFirst: false }).order("updated_at", { ascending: false }).limit(count);
-  if (error) databaseError(error);
-  return ((data || []) as DocRow[]).map(story);
+  const now = new Date().toISOString();
+  const base = () => cmsDb().from("cms_documents").select(DOC_FIELDS).eq("brand", brand).eq("kind", "article").eq("publication_state", "published");
+  const [fresh, legacy] = await Promise.all([
+    base().not("published_at", "is", null).lte("published_at", now).order("published_at", { ascending: false }).limit(count),
+    base().is("published_at", null).order("metadata->legacy_dates->>published_date", { ascending: false, nullsFirst: false }).order("updated_at", { ascending: false }).limit(count),
+  ]);
+  if (fresh.error) databaseError(fresh.error);
+  if (legacy.error) databaseError(legacy.error);
+  const rows = [...((fresh.data || []) as DocRow[]), ...((legacy.data || []) as DocRow[])].map(story);
+  return rows.sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, count);
 }
 
 /** Every pinned position for the brand, with its document. */

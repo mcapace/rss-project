@@ -20,11 +20,11 @@ export async function GET(request: Request) {
   const slug = new URL(request.url).searchParams.get("slug")?.slice(0, 200) || "";
   if (!slug) return NextResponse.json({ error: "Which story?" }, { status: 400, headers: CORS });
   try {
-    const { data } = await cmsDb().from("cms_documents").select("id,slug,title,byline,excerpt,body_html,metadata").eq("brand", "wa").eq("kind", "article").eq("publication_state", "published").ilike("slug", slug).limit(1).maybeSingle();
+    const { data } = await cmsDb().from("cms_documents").select("id,slug,title,byline,excerpt,body_html,published_at,metadata").eq("brand", "wa").eq("kind", "article").eq("publication_state", "published").or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`).ilike("slug", slug).limit(1).maybeSingle();
     if (!data) return NextResponse.json({ error: "No such story." }, { status: 404, headers: { ...CORS, "Cache-Control": "public, s-maxage=60" } });
     const meta = (data.metadata || {}) as Record<string, unknown>;
     const dates = (meta.legacy_dates && typeof meta.legacy_dates === "object" ? meta.legacy_dates : {}) as Record<string, unknown>;
-    const date = typeof dates.published_date === "string" ? dates.published_date.slice(0, 10) : null;
+    const date = typeof dates.published_date === "string" ? dates.published_date.slice(0, 10) : typeof data.published_at === "string" ? data.published_at.slice(0, 10) : null;
     const cats = Array.isArray(meta.categories) ? meta.categories.filter((c): c is string => typeof c === "string") : [];
     const tags = Array.isArray(meta.ai_tags) ? (meta.ai_tags as unknown[]).filter((t): t is string => typeof t === "string") : Array.isArray(meta.tags) ? (meta.tags as unknown[]).filter((t): t is string => typeof t === "string" && !cats.includes(t)) : [];
     const seo = (meta.seo && typeof meta.seo === "object" ? meta.seo : {}) as Record<string, unknown>;

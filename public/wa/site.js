@@ -153,12 +153,31 @@
     var all = opts && opts.all;
     function done() { if (!all) return cb(STORIES); if (STORY_ARCHIVE) return cb(STORIES.concat(STORY_ARCHIVE)); if (!STORY_ARCHIVE_WAIT) STORY_ARCHIVE_WAIT = json("stories-archive.json").then(function (d) { STORY_ARCHIVE = d; return d; }); STORY_ARCHIVE_WAIT.then(function () { cb(STORIES.concat(STORY_ARCHIVE)); }).catch(dataError); }
     if (STORIES) return done();
-    if (!STORIES_WAIT) STORIES_WAIT = json("stories.json").then(function (d) { STORIES = d; return d; });
+    if (!STORIES_WAIT) STORIES_WAIT = Promise.all([json("stories.json"), live()]).then(function (x) { STORIES = mergeLive(x[0], x[1]); return STORIES; });
     STORIES_WAIT.then(done).catch(dataError);
   }
+  /* Stories published from the CMS (2026-11-03): /api/wa/latest has the ones the static export has not caught up with,
+     in the same shape, and the slugs taken down since. They are merged over the index (the live copy wins), so a new
+     story is on the home page and in the lists within about a minute of publishing. A failure leaves the static index. */
+  var LIVE_URL = (location.hostname === "localhost" || /claude\.ai|claudeusercontent/.test(location.hostname) || location.protocol === "file:") ? "https://rss-project-ten.vercel.app/api/wa/latest" : "/api/wa/latest";
+  var LIVE = null;
+  function live() {
+    if (!LIVE) LIVE = fetch(LIVE_URL, { signal: AbortSignal.timeout(8000) }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (d) { return d && Array.isArray(d.stories) ? d : { stories: [], removed: [], sponsored: [] }; });
+    return LIVE;
+  }
+  function mergeLive(list, fresh) {
+    var gone = {}, seen = {};
+    (fresh.removed || []).forEach(function (s) { gone[String(s).toLowerCase()] = 1; });
+    fresh.stories.forEach(function (s) { seen[s.slug.toLowerCase()] = 1; });
+    var kept = list.filter(function (s) { var k = s.slug.toLowerCase(); return !gone[k] && !seen[k]; });
+    return fresh.stories.filter(function (s) { return !gone[s.slug.toLowerCase()]; }).concat(kept).sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
+  }
+  WA.liveStories = live;
   function storyBySlug(slug, cb) { stories(function (recent) { var k = String(slug).toLowerCase(), hit = recent.filter(function (s) { return s.slug.toLowerCase() === k; })[0]; if (hit) return cb(hit, recent); stories(function (all) { cb(all.filter(function (s) { return s.slug.toLowerCase() === k; })[0] || null, all); }, { all: true }); }); }
   var ARTS = {};
-  function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return cb(ARTS[k][slug] || null); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; cb(d[slug] || null); }, function () { dataError(); cb(null); }); }
+  // A story's body: from the exported shard, else (a story published since the export) from the CMS.
+  function liveBody(slug, cb) { fetch(LIVE_URL.replace(/latest$/, "story") + "?slug=" + encodeURIComponent(slug)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { cb(j && j.body ? j.body : null); }, function () { cb(null); }); }
+  function article(slug, cb) { var k = shardOf(slug); if (ARTS[k]) return ARTS[k][slug] ? cb(ARTS[k][slug]) : liveBody(slug, cb); fetch("articles/" + k + ".json").then(function (r) { return r.json(); }).then(function (d) { ARTS[k] = d; if (d[slug]) cb(d[slug]); else liveBody(slug, cb); }, function () { liveBody(slug, cb); }); }
   var GLOSSARY = null;
   function glossary(cb) { if (GLOSSARY) return cb(GLOSSARY); json("glossary.json").then(function (d) { GLOSSARY = d; cb(d); }).catch(dataError); }
   var SECTION_HREF = { news: "stories.html#news", features: "stories.html#features", guides: "guides.html", cocktails: "cocktails.html", travel: "travel.html", life: "stories.html#life" };

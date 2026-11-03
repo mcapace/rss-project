@@ -95,8 +95,14 @@
     try { slug = decodeURIComponent(raw).toLowerCase(); } catch (e) { slug = raw.toLowerCase(); }
     if (!slug) return finish({ sponsored: "no" });
     setTimeout(function () { finish({ sponsored: "no" }); }, 1500);
-    fetch(new URL("sponsored.json", SCRIPT_SRC).href).then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
-      var hit = (list || []).filter(function (x) { return String(x.slug || "").toLowerCase() === slug; })[0];
+    // The exported list, plus the paid stories published from the CMS since the export (/api/wa/latest, cached a minute).
+    var listed = function (url, pick) { return fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(pick, function () { return []; }); };
+    Promise.all([
+      listed(new URL("sponsored.json", SCRIPT_SRC).href, function (d) { return d || []; }),
+      listed(new URL("/api/wa/latest", SCRIPT_SRC).href, function (d) { return (d && d.sponsored) || []; })
+    ]).then(function (lists) {
+      var list = lists[1].concat(lists[0]);
+      var hit = list.filter(function (x) { return String(x.slug || "").toLowerCase() === slug; })[0];
       finish(hit ? (hit.by ? { sponsored: "yes", sponsor: slugify(hit.by) } : { sponsored: "yes" }) : { sponsored: "no" });
     }).catch(function () { finish({ sponsored: "no" }); });
   }

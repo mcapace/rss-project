@@ -148,7 +148,9 @@
   }
   function load() {
     status.textContent='Loading search…';
-    Promise.all(['ratings.json','stories.json','stories-archive.json','cocktails.json'].map(WA.loadJSON)).then(function(sets){
+    // Stories published from the CMS since the export come from WA.liveStories (site.js) and lead the story list.
+    Promise.all(['ratings.json','stories.json','stories-archive.json','cocktails.json'].map(WA.loadJSON).concat([WA.liveStories?WA.liveStories():Promise.resolve(null)])).then(function(sets){
+      var fresh=sets[4];if(fresh&&fresh.stories){var drop={};(fresh.removed||[]).concat(fresh.stories.map(function(s){return s.slug;})).forEach(function(k){drop[String(k).toLowerCase()]=1;});sets[1]=fresh.stories.filter(function(s){return (fresh.removed||[]).indexOf(s.slug)<0;}).concat(sets[1].filter(function(s){return !drop[s.slug.toLowerCase()];}));sets[2]=sets[2].filter(function(s){return !drop[s.slug.toLowerCase()];});}
       index=[];storyBySlug=new Map();ratingBySlug=new Map();bottleItem=new Map();var producers=new Set(),seen=new Set();ratings=sets[0].rows.map(function(row){return Object.fromEntries(sets[0].cols.map(function(c,i){return [c,row[i]];}));});
       ratings.forEach(function(r){producers.add(r.pr);ratedBy.set(r.pr,(ratedBy.get(r.pr)||0)+1);var item={kind:'Bottle',title:r.n,href:WA.bottleHref(r.slug),rating:r,date:r.d,description:r.c+' · '+WA.fmt(r.p)+(r.d?' · Reviewed '+r.d.slice(0,4):'')};index.push(item);ratingBySlug.set(r.slug,r);bottleItem.set(r.slug,item);WA.norm(r.pr).split(' ').forEach(function(w){if(w.length>=3&&!/^(the|and|distillery|distilling|distillers|company|spirits|whisky|whiskey|co)$/.test(w))producerWords.add(w);});});
       sets[1].concat(sets[2]).forEach(function(s){if(seen.has(s.slug))return;seen.add(s.slug);var item={kind:'Story',title:s.title,href:WA.storyHref(s),img:s.hero||'',description:s.dek,date:s.d,hay:WA.norm(s.title+' '+s.dek+' '+(s.tags||[]).join(' '))};index.push(item);storyBySlug.set(s.slug,item);});

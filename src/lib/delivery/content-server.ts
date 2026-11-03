@@ -28,6 +28,7 @@ const DOCUMENT_COLUMNS = "id,brand,kind,title,byline,body_html,body_json,excerpt
 
 export async function getPublishedDocument(brand: CmsBrand, slug: string): Promise<CmsDocument | null> {
   const { data, error } = await cmsDb().from("cms_documents").select(DOCUMENT_COLUMNS).eq("brand", brand).eq("publication_state", "published")
+    .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
     .or(`slug.eq.${slug.replace(/[,()]/g, "")},metadata->>canonical_path.eq./${brand}/${slug.replace(/[,()]/g, "")}`).limit(1).maybeSingle();
   if (error) databaseError(error);
   return (data as CmsDocument | null) ?? null;

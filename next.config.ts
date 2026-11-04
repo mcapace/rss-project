@@ -11,13 +11,16 @@ const nextConfig: NextConfig = {
   // public/wa's file and folder names for the proxy, which cannot read the disk per request (src/lib/wa/static-names.ts).
   env: { WA_STATIC_NAMES: JSON.stringify(readWaStaticNames()) },
   // /wa/<slug> renders the concept site's own story and bottle templates on the server (src/lib/wa/seo.ts).
+  // Keys are picomatch globs matched anywhere in the route path, so brackets must be escaped: an unescaped "/wa/[slug]"
+  // is "/wa/ plus one of s, l, u, g", which matched /api/wa/latest, /story, /similar and /shelf-scan (they carried every
+  // public/wa file) and never matched the /wa/[slug] route itself.
   outputFileTracingIncludes: {
-    "/wa/[slug]": ["./public/wa/*.html", "./public/wa/story.html", "./public/wa/bottle.html", "./public/wa/ratings.json", "./public/wa/stories*.json", "./public/wa/notes/*.json", "./public/wa/articles/*.json"],
-    "/wa/recipes/[slug]": ["./public/wa/cocktail.html", "./public/wa/cocktails.json"],
-    "/wa/producers/[name]": ["./public/wa/producer.html", "./public/wa/ratings.json"],
+    "/wa/\\[slug\\]": ["./public/wa/*.html", "./public/wa/story.html", "./public/wa/bottle.html", "./public/wa/ratings.json", "./public/wa/stories*.json", "./public/wa/notes/*.json", "./public/wa/articles/*.json"],
+    "/wa/recipes/\\[slug\\]": ["./public/wa/cocktail.html", "./public/wa/cocktails.json"],
+    "/wa/producers/\\[name\\]": ["./public/wa/producer.html", "./public/wa/ratings.json"],
     // The takedown lists are cut from the public static files (src/lib/wa/live-stories.ts publicIndex).
     "/api/wa/latest": ["./public/wa/stories.json", "./public/wa/stories-archive.json", "./public/wa/ratings.json"],
-    "/wa/whisky-bars/[slug]": ["./public/wa/whisky-bar.html", "./public/wa/whisky-bars.json"],
+    "/wa/whisky-bars/\\[slug\\]": ["./public/wa/whisky-bar.html", "./public/wa/whisky-bars.json"],
     "/wa/sitemap-pages.xml": ["./public/wa/whisky-bars.json"],
   },
   // The development hosts (*.vercel.app) stay out of search results, so they never compete with whiskyadvocate.com.

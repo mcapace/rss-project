@@ -19,22 +19,36 @@
   <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="band ninety-hero" style="padding-top: 28px">
-  <div class="ninety-head">
-    <div>
-      <span class="tag" id="ninetyKicker">Partner program · Pernod Ricard USA</span>
-      <h1 class="d1" style="margin-top: 12px">90+ Club</h1>
-      <p class="lede" style="margin-top: 18px; max-width: 58ch" id="intro"></p>
-      <p class="sp-note" role="note">Sponsored by Pernod Ricard USA. The 90+ Club is a paid partner program: Pernod Ricard USA pays to feature its brands on this page. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
+<section class="band n9-band">
+  <div class="n9-hero">
+    <div class="n9-top">
+      <div class="n9-copy">
+        <span class="tag" id="ninetyKicker">Partner program · Pernod Ricard USA</span>
+        <h1 class="n9-title"><span class="n9-mark">90+</span> Club</h1>
+        <p class="n9-dek" id="intro"></p>
+      </div>
+      <div class="n9-side">
+        <dl class="n9-stats" id="n9Stats"></dl>
+        <div class="n9-cta"><a class="pill amber" href="#members">Shop the members</a><a class="pill n9-ghost" href="#n9Film" id="n9Watch" hidden>Watch the tasting</a></div>
+      </div>
     </div>
-    <figure class="ninety-film" id="film" hidden></figure>
+    <div class="n9-shelf" id="n9Shelf" role="list" aria-label="The members, by score"></div>
+    <div class="n9-tip" id="n9Tip" aria-hidden="true"></div>
   </div>
+  <p class="sp-note" role="note">Sponsored by Pernod Ricard USA. The 90+ Club is a paid partner program: Pernod Ricard USA pays to feature its brands on this page. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
 </section>
 
 <div class="ad ad-leader" data-slot="wa_ninety_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <section class="band" id="members">
-  <div class="band-head filter-bar" id="memberBar"><div><span class="mono">Shop the members</span><h2 class="d2" style="margin-top:10px" id="membersTitle">Bottles that scored 90 or higher.</h2></div><div class="suggest" id="groups"></div></div>
+  <div class="band-head filter-bar" id="memberBar"><div><span class="mono">Shop the members</span><h2 class="d2" style="margin-top:10px" id="membersTitle">Bottles that scored 90 or higher.</h2></div><div class="n9-tools"><div class="suggest" id="groups"></div><label class="n9-sort"><span class="mono">Sort</span><select id="n9Sort"><option value="score">Highest score</option><option value="price">Lowest price</option><option value="name">Name</option></select></label></div></div>
   <div class="ninety-grid" id="memberGrid"></div>
+</section>
+
+<section class="band n9-film-band" id="n9Film" hidden>
+  <div class="n9-film">
+    <figure class="ninety-film" id="film"></figure>
+    <div class="n9-film-copy"><span class="mono">Watch</span><h2 class="d2" id="filmTitle"></h2><p>A tasting from the 90+ Club, presented by Pernod Ricard USA.</p></div>
+  </div>
 </section>
 
 <section class="band" id="clubStories">
@@ -48,7 +62,7 @@
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
-  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
+  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">Fresh ratings and new releases in your inbox. <a href="newsletter.html">See every newsletter&nbsp;&rarr;</a></p></div>
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
 </section>
 <footer class="site">
@@ -62,62 +76,6 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
-<script>
-WA.ready(function () { WA.archive(function (DATA) {
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  function group(c) { c = (c || "").toLowerCase(); return /scotch/.test(c) ? "scotch" : /irish/.test(c) ? "irish" : /bourbon|tennessee|rye|american/.test(c) ? "american" : "other"; }
-  var GROUPS = [["", "All"], ["scotch", "Scotch"], ["irish", "Irish"], ["american", "American"]];
-  fetch("ninety.json").then(function (r) { return r.json(); }).then(function (N) {
-    document.getElementById("intro").textContent = N.intro || "";
-    document.getElementById("ninetyKicker").innerHTML = WA.sponsorChip() + "Partner program · Pernod Ricard USA";
-    if (N.video) {
-      var film = document.getElementById("film");
-      film.innerHTML = '<button type="button" class="top20-play" data-embed="' + esc(N.video.embed) + '" aria-label="Play ' + esc(N.video.title) + '"><img src="' + esc(N.video.poster) + '" alt=""><span class="play"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span></button><figcaption>' + esc(N.video.title) + "</figcaption>";
-      film.hidden = false;
-      if (WA.watchPosters) WA.watchPosters(film);
-      film.addEventListener("click", function (e) { var f = e.target.closest(".top20-play"); if (f && !f.classList.contains("playing")) WA.playEmbed(f); });
-    }
-    // Members: the site's own rating cards (our bottle picture, score, note, Buy where the store has it).
-    var members = N.members.map(function (m) { return { m: m, r: WA.find(DATA, m.slug) }; });
-    var present = {}; members.forEach(function (x) { present[group(x.m.c)] = true; });
-    var state = { g: "" };
-    document.getElementById("groups").innerHTML = GROUPS.filter(function (g) { return !g[0] || present[g[0]]; }).map(function (g) { return '<button type="button" data-g="' + g[0] + '" aria-pressed="' + (g[0] === state.g) + '">' + g[1] + "</button>"; }).join("");
-    function card(x) {
-      if (x.r) return WA.bottleCard(x.r);
-      var m = x.m;
-      return '<article class="bottle has-img"><a class="thumb" href="club.html#' + encodeURIComponent(m.id) + '"><img src="' + esc(m.img) + '" alt=""></a><div class="top"><div class="score score-type">' + m.s + '<small>points</small></div><div class="cat">' + esc(m.c) + '</div></div><div><h3><a href="club.html#' + encodeURIComponent(m.id) + '">' + esc(m.n) + '</a></h3></div><div class="foot"><span>' + esc(m.p) + "</span></div></article>";
-    }
-    function renderMembers() {
-      var list = members.filter(function (x) { return !state.g || group(x.m.c) === state.g; });
-      document.getElementById("memberGrid").innerHTML = list.map(card).join("");
-      document.getElementById("membersTitle").textContent = list.length + " bottles that scored 90 or higher" + (state.g ? ", " + GROUPS.filter(function (g) { return g[0] === state.g; })[0][1] : "") + ".";
-      document.querySelectorAll("#groups button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-g") === state.g)); });
-      // Every card opens the bottle's 90+ Club page (the club's own page for it, as on the old site).
-      document.querySelectorAll("#memberGrid article").forEach(function (a, i) { var x = list[i]; if (!x) return; a.querySelectorAll('a[href^="bottle.html"], a.thumb').forEach(function (l) { l.href = "club.html#" + encodeURIComponent(x.m.id); }); });
-      if (WA.decorateBuy) WA.decorateBuy(document.getElementById("memberGrid"));
-      if (WA.fillNotes) WA.fillNotes(document.getElementById("memberGrid"));
-    }
-    document.getElementById("groups").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; state.g = b.getAttribute("data-g"); renderMembers(); });
-    WA.stickyFilters(document.getElementById("memberBar"));
-    renderMembers();
-    // The club's stories, from the story index (labeled Sponsored like every paid story).
-    WA.stories(function () {
-      N.stories.forEach(function (slug) { WA.storyBySlug(slug, function (st) {
-        if (!st) return;
-        var el = document.createElement("div"); el.setAttribute("data-order", N.stories.indexOf(slug));
-        el.innerHTML = '<a class="pick-card" href="' + WA.storyHref(st) + '">' + (st.hero ? '<img src="' + st.hero + '" alt="" loading="lazy">' : "") + '<span class="tag">' + (WA.SECTION[st.sec] || "") + " · " + WA.when(st.d) + "</span><h3>" + st.title + '</h3><p class="why">' + (st.dek || "") + "</p></a>";
-        var grid = document.getElementById("storyGrid"), node = el.firstChild; node.setAttribute("data-order", el.getAttribute("data-order"));
-        var after = [].filter.call(grid.children, function (c) { return +c.getAttribute("data-order") > +node.getAttribute("data-order"); })[0];
-        grid.insertBefore(node, after || null);
-      }); });
-    });
-    // Top-shelf spirits: not rated by Whisky Advocate, so no score.
-    document.getElementById("spiritsIntro").textContent = N.spiritsIntro || "";
-    document.getElementById("spiritGrid").innerHTML = N.spirits.map(function (s) { var name = s.n.replace(/,\s*[\d.]+\s*[%$]\s*$/, ""); return '<a class="spirit-card" href="club.html#' + encodeURIComponent(s.id) + '"><span class="pic"><img src="' + esc(s.img) + '" alt="" loading="lazy"></span><span class="tag">' + esc(s.c) + (s.p ? " · " + esc(s.p) : "") + "</span><strong>" + esc(name) + "</strong></a>"; }).join("");
-    document.title = "90+ Club · Whisky Advocate";
-    if (WA.setContext) WA.setContext({ kind: "page", title: "the 90+ Club" });
-  });
-}); });
-</script>
+<script src="ninety.js"></script>
 </body>
 </html>

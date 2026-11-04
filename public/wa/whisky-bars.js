@@ -87,6 +87,7 @@
     shown = BARS.filter(function (b) { return (!stateF || b.state === stateF) && words.every(function (w) { return b._k.indexOf(w) >= 0; }); });
     if (here) shown.sort(function (a, b) { return a._mi - b._mi; });
     if (M) M.map.getSource("bars").setData(M.features(shown));
+    follow.key = "";
     var cap = phone.matches && !expanded && shown.length > 14 ? 12 : Infinity, html = "", last = "";
     shown.slice(0, cap).forEach(function (b) {
       if (!here && b.state !== last) { last = b.state; var n = shown.filter(function (x) { return x.state === b.state; }).length; html += '<li class="wbx-st"><a class="mono" href="' + pageOf(b._st) + '">' + esc(b.state) + '</a><span class="mono">' + n + "</span></li>"; }
@@ -147,12 +148,13 @@
   }
 
   /* ---- camera ---- */
-  function fit(bars, max) {
+  function fit(bars, max, ms) {
     if (!M) return;
     var bb = WABarsMap.bounds(bars);
     if (!bb) return;
-    if (bb[0][0] === bb[1][0] && bb[0][1] === bb[1][1]) M.map.flyTo({ center: bb[0], zoom: 12.5, pitch: 0, bearing: 0, padding: pad(), duration: reduce ? 0 : 1600 });
-    else M.map.fitBounds(bb, { padding: pad(), maxZoom: max || 12.5, pitch: 0, bearing: 0, duration: reduce ? 0 : 1600 });
+    var d = reduce ? 0 : ms || 1600;
+    if (bb[0][0] === bb[1][0] && bb[0][1] === bb[1][1]) M.map.flyTo({ center: bb[0], zoom: Math.min(12.5, max || 12.5), pitch: 0, bearing: 0, padding: pad(), duration: d });
+    else M.map.fitBounds(bb, { padding: pad(), maxZoom: max || 12.5, pitch: 0, bearing: 0, duration: d });
   }
   function fitUS() { if (M) M.map.fitBounds(WABarsMap.US, { padding: pad(), pitch: 0, bearing: 0, duration: reduce ? 0 : 1500 }); }
 
@@ -211,6 +213,30 @@
       list.addEventListener("pointerleave", function () { hover(null); });
     });
   }
+
+  /* ---- the map follows the list: scrolling the panel frames the state being read (the nearest bars in view, near me) ---- */
+  var follow = { key: "", at: 0, t: 0 };
+  function rowsInView() {
+    var box = listView.getBoundingClientRect(), out = [];
+    list.querySelectorAll(".wbx-row").forEach(function (r) { var b = r.getBoundingClientRect(); if (b.bottom > box.top + 30 && b.top < box.bottom - 10) out.push(byId[r.getAttribute("data-id")]); });
+    return out.filter(Boolean);
+  }
+  function followList() {
+    if (!M || sel || listView.hidden) return;
+    if (listView.scrollTop < 8 && !here && !stateF && !q) { if (follow.key !== "us") { follow.key = "us"; M.map.fitBounds(WABarsMap.US, { padding: pad(), pitch: 0, bearing: 0, duration: reduce ? 0 : 900 }); } return; }
+    var v = rowsInView(); if (!v.length) return;
+    var lead = v[Math.min(v.length - 1, Math.floor(v.length / 3))];
+    var group = here ? v : shown.filter(function (x) { return x.state === lead.state; });
+    var key = group.map(function (b) { return b.id; }).join(",");
+    if (key === follow.key) return;
+    follow.key = key;
+    fit(group, here ? 11 : 9.5, 900);
+  }
+  ["wheel", "touchmove", "pointerdown", "keydown"].forEach(function (ev) { listView.addEventListener(ev, function () { follow.at = Date.now(); }, { passive: true }); });
+  listView.addEventListener("scroll", function () {
+    if (Date.now() - follow.at > 1500) return;
+    clearTimeout(follow.t); follow.t = setTimeout(followList, 160);
+  }, { passive: true });
 
   /* ---- events ---- */
   panel.addEventListener("click", function (e) {

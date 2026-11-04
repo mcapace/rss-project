@@ -3844,3 +3844,11 @@ body.cp .cp-aside { display: grid; gap: 14px; }
 body.cp-about .cp-plate img { object-position: 40% 50%; }
 .cp-card a[href^="tel:"], .cp-aside a[href^="tel:"] { white-space: nowrap; }
 .cp-card > .pill { justify-self: start; }
+
+/* Retailer club hero (2026-11-04): the title sat at the foot of a tall square photo with empty space above it. The text is
+   centred against the photo, which is a shorter 5:4 frame; phones keep the stacked layout. */
+@media (min-width: 1100px) {
+  .cp-hero--split { align-items: center; }
+  .cp-hero--split .cp-hero-copy { align-content: center; }
+  .cp-hero--split .cp-figure { aspect-ratio: 5 / 4; max-width: 520px; }
+}

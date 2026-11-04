@@ -11,7 +11,8 @@
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
 <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-<link rel="preload" as="image" href="img/bars/film.webp" imagesrcset="img/bars/film-960.webp 960w, img/bars/film.webp 1920w" imagesizes="100vw">
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="site.css">
 </head>
 <body class="wb-page">
@@ -23,58 +24,48 @@
   <div class="tools"><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="wb-hero" aria-labelledby="wbTitle">
-  <div class="wb-hero-media" aria-hidden="true">
-    <img src="img/bars/film.webp" srcset="img/bars/film-960.webp 960w, img/bars/film.webp 1920w" sizes="100vw" alt="" width="1920" height="1080" fetchpriority="high">
-    <video id="wbHeroVideo" muted playsinline loop preload="none" data-src="https://cdn.jwplayer.com/videos/vn5OBNyP-bXifTlXf.mp4"></video>
-  </div>
-  <div class="wb-hero-copy">
+<section class="band wbx-head" aria-labelledby="wbTitle">
+  <div class="wbx-title">
     <span class="mono">Whisky Advocate &middot; 2026 edition</span>
     <h1 class="d1" id="wbTitle">America&rsquo;s Top Whisky Bars</h1>
-    <p class="wb-hero-dek">The places where exceptional whisky, true hospitality and atmosphere meet, chosen by our editors in every corner of the country.</p>
-    <div class="wb-hero-cta">
+    <p class="wbx-dek">The places where exceptional whisky, true hospitality and atmosphere meet, chosen by our editors in every corner of the country. Find one near you, wander the map, or open a state.</p>
+  </div>
+  <div class="wbx-side">
+    <dl class="wbx-stats" id="wbStats" aria-label="This year&rsquo;s list">
+      <div><dt>Bars</dt><dd>151</dd></div>
+      <div><dt>States</dt><dd>47</dd></div>
+      <div><dt>Plus</dt><dd>D.C. &amp; Puerto Rico</dd></div>
+    </dl>
+    <div class="wbx-cta">
       <button type="button" class="pill amber" id="wbNearHero"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11.2A6.5 6.5 0 0 1 12 3.3a6.5 6.5 0 0 1 6.5 6.5C18.5 14.9 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9.8" r="2.3" fill="currentColor"/></svg>Find a bar near me</button>
-      <a class="pill wb-ghost" href="#explore">Explore the map</a>
+      <a class="pill" href="#film">Watch the film</a>
     </div>
-  </div>
-  <dl class="wb-hero-stats" id="wbStats" aria-label="This year&rsquo;s list">
-    <div><dt>Bars</dt><dd>151</dd></div>
-    <div><dt>States</dt><dd>47</dd></div>
-    <div><dt>Plus</dt><dd>D.C. &amp; Puerto Rico</dd></div>
-  </dl>
-</section>
-
-<section class="band wb-intro">
-  <div><span class="mono">The list</span><h2 class="d2">Where exceptional whisky meets true hospitality</h2></div>
-  <div class="wb-intro-copy">
-    <p>America&rsquo;s Top Whisky Bars honors the places where exceptional whisky, true hospitality and atmosphere converge. Each bar reflects the artistry of its beverage program, the warmth of its service and the authenticity of its setting.</p>
-    <p class="muted">Think your favorite bar belongs on next year&rsquo;s list? <a href="https://whiskyadvocate.com/bars" target="_blank" rel="noopener">Tell us about it</a>.</p>
+    <p class="wbx-tell muted">Think your favorite bar belongs on next year&rsquo;s list? <a href="https://whiskyadvocate.com/bars" target="_blank" rel="noopener">Tell us about it</a>.</p>
   </div>
 </section>
 
-<section class="band wb-explore" id="explore" aria-labelledby="wbExploreTitle">
-  <div class="wb-explore-head">
-    <div><span class="mono">Explore the bars</span><h2 class="d2" id="wbExploreTitle">Every bar on the list, on one map</h2></div>
-    <div class="wb-filters">
-      <form class="fmap-find wb-find" role="search" onsubmit="return false"><label class="sr-only" for="wbFind">Search bars, cities or states</label><input id="wbFind" type="search" placeholder="Search a bar, city or state" autocomplete="off"></form>
-      <label class="sr-only" for="wbState">State</label>
-      <select id="wbState" class="wb-select"><option value="">All states</option></select>
-      <button type="button" class="pill" id="wbNear" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11.2A6.5 6.5 0 0 1 12 3.3a6.5 6.5 0 0 1 6.5 6.5C18.5 14.9 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9.8" r="2.3" fill="currentColor"/></svg>Near me</button>
-    </div>
-  </div>
-
-  <div class="wb-atlas">
-    <div class="wb-map" id="wbMap">
-      <svg id="wbSvg" role="img" aria-label="Map of the United States with every bar on the list. Choose a bar from the list to see it on the map."></svg>
-      <div class="fmap-tip wb-tip" id="wbTip" hidden></div>
-      <div class="fmap-zoom wb-zoom"><button type="button" id="wbZoomIn" aria-label="Zoom in">+</button><button type="button" id="wbZoomOut" aria-label="Zoom out">&minus;</button></div>
-      <button type="button" class="wb-reset" id="wbReset" hidden>All of America</button>
-      <article class="wb-card" id="wbCard" hidden aria-live="polite"></article>
-    </div>
-    <div class="wb-list-wrap">
-      <p class="wb-count mono" id="wbCount" role="status">Loading the bars&hellip;</p>
-      <ol class="wb-list" id="wbList"></ol>
-    </div>
+<section class="band wbx-explore" id="explore" aria-label="The map">
+  <div class="wbx-stage" id="wbStage">
+    <div class="wbx-map" id="wbMap" role="region" aria-label="Map of every bar on the list"></div>
+    <div class="wbx-loading mono" id="wbLoading">Loading the map&hellip;</div>
+    <aside class="wbx-panel" id="wbPanel" aria-label="Bars">
+      <div class="wbx-panel-top">
+        <form class="wbx-find" role="search" onsubmit="return false"><label class="sr-only" for="wbFind">Search bars, cities or states</label><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="wbFind" type="search" placeholder="Search a bar, city or state" autocomplete="off"></form>
+        <div class="wbx-filters">
+          <label class="sr-only" for="wbState">State</label>
+          <select id="wbState" class="wbx-select"><option value="">All states</option></select>
+          <button type="button" class="wbx-near" id="wbNear" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11.2A6.5 6.5 0 0 1 12 3.3a6.5 6.5 0 0 1 6.5 6.5C18.5 14.9 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9.8" r="2.3" fill="currentColor"/></svg>Near me</button>
+        </div>
+      </div>
+      <div class="wbx-listview" id="wbListView">
+        <p class="wbx-count mono" id="wbCount" role="status">Loading the bars&hellip;</p>
+        <ol class="wbx-list" id="wbList"></ol>
+      </div>
+      <article class="wbx-detail" id="wbDetail" hidden aria-live="polite"></article>
+    </aside>
+    <div class="wbx-jumps" id="wbJumps" role="group" aria-label="Jump to"><button type="button" data-jump="us">All of America</button><button type="button" data-jump="Alaska">Alaska</button><button type="button" data-jump="Hawaii">Hawaii</button><button type="button" data-jump="Puerto Rico">Puerto Rico</button></div>
+    <div class="wbx-zoom"><button type="button" id="wbZoomIn" aria-label="Zoom in">+</button><button type="button" id="wbZoomOut" aria-label="Zoom out">&minus;</button></div>
+    <div class="wbx-tip" id="wbTip" hidden></div>
   </div>
 </section>
 
@@ -83,7 +74,7 @@
   <div class="wb-drinks" id="wbDrinks"></div>
 </section>
 
-<section class="band wb-film-band" aria-labelledby="wbFilmTitle">
+<section class="band wb-film-band" id="film" aria-labelledby="wbFilmTitle">
   <div class="wb-sec-head"><span class="mono">The film</span><h2 class="d2" id="wbFilmTitle">An ode to the whisky bar</h2></div>
   <div class="wb-film" id="wbFilm">
     <img src="img/bars/film.webp" srcset="img/bars/film-960.webp 960w, img/bars/film.webp 1920w" sizes="(min-width: 1200px) 1140px, 100vw" alt="" width="1920" height="1080" loading="lazy">
@@ -95,7 +86,7 @@
 <dialog class="wb-drink-dlg" id="wbDrinkDlg" aria-labelledby="wbDrinkName"></dialog>
 
 <section class="nl-band" aria-label="Newsletters">
-  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">The newest ratings and releases, twice a month and every Friday. <a href="newsletter.html">All four letters</a></p></div>
+  <div class="nl-strip-wrap glass"><div><span class="mono">Newsletters</span><h2 class="d3">WhiskyNotes and Whisky Weekend, from the editors.</h2><p class="muted">Fresh ratings and new releases in your inbox. <a href="newsletter.html">See every newsletter&nbsp;&rarr;</a></p></div>
   <form class="nl-strip" data-lists="notes,weekend" data-source="footer strip"><input type="email" placeholder="you@example.com" aria-label="Email" required autocomplete="email"><button type="submit" class="pill solid">Sign up</button><span class="nl-note muted"></span></form></div>
 </section>
 <footer class="site">
@@ -110,6 +101,7 @@
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
 <script>WA.ready(function () {});</script>
+<script src="bars-map.js"></script>
 <script src="whisky-bars.js"></script>
 </body>
 </html>

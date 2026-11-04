@@ -6,16 +6,6 @@
   var track = function (name, data) { if (window.WA && WA.track) WA.track(name, data); };
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---------- Hero film loop: wide screens only, paused off screen, skipped for reduced motion and data saver ---------- */
-  (function () {
-    var v = $("wbHeroVideo"); if (!v) return;
-    var save = navigator.connection && navigator.connection.saveData;
-    if (reduce || save || !matchMedia("(min-width: 900px)").matches) return;
-    v.src = v.getAttribute("data-src");
-    v.addEventListener("playing", function () { v.classList.add("is-on"); }, { once: true });
-    new IntersectionObserver(function (e) { if (e[0].isIntersecting && !document.body.classList.contains("wb-film-on")) v.play().catch(function () {}); else v.pause(); }, { threshold: 0.15 }).observe(v);
-  })();
-
   /* ---------- The six classics ---------- */
   var DRINKS = [
     { id: "manhattan", name: "The Manhattan", img: "manhattan", recipe: "2 parts Maker's Mark 46\u00ae\n1 part sweet vermouth\n2 dashes Angostura\u00ae bitters\nLuxardo\u00ae cherry for garnish\n\nCombine ingredients over ice in a mixing glass. Stir and strain into a chilled cocktail glass neat or on the rocks. Garnish with a Luxardo\u00ae cherry.", take: "Today's bartenders revisit the Manhattan through nuance, not novelty. They explore the spectrum of vermouths from blanc to dry, utilize bitters with chocolate or cherry, and introduce smoke or barrel-aging for added depth. Each variation reflects the dialogue between sweetness and spirit, reaffirming why this drink remains a benchmark.", shop: "https://www.reservebar.com/products/makers-46-bourbon-whisky/GROUPING-34281" },
@@ -64,111 +54,91 @@
       v.src = innerWidth > 1300 ? "https://cdn.jwplayer.com/videos/vn5OBNyP-VLJR2Jsq.mp4" : "https://cdn.jwplayer.com/videos/vn5OBNyP-WBFwZoOE.mp4";
       v.setAttribute("aria-label", "An ode to the whisky bar");
       box.innerHTML = ""; box.appendChild(v); box.classList.add("is-playing");
-      document.body.classList.add("wb-film-on"); var h = $("wbHeroVideo"); if (h) h.pause();
       v.play().catch(function () {}); v.focus(); track("bars_film_play", {});
     });
   })();
 
-  /* ---------- Map and list ---------- */
-  var svg = $("wbSvg"), list = $("wbList"); if (!svg || !list) return;
-  var D, BARS = [], byId = {}, W = 975, H = 610, view = { x: 0, y: 0, w: W, h: H }, full = { x: 0, y: 0, w: W, h: H };
-  var dots = {}, rows = {}, sel = null, here = null, q = "", stateF = "", shown = [], expanded = false;
-  var phone = matchMedia("(max-width: 860px)");
+  /* ---------- The map and the panel ---------- */
+  var stage = $("wbStage"), list = $("wbList"); if (!stage || !list) return;
   var BP = window.WA && typeof WA.BASE === "string" ? WA.BASE : "/wa";
   var pageOf = function (slug) { return BP + "/whisky-bars/" + encodeURIComponent(slug); };
-  var map = $("wbMap"), tip = $("wbTip"), card = $("wbCard"), count = $("wbCount"), find = $("wbFind"), stateSel = $("wbState"), nearBtn = $("wbNear"), reset = $("wbReset");
+  var panel = $("wbPanel"), listView = $("wbListView"), detail = $("wbDetail"), count = $("wbCount"), find = $("wbFind"), stateSel = $("wbState"), nearBtn = $("wbNear"), tip = $("wbTip"), loading = $("wbLoading");
+  var phone = matchMedia("(max-width: 860px)");
+  var D, BARS = [], byId = {}, stSlug = {}, shown = [], sel = null, here = null, q = "", stateF = "", expanded = false;
+  var M = null, selMarker = null, youMarker = null, hoverId = null;
 
-  function el(tag, attrs) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); return n; }
-  function pxW() { return svg.getBoundingClientRect().width || W; }
-  function fitAspect(v) {
-    var r = svg.getBoundingClientRect(), a = r.width && r.height ? r.width / r.height : W / H;
-    var w = v.w, h = v.h; if (w / h < a) w = h * a; else h = w / a;
-    return { x: v.x + (v.w - w) / 2, y: v.y + (v.h - h) / 2, w: w, h: h };
-  }
-  function apply(v) {
-    view = v; svg.setAttribute("viewBox", v.x.toFixed(2) + " " + v.y.toFixed(2) + " " + v.w.toFixed(2) + " " + v.h.toFixed(2));
-    var k = v.w / pxW(); svg.style.setProperty("--k", k.toFixed(4));
-    var r = 3.4 * Math.max(k, 0.12) * Math.min(1.5, Math.pow(full.w / v.w, 0.22));
-    for (var id in dots) dots[id].setAttribute("r", (dots[id].classList.contains("is-on") ? r * 1.7 : r).toFixed(2));
-    reset.hidden = v.w > full.w * 0.92; map.classList.toggle("is-zoomed", !reset.hidden);
-  }
-  var anim = 0;
-  function go(target, ms) {
-    target = fitAspect(target); cancelAnimationFrame(anim);
-    if (reduce || ms === 0) { apply(target); return; }
-    var from = { x: view.x, y: view.y, w: view.w, h: view.h }, t0 = performance.now(); ms = ms || 650;
-    (function step(t) {
-      var p = Math.min(1, (t - t0) / ms), e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      apply({ x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, w: from.w + (target.w - from.w) * e, h: from.h + (target.h - from.h) * e });
-      if (p < 1) anim = requestAnimationFrame(step);
-    })(t0);
-  }
-  function boxOf(pts, pad, minW) {
-    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    pts.forEach(function (p) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[2] == null ? p[0] : p[2]); y1 = Math.max(y1, p[3] == null ? p[1] : p[3]); });
-    var w = Math.max(x1 - x0, minW || 0), h = Math.max(y1 - y0, (minW || 0) * 0.62), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    w *= 1 + pad; h *= 1 + pad; return { x: cx - w / 2, y: cy - h / 2, w: w, h: h };
-  }
-  function stateBox(name) { var s = D.states.filter(function (x) { return x.name === name; })[0]; return s ? boxOf([s.box], 0.18, 70) : full; }
-
-  function miles(a, b) {
-    var R = 3958.8, t = Math.PI / 180, dLat = (b.lat - a.lat) * t, dLng = (b.lng - a.lng) * t;
-    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * t) * Math.cos(b.lat * t) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    return 2 * R * Math.asin(Math.sqrt(h));
-  }
   var fold = function (s) { return String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); };
+  var place = function (b) { return b.city + (b.st ? ", " + b.st : ""); };
+  var mi = function (n) { return n < 10 ? n.toFixed(1) : Math.round(n).toLocaleString(); };
+  function miles(a, b) {
+    if (a.lat == null || b.lat == null) return Infinity;
+    var t = Math.PI / 180, dLat = (b.lat - a.lat) * t, dLng = (b.lng - a.lng) * t;
+    var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * t) * Math.cos(b.lat * t) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+  }
+  function pad() {
+    if (phone.matches) return { top: 50, bottom: 40, left: 36, right: 36 };
+    return { top: 70, bottom: 60, left: panel.offsetWidth + 60, right: 80 };
+  }
 
+  /* ---- list ---- */
   function render() {
     var words = fold(q).split(/\s+/).filter(Boolean);
-    shown = BARS.filter(function (b) {
-      if (stateF && b.state !== stateF) return false;
-      return words.every(function (w) { return b._k.indexOf(w) >= 0; });
-    });
+    shown = BARS.filter(function (b) { return (!stateF || b.state === stateF) && words.every(function (w) { return b._k.indexOf(w) >= 0; }); });
     if (here) shown.sort(function (a, b) { return a._mi - b._mi; });
-    var on = {}; shown.forEach(function (b) { on[b.id] = 1; });
-    for (var id in dots) dots[id].classList.toggle("is-dim", !on[id]);
-    var html = "", lastState = "", cap = phone.matches && !expanded && shown.length > 14 ? 12 : Infinity;
-    if (sel && cap < Infinity && shown.indexOf(sel) >= cap) cap = shown.indexOf(sel) + 1;
+    if (M) M.map.getSource("bars").setData(M.features(shown));
+    var cap = phone.matches && !expanded && shown.length > 14 ? 12 : Infinity, html = "", last = "";
     shown.slice(0, cap).forEach(function (b) {
-      if (!here && b.state !== lastState) { lastState = b.state; html += '<li class="wb-st mono"><a href="' + pageOf(b._st) + '">' + esc(b.state) + '</a><span>' + BARS.filter(function (x) { return x.state === b.state && (!words.length || shown.indexOf(x) >= 0); }).length + '</span></li>'; }
-      html += '<li><button type="button" class="wb-row' + (sel && sel.id === b.id ? " is-on" : "") + '" data-id="' + b.id + '" aria-pressed="' + (sel && sel.id === b.id) + '"><span class="wb-row-t"><strong>' + esc(b.name) + '</strong><em>' + esc(b.city + (b.st ? ", " + b.st : "")) + '</em></span>'
-        + (here ? '<span class="wb-mi">' + (b._mi < 10 ? b._mi.toFixed(1) : Math.round(b._mi).toLocaleString()) + ' mi</span>' : '<i aria-hidden="true">&rarr;</i>') + "</button></li>";
+      if (!here && b.state !== last) { last = b.state; var n = shown.filter(function (x) { return x.state === b.state; }).length; html += '<li class="wbx-st"><a class="mono" href="' + pageOf(b._st) + '">' + esc(b.state) + '</a><span class="mono">' + n + "</span></li>"; }
+      html += '<li><button type="button" class="wbx-row' + (sel === b ? " is-on" : "") + '" data-id="' + b.id + '"><span class="wbx-row-t"><strong>' + esc(b.name) + "</strong><em>" + esc(place(b)) + "</em></span>"
+        + (here ? '<span class="wbx-mi">' + mi(b._mi) + " mi</span>" : '<i aria-hidden="true">&rarr;</i>') + "</button></li>";
     });
-    if (cap < shown.length) html += '<li class="wb-more"><button type="button" class="pill" data-more>Show all ' + shown.length + ' bars</button></li>';
-    list.innerHTML = html || '<li class="wb-empty">No bars match. <button type="button" class="pill" data-clear>Show every bar</button></li>';
-    rows = {}; list.querySelectorAll(".wb-row").forEach(function (r) { rows[r.getAttribute("data-id")] = r; });
-    count.textContent = shown.length === BARS.length && !here ? BARS.length + " bars, A to Z by state" : here ? shown.length + " bars, nearest first" : shown.length + (shown.length === 1 ? " bar" : " bars") + (stateF ? " in " + stateF : "") + (q ? " matching \u201c" + q + "\u201d" : "");
+    if (cap < shown.length) html += '<li class="wbx-more"><button type="button" data-more>Show all ' + shown.length + " bars</button></li>";
+    list.innerHTML = html || '<li class="wbx-empty"><p>No bars match.</p><button type="button" data-clear>Show every bar</button></li>';
+    count.textContent = here ? shown.length + " bars, nearest first" : shown.length === BARS.length ? BARS.length + " bars, A to Z by state" : shown.length + (shown.length === 1 ? " bar" : " bars") + (stateF ? " in " + stateF : "") + (q ? " matching \u201c" + q + "\u201d" : "");
   }
 
-  function cardHtml(b) {
+  /* ---- detail ---- */
+  function detailHtml(b) {
     var i = shown.indexOf(b), maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(b.name + ", " + b.addr);
-    return '<button type="button" class="wb-x" data-close aria-label="Close">&times;</button>'
-      + '<span class="mono">' + esc(b.city + (b.st ? ", " + b.st : "")) + (b._mi != null && here ? " &middot; " + (b._mi < 10 ? b._mi.toFixed(1) : Math.round(b._mi)) + " mi away" : "") + '</span>'
-      + '<h3><a href="' + pageOf(b.slug) + '">' + esc(b.name) + '</a></h3><p class="wb-addr">' + esc(b.addr) + '</p>' + (b.desc ? '<p class="wb-desc">' + esc(b.desc) + '</p>' : "")
-      + '<div class="wb-card-act">' + (b.list ? '<a class="pill solid" href="' + esc(b.list) + '" target="_blank" rel="noopener" data-out="list">Whisky list</a>' : "")
-      + (b.web ? '<a class="pill' + (b.list ? "" : " solid") + '" href="' + esc(b.web) + '" target="_blank" rel="noopener" data-out="web">Website</a>' : "")
-      + '<a class="pill" href="' + maps + '" target="_blank" rel="noopener" data-out="maps">Directions</a><button type="button" class="pill" data-share>Share</button></div>'
-      + '<a class="wb-full" href="' + pageOf(b.slug) + '">The full page on ' + esc(b.name) + ' <i aria-hidden="true">&rarr;</i></a>'
-      + (shown.length > 1 && i >= 0 ? '<div class="wb-card-nav"><button type="button" data-step="-1" aria-label="Previous bar">&larr;</button><span class="mono">' + (i + 1) + " of " + shown.length + '</span><button type="button" data-step="1" aria-label="Next bar">&rarr;</button></div>' : "");
+    var near = BARS.filter(function (x) { return x !== b; }).map(function (x) { return { x: x, d: miles(b, x) }; }).sort(function (p, q) { return p.d - q.d; }).slice(0, 3);
+    return '<div class="wbx-detail-bar"><button type="button" class="wbx-back" data-back><span aria-hidden="true">&larr;</span> ' + (here ? "Nearest bars" : stateF ? esc(stateF) : "All bars") + "</button>"
+      + (shown.length > 1 && i >= 0 ? '<span class="wbx-steps"><button type="button" data-step="-1" aria-label="Previous bar">&lsaquo;</button><span class="mono">' + (i + 1) + " / " + shown.length + '</span><button type="button" data-step="1" aria-label="Next bar">&rsaquo;</button></span>' : "") + "</div>"
+      + '<span class="mono wbx-kicker">' + esc(place(b)) + (here && b._mi != null ? " &middot; " + mi(b._mi) + " mi away" : "") + "</span>"
+      + '<h2 class="wbx-name"><a href="' + pageOf(b.slug) + '">' + esc(b.name) + "</a></h2><p class=\"wbx-addr\">" + esc(b.addr) + "</p>"
+      + (b.desc ? '<p class="wbx-desc">' + esc(b.desc) + "</p>" : "")
+      + '<div class="wbx-act">' + (b.list ? '<a class="wbx-btn solid" href="' + esc(b.list) + '" target="_blank" rel="noopener" data-out="list">Whisky list</a>' : "")
+      + (b.web ? '<a class="wbx-btn' + (b.list ? "" : " solid") + '" href="' + esc(b.web) + '" target="_blank" rel="noopener" data-out="web">Website</a>' : "")
+      + '<a class="wbx-btn" href="' + maps + '" target="_blank" rel="noopener" data-out="maps">Directions</a><button type="button" class="wbx-btn" data-share>Share</button></div>'
+      + '<a class="wbx-full" href="' + pageOf(b.slug) + '">The full page on ' + esc(b.name) + ' <i aria-hidden="true">&rarr;</i></a>'
+      + '<h3 class="mono wbx-near-h">Close by on the list</h3><ul class="wbx-nearby">' + near.map(function (o) { return '<li><button type="button" data-id="' + o.x.id + '"><span><strong>' + esc(o.x.name) + "</strong><em>" + esc(place(o.x)) + '</em></span><span class="wbx-mi">' + mi(o.d) + " mi</span></button></li>"; }).join("") + "</ul>";
   }
 
+  function setOn(id, on) { if (M && id != null) M.map.setFeatureState({ source: "bars", id: id }, { on: on }); }
   function select(b, opts) {
     opts = opts || {};
-    if (sel && dots[sel.id]) dots[sel.id].classList.remove("is-on");
-    if (sel && rows[sel.id]) { rows[sel.id].classList.remove("is-on"); rows[sel.id].setAttribute("aria-pressed", "false"); }
+    if (sel) setOn(sel.id, false);
     sel = b; tip.hidden = true;
-    if (!b) { card.hidden = true; map.classList.remove("has-card"); setUrl(); apply(view); return; }
-    var d = dots[b.id]; if (d) { d.classList.add("is-on"); d.parentNode.appendChild(d); }
-    var r = rows[b.id]; if (r) { r.classList.add("is-on"); r.setAttribute("aria-pressed", "true"); if (!opts.fromList) { var lw = list.parentNode; lw.scrollTop = r.offsetTop - lw.clientHeight / 2 + r.offsetHeight / 2; } }
-    card.innerHTML = cardHtml(b); card.hidden = false; map.classList.add("has-card");
-    if (b.x != null && opts.zoom !== false) {
-      var mobile = innerWidth < 861, w = Math.min(Math.max(view.w, 150), 230);
-      var v = fitAspect({ x: b.x - w / 2, y: b.y - w * 0.31, w: w, h: w * 0.62 });
-      if (!mobile) { v.x += v.w * 0.14; v.y += v.h * 0.1; }
-      go(v);
-    } else apply(view);
+    list.querySelectorAll(".wbx-row.is-on").forEach(function (r) { r.classList.remove("is-on"); });
+    if (!b) {
+      detail.hidden = true; listView.hidden = false; panel.classList.remove("has-detail");
+      if (selMarker) { selMarker.remove(); selMarker = null; }
+      if (M && M.map.getPitch() > 0) M.map.easeTo({ pitch: 0, bearing: 0, duration: 700 });
+      setUrl(); return;
+    }
+    var r = list.querySelector('.wbx-row[data-id="' + b.id + '"]'); if (r) r.classList.add("is-on");
+    detail.innerHTML = detailHtml(b); detail.hidden = false; listView.hidden = true; panel.classList.add("has-detail"); detail.scrollTop = 0;
+    if (M && b.lat != null) {
+      setOn(b.id, true);
+      if (selMarker) selMarker.setLngLat([b.lng, b.lat]); else selMarker = M.marker("wbx-pulse", [b.lng, b.lat]);
+      var z = Math.max(M.map.getZoom(), opts.zoom || 15.2);
+      var cam = { center: [b.lng, b.lat], zoom: z, pitch: reduce ? 0 : 52, bearing: reduce ? 0 : -14, padding: pad(), speed: 1.3, curve: 1.5, essential: true };
+      if (reduce) cam.duration = 0;
+      M.map.flyTo(cam);
+    }
     setUrl(); track("bars_select", { slug: b.slug, state: b.state });
-    if (opts.scroll && innerWidth < 861) map.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    if (opts.scroll && phone.matches) stage.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    if (!opts.keepFocus) { var h = detail.querySelector(".wbx-name a"); if (h && !phone.matches) h.focus({ preventScroll: true }); }
   }
   function setUrl() {
     var u = new URL(location.href); u.searchParams.delete("bar"); u.searchParams.delete("state");
@@ -176,136 +146,126 @@
     history.replaceState(null, "", u.pathname + u.search + u.hash);
   }
 
-  function setState(name, zoom) {
-    stateF = name; stateSel.value = name; render();
-    if (sel && name && sel.state !== name) select(null);
-    if (zoom !== false) go(name ? stateBox(name) : full);
-    setUrl();
+  /* ---- camera ---- */
+  function fit(bars, max) {
+    if (!M) return;
+    var bb = WABarsMap.bounds(bars);
+    if (!bb) return;
+    if (bb[0][0] === bb[1][0] && bb[0][1] === bb[1][1]) M.map.flyTo({ center: bb[0], zoom: 12.5, pitch: 0, bearing: 0, padding: pad(), duration: reduce ? 0 : 1600 });
+    else M.map.fitBounds(bb, { padding: pad(), maxZoom: max || 12.5, pitch: 0, bearing: 0, duration: reduce ? 0 : 1600 });
+  }
+  function fitUS() { if (M) M.map.fitBounds(WABarsMap.US, { padding: pad(), pitch: 0, bearing: 0, duration: reduce ? 0 : 1500 }); }
+
+  function setState(name, move) {
+    stateF = name; stateSel.value = name; expanded = false;
+    if (here) { here = null; nearBtn.setAttribute("aria-pressed", "false"); if (youMarker) { youMarker.remove(); youMarker = null; } }
+    if (sel && (!name || sel.state !== name)) select(null);
+    render(); setUrl();
+    if (move !== false) name ? fit(shown, 11) : fitUS();
   }
 
   function near() {
-    if (!navigator.geolocation) { count.textContent = "Your browser can't share a location; choose a state instead."; return; }
+    if (!navigator.geolocation) { count.textContent = "Your browser can\u2019t share a location. Choose a state instead."; return; }
     nearBtn.setAttribute("aria-busy", "true"); count.textContent = "Finding bars near you\u2026";
     navigator.geolocation.getCurrentPosition(function (p) {
       here = { lat: p.coords.latitude, lng: p.coords.longitude };
-      BARS.forEach(function (b) { b._mi = b.lat != null ? miles(here, b) : 1e9; });
+      BARS.forEach(function (b) { b._mi = miles(here, b); });
       nearBtn.removeAttribute("aria-busy"); nearBtn.setAttribute("aria-pressed", "true");
-      stateF = ""; stateSel.value = ""; q = ""; find.value = ""; render();
-      var top = shown.slice(0, 4).filter(function (b) { return b.x != null; });
-      if (shown[0]) select(shown[0], { zoom: false });
-      if (top.length) go(boxOf(top.map(function (b) { return [b.x, b.y]; }), 0.6, 90));
-      list.parentNode.scrollTop = 0; track("bars_near", {});
-    }, function () {
-      nearBtn.removeAttribute("aria-busy"); count.textContent = "Location is off for this site. Choose a state or search instead.";
-    }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
+      stateF = ""; stateSel.value = ""; q = ""; find.value = ""; if (sel) select(null); render(); listView.scrollTop = 0;
+      if (M) {
+        if (youMarker) youMarker.setLngLat([here.lng, here.lat]); else youMarker = M.marker("wbx-you", [here.lng, here.lat]);
+        fit([here].concat(shown.slice(0, 4)), 13);
+      }
+      track("bars_near", {});
+    }, function () { nearBtn.removeAttribute("aria-busy"); count.textContent = "Location is off for this site. Choose a state or search instead."; }, { timeout: 10000, maximumAge: 600000 });
   }
 
-  function clusterAt(b) {
-    var k = view.w / pxW(), lim = 9 * k;
-    return shown.filter(function (x) { return x.x != null && Math.abs(x.x - b.x) < lim && Math.abs(x.y - b.y) < lim; });
-  }
-
-  function build() {
-    stateSel.innerHTML = '<option value="">All states</option>' + Array.from(new Set(BARS.map(function (b) { return b.state; }))).sort().map(function (s) {
-      return '<option value="' + esc(s) + '">' + esc(s) + " (" + BARS.filter(function (b) { return b.state === s; }).length + ")</option>";
-    }).join("");
-    var defs = el("defs", {}); defs.innerHTML = '<radialGradient id="wbGlow"><stop offset="0" stop-color="#ffd38a" stop-opacity="0.55"/><stop offset="1" stop-color="#e3a443" stop-opacity="0"/></radialGradient>';
-    svg.appendChild(defs);
-    var gS = el("g", { "class": "wb-states" });
-    D.states.forEach(function (s) { var p = el("path", { d: s.d, "class": s.bars ? "has-bars" : "" }); p.setAttribute("data-state", s.name); var t = el("title", {}); t.textContent = s.name; p.appendChild(t); gS.appendChild(p); });
-    svg.appendChild(gS);
-    var prBox = D.states.filter(function (s) { return s.name === "Puerto Rico"; })[0];
-    if (prBox) { var b = prBox.box; var f = el("rect", { x: b[0] - 10, y: b[1] - 12, width: b[2] - b[0] + 20, height: b[3] - b[1] + 22, rx: 6, "class": "wb-inset" }); svg.insertBefore(f, gS.nextSibling); }
-    var gD = el("g", { "class": "wb-dots" });
-    BARS.forEach(function (b) {
-      if (b.x == null) return;
-      var c = el("circle", { cx: b.x, cy: b.y, r: 3.4, "class": "wb-dot" }); c.setAttribute("data-id", b.id);
-      dots[b.id] = c; gD.appendChild(c);
+  /* ---- map ---- */
+  function initMap() {
+    var el = $("wbMap");
+    WABarsMap.create(el, { bars: shown, center: [-97, 39], zoom: phone.matches ? 2.4 : 3.3 }).then(function (m) {
+      loading.hidden = true;
+      if (!m) { stage.classList.add("no-map"); return; }
+      M = m; var map = m.map; stage.classList.add("has-map");
+      map.getSource("bars").setData(m.features(shown));
+      if (sel) { var s = sel; sel = null; select(s, { keepFocus: true }); }
+      else if (stateF) fit(shown, 11); else fitUS();
+      map.on("click", "bar-cluster", function (e) {
+        var f = e.features[0];
+        Promise.resolve(map.getSource("bars").getClusterExpansionZoom(f.properties.cluster_id)).then(function (z) { map.easeTo({ center: f.geometry.coordinates, zoom: Math.min(z + 0.4, 14), duration: reduce ? 0 : 700 }); });
+      });
+      map.on("click", "bar-dot", function (e) { select(byId[e.features[0].properties.id]); });
+      function hover(id) { if (hoverId != null) map.setFeatureState({ source: "bars", id: hoverId }, { hover: false }); hoverId = id; if (id != null) map.setFeatureState({ source: "bars", id: id }, { hover: true }); }
+      map.on("mousemove", "bar-dot", function (e) {
+        var f = e.features[0], b = byId[f.properties.id]; map.getCanvas().style.cursor = "pointer"; hover(f.id);
+        tip.innerHTML = "<strong>" + esc(b.name) + "</strong><span>" + esc(place(b)) + "</span>"; tip.hidden = false;
+        tip.style.transform = "translate(" + (e.point.x + 14) + "px," + (e.point.y + 14) + "px)";
+      });
+      map.on("mousemove", "bar-cluster", function (e) {
+        map.getCanvas().style.cursor = "pointer"; var n = e.features[0].properties.point_count;
+        tip.innerHTML = "<strong>" + n + " bars</strong><span>Click to zoom in</span>"; tip.hidden = false;
+        tip.style.transform = "translate(" + (e.point.x + 14) + "px," + (e.point.y + 14) + "px)";
+      });
+      ["bar-dot", "bar-cluster"].forEach(function (l) { map.on("mouseleave", l, function () { map.getCanvas().style.cursor = ""; tip.hidden = true; hover(null); }); });
+      list.addEventListener("pointerover", function (e) { var r = e.target.closest(".wbx-row"); hover(r ? +r.getAttribute("data-id") : null); });
+      list.addEventListener("pointerleave", function () { hover(null); });
     });
-    svg.appendChild(gD);
-    apply(fitAspect(full));
   }
 
-  /* Map pointer: hover names a bar (or a cluster), a tap selects or zooms into a cluster, a drag pans when zoomed. */
-  var drag = null;
-  svg.addEventListener("pointerdown", function (e) { if (e.button) return; drag = { x: e.clientX, y: e.clientY, v: { x: view.x, y: view.y, w: view.w, h: view.h }, moved: false }; });
-  addEventListener("pointermove", function (e) {
-    if (drag) {
-      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-      if (!drag.moved && Math.hypot(dx, dy) > 5 && view.w < full.w * 0.98) { drag.moved = true; svg.setPointerCapture && svg.setPointerCapture(e.pointerId); map.classList.add("is-drag"); cancelAnimationFrame(anim); }
-      if (drag.moved) { var k = view.w / pxW(); apply({ x: drag.v.x - dx * k, y: drag.v.y - dy * k, w: drag.v.w, h: drag.v.h }); }
-      return;
-    }
-    if (e.pointerType !== "mouse" || !svg.contains(e.target)) return;
-    var c = e.target.closest && e.target.closest(".wb-dot");
-    if (!c) { tip.hidden = true; return; }
-    var b = byId[c.getAttribute("data-id")], cl = clusterAt(b), mr = map.getBoundingClientRect();
-    tip.innerHTML = cl.length > 1 ? "<strong>" + cl.length + " bars here</strong><span>" + esc(b.city + ", " + b.st) + "</span><em>Click to zoom in</em>" : "<strong>" + esc(b.name) + "</strong><span>" + esc(b.city + ", " + b.st) + "</span>";
-    tip.hidden = false; tip.style.transform = "translate(" + Math.min(e.clientX - mr.left + 14, mr.width - 260) + "px," + (e.clientY - mr.top + 14) + "px)";
-  });
-  addEventListener("pointerup", function (e) {
-    if (!drag) return; var d = drag; drag = null; map.classList.remove("is-drag");
-    if (d.moved || !svg.contains(e.target)) return;
-    var c = e.target.closest && e.target.closest(".wb-dot");
-    if (c) {
-      var b = byId[c.getAttribute("data-id")], cl = clusterAt(b);
-      if (cl.length > 1 && view.w > 60) { go(boxOf(cl.map(function (x) { return [x.x, x.y]; }), 0.6, Math.max(view.w / 7, 14))); tip.hidden = true; }
-      else select(b);
-      return;
-    }
-    var p = e.target.closest && e.target.closest("path[data-state]");
-    if (p && p.getAttribute("class") === "has-bars") setState(p.getAttribute("data-state"));
-  });
-  svg.addEventListener("pointerleave", function () { tip.hidden = true; });
-
-  $("wbZoomIn").addEventListener("click", function () { var w = Math.max(view.w / 1.7, 18); go({ x: view.x + (view.w - w) / 2, y: view.y + (view.h - w / view.w * view.h) / 2, w: w, h: w / view.w * view.h }, 380); });
-  $("wbZoomOut").addEventListener("click", function () { var w = Math.min(view.w * 1.7, full.w * 1.05); go({ x: view.x + (view.w - w) / 2, y: view.y + (view.h - w / view.w * view.h) / 2, w: w, h: w / view.w * view.h }, 380); });
-  reset.addEventListener("click", function () { select(null); setState("", true); });
-
-  list.addEventListener("click", function (e) {
-    if (e.target.closest("[data-clear]")) { q = ""; find.value = ""; setState(""); return; }
-    if (e.target.closest("[data-more]")) { expanded = true; render(); return; }
-    var r = e.target.closest(".wb-row"); if (r) select(byId[r.getAttribute("data-id")], { fromList: true, scroll: true });
-  });
-  list.addEventListener("pointerover", function (e) { var r = e.target.closest(".wb-row"); svg.querySelectorAll(".is-hot").forEach(function (d) { d.classList.remove("is-hot"); }); if (r && dots[r.getAttribute("data-id")]) dots[r.getAttribute("data-id")].classList.add("is-hot"); });
-  list.addEventListener("pointerleave", function () { svg.querySelectorAll(".is-hot").forEach(function (d) { d.classList.remove("is-hot"); }); });
-
-  card.addEventListener("click", function (e) {
-    if (e.target.closest("[data-close]")) { select(null); return; }
-    var s = e.target.closest("[data-step]");
-    if (s && sel) { var i = shown.indexOf(sel), n = shown[(i + +s.getAttribute("data-step") + shown.length) % shown.length]; select(n); var nb = card.querySelector('[data-step="' + s.getAttribute("data-step") + '"]'); if (nb) nb.focus(); return; }
-    var o = e.target.closest("[data-out]"); if (o && sel) track("bars_out", { slug: sel.slug, kind: o.getAttribute("data-out") });
-    if (e.target.closest("[data-share]") && sel) {
-      var u = new URL(pageOf(sel.slug), location.href); var btn = e.target.closest("[data-share]");
-      if (navigator.share) navigator.share({ title: sel.name + " \u00b7 America\u2019s Top Whisky Bars", url: u.href }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(u.href).then(function () { btn.textContent = "Link copied"; setTimeout(function () { btn.textContent = "Share"; }, 1800); });
+  /* ---- events ---- */
+  panel.addEventListener("click", function (e) {
+    var t = e.target;
+    if (t.closest("[data-more]")) { expanded = true; render(); return; }
+    if (t.closest("[data-clear]")) { q = ""; find.value = ""; setState(""); return; }
+    if (t.closest("[data-back]")) { select(null); return; }
+    var s = t.closest("[data-step]");
+    if (s && sel) { var i = shown.indexOf(sel), n = shown[(i + +s.getAttribute("data-step") + shown.length) % shown.length]; select(n, { keepFocus: true }); var nb = detail.querySelector('[data-step="' + s.getAttribute("data-step") + '"]'); if (nb) nb.focus(); return; }
+    var row = t.closest("[data-id]"); if (row && row.tagName === "BUTTON") { select(byId[row.getAttribute("data-id")], { scroll: true }); return; }
+    var o = t.closest("[data-out]"); if (o && sel) track("bars_out", { slug: sel.slug, kind: o.getAttribute("data-out") });
+    var sh = t.closest("[data-share]");
+    if (sh && sel) {
+      var u = new URL(pageOf(sel.slug), location.href).href;
+      if (navigator.share) navigator.share({ title: sel.name + " \u00b7 America\u2019s Top Whisky Bars", url: u }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(u).then(function () { sh.textContent = "Link copied"; setTimeout(function () { sh.textContent = "Share"; }, 1800); });
     }
   });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sel && !document.querySelector("dialog[open]")) select(null); });
-
+  $("wbJumps").addEventListener("click", function (e) {
+    var j = e.target.closest("[data-jump]"); if (!j) return; var v = j.getAttribute("data-jump");
+    if (v === "us") { q = ""; find.value = ""; if (sel) select(null); setState("", false); fitUS(); } else setState(v);
+  });
+  $("wbZoomIn").addEventListener("click", function () { if (M) M.map.zoomIn({ duration: 300 }); });
+  $("wbZoomOut").addEventListener("click", function () { if (M) M.map.zoomOut({ duration: 300 }); });
   var qt = 0;
-  find.addEventListener("input", function () { clearTimeout(qt); qt = setTimeout(function () { q = find.value.trim(); render(); var pts = shown.filter(function (b) { return b.x != null; }); if (q && pts.length) go(pts.length === 1 ? boxOf([[pts[0].x, pts[0].y]], 0, 160) : boxOf(pts.map(function (b) { return [b.x, b.y]; }), 0.5, 90)); else if (!q) go(stateF ? stateBox(stateF) : full); }, 140); });
+  find.addEventListener("input", function () {
+    clearTimeout(qt); qt = setTimeout(function () {
+      q = find.value.trim(); if (sel) select(null); expanded = false; render();
+      if (q && shown.length) fit(shown, 12); else if (!q) stateF ? fit(shown, 11) : fitUS();
+    }, 160);
+  });
   find.addEventListener("keydown", function (e) { if (e.key === "Enter" && shown[0]) { e.preventDefault(); select(shown[0], { scroll: true }); } });
-  stateSel.addEventListener("change", function () { if (here) { here = null; nearBtn.setAttribute("aria-pressed", "false"); } setState(stateSel.value); });
+  stateSel.addEventListener("change", function () { setState(stateSel.value); });
   nearBtn.addEventListener("click", function () {
-    if (here) { here = null; nearBtn.setAttribute("aria-pressed", "false"); render(); go(full); return; }
+    if (here) { here = null; nearBtn.setAttribute("aria-pressed", "false"); if (youMarker) { youMarker.remove(); youMarker = null; } render(); fitUS(); return; }
     near();
   });
   var heroNear = $("wbNearHero");
-  if (heroNear) heroNear.addEventListener("click", function () { $("explore").scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); near(); });
-  var rz = 0; addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(function () { apply(fitAspect(view)); }, 120); });
+  if (heroNear) heroNear.addEventListener("click", function () { stage.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); near(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && sel && !document.querySelector("dialog[open]")) select(null); });
+  phone.addEventListener && phone.addEventListener("change", function () { render(); if (M) M.map.resize(); });
 
   (window.WA && WA.loadJSON ? WA.loadJSON("whisky-bars.json") : fetch("whisky-bars.json").then(function (r) { return r.json(); })).then(function (d) {
-    D = d; W = d.box[0]; H = d.box[1]; full = { x: 0, y: 0, w: W, h: H };
+    D = d;
+    d.states.forEach(function (s) { stSlug[s.name] = s.slug; });
     BARS = d.bars.slice().sort(function (a, b) { return a.state.localeCompare(b.state) || a.city.localeCompare(b.city) || a.name.localeCompare(b.name); });
-    var stSlug = {}; d.states.forEach(function (s) { stSlug[s.name] = s.slug; });
     BARS.forEach(function (b) { byId[b.id] = b; b._st = stSlug[b.state] || ""; b._k = fold([b.name, b.city, b.state, b.st, b.addr].join(" ")); });
     var st = new Set(BARS.map(function (b) { return b.state; })), extra = ["District of Columbia", "Puerto Rico"].filter(function (s) { return st.has(s); });
     var dd = document.querySelectorAll("#wbStats dd"); if (dd.length === 3) { dd[0].textContent = BARS.length; dd[1].textContent = st.size - extra.length; dd[2].textContent = extra.map(function (s) { return s === "Puerto Rico" ? "Puerto Rico" : "D.C."; }).join(" & ") || "Coast to coast"; }
-    build(); render();
+    stateSel.innerHTML = '<option value="">All states</option>' + Array.from(st).sort().map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + " (" + BARS.filter(function (b) { return b.state === s; }).length + ")</option>"; }).join("");
     var p = new URLSearchParams(location.search), want = p.get("bar"), ws = p.get("state");
+    if (ws && st.has(ws)) { stateF = ws; stateSel.value = ws; }
+    render();
     var hit = want && (BARS.filter(function (b) { return b.slug === want; })[0] || (/^\d+$/.test(want) ? byId[+want] : null));
-    if (hit) { select(hit, { zoom: true }); if (location.search.indexOf("bar=") >= 0 && !location.hash) setTimeout(function () { $("explore").scrollIntoView(); }, 50); }
-    else if (ws && st.has(ws)) setState(ws);
-  }).catch(function () { count.textContent = "The bars could not load. Check your connection and reload the page."; });
+    if (hit) { select(hit, { keepFocus: true }); setTimeout(function () { stage.scrollIntoView({ block: "start" }); }, 60); }
+    initMap();
+  }).catch(function () { count.textContent = "The bars could not load. Check your connection and reload the page."; loading.hidden = true; });
 })();

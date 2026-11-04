@@ -3926,3 +3926,48 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
   .n9-bottle { opacity: 1; transform: none; transition: filter 0.2s; }
   .n9-bottle img { transition: none; }
 }
+
+/* Where to buy, the map (2026-11-04): retailers.html. A dark MapLibre panel (bars-map.js) between the finder and the
+   list: clustered stores, a card per store, Near me, and a Map button on every row. It follows the search and state. */
+.ret-map { position: relative; margin: 0 0 28px; height: clamp(380px, 58vh, 600px); border-radius: 24px; overflow: hidden; background: #140d08; box-shadow: 0 30px 60px -44px rgba(23, 18, 13, 0.85); isolation: isolate; }
+.ret-map[hidden] { display: none; }
+.ret-map-canvas, .ret-map-canvas.maplibregl-map { position: absolute; inset: 0; }
+.ret-map-bar { position: absolute; top: 14px; left: 14px; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; }
+.ret-map-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: 1px solid rgba(255, 246, 234, 0.22); border-radius: 999px; background: rgba(20, 13, 8, 0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff6ea; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background-color 0.15s; }
+.ret-map-btn:hover { border-color: #e3a443; }
+.ret-map-btn svg { width: 16px; height: 16px; fill: #e3a443; stroke: #e3a443; stroke-width: 1.8; stroke-linecap: round; }
+.ret-map-btn svg circle[fill="none"] { fill: none; }
+.ret-map-note { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 2; width: fit-content; max-width: calc(100% - 28px); padding: 9px 14px; border-radius: 12px; background: rgba(20, 13, 8, 0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #fff6ea; font-size: 13.5px; line-height: 1.4; }
+.ret-map-note:empty { display: none; }
+.ret-map .maplibregl-ctrl-group { background: rgba(20, 13, 8, 0.82); border: 1px solid rgba(255, 246, 234, 0.2); border-radius: 12px; box-shadow: none; overflow: hidden; }
+.ret-map .maplibregl-ctrl-group button + button { border-top-color: rgba(255, 246, 234, 0.14); }
+.ret-map .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1) sepia(0.4); }
+.ret-map .maplibregl-ctrl-top-right { top: 6px; right: 6px; }
+.ret-map .maplibregl-ctrl.maplibregl-ctrl-attrib, .ret-map .maplibregl-ctrl-attrib.maplibregl-compact-show { background: rgba(20, 13, 8, 0.78); color: rgba(255, 246, 234, 0.6); font-family: var(--font); font-size: 10.5px; line-height: 1.5; }
+.ret-map .maplibregl-ctrl-attrib-inner { white-space: normal; }
+.ret-map .maplibregl-ctrl-attrib a { color: rgba(255, 246, 234, 0.85); text-decoration: none; }
+.ret-map .maplibregl-ctrl-attrib a:hover { text-decoration: underline; }
+.ret-map .maplibregl-ctrl-attrib-button { filter: invert(0.92); background-color: transparent; }
+.ret-map .maplibregl-cooperative-gesture-screen { background: rgba(20, 13, 8, 0.6); color: #fff6ea; font-family: var(--font); font-size: 16px; }
+.ret-pop .maplibregl-popup-content { padding: 14px 16px 12px; border-radius: 16px; background: #fff6ea; color: var(--ink); box-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.7); font-family: var(--font); }
+.ret-pop .maplibregl-popup-tip { border-top-color: #fff6ea; border-bottom-color: #fff6ea; }
+.ret-pop .maplibregl-popup-close-button { width: 32px; height: 32px; font-size: 20px; color: var(--ink-3); border-radius: 0 16px 0 10px; }
+.ret-pop-in { display: grid; gap: 3px; padding-right: 18px; }
+.ret-pop-in .mono { font-size: 10.5px; color: var(--copper); }
+.ret-pop-in strong { font-size: 16px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; text-wrap: balance; }
+.ret-pop-in > span:not(.mono):not(.ret-pop-links) { color: var(--ink-2); font-size: 13.5px; }
+.ret-pop-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 13.5px; }
+.ret-pop-links a, .ret-pop-list { color: var(--copper); font-weight: 500; }
+.ret-pop-list { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rule-2); font-size: 13px; }
+.ret-pop-links a:hover, .ret-pop-list:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ret-you { width: 18px; height: 18px; border-radius: 50%; background: #6cb6ff; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(108, 182, 255, 0.28); }
+.ret-pin { padding: 0; border: 0; background: none; color: var(--copper); font: inherit; font-size: 13.5px; cursor: pointer; }
+.ret-pin::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #e3a443; box-shadow: 0 0 0 2px rgba(227, 164, 67, 0.25); vertical-align: 1px; }
+.ret-pin:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (pointer: coarse) { .ret-pin { display: inline-flex; align-items: center; min-height: 44px; } }
+@keyframes ret-flash { 0%, 30% { background: rgba(227, 164, 67, 0.22); } 100% { background: transparent; } }
+.cp-store.ret-flash { animation: ret-flash 1.8s ease-out; border-radius: 10px; }
+@media (max-width: 760px) {
+  .ret-map { height: min(62vh, 125vw); min-height: 360px; border-radius: 20px; margin-inline: calc(-1 * var(--gutter) + 8px); }
+  .ret-map-btn { min-height: 44px; }
+}

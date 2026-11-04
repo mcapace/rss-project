@@ -34,6 +34,14 @@
       <span id="retCount" role="status" aria-live="polite"></span>
     </div>
   </div>
+  <figure class="ret-map" id="retMapWrap" hidden>
+    <div class="ret-map-canvas" id="retMap" role="region" aria-label="Map of the stores"></div>
+    <div class="ret-map-bar">
+      <button type="button" class="ret-map-btn" id="retNear"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="7.2" fill="none"/></svg>Near me</button>
+      <button type="button" class="ret-map-btn" id="retAll">All stores</button>
+    </div>
+    <p class="ret-map-note" id="retMapNote" role="status" aria-live="polite"></p>
+  </figure>
   <div class="cp-results">
     <nav class="cp-index" id="retIndex" aria-label="States"></nav>
     <div id="retGrid"></div>
@@ -48,6 +56,7 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
+<script src="bars-map.js"></script>
 <script>
 WA.ready(function () {
   fetch("retailers.json").then(function (r) { return r.json(); }).then(function (data) {
@@ -58,6 +67,16 @@ WA.ready(function () {
     function byName(x, y) { return displayName(x.state).localeCompare(displayName(y.state)); }
     var us = data.filter(function (s) { return /, US$/.test(s.state); }).sort(byName);
     var intl = data.filter(function (s) { return !/, US$/.test(s.state); }).sort(byName);
+    // Every store gets an index for the map; stores that share a city's point fan out a little so each can be clicked.
+    var all = [], spots = {};
+    data.forEach(function (s) { s.stores.forEach(function (x) {
+      x._i = all.length; x._state = s.state; all.push(x);
+      if (x.lat == null) return;
+      var k = x.lat + "," + x.lng, n = spots[k] = (spots[k] || 0) + 1;
+      if (n > 1) { var a = n * 2.4, r = 0.0032 * Math.sqrt(n - 1); x._lat = x.lat + r * Math.sin(a); x._lng = x.lng + r * Math.cos(a) / Math.cos(x.lat * Math.PI / 180); }
+      else { x._lat = x.lat; x._lng = x.lng; }
+    }); });
+    var M = { update: function () {}, show: function () {} };
     [["United States", us], ["Outside the US", intl]].forEach(function (g) {
       if (!g[1].length) return;
       var og = document.createElement("optgroup"); og.label = g[0];
@@ -78,18 +97,19 @@ WA.ready(function () {
       return out + esc(raw.slice(i));
     }
     function render() {
-      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [], links = [], openAll = !!(term || st) || window.innerWidth > 900;
+      var term = q.value.trim().toLowerCase(), st = sel.value, n = 0, out = [], links = [], vis = [], openAll = !!(term || st) || window.innerWidth > 900;
       [["United States", us], ["Outside the US", intl]].forEach(function (g, gi) {
         var shown = [];
         g[1].forEach(function (s) {
           if (st && s.state !== st) return;
           var stores = s.stores.filter(function (x) { return !term || (x.name + " " + x.city).toLowerCase().indexOf(term) >= 0; });
-          if (!stores.length) return; n += stores.length;
+          if (!stores.length) return; n += stores.length; vis.push.apply(vis, stores);
           var name = displayName(s.state), id = "ret-" + slug(name);
           shown.push('<details class="ret-state cp-state" id="' + id + '"' + (openAll ? " open" : "") + '><summary class="cp-state-head"><h2 class="d3">' + esc(name) + '</h2><span class="cp-count">' + stores.length + '</span><span class="cp-chev" aria-hidden="true"></span></summary><div class="cp-stores">' + stores.map(function (x) {
             var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website<span class="cp-sr"> (opens in a new tab)</span></a>' : "";
             var ph = x.phone ? '<a href="tel:' + esc(String(x.phone).split("/")[0].replace(/[^\d+]/g, "")) + '">' + esc(tel(x.phone)) + "</a>" : "";
-            return '<div class="cp-store"><strong>' + hi(x.name, term) + '</strong><span class="cp-city">' + hi(x.city, term) + '</span><span class="cp-links">' + ph + web + "</span></div>";
+            var pin = x._lat != null ? '<button type="button" class="ret-pin" data-i="' + x._i + '" aria-label="Show ' + esc(x.name) + ' on the map">Map</button>' : "";
+            return '<div class="cp-store" data-i="' + x._i + '"><strong>' + hi(x.name, term) + '</strong><span class="cp-city">' + hi(x.city, term) + '</span><span class="cp-links">' + ph + web + pin + "</span></div>";
           }).join("") + "</div></details>");
           links.push('<a href="#' + id + '"><span>' + esc(name) + '</span><span class="mono">' + stores.length + "</span></a>");
         });
@@ -102,13 +122,101 @@ WA.ready(function () {
       index.innerHTML = links.join("");
       count.textContent = n + (n === 1 ? " store" : " stores") + (st ? " in " + displayName(st) : "") + (term ? " matching “" + q.value.trim() + "”" : "");
       clear.hidden = !(term || st);
+      M.update(vis, !!(term || st));
     }
     q.addEventListener("input", render); sel.addEventListener("change", render);
+    grid.addEventListener("click", function (e) { var b = e.target.closest(".ret-pin"); if (b) M.show(all[+b.getAttribute("data-i")], true); });
+    initMap();
     clear.addEventListener("click", function () { q.value = ""; sel.value = ""; render(); q.focus(); });
     var h = decodeURIComponent(location.hash.slice(1));
     if (h && [].some.call(sel.options, function (o) { return o.value === h; })) { sel.value = h; }
     render();
     WA.stickyFilters(document.querySelector(".cp-finder"));
+    function initMap() {
+      var wrap = document.getElementById("retMapWrap"), note = document.getElementById("retMapNote");
+      if (!window.WABarsMap || !WABarsMap.webgl()) return;
+      wrap.hidden = false;
+      var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, popup = null, you = null, last = [], gl, map;
+      function pts(list) { return list.filter(function (x) { return x._lat != null; }).map(function (x) { return { id: x._i, name: x.name, city: x.city, st: "", lat: x._lat, lng: x._lng }; }); }
+      function lower48(list) { var b = WABarsMap.bounds(pts(list).filter(function (p) { return p.lng > -130 && p.lng < -60 && p.lat > 24 && p.lat < 50; })); return b || WABarsMap.US; }
+      function fit(list, all48) {
+        var b = all48 ? lower48(list) : WABarsMap.bounds(pts(list)); if (!b) return;
+        var wide = b[1][0] - b[0][0] < 0.02 && b[1][1] - b[0][1] < 0.02;
+        if (wide) map.easeTo({ center: [b[0][0], b[0][1]], zoom: 11.5, duration: reduce ? 0 : 900 });
+        else map.fitBounds(b, { padding: { top: 60, bottom: 70, left: 40, right: 40 }, maxZoom: 12, duration: reduce ? 0 : 900 });
+      }
+      function card(x, extra) {
+        var web = x.web ? '<a href="' + esc(/^https?:/.test(x.web) ? x.web : "https://" + x.web) + '" target="_blank" rel="noopener">Website</a>' : "";
+        var ph = x.phone ? '<a href="tel:' + esc(String(x.phone).split("/")[0].replace(/[^\d+]/g, "")) + '">' + esc(tel(x.phone)) + "</a>" : "";
+        var dir = '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ", " + x.city) + '" target="_blank" rel="noopener">Directions</a>';
+        return '<div class="ret-pop-in"><span class="mono">' + esc(displayName(x._state)) + (extra ? " · " + esc(extra) : "") + "</span><strong>" + esc(x.name) + "</strong><span>" + esc(x.city) + '</span><span class="ret-pop-links">' + ph + web + dir + '</span><a class="ret-pop-list" href="#ret-' + slug(displayName(x._state)) + '" data-i="' + x._i + '">See it in the list</a></div>';
+      }
+      function setOn(i) { if (M.on != null) map.setFeatureState({ source: "bars", id: M.on }, { on: false }); M.on = i; if (i != null) map.setFeatureState({ source: "bars", id: i }, { on: true }); }
+      M.show = function (x, fly, extra) {
+        if (!map || !x || x._lat == null) return;
+        if (popup) popup.remove();
+        setOn(x._i);
+        popup = new gl.Popup({ className: "ret-pop", offset: 14, maxWidth: "280px", focusAfterOpen: false }).setLngLat([x._lng, x._lat]).setHTML(card(x, extra)).addTo(map);
+        popup.on("close", function () { setOn(null); });
+        if (fly) {
+          wrap.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+          map.flyTo({ center: [x._lng, x._lat], zoom: Math.max(map.getZoom(), 12.5), duration: reduce ? 0 : 1400, essential: true });
+        }
+      };
+      M.update = function (list, refit) {
+        last = list;
+        if (!map) return;
+        map.getSource("bars").setData(map._wa.features(pts(list)));
+        if (popup) popup.remove();
+        if (refit) fit(list); else fit(list, true);
+      };
+      WABarsMap.create(document.getElementById("retMap"), { bars: [], bounds: WABarsMap.US, padding: 40 }).then(function (r) {
+        if (!r) { wrap.hidden = true; return; }
+        gl = r.gl; map = r.map; map._wa = r;
+        map.addControl(new gl.NavigationControl({ showCompass: false }), "top-right");
+        M.update(last, !!(q.value.trim() || sel.value));
+        map.on("click", "bar-cluster", function (e) {
+          var f = e.features[0];
+          map.getSource("bars").getClusterExpansionZoom(f.properties.cluster_id).then(function (z) { map.easeTo({ center: f.geometry.coordinates, zoom: z + 0.3, duration: reduce ? 0 : 700 }); });
+        });
+        map.on("click", "bar-dot", function (e) { M.show(all[e.features[0].id]); });
+        var hov = null;
+        ["bar-dot", "bar-cluster"].forEach(function (id) {
+          map.on("mousemove", id, function (e) { map.getCanvas().style.cursor = "pointer"; var f = e.features[0]; if (hov && hov.id !== f.id) map.setFeatureState(hov, { hover: false }); hov = { source: "bars", id: f.id }; if (f.id != null) map.setFeatureState(hov, { hover: true }); });
+          map.on("mouseleave", id, function () { map.getCanvas().style.cursor = ""; if (hov && hov.id != null) map.setFeatureState(hov, { hover: false }); hov = null; });
+        });
+      });
+      wrap.addEventListener("click", function (e) {
+        var a = e.target.closest(".ret-pop-list"); if (!a) return;
+        e.preventDefault();
+        var x = all[+a.getAttribute("data-i")], row = grid.querySelector('.cp-store[data-i="' + x._i + '"]');
+        if (!row) { q.value = ""; sel.value = x._state; render(); row = grid.querySelector('.cp-store[data-i="' + x._i + '"]'); }
+        if (!row) return;
+        var d = row.closest("details"); if (d) d.open = true;
+        row.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+        row.classList.remove("ret-flash"); void row.offsetWidth; row.classList.add("ret-flash");
+      });
+      document.getElementById("retAll").addEventListener("click", function () { q.value = ""; sel.value = ""; render(); note.textContent = ""; });
+      document.getElementById("retNear").addEventListener("click", function () {
+        if (!navigator.geolocation) { note.textContent = "Your browser cannot share a location."; return; }
+        note.textContent = "Finding you…";
+        navigator.geolocation.getCurrentPosition(function (p) {
+          var me = [p.coords.longitude, p.coords.latitude];
+          function mi(x) { var r = Math.PI / 180, a = Math.sin((x.lat - me[1]) * r / 2), b = Math.sin((x.lng - me[0]) * r / 2); return 7918 * Math.asin(Math.sqrt(a * a + Math.cos(me[1] * r) * Math.cos(x.lat * r) * b * b)); }
+          var near = all.filter(function (x) { return x.lat != null; }).map(function (x) { return { x: x, d: mi(x) }; }).sort(function (a, b) { return a.d - b.d; });
+          if (q.value || sel.value) { q.value = ""; sel.value = ""; render(); }
+          if (!map) return;
+          if (you) you.remove();
+          you = map._wa.marker("ret-you", me);
+          var close = near.slice(0, 5), b = [[me[0], me[1]], [me[0], me[1]]];
+          close.forEach(function (c) { b[0][0] = Math.min(b[0][0], c.x._lng); b[0][1] = Math.min(b[0][1], c.x._lat); b[1][0] = Math.max(b[1][0], c.x._lng); b[1][1] = Math.max(b[1][1], c.x._lat); });
+          map.fitBounds(b, { padding: { top: 90, bottom: 70, left: 50, right: 50 }, maxZoom: 13, duration: reduce ? 0 : 1400 });
+          var d = Math.round(near[0].d);
+          note.textContent = "The closest store is " + near[0].x.name + " in " + near[0].x.city + ", " + (d < 1 ? "under a mile" : d + (d === 1 ? " mile" : " miles")) + " away.";
+          setTimeout(function () { M.show(near[0].x, false, (d < 1 ? "under a mile" : d + " mi") + " away"); }, reduce ? 0 : 1450);
+        }, function () { note.textContent = "Location is off. Pick a state or search a city instead."; }, { timeout: 10000, maximumAge: 600000 });
+      });
+    }
     if (/^ret-/.test(h)) { var t = document.getElementById(h); if (t) { t.scrollIntoView(); if (document.readyState !== "complete") addEventListener("load", function () { if (location.hash.slice(1) === h) t.scrollIntoView(); }, { once: true }); } }
   });
 });

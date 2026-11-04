@@ -19,26 +19,31 @@
   <div class="tools"><a class="pill fest-pill" href="index.html#whiskyfest">WhiskyFest · Nov 20</a><a class="pill" href="tools.html">Tools</a><a class="pill" href="https://store.whiskyadvocate.com/">Store</a><a class="pill solid" href="https://sub.whiskyadvocate.com/pubs/M5/MAV/WAcom_subscribe_4for22_PC.jsp?cds_page_id=274306&amp;cds_mag_code=MAV">Subscribe</a></div>
 </header>
 
-<section class="band club-item" style="padding-top: 28px">
-  <div class="crumbs" style="margin-bottom: 22px"><a href="ninety.html">90+ Club</a> › <span id="crumbName"></span></div>
-  <div class="club-grid">
-    <div class="club-pic"><img id="pic" src="" alt=""></div>
-    <div class="club-info">
-      <span class="tag" id="kicker"></span>
-      <h1 class="d2" style="margin-top: 12px" id="name"></h1>
-      <div class="club-score" id="score" hidden></div>
-      <p class="club-stats" id="stats"></p>
-      <p class="club-note" id="note"></p>
-      <div class="actions" id="actions" style="margin-top: 18px"></div>
-      <p class="sp-note" role="note" style="margin-top: 22px">Sponsored by Pernod Ricard USA. The 90+ Club is a paid partner program: Pernod Ricard USA pays to feature its brands on these pages. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
+<section class="band cl-band">
+  <div class="crumbs cl-crumbs"><a href="ninety.html">90+ Club</a> › <span id="crumbName"></span></div>
+  <article class="cl-stage" id="clStage">
+    <div class="cl-pic">
+      <span class="cl-num" id="bigNum" aria-hidden="true"></span>
+      <img id="pic" src="" alt="">
+      <span class="cl-plinth" aria-hidden="true"></span>
     </div>
-  </div>
+    <div class="cl-info">
+      <span class="tag" id="kicker"></span>
+      <h1 class="cl-name" id="name"></h1>
+      <div class="cl-score" id="score" hidden></div>
+      <dl class="cl-facts" id="facts"></dl>
+      <blockquote class="cl-note" id="noteWrap" hidden><p id="note"></p><footer id="noteBy"></footer></blockquote>
+      <div class="cl-actions" id="actions"></div>
+    </div>
+    <nav class="cl-step" aria-label="The club, bottle by bottle"><a id="prev" class="cl-arrow" rel="prev"></a><span class="mono" id="pos"></span><a id="next" class="cl-arrow" rel="next"></a></nav>
+  </article>
+  <p class="sp-note" role="note">Sponsored by Pernod Ricard USA. The 90+ Club is a paid partner program: Pernod Ricard USA pays to feature its brands on these pages. Every score comes from Whisky Advocate&rsquo;s reviews.</p>
 </section>
 
 <div class="ad ad-leader" data-slot="wa_club_leader_1" aria-label="Advertisement"><span>Advertisement</span><i>728 × 90 leaderboard · 320 × 50 mobile</i></div>
 <section class="band">
   <div class="band-head"><div><span class="mono">More from the 90+ Club</span><h2 class="d2" style="margin-top:10px">The rest of the club.</h2></div><a class="pill" href="ninety.html">All of the 90+ Club</a></div>
-  <div class="spirit-grid" id="more"></div>
+  <div class="spirit-grid cl-more" id="more"></div>
 </section>
 
 <section class="nl-band" aria-label="Newsletters">
@@ -56,41 +61,6 @@
 <script src="site.js"></script>
 <script src="reader-core.js"></script>
 <script src="reader.js"></script>
-<script>
-/* One 90+ Club bottle (club.html#<id>): the partner page the old site had for each member and spirit, rebuilt.
-   Sponsored template: the item, its note, Buy where the store has it, and only other club items; no other recommendations. */
-WA.ready(function () { WA.archive(function (DATA) {
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  function plain(n) { return String(n || "").replace(/,\s*[\d.]+\s*[%$]\s*$/, ""); }
-  addEventListener("hashchange", function () { location.reload(); });
-  fetch("ninety.json").then(function (r) { return r.json(); }).then(function (N) {
-    var all = N.members.map(function (m) { return Object.assign({ member: true }, m); }).concat(N.spirits.map(function (s) { return Object.assign({ member: false }, s); }));
-    var want = decodeURIComponent((location.hash || "").slice(1)).toLowerCase();
-    var it = all.filter(function (x) { return (x.id || "").toLowerCase() === want || (x.slug || "").toLowerCase() === want; })[0];
-    if (!it) { location.replace("ninety.html"); return; }
-    var r = it.slug ? WA.find(DATA, it.slug) : null;
-    document.title = plain(it.n) + " · 90+ Club · Whisky Advocate";
-    document.getElementById("crumbName").textContent = plain(it.n);
-    var pic = document.getElementById("pic"); pic.src = it.img; pic.alt = plain(it.n);
-    document.getElementById("kicker").innerHTML = WA.sponsorChip() + "90+ Club · " + esc(it.member ? "Member" : "Top-shelf spirit") + " · Pernod Ricard USA";
-    document.getElementById("name").textContent = it.n;
-    if (it.s) { var sc = document.getElementById("score"); sc.innerHTML = '<b class="score-type">' + esc(it.s) + "</b><span>points</span>"; sc.hidden = false; }
-    var stats = [];
-    if (it.p) stats.push("Price " + esc(it.p));
-    if (it.c) stats.push(esc(it.c));
-    if (it.issue) stats.push(esc(it.issue));
-    if (it.reviewer) stats.push("Reviewed by " + esc(it.reviewer));
-    document.getElementById("stats").innerHTML = stats.join(" <span>·</span> ");
-    document.getElementById("note").textContent = it.desc || (r && r.t) || "";
-    var actions = document.getElementById("actions");
-    if (r) actions.insertAdjacentHTML("beforeend", '<a class="pill" href="' + WA.bottleHref(r) + '">The full rating</a>');
-    WA.shop(function () { var p = it.slug ? WA.productFor(it.slug) : null; if (p) actions.insertAdjacentHTML("afterbegin", '<a class="pill solid" href="' + WA.buyHref(p) + '" target="_blank" rel="noopener">Buy at the store' + (p.p ? " · $" + Math.round(p.p) : "") + "</a>"); });
-    if (!it.desc && r && WA.note) WA.note(r.slug, function (t) { if (t) document.getElementById("note").textContent = t; });
-    document.getElementById("more").innerHTML = all.filter(function (x) { return x !== it; }).map(function (x) {
-      return '<a class="spirit-card" href="club.html#' + encodeURIComponent(x.id) + '"><span class="pic"><img src="' + esc(x.img) + '" alt="" loading="lazy"></span><span class="tag">' + (x.s ? '<b class="score-type">' + esc(x.s) + "</b> · " : "") + esc(x.c) + (x.p ? " · " + esc(x.p) : "") + "</span><strong>" + esc(plain(x.n)) + "</strong></a>";
-    }).join("");
-  });
-}); });
-</script>
+<script src="club.js"></script>
 </body>
 </html>

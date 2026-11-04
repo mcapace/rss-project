@@ -3971,3 +3971,62 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
   .ret-map { height: min(62vh, 125vw); min-height: 360px; border-radius: 20px; margin-inline: calc(-1 * var(--gutter) + 8px); }
   .ret-map-btn { min-height: 44px; }
 }
+
+/* 90+ Club bottle pages, the stage (2026-11-04): club.html. The bottle stands lit on a dark stage under its score (or its
+   style, for the spirits), beside the facts and the tasting note; Previous and Next walk the club in score order. */
+.cl-band { padding-top: 20px; }
+.cl-crumbs { margin-bottom: 16px; }
+.cl-stage { --pad: clamp(20px, 4vw, 56px); position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 0 clamp(24px, 5vw, 72px); padding: var(--pad) var(--pad) 0; border-radius: 28px; color: #fff6ea; background: radial-gradient(520px 520px at 26% 46%, rgba(227, 164, 67, 0.2), transparent 64%), radial-gradient(900px 300px at 26% 100%, rgba(201, 115, 29, 0.3), transparent 70%), linear-gradient(180deg, #1d150e, #0e0905); box-shadow: 0 40px 80px -50px rgba(23, 18, 13, 0.9); }
+.cl-pic { position: relative; display: grid; place-items: end center; min-height: clamp(360px, 58vh, 600px); }
+.cl-num { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); z-index: -1; font-size: clamp(180px, 24vw, 360px); font-weight: 700; line-height: 0.8; letter-spacing: -0.06em; white-space: nowrap; background: linear-gradient(180deg, rgba(255, 246, 234, 0.2), rgba(255, 246, 234, 0.02) 88%); -webkit-background-clip: text; background-clip: text; color: transparent; pointer-events: none; user-select: none; }
+.cl-stage.is-spirit .cl-num { font-size: clamp(64px, 8vw, 128px); letter-spacing: -0.04em; text-transform: uppercase; }
+.cl-pic img { position: relative; width: auto; max-width: 78%; height: clamp(300px, 50vh, 520px); object-fit: contain; object-position: bottom; margin-bottom: 34px; filter: drop-shadow(0 26px 22px rgba(0, 0, 0, 0.6)); -webkit-box-reflect: below 0 linear-gradient(transparent 80%, rgba(255, 255, 255, 0.14)); opacity: 0; transform: translateY(28px) scale(0.98); transition: opacity 0.6s ease, transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.cl-stage.in .cl-pic img { opacity: 1; transform: none; }
+.cl-plinth { position: absolute; left: -10%; right: -10%; bottom: 33px; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 214, 150, 0.6) 25%, rgba(255, 214, 150, 0.6) 75%, transparent); box-shadow: 0 0 30px 6px rgba(227, 164, 67, 0.26); }
+.cl-info { align-self: center; padding: clamp(8px, 2vw, 24px) 0 clamp(24px, 4vw, 48px); opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease 0.1s, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s; }
+.cl-stage.in .cl-info { opacity: 1; transform: none; }
+.cl-stage .tag { color: #e8b871; }
+.cl-stage .sp-chip { background: transparent; border-color: rgba(255, 246, 234, 0.35); color: #fff6ea; }
+.cl-name { margin-top: 14px; font-weight: 500; font-size: clamp(34px, 4.2vw, 62px); line-height: 1; letter-spacing: -0.035em; text-wrap: balance; }
+.cl-score { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.cl-score b { font-size: clamp(64px, 7vw, 104px); line-height: 0.85; background: linear-gradient(180deg, #ffe0a3, #e3a443 50%, #a8560f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cl-score span { display: grid; gap: 4px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 246, 234, 0.6); }
+.cl-score small { font-family: var(--font); font-size: 14px; letter-spacing: 0; text-transform: none; color: #fff6ea; }
+.cl-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 14px 20px; margin-top: 24px; }
+.cl-facts div { padding-top: 9px; border-top: 1px solid rgba(255, 246, 234, 0.16); min-width: 0; }
+.cl-facts dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 246, 234, 0.55); }
+.cl-facts dd { margin: 4px 0 0; font-size: 15.5px; font-weight: 500; line-height: 1.3; }
+.cl-note { margin: 24px 0 0; padding-left: 18px; border-left: 2px solid #e3a443; }
+.cl-note p { font-size: clamp(16px, 1.3vw, 18.5px); line-height: 1.6; color: rgba(255, 246, 234, 0.88); text-wrap: pretty; max-width: 60ch; }
+.cl-note footer { margin-top: 10px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 246, 234, 0.55); }
+.cl-note footer:empty { display: none; }
+.cl-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.cl-actions:empty { display: none; }
+.cl-actions .pill { min-height: 44px; padding: 0 20px; font-weight: 600; }
+.cl-step { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; margin: 0 calc(-1 * var(--pad)); padding: 14px var(--pad); border-top: 1px solid rgba(255, 246, 234, 0.1); background: rgba(0, 0, 0, 0.22); }
+.cl-step .mono { color: rgba(255, 246, 234, 0.5); text-align: center; }
+.cl-arrow { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; min-width: 0; color: #fff6ea; font-size: 14px; font-weight: 500; }
+.cl-arrow:last-child { justify-self: end; text-align: right; }
+.cl-arrow-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-arrow > span[aria-hidden] { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border: 1px solid rgba(255, 246, 234, 0.25); border-radius: 50%; transition: border-color 0.15s, background-color 0.15s; }
+.cl-arrow:hover > span[aria-hidden] { border-color: #e3a443; background: rgba(227, 164, 67, 0.16); }
+.cl-band > .sp-note { margin-top: 16px; }
+.cl-more .spirit-card .pic { aspect-ratio: 4 / 5; background: radial-gradient(circle at 50% 70%, var(--paper-3), var(--paper) 70%); }
+.cl-more .spirit-card .pic img { height: 90%; max-height: 90%; max-width: 90%; width: auto; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.cl-more .spirit-card:hover .pic img { transform: translateY(-6px) scale(1.04); }
+.cl-more .spirit-card .tag b { font-size: 13px; }
+.cl-stage { --bottle: clamp(300px, 54vh, 500px); }
+.cl-pic img.seated { max-width: none; height: calc(var(--bottle) / var(--span)); margin-bottom: calc(34px - var(--bottle) / var(--span) * var(--foot)); }
+@media (max-width: 860px) {
+  .cl-stage { --bottle: clamp(240px, 40vh, 340px); }
+  .cl-stage { grid-template-columns: minmax(0, 1fr); }
+  .cl-pic { min-height: 0; }
+  .cl-pic img { height: clamp(260px, 44vh, 380px); }
+  .cl-num { font-size: clamp(160px, 52vw, 260px); }
+  .cl-stage.is-spirit .cl-num { font-size: clamp(48px, 13vw, 80px); }
+  .cl-info { padding-top: 22px; }
+  .cl-arrow-name { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-pic img, .cl-info { opacity: 1; transform: none; transition: none; }
+}

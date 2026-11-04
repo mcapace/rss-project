@@ -4151,3 +4151,9 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
   .wbx-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .wbx-pulse::before { animation: none; } }
+
+/* Where to buy map on phones (2026-11-04): a store card that opened near the top went under the Near me / All stores bar,
+   hiding the store's name, and the "closest store" note ran under the floating Ask button. Cards now sit above the bar,
+   and on narrow screens the note stops short of the Ask button. */
+.ret-map .maplibregl-popup { z-index: 3; }
+@media (max-width: 700px) { .ret-map-note { right: 72px; max-width: calc(100% - 86px); } }

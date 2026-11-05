@@ -4197,3 +4197,18 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
 }
 @media (min-width: 901px) and (max-width: 980px) { .mast[data-scrolled="true"] .wordmark img { height: 36px; } }
 @media (max-width: 900px) { .mast, .mast[data-scrolled="true"] { padding-block: 14px; } }
+
+/* Larger top bar links (2026-11-05): 16px on large screens, 15px on smaller desktops, sized to the taller bar.
+   The extra sections join the bar later so the larger links keep clear of the wordmark. */
+@media (min-width: 1440px) {
+  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 44px; font-size: 16px; }
+  .mast nav a, .mast .tools .pill { padding: 0 15px; }
+  .mast .tools .pill.solid { padding: 0 20px; }
+}
+@media (min-width: 1200px) and (max-width: 1439px) {
+  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { font-size: 15px; }
+  .mast nav a { padding: 0 10px; }
+}
+@media (min-width: 1041px) and (max-width: 1199px) { .mast nav a { padding: 0 8px; } .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { font-size: 14px; } .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: 46px; } }
+@media (min-width: 1760px) and (max-width: 1879px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: none; } }
+@media (min-width: 2100px) and (max-width: 2279px) { .mast nav a[href="producers.html"], .mast nav a[href="industry.html"] { display: none; } }

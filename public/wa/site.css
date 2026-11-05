@@ -4163,3 +4163,21 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
 .story h3, .pick-card h3, .recipe-card h3, .video-card h3, .bottle h3, .shelf-bottle h3 a, .rot-t,
 #homeStories .story.side h3, #homeStories .story.third h3 { display: block; -webkit-line-clamp: unset; line-clamp: none; overflow: visible; text-wrap: balance; }
 .cl-arrow-name { overflow: visible; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.25; }
+
+/* A roomier top bar (2026-11-05): taller with a larger wordmark at the top of the page, easing back to the slim bar once
+   you scroll, and more sections in the bar as the screen allows (Travel, 90+ Club and Video, then Producers and Industry). */
+@media (min-width: 901px) {
+  .mast { padding-block: 18px; }
+  .mast .wordmark img { height: 50px; transition: height 240ms ease; }
+  .mast nav a, .mast .tools .pill { height: 40px; font-size: 14px; }
+  .mast nav a { padding: 0 14px; }
+  .mast .burger { width: 46px; height: 46px; }
+  .mast[data-scrolled="true"] { padding-block: 8px; }
+  .mast[data-scrolled="true"] .wordmark img { height: 40px; }
+  .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 36px; }
+}
+@media (min-width: 901px) and (max-width: 1100px) { .mast nav a { padding: 0 9px; font-size: 13.5px; } }
+@media (min-width: 901px) and (max-width: 1040px) { .mast nav a { padding: 0 7px; font-size: 13px; } .mast .wordmark img { height: 42px; } }
+@media (min-width: 901px) and (max-width: 980px) { .mast nav a { padding: 0 5px; } .mast .wordmark img { height: 36px; } }
+@media (min-width: 1760px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: inline-flex; } }
+@media (min-width: 2100px) { .mast nav a[data-more] { display: inline-flex; } }

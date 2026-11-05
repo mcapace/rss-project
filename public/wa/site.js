@@ -587,7 +587,7 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
   document.addEventListener("keydown", function (e) {
     var typing = /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || "");
     if (e.key === "Escape" && ov.getAttribute("data-open") === "true") { open(false); return; }
-    if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || (e.key === "/" && !typing)) { e.preventDefault(); open(true); }
+    if (e.key === "/" && !typing) { e.preventDefault(); open(true); }
   });
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function mark(text, terms) { var out = esc(text); terms.forEach(function (t) { if (t.length < 3) return; out = out.replace(new RegExp("(" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i"), "<b>$1</b>"); }); return out; }
@@ -943,9 +943,6 @@ WA.canvasTips = function (canvas, points, html, href) {
     var on = null;
     function check() { var s = scrollY > 8; if (s !== on) { on = s; mast.setAttribute("data-scrolled", String(s)); } }
     addEventListener("scroll", check, { passive: true }); check();
-    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-    function key() { var b = mast.querySelector(".search-btn"); if (b) b.setAttribute("data-key", mac ? "⌘K" : "Ctrl K"); else setTimeout(key, 200); }
-    key();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();

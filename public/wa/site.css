@@ -4181,3 +4181,19 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
 @media (min-width: 901px) and (max-width: 980px) { .mast nav a { padding: 0 5px; } .mast .wordmark img { height: 36px; } }
 @media (min-width: 1760px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: inline-flex; } }
 @media (min-width: 2100px) { .mast nav a[data-more] { display: inline-flex; } }
+
+/* Taller top bar (2026-11-05): about 112px with a 60px wordmark on desktop, holding its height as you scroll. */
+@media (min-width: 1041px) {
+  .mast, .mast[data-scrolled="true"] { padding-block: 26px; }
+  .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: 60px; }
+  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 42px; font-size: 14.5px; }
+  .mast .burger { width: 48px; height: 48px; }
+}
+@media (min-width: 1041px) and (max-width: 1200px) { .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: 52px; } }
+@media (min-width: 901px) and (max-width: 1040px) {
+  .mast, .mast[data-scrolled="true"] { padding-block: 22px; }
+  .mast[data-scrolled="true"] .wordmark img { height: 42px; }
+  .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 40px; }
+}
+@media (min-width: 901px) and (max-width: 980px) { .mast[data-scrolled="true"] .wordmark img { height: 36px; } }
+@media (max-width: 900px) { .mast, .mast[data-scrolled="true"] { padding-block: 14px; } }

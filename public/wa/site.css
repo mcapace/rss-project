@@ -4164,51 +4164,18 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
 #homeStories .story.side h3, #homeStories .story.third h3 { display: block; -webkit-line-clamp: unset; line-clamp: none; overflow: visible; text-wrap: balance; }
 .cl-arrow-name { overflow: visible; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.25; }
 
-/* A roomier top bar (2026-11-05): taller with a larger wordmark at the top of the page, easing back to the slim bar once
-   you scroll, and more sections in the bar as the screen allows (Travel, 90+ Club and Video, then Producers and Industry). */
+/* The top bar (2026-11-05): tall and steady, holding its height as you scroll. Between 901px and 1440px every size
+   scales with the window (bar padding, wordmark, link text, spacing) so resizing glides rather than snapping at
+   breakpoints; from 1440px it holds at a 60px wordmark and 16px links. More sections join the bar on very wide screens. */
 @media (min-width: 901px) {
-  .mast { padding-block: 18px; }
-  .mast .wordmark img { height: 50px; transition: height 240ms ease; }
-  .mast nav a, .mast .tools .pill { height: 40px; font-size: 14px; }
-  .mast nav a { padding: 0 14px; }
-  .mast .burger { width: 46px; height: 46px; }
-  .mast[data-scrolled="true"] { padding-block: 8px; }
-  .mast[data-scrolled="true"] .wordmark img { height: 40px; }
-  .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 36px; }
+  .mast, .mast[data-scrolled="true"] { padding-block: clamp(16px, 1.855vw - 0.7px, 26px); transition: box-shadow 240ms ease; }
+  .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: clamp(36px, 4.453vw - 4px, 60px); transition: none; }
+  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: clamp(36px, 1.484vw + 22.6px, 44px); font-size: clamp(13px, 0.557vw + 8px, 16px); }
+  .mast nav a, .mast .tools .pill { padding: 0 clamp(5px, 1.855vw - 11.7px, 15px); }
+  .mast .tools .pill.solid { padding: 0 clamp(12px, 1.484vw - 1.4px, 20px); }
+  .mast .burger { width: clamp(42px, 1.113vw + 32px, 48px); height: clamp(42px, 1.113vw + 32px, 48px); }
 }
-@media (min-width: 901px) and (max-width: 1100px) { .mast nav a { padding: 0 9px; font-size: 13.5px; } }
-@media (min-width: 901px) and (max-width: 1040px) { .mast nav a { padding: 0 7px; font-size: 13px; } .mast .wordmark img { height: 42px; } }
-@media (min-width: 901px) and (max-width: 980px) { .mast nav a { padding: 0 5px; } .mast .wordmark img { height: 36px; } }
-@media (min-width: 1760px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: inline-flex; } }
-@media (min-width: 2100px) { .mast nav a[data-more] { display: inline-flex; } }
-
-/* Taller top bar (2026-11-05): about 112px with a 60px wordmark on desktop, holding its height as you scroll. */
-@media (min-width: 1041px) {
-  .mast, .mast[data-scrolled="true"] { padding-block: 26px; }
-  .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: 60px; }
-  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 42px; font-size: 14.5px; }
-  .mast .burger { width: 48px; height: 48px; }
-}
-@media (min-width: 1041px) and (max-width: 1200px) { .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: 52px; } }
-@media (min-width: 901px) and (max-width: 1040px) {
-  .mast, .mast[data-scrolled="true"] { padding-block: 22px; }
-  .mast[data-scrolled="true"] .wordmark img { height: 42px; }
-  .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 40px; }
-}
-@media (min-width: 901px) and (max-width: 980px) { .mast[data-scrolled="true"] .wordmark img { height: 36px; } }
+@media (min-width: 1501px) and (max-width: 1619px) { .mast .tools a[href="tools.html"], .mast .tools a[href^="https://store."] { display: none; } .mast .search-btn::after { display: none; } }
+@media (min-width: 1880px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: inline-flex; } }
+@media (min-width: 2280px) { .mast nav a[data-more] { display: inline-flex; } }
 @media (max-width: 900px) { .mast, .mast[data-scrolled="true"] { padding-block: 14px; } }
-
-/* Larger top bar links (2026-11-05): 16px on large screens, 15px on smaller desktops, sized to the taller bar.
-   The extra sections join the bar later so the larger links keep clear of the wordmark. */
-@media (min-width: 1440px) {
-  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { height: 44px; font-size: 16px; }
-  .mast nav a, .mast .tools .pill { padding: 0 15px; }
-  .mast .tools .pill.solid { padding: 0 20px; }
-}
-@media (min-width: 1200px) and (max-width: 1439px) {
-  .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { font-size: 15px; }
-  .mast nav a { padding: 0 10px; }
-}
-@media (min-width: 1041px) and (max-width: 1199px) { .mast nav a { padding: 0 8px; } .mast nav a, .mast .tools .pill, .mast[data-scrolled="true"] nav a, .mast[data-scrolled="true"] .tools .pill { font-size: 14px; } .mast .wordmark img, .mast[data-scrolled="true"] .wordmark img { height: 46px; } }
-@media (min-width: 1760px) and (max-width: 1879px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: none; } }
-@media (min-width: 2100px) and (max-width: 2279px) { .mast nav a[href="producers.html"], .mast nav a[href="industry.html"] { display: none; } }

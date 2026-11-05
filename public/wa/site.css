@@ -4157,3 +4157,9 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
    and on narrow screens the note stops short of the Ask button. */
 .ret-map .maplibregl-popup { z-index: 3; }
 @media (max-width: 700px) { .ret-map-note { right: 72px; max-width: calc(100% - 86px); } }
+
+/* Headlines in full (2026-11-05): story, pick, recipe, video and rating cards, the home lead-and-stack and the rotating list
+   showed headlines cut to two or three lines with an ellipsis. Every headline now shows whole, with balanced lines. */
+.story h3, .pick-card h3, .recipe-card h3, .video-card h3, .bottle h3, .shelf-bottle h3 a, .rot-t,
+#homeStories .story.side h3, #homeStories .story.third h3 { display: block; -webkit-line-clamp: unset; line-clamp: none; overflow: visible; text-wrap: balance; }
+.cl-arrow-name { overflow: visible; white-space: normal; text-overflow: clip; text-wrap: balance; line-height: 1.25; }

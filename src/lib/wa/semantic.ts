@@ -104,8 +104,8 @@ export type Similar = { slug: string; title: string; score: number | null; price
 
 /**
  * "Bottles like this": embedding candidates re-ranked by flavor profile, a small
- * nudge toward the same category, a lean toward recent reviews (recencyWeight),
- * and at most `perBrand` from any one house so the list reaches past the
+ * nudge toward the same category, a lean toward recent reviews (recencyWeight)
+ * and toward the bottle's own price range, and at most `perBrand` from any one house so the list reaches past the
  * bottle's own distillery.
  */
 export function rankSimilar(self: Bottle, matches: Match[], bottles: Map<string, Bottle>, options: { limit?: number; perBrand?: number; now?: number } = {}): Similar[] {
@@ -117,7 +117,9 @@ export function rankSimilar(self: Bottle, matches: Match[], bottles: Map<string,
     if (!b || norm(b.title) === norm(self.title)) return null;
     const taste = mine && b.flavor ? cosine(mine, flavorVector(b.flavor)) : null;
     const sameCategory = !!b.rating.category && b.rating.category === self.rating.category;
-    const score = (taste == null ? m.similarity : 0.45 * m.similarity + 0.55 * taste) + (sameCategory ? 0.03 : 0) + recencyWeight(b.rating.issue, options.now);
+    const myPrice = Number(self.rating.price) || 0, theirs = Number(b.rating.price) || 0;
+    const priceGap = myPrice > 0 && theirs > 0 ? Math.min(0.06, Math.abs(Math.log(theirs / myPrice)) * 0.02) : 0;
+    const score = (taste == null ? m.similarity : 0.45 * m.similarity + 0.55 * taste) + (sameCategory ? 0.03 : 0) + recencyWeight(b.rating.issue, options.now) - priceGap;
     return { b, score };
   }).filter((x): x is { b: Bottle; score: number } => !!x).sort((a, b) => b.score - a.score);
   const perHouse = new Map<string, number>(), out: Similar[] = [];

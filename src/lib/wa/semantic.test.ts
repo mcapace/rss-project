@@ -71,4 +71,11 @@ describe("recency", () => {
     const ranked = rankSimilar(self, matches, new Map([old, fresh].map(b => [b.id, b])), { now: 2026 });
     expect(ranked.map(r => r.slug)).toEqual(["new", "old"]);
   });
+  it("leans toward the bottle's own price range", () => {
+    const self = bottle("self", "Ardbeg 10", "Ardbeg", { smoke: 9, maritime: 7 });
+    const dear = { ...bottle("dear", "Old Rare 25", "Rare House", { smoke: 9, maritime: 7 }), rating: { brand: "Rare House", category: "Single Malt Scotch", issue: "Fall 2025", price: 1400 } };
+    const near = { ...bottle("near", "Islay 10", "Near House", { smoke: 9, maritime: 7 }), rating: { brand: "Near House", category: "Single Malt Scotch", issue: "Fall 2025", price: 70 } };
+    const matches: Match[] = [dear, near].map((b, i) => ({ document_id: b.id, kind: "rating", slug: b.slug, title: b.title, similarity: 0.8 - i * 0.02 }));
+    expect(rankSimilar(self, matches, new Map([dear, near].map(b => [b.id, b])), { now: 2026 }).map(r => r.slug)).toEqual(["near", "dear"]);
+  });
 });

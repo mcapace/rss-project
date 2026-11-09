@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
 import { visitorKey, withinLimit } from "@/lib/wa/rate-limit";
-import { embedQuery, loadBottles, matchDocuments, priceLimits } from "@/lib/wa/semantic";
+import { embedQuery, loadBottles, matchDocuments, priceLimits, recentFirst } from "@/lib/wa/semantic";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -11,7 +11,8 @@ export const maxDuration = 30;
  * The search page's answer: the reader's words matched by meaning against every
  * published rating and story, then a short answer in the magazine's voice that
  * cites only what was found. Price limits in the question ("under $80") filter
- * the bottles before the model sees them. Cached at the edge per question.
+ * the bottles before the model sees them, and bottles reviewed in the last five
+ * years come first (recentFirst). Cached at the edge per question.
  */
 const MODEL = process.env.WA_ANSWER_MODEL || "claude-sonnet-5-5";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, OPTIONS" };
@@ -23,7 +24,7 @@ const SCHEMA = {
     stories: { type: "array", items: { type: "string" }, description: "Up to three story slugs from the list that a reader asking this should read. Empty when none fit." },
   },
 };
-const SYSTEM = `You answer readers' questions on whiskyadvocate.com from the magazine's own ratings and stories, which are listed for you. Use only them: never mention a bottle, score, price or fact that is not in the list. Honor every constraint in the question (price, style, region, flavor, age). Prefer bottles reviewed in the last five years, since older releases are hard to find, unless the reader asks about older or vintage bottles. If nothing listed fits, say so plainly in one sentence and return no picks. Scores and prices exactly as given. No em dashes, no exclamation marks. Return only the JSON asked for.`;
+const SYSTEM = `You answer readers' questions on whiskyadvocate.com from the magazine's own ratings and stories, which are listed for you. Use only them: never mention a bottle, score, price or fact that is not in the list. Honor every constraint in the question (price, style, region, flavor, age). Recommend bottles reviewed in the last five years (the issue says when), since those are the ones a reader can still buy; the list puts them first. Reach for an older review only when nothing recent fits, or when the reader asks about older, vintage or discontinued bottles. Lean the same way toward regular releases over rare ones (decades-old age statements, single casks, limited editions, bottles over $500) unless the reader asks for something rare, special or a splurge. If nothing listed fits, say so plainly in one sentence and return no picks. Scores and prices exactly as given. No em dashes, no exclamation marks. Return only the JSON asked for.`;
 
 export function OPTIONS() { return new NextResponse(null, { status: 204, headers: CORS }); }
 
@@ -38,8 +39,8 @@ export async function GET(request: Request) {
     const [ratingMatches, storyMatches] = await Promise.all([matchDocuments(db, embedding, ["rating"], 80), matchDocuments(db, embedding, ["article"], 12)]);
     const bottles = await loadBottles(db, ratingMatches.map(m => m.document_id));
     const { min, max } = priceLimits(q);
-    const candidates = ratingMatches.map(m => bottles.get(m.document_id)).filter((b): b is NonNullable<typeof b> => !!b)
-      .filter(b => { const p = Number(b.rating.price) || 0; return (max == null || (p > 0 && p <= max)) && (min == null || p >= min); }).slice(0, 30);
+    const candidates = recentFirst(ratingMatches.map(m => bottles.get(m.document_id)).filter((b): b is NonNullable<typeof b> => !!b)
+      .filter(b => { const p = Number(b.rating.price) || 0; return (max == null || (p > 0 && p <= max)) && (min == null || p >= min); }), b => b.rating.issue, q).slice(0, 30);
     const { data: storyRows } = storyMatches.length ? await db.from("cms_documents").select("id,slug,title,excerpt,published_at").in("id", storyMatches.map(m => m.document_id)) : { data: [] };
     const storyById = new Map((storyRows ?? []).map(s => [s.id, s]));
     const stories = storyMatches.map(m => storyById.get(m.document_id)).filter((s): s is NonNullable<typeof s> => !!s).slice(0, 8);

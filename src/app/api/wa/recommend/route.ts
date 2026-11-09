@@ -16,7 +16,7 @@ export const maxDuration = 30;
  * its candidates change.
  */
 const MODEL = process.env.WA_RECOMMEND_MODEL || "claude-sonnet-5-5";
-const PROMPT_VERSION = "2";
+const PROMPT_VERSION = "3";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" };
 const bucket = new Map<string, { count: number; at: number }>();
 
@@ -26,7 +26,7 @@ function limited(ip: string) {
   hit.count += 1; return hit.count > 40;
 }
 
-type Candidate = { slug: string; name: string; score: number; price: number | null; category: string; producer: string; note?: string; how?: string };
+type Candidate = { slug: string; name: string; score: number; price: number | null; category: string; producer: string; year?: number | null; note?: string; how?: string };
 type Body = { kind?: string; slug?: string; title?: string; summary?: string; ingredients?: string[]; candidates?: Candidate[] };
 
 const SCHEMA = {
@@ -45,7 +45,8 @@ Rules, in order:
 2. Then bottles from the house the page is about (the same producer or brand), newest or most relevant expression first.
 3. Only then bottles of the exact style the page is about, and only when the page is about that style (a story about Islay single malts can show Islay single malts; a story about a distillery tour or an auction should not show random bourbons).
 4. For a cocktail: the bottle the recipe names first; otherwise bottles that fit the role in the drink (the right whisky type, a proof that stands up to mixing, a price that makes sense for mixing); a $500 bottle does not go in a highball.
-5. Never pad. Two right picks beat four loose ones. If nothing fits, return no picks and say in the line that the archive has no close match.
+5. Among bottles that fit equally well, prefer ones reviewed in the last five years: those are the ones a reader can still buy. A bottle the text names keeps its place whatever its year; otherwise reach past five years only when nothing recent fits. On bottle and producer pages, prefer regular releases a reader can find over rare ones (decades-old age statements, single casks, bottles over $500) unless the page itself is about one.
+6. Never pad. Two right picks beat four loose ones. If nothing fits, return no picks and say in the line that the archive has no close match.
 Use scores and prices exactly as given. No em dashes. Return only the JSON asked for.`;
 
 export function OPTIONS() { return new NextResponse(null, { status: 204, headers: CORS }); }
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
   const title = String(body.title || "").slice(0, 200);
   const summary = String(body.summary || "").replace(/\s+/g, " ").slice(0, 2200);
   const ingredients = (Array.isArray(body.ingredients) ? body.ingredients : []).map(i => String(i).slice(0, 120)).slice(0, 16);
-  const candidates: Candidate[] = (Array.isArray(body.candidates) ? body.candidates : []).slice(0, 24).map(c => ({ slug: String(c.slug || "").slice(0, 200), name: String(c.name || "").slice(0, 160), score: Number(c.score) || 0, price: c.price == null ? null : Number(c.price), category: String(c.category || "").slice(0, 60), producer: String(c.producer || "").slice(0, 80), note: String(c.note || "").slice(0, 240), how: String(c.how || "").slice(0, 40) })).filter(c => c.slug && c.name);
+  const candidates: Candidate[] = (Array.isArray(body.candidates) ? body.candidates : []).slice(0, 24).map(c => ({ slug: String(c.slug || "").slice(0, 200), name: String(c.name || "").slice(0, 160), score: Number(c.score) || 0, price: c.price == null ? null : Number(c.price), category: String(c.category || "").slice(0, 60), producer: String(c.producer || "").slice(0, 80), year: Number(c.year) > 1900 ? Number(c.year) : null, note: String(c.note || "").slice(0, 240), how: String(c.how || "").slice(0, 40) })).filter(c => c.slug && c.name);
   if (!candidates.length) return NextResponse.json({ line: "", picks: [], cached: true }, { headers: CORS });
 
   const key = createHash("sha256").update([PROMPT_VERSION, kind, slug, title, summary, ingredients.join("|"), candidates.map(c => c.slug).sort().join(",")].join("\n")).digest("hex");
@@ -77,12 +78,12 @@ export async function POST(request: Request) {
       : kind === "producer"
         ? `A producer's page: "${title}"\n${summary}\nChoose the three or four bottles a newcomer to this house should start with, across price points, best first.`
         : `A story: "${title}"\n${summary}`;
-  const list = candidates.map(c => `${c.slug} | ${c.name} | ${c.score} pts | ${c.price == null ? "price n/a" : "$" + c.price} | ${c.category} | ${c.producer}${c.how ? " | found: " + c.how : ""}${c.note ? " | " + c.note : ""}`).join("\n");
+  const list = candidates.map(c => `${c.slug} | ${c.name} | ${c.score} pts | ${c.price == null ? "price n/a" : "$" + c.price} | ${c.category} | ${c.producer} | ${c.year ? "reviewed " + c.year : "year n/a"}${c.how ? " | found: " + c.how : ""}${c.note ? " | " + c.note : ""}`).join("\n");
   try {
     const anthropic = new Anthropic();
     const message = await anthropic.messages.create({
       model: MODEL, max_tokens: 2000, system: SYSTEM,
-      messages: [{ role: "user", content: `${page}\n\nCandidates (slug | name | score | price | category | producer | how the page found it | note):\n${list}` }],
+      messages: [{ role: "user", content: `${page}\n\nCandidates (slug | name | score | price | category | producer | year reviewed | how the page found it | note):\n${list}` }],
       output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA as unknown as Record<string, unknown> } },
     } as Anthropic.MessageCreateParamsNonStreaming);
     if (message.stop_reason === "max_tokens") throw new Error("the answer ran past max_tokens");

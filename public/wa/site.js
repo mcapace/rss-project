@@ -513,8 +513,11 @@ document.querySelectorAll("a[data-app-link]").forEach(function (a) { a.href = WA
   function add(html, cls) { var d = document.createElement("div"); d.className = "chat-msg " + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
   function candidates(q) {
     var f = WA.understand ? WA.understand(q) : null; if (!f || !WA.apply) return [];
-    var rows = WA.apply(f, WA.data() || []).slice(0, 12);
-    return rows.map(function (r) { return { slug: r.slug || "", name: r.n, score: r.s, price: r.p || null, category: r.c, producer: r.pr, note: (r.t || "").slice(0, 240) }; });
+    var rows = WA.recentFirst ? WA.recentFirst(WA.apply(f, WA.data() || []), q) : WA.apply(f, WA.data() || []);
+    // Mostly bottles a reader can find (a price on record, $250 or less), a few rarer ones, unless the question asks for rare or dear.
+    if (!/\b(?:rare|special|splurge|collect\w*|limited|luxury|expensive|unicorn|allocated|old and rare)\b|\$\s*\d{3,}|\b(?:over|above) \$?\d{3,}/i.test(q)) { var easy = rows.filter(function (r) { return r.p > 0 && r.p <= 250; }); rows = easy.slice(0, 9).concat(rows.filter(function (r) { return easy.indexOf(r) < 0; }).slice(0, 3)); }
+    rows = rows.slice(0, 12);
+    return rows.map(function (r) { return { slug: r.slug || "", name: r.n, score: r.s, price: r.p || null, category: r.c, producer: r.pr, year: WA.reviewYear ? WA.reviewYear(r) || null : null, note: (r.t || "").slice(0, 240) }; });
   }
   function askIt(q) {
     q = (q || "").trim(); if (!q || busy) return;
@@ -662,7 +665,12 @@ document.body.appendChild(waAds);
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { if (j && j.picks) cache[key] = j; cb(j && j.picks ? j : null); }, function () { cb(null); });
   };
-  window.WA.candidate = function (r, how, note) { return { slug: r.slug, name: r.n, score: r.s, price: r.p > 0 ? r.p : null, category: r.c, producer: r.pr || "", how: how, note: note || "" }; };
+  window.WA.candidate = function (r, how, note) { return { slug: r.slug, name: r.n, score: r.s, price: r.p > 0 ? r.p : null, category: r.c, producer: r.pr || "", year: WA.reviewYear(r) || null, how: how, note: note || "" }; };
+  // Picks lean to bottles reviewed in the last five years, the ones a reader can still buy; older reviews follow unless the question asks for them.
+  window.WA.reviewYear = function (r) { var m = /\b(?:19|20)\d{2}\b/.exec((r && r.issue) || "") || /^\d{4}/.exec((r && r.d) || ""); return m ? +m[0] : 0; };
+  window.WA.RECENT = new Date().getFullYear() - 5;
+  window.WA.wantsOlder = function (q) { return /\b(?:older (?:releases?|bottl\w*|expressions?|reviews?)|vintage|discontinued|dust(?:y|ies)|retired|out of production|no longer made|historic\w*|19\d{2}|20(?:0\d|1\d|20))\b/i.test(q || ""); };
+  window.WA.recentFirst = function (rows, q) { if (WA.wantsOlder(q)) return rows; var a = [], b = []; rows.forEach(function (r) { (WA.reviewYear(r) >= WA.RECENT ? a : b).push(r); }); return a.concat(b); };
   window.WA.withNotes = function (rows, cb) { var left = rows.length, notes = {}; if (!left) return cb(notes); rows.forEach(function (r) { WA.note(r.slug, function (t) { notes[r.slug] = (t || "").replace(/\s+/g, " ").slice(0, 220); if (--left === 0) cb(notes); }); }); };
   window.WA.recCards = function (picks, byslug) { return picks.map(function (p) { var r = byslug[p.slug]; return r ? '<div class="rec">' + WA.bottleCard(r) + (p.why ? '<p class="rec-why">' + p.why + "</p>" : "") + "</div>" : ""; }).join(""); };
 })();

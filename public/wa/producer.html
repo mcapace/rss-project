@@ -118,8 +118,8 @@ WA.ready(function (recent) { WA.archive(function (data) {
       var host = document.getElementById("housePicks"); if (!host || !WA.recommend) return; host.hidden = true;
       var pool = [], seen = {}, byslug = {};
       function add(x, how) { if (!x || seen[x.slug] || pool.length >= 18) return; seen[x.slug] = true; byslug[x.slug] = x; pool.push({ r: x, how: how }); }
-      shownRows.slice(0, 8).forEach(function (x) { add(x, "highest scores"); });
-      rows.filter(function (x) { return x.p > 0; }).sort(function (a, b) { return WA.value(b) - WA.value(a); }).slice(0, 5).forEach(function (x) { add(x, "best value"); });
+      WA.recentFirst(shownRows.slice()).slice(0, 8).forEach(function (x) { add(x, "highest scores"); });
+      WA.recentFirst(rows.filter(function (x) { return x.p > 0; }).sort(function (a, b) { return WA.value(b) - WA.value(a); })).slice(0, 5).forEach(function (x) { add(x, "best value"); });
       rows.slice().reverse().slice(0, 4).forEach(function (x) { add(x, "newest"); });
       WA.withNotes(pool.map(function (x) { return x.r; }), function (notes) {
         WA.recommend({ kind: "producer", slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), title: name, summary: rows.length + " bottles rated, mostly " + mainCat + ", highest " + best.s + " points, prices " + WA.fmt(prices[0]) + " to " + WA.fmt(prices[prices.length - 1]) + ".", candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {

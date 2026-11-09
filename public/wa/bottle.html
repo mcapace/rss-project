@@ -349,9 +349,9 @@ WA.ready(function (recent) { WA.archive(function (data) {
       if (near.length >= 4) { var rail = document.getElementById("similar"); rail.innerHTML = near.slice(0, 4).map(function (x) { return WA.bottleCard(x); }).join(""); WA.fillNotes(rail); }
       near.forEach(function (x) { add(x, "closest in flavor, from the tasting notes"); });
       sim.slice(0, 10).forEach(function (x) { add(x, "closest by score, price and character"); });
-      data.filter(function (x) { return x.pr === r.pr && !same(x); }).sort(function (a, b) { return b.s - a.s; }).slice(0, 4).forEach(function (x) { add(x, "same house"); });
-      peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }).sort(function (a, b) { return a.p - b.p; }).slice(0, 4).forEach(function (x) { add(x, "scores as high for less"); });
-      peers.filter(function (x) { return x.s > r.s && x.p > r.p; }).sort(function (a, b) { return b.s - a.s; }).slice(0, 3).forEach(function (x) { add(x, "a step up in the same style"); });
+      WA.recentFirst(data.filter(function (x) { return x.pr === r.pr && !same(x); }).sort(function (a, b) { return b.s - a.s; })).slice(0, 4).forEach(function (x) { add(x, "same house"); });
+      WA.recentFirst(peers.filter(function (x) { return x.p > 0 && x.p < r.p && x.s >= r.s; }).sort(function (a, b) { return a.p - b.p; })).slice(0, 4).forEach(function (x) { add(x, "scores as high for less"); });
+      WA.recentFirst(peers.filter(function (x) { return x.s > r.s && x.p > r.p; }).sort(function (a, b) { return b.s - a.s; })).slice(0, 3).forEach(function (x) { add(x, "a step up in the same style"); });
       if (!pool.length || !WA.recommend) return;
       WA.withNotes(pool.map(function (x) { return x.r; }).concat([r]), function (notes) {
         WA.recommend({ kind: "bottle", slug: r.slug, title: r.n, summary: r.s + " points, " + fmt(r.p) + ", " + r.c + (r.pr ? ", by " + r.pr : "") + ". " + (notes[r.slug] || ""), candidates: pool.map(function (x) { return WA.candidate(x.r, x.how, notes[x.r.slug]); }) }, function (rec) {

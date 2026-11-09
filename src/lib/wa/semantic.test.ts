@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cosine, priceLimits, rankSimilar, type Bottle, type Match } from "./semantic";
+import { cosine, priceLimits, rankSimilar, recencyWeight, recentFirst, reviewYear, wantsOlder, type Bottle, type Match } from "./semantic";
 
 const flavor = (axes: Record<string, number>, notes: string[] = []) => ({ v: 1, axes, body: 3, finish: 3, notes, line: "" });
 const bottle = (id: string, title: string, brand: string, axes: Record<string, number>, notes: string[] = []): Bottle => ({ id, slug: id, title, rating: { brand, category: "Single Malt Scotch", score: 90, price: 60 }, flavor: flavor(axes, notes) });
@@ -41,5 +41,34 @@ describe("rankSimilar", () => {
   it("measures direction, not size", () => {
     expect(cosine([1, 2, 3], [2, 4, 6])).toBeCloseTo(1);
     expect(cosine([0, 0], [1, 1])).toBe(0);
+  });
+});
+
+describe("recency", () => {
+  it("reads the year from an issue", () => {
+    expect(reviewYear("Fall 2026")).toBe(2026);
+    expect(reviewYear("Winter 2011")).toBe(2011);
+    expect(reviewYear("")).toBeNull();
+  });
+  it("puts recent reviews first and keeps each group's order", () => {
+    const rows = [{ s: "a", issue: "Winter 2012" }, { s: "b", issue: "Fall 2025" }, { s: "c", issue: "" }, { s: "d", issue: "Spring 2022" }];
+    expect(recentFirst(rows, r => r.issue, "", 2026).map(r => r.s)).toEqual(["b", "d", "a", "c"]);
+  });
+  it("leaves the order alone when the reader asks about older bottles", () => {
+    const rows = [{ s: "a", issue: "Winter 2012" }, { s: "b", issue: "Fall 2025" }];
+    expect(recentFirst(rows, r => r.issue, "discontinued bourbon worth hunting", 2026).map(r => r.s)).toEqual(["a", "b"]);
+    expect(wantsOlder("a vintage single malt")).toBe(true);
+    expect(wantsOlder("12 year old scotch under $80")).toBe(false);
+  });
+  it("lifts recent reviews and lowers old ones in bottles like this", () => {
+    expect(recencyWeight("Fall 2024", 2026)).toBeGreaterThan(0);
+    expect(recencyWeight("Winter 2012", 2026)).toBeLessThan(0);
+    expect(recencyWeight(undefined, 2026)).toBe(0);
+    const self = bottle("self", "Lagavulin 16", "Lagavulin", { smoke: 8, maritime: 6 });
+    const old = { ...bottle("old", "Old Islay", "Old House", { smoke: 8, maritime: 6 }), rating: { brand: "Old House", category: "Single Malt Scotch", issue: "Winter 2012" } };
+    const fresh = { ...bottle("new", "New Islay", "New House", { smoke: 8, maritime: 6 }), rating: { brand: "New House", category: "Single Malt Scotch", issue: "Fall 2025" } };
+    const matches: Match[] = [old, fresh].map((b, i) => ({ document_id: b.id, kind: "rating", slug: b.slug, title: b.title, similarity: 0.8 - i * 0.02 }));
+    const ranked = rankSimilar(self, matches, new Map([old, fresh].map(b => [b.id, b])), { now: 2026 });
+    expect(ranked.map(r => r.slug)).toEqual(["new", "old"]);
   });
 });

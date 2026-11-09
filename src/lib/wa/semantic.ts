@@ -51,6 +51,44 @@ export function priceLimits(q: string): { min: number | null; max: number | null
   return { max: max ? num(max[1]) || null : null, min: min ? num(min[1]) || null : null };
 }
 
+/**
+ * Recommendations lean to bottles reviewed in the last RECENT_YEARS: those are the ones a reader can still find on a
+ * shelf. Older reviews stay in the archive and in search; they rank after the recent ones unless the reader asks
+ * about older, vintage or discontinued bottles.
+ */
+export const RECENT_YEARS = 5;
+
+/** The year a rating ran, from its issue ("Fall 2026"). */
+export function reviewYear(issue?: string | null): number | null {
+  const m = /\b(?:19|20)\d{2}\b/.exec(String(issue || ""));
+  return m ? Number(m[0]) : null;
+}
+
+export function wantsOlder(q: string): boolean {
+  return /\b(?:older (?:releases?|bottl\w*|expressions?|reviews?)|vintage|discontinued|dust(?:y|ies)|retired|out of production|no longer made|historic\w*|19\d{2}|20(?:0\d|1\d|20))\b/i.test(q);
+}
+
+export function isRecent(issue?: string | null, now = new Date().getFullYear()): boolean {
+  const year = reviewYear(issue);
+  return year != null && year >= now - RECENT_YEARS;
+}
+
+/** Recent reviews first, each group keeping its order; unchanged when the reader asks about older bottles. */
+export function recentFirst<T>(items: T[], issueOf: (item: T) => string | null | undefined, question = "", now = new Date().getFullYear()): T[] {
+  if (question && wantsOlder(question)) return items;
+  const recent: T[] = [], older: T[] = [];
+  for (const item of items) (isRecent(issueOf(item), now) ? recent : older).push(item);
+  return [...recent, ...older];
+}
+
+/** A small lift for a recent review and a growing drop for an old one; nothing when the year is unknown. */
+export function recencyWeight(issue?: string | null, now = new Date().getFullYear()): number {
+  const year = reviewYear(issue);
+  if (year == null) return 0;
+  const age = now - year;
+  return age <= RECENT_YEARS ? 0.04 : -Math.min(0.1, (age - RECENT_YEARS) * 0.02);
+}
+
 /** Axes plus body and finish (doubled onto the 0-10 scale), so a light, short dram and a heavy, long one stay apart. */
 export function flavorVector(f: Flavor): number[] {
   return [...FLAVOR_AXES.map(a => Number(f.axes?.[a]) || 0), (Number(f.body) || 3) * 2, (Number(f.finish) || 3) * 2];
@@ -66,10 +104,11 @@ export type Similar = { slug: string; title: string; score: number | null; price
 
 /**
  * "Bottles like this": embedding candidates re-ranked by flavor profile, a small
- * nudge toward the same category, and at most `perBrand` from any one house so
- * the list reaches past the bottle's own distillery.
+ * nudge toward the same category, a lean toward recent reviews (recencyWeight),
+ * and at most `perBrand` from any one house so the list reaches past the
+ * bottle's own distillery.
  */
-export function rankSimilar(self: Bottle, matches: Match[], bottles: Map<string, Bottle>, options: { limit?: number; perBrand?: number } = {}): Similar[] {
+export function rankSimilar(self: Bottle, matches: Match[], bottles: Map<string, Bottle>, options: { limit?: number; perBrand?: number; now?: number } = {}): Similar[] {
   const limit = options.limit ?? 8, perBrand = options.perBrand ?? 2;
   const mine = self.flavor ? flavorVector(self.flavor) : null, myNotes = new Set(self.flavor?.notes ?? []);
   const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -78,7 +117,7 @@ export function rankSimilar(self: Bottle, matches: Match[], bottles: Map<string,
     if (!b || norm(b.title) === norm(self.title)) return null;
     const taste = mine && b.flavor ? cosine(mine, flavorVector(b.flavor)) : null;
     const sameCategory = !!b.rating.category && b.rating.category === self.rating.category;
-    const score = (taste == null ? m.similarity : 0.45 * m.similarity + 0.55 * taste) + (sameCategory ? 0.03 : 0);
+    const score = (taste == null ? m.similarity : 0.45 * m.similarity + 0.55 * taste) + (sameCategory ? 0.03 : 0) + recencyWeight(b.rating.issue, options.now);
     return { b, score };
   }).filter((x): x is { b: Bottle; score: number } => !!x).sort((a, b) => b.score - a.score);
   const perHouse = new Map<string, number>(), out: Similar[] = [];

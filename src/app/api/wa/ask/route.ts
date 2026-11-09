@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { cmsDb } from "@/lib/cms/db";
 import { embeddingsConfigured } from "@/lib/editorial/server/embeddings";
-import { embedQuery, loadBottles, matchDocuments, priceLimits } from "@/lib/wa/semantic";
+import { embedQuery, loadBottles, matchDocuments, priceLimits, recentFirst, reviewYear } from "@/lib/wa/semantic";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -28,7 +28,7 @@ function limited(ip: string) {
 }
 
 type Turn = { role: "user" | "assistant"; text: string };
-type Bottle = { slug: string; name: string; score: number; price: number | null; category: string; producer: string; note?: string; how?: string };
+type Bottle = { slug: string; name: string; score: number; price: number | null; category: string; producer: string; year?: number | null; note?: string; how?: string };
 
 const SCHEMA = {
   type: "object",
@@ -47,7 +47,7 @@ const SCHEMA = {
 
 const SYSTEM = `You are Ask Whisky Advocate, the assistant on whiskyadvocate.com, the magazine of record for whisky. You speak like a knowledgeable, warm editor: direct, specific, never gushing, no exclamation marks, no emoji, no em dashes. American English, "whisky" for Scotch and Japanese, "whiskey" for American and Irish.
 
-You answer from the bottles the page gives you, which come from Whisky Advocate's own blind-tasted ratings (100-point scale: 95 to 100 classic, 90 to 94 outstanding, 85 to 89 very good). Recommend by fit first, then score, then price, and say why in a sentence each. Quote scores and prices exactly as given. Never invent a bottle, a score, a price or a tasting note. If the list does not fit the question, say so plainly and suggest how to narrow or widen it. Questions outside whisky (and the cocktails, bars and travel around it) get one polite sentence pointing back to whisky. Keep the whole reply under 110 words. Return only the JSON asked for.`;
+You answer from the bottles the page gives you, which come from Whisky Advocate's own blind-tasted ratings (100-point scale: 95 to 100 classic, 90 to 94 outstanding, 85 to 89 very good). Recommend by fit first, then score, then price, and say why in a sentence each. Lean to bottles reviewed in the last five years (the year is given), since those are the ones a reader can still buy; recommend an older review only when nothing recent fits, or when the reader asks about older, vintage or discontinued bottles, and then say it may be hard to find. Lean the same way toward regular releases over rare ones (decades-old age statements, single casks, limited editions, bottles over $500) unless the reader asks for something rare, special or a splurge. Quote scores and prices exactly as given. Never invent a bottle, a score, a price or a tasting note. If the list does not fit the question, say so plainly and suggest how to narrow or widen it. Questions outside whisky (and the cocktails, bars and travel around it) get one polite sentence pointing back to whisky. Keep the whole reply under 110 words. Return only the JSON asked for.`;
 
 /** Ratings that read closest to the question by meaning, within any price limit it names; the browser's own search finds names and styles, this finds the rest. */
 async function closeInMeaning(question: string, have: Set<string>, signal: AbortSignal) {
@@ -57,13 +57,13 @@ async function closeInMeaning(question: string, have: Set<string>, signal: Abort
     const matches = await matchDocuments(db, await embedQuery(question.slice(0, 400), signal), ["rating"], 40);
     const found = await loadBottles(db, matches.map(m => m.document_id));
     const { min, max } = priceLimits(question);
-    const fits = matches.map(m => found.get(m.document_id)).filter((b): b is NonNullable<typeof b> => !!b && !have.has(b.slug))
-      .filter(b => { const p = Number(b.rating.price) || 0; return (max == null || (p > 0 && p <= max)) && (min == null || p >= min); });
+    const fits = recentFirst(matches.map(m => found.get(m.document_id)).filter((b): b is NonNullable<typeof b> => !!b && !have.has(b.slug))
+      .filter(b => { const p = Number(b.rating.price) || 0; return (max == null || (p > 0 && p <= max)) && (min == null || p >= min); }), b => b.rating.issue, question);
     const strong = fits.filter(b => (b.rating.score ?? 0) >= 85), perHouse = new Map<string, number>();
     return (strong.length >= 6 ? strong : fits)
       .filter(b => { const house = (b.rating.brand || b.title.split(" ")[0]).toLowerCase(), n = perHouse.get(house) ?? 0; perHouse.set(house, n + 1); return n < 2; })
       .slice(0, 10)
-      .map(b => ({ slug: b.slug, name: b.title, score: b.rating.score ?? 0, price: b.rating.price ?? null, category: b.rating.category || "", producer: b.rating.brand || "", note: b.flavor ? `${b.flavor.line} Notes: ${b.flavor.notes.join(", ")}` : "", how: "close in meaning to the question" }));
+      .map(b => ({ slug: b.slug, name: b.title, score: b.rating.score ?? 0, price: b.rating.price ?? null, category: b.rating.category || "", producer: b.rating.brand || "", year: reviewYear(b.rating.issue), note: b.flavor ? `${b.flavor.line} Notes: ${b.flavor.notes.join(", ")}` : "", how: "close in meaning to the question" }));
   } catch (error) {
     console.error("[wa/ask] meaning search", error instanceof Error ? error.message : error);
     return [];
@@ -80,13 +80,13 @@ export async function POST(request: Request) {
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Send JSON." }, { status: 400, headers: CORS }); }
   const turns = (Array.isArray(body.turns) ? body.turns : []).filter(t => t && (t.role === "user" || t.role === "assistant") && typeof t.text === "string").slice(-10).map(t => ({ role: t.role, text: t.text.slice(0, 1200) }));
   if (!turns.length || turns[turns.length - 1].role !== "user") return NextResponse.json({ error: "Ask something first." }, { status: 400, headers: CORS });
-  const bottles = (Array.isArray(body.bottles) ? body.bottles : []).slice(0, 14).map(b => ({ slug: String(b.slug || "").slice(0, 200), name: String(b.name || "").slice(0, 160), score: Number(b.score) || 0, price: b.price == null ? null : Number(b.price), category: String(b.category || "").slice(0, 60), producer: String(b.producer || "").slice(0, 80), note: String(b.note || "").slice(0, 260), how: String(b.how || "").slice(0, 40) }));
+  const bottles = (Array.isArray(body.bottles) ? body.bottles : []).slice(0, 14).map(b => ({ slug: String(b.slug || "").slice(0, 200), name: String(b.name || "").slice(0, 160), score: Number(b.score) || 0, price: b.price == null ? null : Number(b.price), category: String(b.category || "").slice(0, 60), producer: String(b.producer || "").slice(0, 80), year: Number(b.year) > 1900 ? Number(b.year) : null, note: String(b.note || "").slice(0, 260), how: String(b.how || "").slice(0, 40) }));
   const page = String(body.page || "").slice(0, 200);
   const added = await closeInMeaning(turns[turns.length - 1].text, new Set(bottles.map(b => b.slug)), request.signal);
   bottles.push(...added);
 
   const context = bottles.length
-    ? "Bottles the site found for the latest question (slug | name | score | price | category | producer | how it relates to the page | note). When the reader says \"these\" or \"this story\", they mean the bottles marked as named in the text:\n" + bottles.map(b => `${b.slug} | ${b.name} | ${b.score} | ${b.price == null ? "price n/a" : "$" + b.price} | ${b.category} | ${b.producer} | ${b.how || ""} | ${b.note || ""}`).join("\n")
+    ? "Bottles the site found for the latest question (slug | name | score | price | category | producer | year reviewed | how it relates to the page | note). When the reader says \"these\" or \"this story\", they mean the bottles marked as named in the text:\n" + bottles.map(b => `${b.slug} | ${b.name} | ${b.score} | ${b.price == null ? "price n/a" : "$" + b.price} | ${b.category} | ${b.producer} | ${b.year || "year n/a"} | ${b.how || ""} | ${b.note || ""}`).join("\n")
     : "The site found no bottles for the latest question.";
   const messages: Anthropic.MessageParam[] = turns.map((t, i) => ({ role: t.role, content: i === turns.length - 1 ? `${t.text}\n\n[${context}${page ? `\nThe reader is on: ${page}` : ""}]` : t.text }));
 

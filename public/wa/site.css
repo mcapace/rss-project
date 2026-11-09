@@ -4179,3 +4179,6 @@ body.cp-about .cp-plate img { object-position: 40% 50%; }
 @media (min-width: 1880px) { .mast nav a[href="travel.html"], .mast nav a[href="ninety.html"], .mast nav a[href="video.html"] { display: inline-flex; } }
 @media (min-width: 2280px) { .mast nav a[data-more] { display: inline-flex; } }
 @media (max-width: 900px) { .mast, .mast[data-scrolled="true"] { padding-block: 14px; } }
+
+/* Cookie consent (2026-11-09): the footer note confirming a Global Privacy Control signal was honored (site.js, WAConsent). */
+footer.site .gpc-note { margin-top: 8px; font-size: 11.5px; line-height: 1.45; color: var(--ink-3); max-width: 32ch; }

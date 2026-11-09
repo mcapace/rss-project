@@ -1,4 +1,71 @@
 /* Whisky Advocate concept: shared behaviour. Data is real (320 recent ratings); the "AI" is a deterministic stand-in. */
+
+/* Cookie consent (2026-11-09). Cookiebot asks first, and nothing that sets advertising or analytics cookies runs until it
+   answers: GA4 (below) waits for statistics consent, and ads.js asks for personalized ads only with marketing consent and
+   no Global Privacy Control signal, otherwise for Google's cookieless limited ads. A first visit with the banner still up
+   counts as a decline until the reader chooses, and so does a Cookiebot that never answers (blocked, slow, or a host not
+   registered in Cookiebot, such as the development host). Google Consent Mode starts at "denied" for every Google tag.
+   Cookiebot ID: <meta name="cookiebot-cbid" content="..."> on a page, else window.WA_COOKIEBOT_CBID, else Whisky Advocate's.
+   WAConsent.onReady(fn) runs fn once with the first answer; WAConsent.onChange(fn) runs on every answer after that;
+   WAConsent.manage() reopens the banner (the footer's "Cookie settings" link). */
+(function () {
+  if (window.WAConsent) return;
+  var CBID = (document.querySelector('meta[name="cookiebot-cbid"]') || {}).content || window.WA_COOKIEBOT_CBID || "46927422-5d96-4541-8331-7f8f535aafab";
+  var gpc = navigator.globalPrivacyControl === true || navigator.globalPrivacyControl === "1";
+  var state = { ready: false, chosen: false, marketing: false, statistics: false, preferences: false, gpc: gpc };
+  var waiting = [], listeners = [];
+  window.dataLayer = window.dataLayer || [];
+  function consentMode() { window.dataLayer.push(arguments); }
+  consentMode("consent", "default", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied", functionality_storage: "denied", personalization_storage: "denied", security_storage: "granted", wait_for_update: 500 });
+  consentMode("set", "ads_data_redaction", true);
+  function settle() {
+    var cb = window.Cookiebot, c = (cb && cb.consent) || {};
+    state.chosen = !!(cb && cb.hasResponse);
+    state.statistics = state.chosen && !!c.statistics;
+    state.preferences = state.chosen && !!c.preferences;
+    state.marketing = state.chosen && !!c.marketing && !gpc;
+    var ads = state.marketing ? "granted" : "denied";
+    consentMode("consent", "update", { ad_storage: ads, ad_user_data: ads, ad_personalization: ads, analytics_storage: state.statistics ? "granted" : "denied", personalization_storage: state.preferences ? "granted" : "denied" });
+    var first = !state.ready;
+    state.ready = true;
+    (first ? waiting.splice(0) : listeners.slice()).forEach(function (fn) { try { fn(state); } catch (e) { setTimeout(function () { throw e; }); } });
+  }
+  window.addEventListener("CookiebotOnConsentReady", settle);
+  window.addEventListener("CookiebotOnLoad", function () { if (!state.ready && window.Cookiebot && !window.Cookiebot.hasResponse) settle(); });
+  setTimeout(function () { if (!state.ready) settle(); }, 3000);
+  if (!document.getElementById("Cookiebot")) {
+    var s = document.createElement("script");
+    s.id = "Cookiebot";
+    s.src = "https://consent.cookiebot.com/uc.js";
+    s.setAttribute("data-cbid", CBID);
+    s.async = true;
+    s.onerror = function () { if (!state.ready) settle(); };
+    (document.head || document.documentElement).appendChild(s);
+  }
+  window.WAConsent = {
+    state: state,
+    onReady: function (fn) { if (state.ready) fn(state); else waiting.push(fn); },
+    onChange: function (fn) { listeners.push(fn); },
+    manage: function () { if (window.Cookiebot && window.Cookiebot.renew) window.Cookiebot.renew(); }
+  };
+  // Footer: a "Cookie settings" link beside the privacy policy, and the confirmation California requires when a GPC signal is honored.
+  var legal = document.querySelector('footer.site a[href$="privacy.html"]');
+  if (legal && !document.querySelector("[data-cookie-settings]")) {
+    var link = document.createElement("a");
+    link.href = "#cookie-settings";
+    link.textContent = "Cookie settings";
+    link.setAttribute("data-cookie-settings", "");
+    link.addEventListener("click", function (e) { e.preventDefault(); window.WAConsent.manage(); });
+    legal.parentNode.insertBefore(link, legal.nextSibling);
+    if (gpc) {
+      var note = document.createElement("p");
+      note.className = "gpc-note";
+      note.textContent = "Global Privacy Control detected: we treat it as your request to opt out of the sale or sharing of your personal information, and it has been honored.";
+      legal.parentNode.appendChild(note);
+    }
+  }
+})();
+
 (function () {
   var DATA = null;
   var requests = {};
@@ -674,11 +741,17 @@ document.body.appendChild(waAds);
   WA.track = function (name, data) {
     var payload = Object.assign({ page: location.pathname.split("/").pop() || "index.html", hash: (location.hash || "").slice(1, 120) }, data || {});
     WA.events.push({ name: name, data: payload, at: Date.now() });
-    if (window.gtag) window.gtag("event", name, payload);
+    if (window.gtag && (!window.WAConsent || window.WAConsent.state.statistics)) window.gtag("event", name, payload);
   };
-  if (id && !window.gtag) {
+  // Consent (2026-11-09): GA4 loads only once the reader has allowed statistics cookies in Cookiebot (WAConsent, top of this file).
+  function loadGA4() {
+    if (!id || window.gtag) return;
     var s = document.createElement("script"); s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(id); document.head.appendChild(s);
     window.dataLayer = window.dataLayer || []; window.gtag = function () { window.dataLayer.push(arguments); }; window.gtag("js", new Date()); window.gtag("config", id, { send_page_view: true });
+  }
+  if (id && window.WAConsent) {
+    window.WAConsent.onReady(function (c) { if (c.statistics) loadGA4(); });
+    window.WAConsent.onChange(function (c) { if (c.statistics) loadGA4(); });
   }
   // What the pages already do, counted: site search, the ask bar, the chat, the shelf scan, sign-ups, and the picks readers tap.
   document.addEventListener("submit", function (e) {

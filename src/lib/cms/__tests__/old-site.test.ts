@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanBody, isoDate, listingLinks, parseFeed, parsePost, sitePath } from "../old-site";
+import { cleanBody, isoDate, listingLinks, parseFeed, parsePost, parseSitemap, sitePath } from "../old-site";
 
 const story = `<script>mwData.BlogsPostID = 17907;</script>
 <meta name="description" content="We review Heaven Hill Phoenix, a $325 bourbon.">
@@ -46,6 +46,7 @@ describe("old site reader", () => {
       .toEqual([{ path: "/compass-box-discontinues-hedonism", title: "The End of the Road for Hedonism", published: "2026-11-12T15:09:29.000Z" }]);
     expect(listingLinks('<a href="/diageo-special-releases-ends">x</a><a href="/News">y</a><a href="https://example.com/some-long-path-here">z</a><a href="/files/site.css">c</a>')).toEqual(["/diageo-special-releases-ends"]);
     expect(sitePath("https://www.whiskyadvocate.com/News/")).toBe("/News");
+    expect(parseSitemap("<loc>https://whiskyadvocate.com/Penelope-Toasted-Barrel-Strength-56-1&#13;</loc><loc>https://whiskyadvocate.com/a&amp;b</loc>")).toEqual(["/Penelope-Toasted-Barrel-Strength-56-1", "/a&b"]);
     expect(isoDate("March 3, 2026")).toBe("2026-03-03");
     expect(cleanBody('<a href="/tag/x">x</a><!-- c -->')).toBe('<a href="https://whiskyadvocate.com/tag/x">x</a>');
   });

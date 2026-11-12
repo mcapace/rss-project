@@ -37,7 +37,7 @@ export function parseFeed(xml: string): FeedItem[] {
 
 /** Every <loc> in a sitemap or sitemap index, as site paths. */
 export function parseSitemap(xml: string): string[] {
-  return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map(m => sitePath(m[1])).filter((p): p is string => !!p);
+  return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map(m => sitePath(decode(m[1]).trim())).filter((p): p is string => !!p);
 }
 
 /** Post links on a listing page (home, a section, a tag): single-segment paths long enough to be a story or rating. */

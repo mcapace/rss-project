@@ -85,11 +85,25 @@
   }).filter(Boolean);
   if (!slots.length) return;
 
+  /* Consent (2026-11-09): GPT loads only after Cookiebot answers (WAConsent, top of site.js). Personalized ads need marketing
+     consent and no Global Privacy Control signal. Everyone else, including a first visit with the banner still up, gets
+     Google's limited ads: the limited-ads build of GPT, which keeps off cookies and other local storage, with restricted
+     data processing and non-personalized requests. A reader who accepts gets personalized ads from the next page on. */
   window.googletag = window.googletag || { cmd: [] };
-  var script = document.createElement("script");
-  script.async = true;
-  script.src = "https://securepubads.g.doubleclick.net/tag/js/gpt.js";
-  document.head.appendChild(script);
+  var GPT_STANDARD = "https://securepubads.g.doubleclick.net/tag/js/gpt.js";
+  var GPT_LIMITED = "https://pagead2.googlesyndication.com/tag/js/gpt.js";   // setPrivacySettings({ limitedAds }) only works from this URL
+  function loadGpt(consent) {
+    var personalized = !!(consent && consent.marketing && !consent.gpc);
+    if (!personalized) {
+      var restrict = function () { googletag.pubads().setPrivacySettings({ limitedAds: true, restrictDataProcessing: true, nonPersonalizedAds: true }); };
+      if (Array.isArray(googletag.cmd)) googletag.cmd.unshift(restrict); else googletag.cmd.push(restrict);   // first in the queue, before any slot is requested
+    }
+    var script = document.createElement("script");
+    script.async = true;
+    script.src = personalized ? GPT_STANDARD : GPT_LIMITED;
+    document.head.appendChild(script);
+  }
+  if (window.WAConsent) window.WAConsent.onReady(loadGpt); else loadGpt(null);
 
   /* Define a slot at the one size its rule allows here, or leave it out (and hide its holder) when nothing fits. */
   function defineAt(spec) {
